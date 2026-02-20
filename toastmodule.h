@@ -11,6 +11,7 @@
 namespace au::toast {
 class ToastService;
 class ToastProvider;
+
 class ToastModule : public muse::modularity::IModuleSetup
 {
 public:
@@ -19,8 +20,22 @@ public:
     void registerResources() override;
     void registerUiTypes() override;
 
+    muse::modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
+
+private:
+    std::shared_ptr<ToastProvider> m_toastProvider;
+};
+
+class ToastContext : public muse::modularity::IContextSetup
+{
+public:
+    ToastContext(const muse::modularity::ContextPtr& ctx)
+        : muse::modularity::IContextSetup(ctx) {}
+
+    void registerExports() override;
+    void onDeinit() override;
+
 private:
     std::shared_ptr<ToastService> m_toastService;
-    std::shared_ptr<ToastProvider> m_toastProvider;
 };
 }

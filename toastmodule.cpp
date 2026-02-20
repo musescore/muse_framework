@@ -16,6 +16,8 @@ using namespace au::toast;
 using namespace muse;
 using namespace muse::modularity;
 
+static const std::string mname("toastnotification");
+
 static void toast_init_qrc()
 {
     Q_INIT_RESOURCE(toast);
@@ -23,16 +25,14 @@ static void toast_init_qrc()
 
 std::string ToastModule::moduleName() const
 {
-    return "toastnotification";
+    return mname;
 }
 
 void ToastModule::registerExports()
 {
-    m_toastService = std::make_shared<ToastService>(iocContext());
     m_toastProvider = std::make_shared<ToastProvider>();
 
-    ioc()->registerExport<IToastService>(moduleName(), m_toastService);
-    ioc()->registerExport<IToastProvider>(moduleName(), m_toastProvider);
+    globalIoc()->registerExport<IToastProvider>(mname, m_toastProvider);
 }
 
 void ToastModule::registerResources()
@@ -44,4 +44,24 @@ void ToastModule::registerUiTypes()
 {
     qmlRegisterType<ToastListModel>("Audacity.Toast", 1, 0, "ToastListModel");
     qmlRegisterType<ToastTestsModel>("Audacity.Toast", 1, 0, "ToastTestsModel");
+}
+
+IContextSetup* ToastModule::newContext(const muse::modularity::ContextPtr& ctx) const
+{
+    return new ToastContext(ctx);
+}
+
+// =====================================================
+// ToastContext
+// =====================================================
+
+void ToastContext::registerExports()
+{
+    m_toastService = std::make_shared<ToastService>(iocContext());
+
+    ioc()->registerExport<IToastService>(mname, m_toastService);
+}
+
+void ToastContext::onDeinit()
+{
 }
