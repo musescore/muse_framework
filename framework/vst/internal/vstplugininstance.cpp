@@ -67,7 +67,7 @@ VstPluginInstance::VstPluginInstance(const muse::audio::AudioResourceId& resourc
 VstPluginInstance::~VstPluginInstance()
 {
     //! NOTE: Signal early so any rescanParams() already queued to the main thread
-    //! returns before touching members (mutex, provider, etc.)
+    //! returns before touching members (provider, etc.)
     m_isLoaded = false;
 
     muse::audio::AudioResourceId resourceId = m_resourceId;
@@ -124,8 +124,6 @@ void VstPluginInstance::load()
     Async::call(this, [this]() {
         ONLY_MAIN_THREAD(threadSecurer);
 
-        std::lock_guard lock(m_mutex);
-
         m_module = modulesRepo()->pluginModule(m_resourceId);
         if (!m_module) {
             modulesRepo()->addPluginModule(m_resourceId);
@@ -145,7 +143,6 @@ void VstPluginInstance::load()
             }
 
             m_pluginProvider = std::make_unique<VstPluginProvider>(factory, classInfo);
-            m_classInfo = classInfo;
             break;
         }
 
@@ -208,8 +205,6 @@ void VstPluginInstance::rescanParams()
         return;
     }
 
-    std::lock_guard lock(m_mutex);
-
     if (!m_pluginProvider) {
         LOGE() << "Plugin provider is not initialized";
         return;
@@ -260,8 +255,6 @@ void VstPluginInstance::setPluginConfig(const audio::AudioUnitConfig& config)
     if (!m_isLoaded) {
         return;
     }
-
-    std::lock_guard lock(m_mutex);
 
     if (!m_pluginProvider) {
         LOGE() << "Plugin provider is not initialized";
@@ -316,9 +309,7 @@ PluginViewPtr VstPluginInstance::createView() const
 {
     ONLY_MAIN_THREAD(threadSecurer);
 
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
+    if (!m_isLoaded || !m_pluginProvider) {
         return nullptr;
     }
 
@@ -334,9 +325,7 @@ PluginControllerPtr VstPluginInstance::controller() const
 {
     ONLY_AUDIO_THREAD(threadSecurer);
 
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
+    if (!m_isLoaded || !m_pluginProvider) {
         return nullptr;
     }
 
@@ -348,9 +337,7 @@ PluginComponentPtr VstPluginInstance::component() const
     // TODO: Audio engine or process thread
     // ONLY_AUDIO_THREAD(threadSecurer);
 
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
+    if (!m_isLoaded || !m_pluginProvider) {
         return nullptr;
     }
 
@@ -361,30 +348,11 @@ PluginMidiMappingPtr VstPluginInstance::midiMapping() const
 {
     ONLY_AUDIO_THREAD(threadSecurer);
 
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
+    if (!m_isLoaded || !m_pluginProvider) {
         return nullptr;
     }
 
     return m_pluginProvider->midiMapping();
-}
-
-bool VstPluginInstance::isAbleForInput() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    auto search = std::find_if(m_classInfo.subCategories().begin(),
-                               m_classInfo.subCategories().end(), [](const std::string& subCategoryStr) {
-        return subCategoryStr == PluginSubCategory::Synth
-               || subCategoryStr == PluginSubCategory::Piano
-               || subCategoryStr == PluginSubCategory::Drum
-               || subCategoryStr == PluginSubCategory::External;
-    });
-
-    return search != m_classInfo.subCategories().cend();
 }
 
 void VstPluginInstance::updatePluginConfig(const audio::AudioUnitConfig& config)
@@ -401,20 +369,6 @@ void VstPluginInstance::refreshConfig()
     ONLY_MAIN_THREAD(threadSecurer);
 
     rescanParams();
-}
-
-bool VstPluginInstance::isValid() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    if (!m_module
-        || !m_pluginProvider) {
-        return false;
-    }
-
-    return true;
 }
 
 bool VstPluginInstance::isLoaded() const
