@@ -1,0 +1,66 @@
+.*,
+*~
+*.swp
+*.autosave
+.qped
+.directory
+.idea
+.qtcreator
+.vscode/
+/builds
+build
+/build_overrides.cmake
+build.release
+build.debug
+build.install
+build.tooldata
+build.qtc
+build-*
+build
+win32build
+win32install
+win64build
+win64install
+build.xcode
+applebuild
+build.artifacts
+build.symbols
+/*.config
+/*.creator
+/*.files
+/*.includes
+*.user
+Doc
+DocLib
+*.sfd~
+/.project
+.DS_Store
+CMakeLists.txt.user.*
+*.qmlc
+*.jsc
+.vs
+
+# Backup Files created by Merging Softwares (Example: Meld)
+*.orig
+
+temp_*
+
+*.local.cmake
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pdm-python
+
+**/_deps/*
+
+# CMake User presets
+CMakeUserPresets.json
+
+# Compile commands json
+compile_commands.json
+.cache
+
+# QML language server
+**/.qmlls.ini
