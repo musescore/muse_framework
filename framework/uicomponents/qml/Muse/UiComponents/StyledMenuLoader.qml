@@ -146,10 +146,14 @@ Loader {
 
         if (x !== -1) {
             menu.x = x
+        } else {
+            menu.x = 0
         }
 
         if (y !== -1) {
             menu.y = y
+        } else {
+            menu.y = Qt.binding(() => menu.parent?.height ?? 0)
         }
     }
 
