@@ -83,7 +83,6 @@ else()
 
         # Nodes
         internal/nodes/audionode.h
-        internal/nodes/audiosourcenode.cpp
         internal/nodes/audiosourcenode.h
         internal/nodes/mixernode.cpp
         internal/nodes/mixernode.h
