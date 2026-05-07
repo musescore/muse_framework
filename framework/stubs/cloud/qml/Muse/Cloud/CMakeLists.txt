@@ -26,7 +26,6 @@ qt_add_qml_module(muse_cloud_qml
     QML_FILES
         AccountInfoButton.qml
         AccountPage.qml
-        CloudScoresView.qml
     IMPORTS
         TARGET muse_ui_qml
         TARGET muse_uicomponents_qml
