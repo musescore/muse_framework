@@ -97,7 +97,7 @@ async::Promise<Ret> Playback::init()
                 ONLY_AUDIO_MAIN_THREAD;
                 Ret ret;
                 IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
-                    Ret ret = audio::make_ret(Err::InvalidRpcData);
+                    ret = audio::make_ret(Err::InvalidRpcData);
                     (void)resolve(ret);
                     return;
                 }
