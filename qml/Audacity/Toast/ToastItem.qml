@@ -34,10 +34,11 @@ Item {
     property int titlePixelSize: 14
     property int messagePixelSize: 14
     property int actionButtonHeight: 28
+    property int actionButtonMinWidth: 80
     property int actionButtonMargins: 6
     property int actionButtonsSpacing: 8
 
-    signal dismissed()
+    signal dismissed
     signal actionTriggered(string actionStr)
 
     width: 360
@@ -52,9 +53,6 @@ Item {
 
         color: ui.theme.backgroundPrimaryColor
         radius: 8
-
-        border.color: "lightgray"
-        border.width: 1
 
         opacity: 0.95
 
@@ -162,10 +160,10 @@ Item {
                     FlatButton {
                         text: root.actions[index].text
                         height: root.actionButtonHeight
-                        minWidth: 0
+                        minWidth: root.actionButtonMinWidth
                         margins: root.actionButtonMargins
                         onClicked: {
-                            root.actionTriggered(root.actions[index].text);
+                            root.actionTriggered(root.actions[index].text)
                         }
                     }
                 }

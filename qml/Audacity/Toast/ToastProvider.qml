@@ -47,7 +47,7 @@ StyledListView {
         width: root.width
         x: root.width
         opacity: 0
-        
+
         property bool enableAnimation: false
 
         title: model.title
@@ -59,27 +59,31 @@ StyledListView {
         progress: model.progress
         showProgressInfo: model.showProgressInfo
         timeElapsed: model.timeElapsed
- 
-        onActionTriggered: function(actionStr) {
-            toastmodel.executeAction(model.id, actionStr);
+
+        onActionTriggered: function (actionStr) {
+            toastmodel.executeAction(model.id, actionStr)
         }
-        
+
         Component.onCompleted: {
-            x = 0;
-            opacity = 1;
+            x = 0
+            opacity = 1
         }
-        
+
         Behavior on x {
             NumberAnimation {
                 duration: root.animationDuration
                 easing.type: Easing.OutCubic
             }
         }
-        
-        Behavior on opacity { OpacityAnimator { duration: root.animationDuration } }
+
+        Behavior on opacity {
+            OpacityAnimator {
+                duration: root.animationDuration
+            }
+        }
 
         onDismissed: {
-            toastmodel.dismissToast(model.id);
+            toastmodel.dismissToast(model.id)
         }
     }
 
