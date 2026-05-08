@@ -29,6 +29,7 @@
 
 #include "audio/common/audioutils.h"
 #include "audio/common/rpc/rpcpacker.h"
+#include "audio/common/audioerrors.h"
 
 #include "enginerpccontroller.h"
 #include "audioengine.h"

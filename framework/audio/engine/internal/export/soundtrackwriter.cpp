@@ -38,7 +38,6 @@
 
 using namespace muse;
 using namespace muse::audio;
-using namespace muse::audio::engine;
 using namespace muse::audio::soundtrack;
 
 static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice)
