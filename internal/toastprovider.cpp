@@ -135,7 +135,8 @@ void ToastProvider::resolveToast(int id, ToastActionCode actionCode)
 {
     auto promiseIt = m_resolvers.find(id);
     if (promiseIt != m_resolvers.end()) {
-        (void)promiseIt->second(actionCode);
+        auto resolve = std::move(promiseIt->second);
         m_resolvers.erase(promiseIt);
+        (void)resolve(actionCode);
     }
 }
