@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-CLA-applies
  *
- * MuseScore Studio
+ * MuseScore
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -20,31 +20,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <qqmlintegration.h>
-
-#include <QString>
-
 #include "sorter.h"
 
 namespace muse::uicomponents {
-class SorterValue : public Sorter
+Sorter::Sorter(QObject* parent)
+    : QObject(parent)
 {
-    Q_OBJECT
-    QML_ELEMENT
+}
 
-    Q_PROPERTY(QString roleName READ roleName WRITE setRoleName NOTIFY dataChanged)
+Qt::SortOrder Sorter::sortOrder() const
+{
+    return m_sortOrder;
+}
 
-public:
-    explicit SorterValue(QObject* parent = nullptr);
+void Sorter::setSortOrder(const Qt::SortOrder sortOrder)
+{
+    if (m_sortOrder == sortOrder) {
+        return;
+    }
 
-    bool lessThan(const QModelIndex& sourceLeft, const QModelIndex& sourceRight, const SortFilterProxyModel&) override;
+    m_sortOrder = sortOrder;
+    emit dataChanged();
+}
 
-    QString roleName() const;
-    void setRoleName(QString roleName);
+bool Sorter::enabled() const
+{
+    return m_enabled;
+}
 
-private:
-    QString m_roleName;
-};
+void Sorter::setEnabled(const bool enabled)
+{
+    if (m_enabled == enabled) {
+        return;
+    }
+
+    m_enabled = enabled;
+    emit dataChanged();
+}
 }
