@@ -24,6 +24,7 @@
 
 #include <qqmlintegration.h>
 
+#include <QByteArray>
 #include <QHash>
 #include <QList>
 #include <QSortFilterProxyModel>
@@ -74,13 +75,12 @@ protected:
     bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 
 private:
-    void fillRoleIds();
-
+    void updateRoleIds();
     SorterValue* currentSorterValue() const;
 
-    QmlListProperty<FilterValue> m_filters;
-    QHash<int, FilterValue*> m_roleIdToFilterValueHash;
+    QHash<QByteArray, int> m_roleIds;
 
+    QmlListProperty<FilterValue> m_filters;
     QmlListProperty<SorterValue> m_sorters;
 
     QList<int> m_alwaysIncludeIndices;
