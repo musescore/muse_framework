@@ -19,14 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 #include "sortfilterproxymodel.h"
 
 #include <QTimer>
+#include <QtVersionChecks>
 
-#include "defer.h"
-#include "types/val.h"
+#include "global/defer.h"
+#include "global/types/val.h"
 
-#include "view/modelutils.h"
+#include "uicomponents/view/modelutils.h"
 
 using namespace muse::uicomponents;
 
@@ -136,6 +138,11 @@ void SortFilterProxyModel::setAlwaysExcludeIndices(const QList<int>& indices)
     emit alwaysExcludeIndicesChanged();
 }
 
+int SortFilterProxyModel::roleIdFromName(const QString& roleName) const
+{
+    return roleNames().key(roleName.toUtf8(), INVALID_KEY);
+}
+
 QHash<int, QByteArray> SortFilterProxyModel::roleNames() const
 {
     if (!sourceModel()) {
@@ -159,12 +166,6 @@ void SortFilterProxyModel::setSourceModel(QAbstractItemModel* sourceModel)
         m_subSourceModelConnection = connect(sourceSortFilterModel, &SortFilterProxyModel::sourceModelRoleNamesChanged,
                                              this, &SortFilterProxyModel::sourceModelRoleNamesChanged);
     }
-}
-
-void SortFilterProxyModel::refresh()
-{
-    setFilterFixedString(filterRegularExpression().pattern());
-    setSortCaseSensitivity(sortCaseSensitivity());
 }
 
 bool SortFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
@@ -219,19 +220,12 @@ bool SortFilterProxyModel::lessThan(const QModelIndex& left, const QModelIndex& 
         return false;
     }
 
-    int sorterRoleKey = roleKey(sorter->roleName());
+    int sorterRoleKey = roleIdFromName(sorter->roleName());
 
     Val leftData = Val::fromQVariant(sourceModel()->data(left, sorterRoleKey));
     Val rightData = Val::fromQVariant(sourceModel()->data(right, sorterRoleKey));
 
     return leftData < rightData;
-}
-
-void SortFilterProxyModel::reset()
-{
-    beginResetModel();
-    resetInternalData();
-    endResetModel();
 }
 
 void SortFilterProxyModel::fillRoleIds()
@@ -278,16 +272,4 @@ SorterValue* SortFilterProxyModel::currentSorterValue() const
     }
 
     return nullptr;
-}
-
-int SortFilterProxyModel::roleKey(const QString& roleName) const
-{
-    QHash<int, QByteArray> roles = sourceModel()->roleNames();
-    for (auto it = roles.begin(); it != roles.end(); ++it) {
-        if (roleName == QString(it.value())) {
-            return it.key();
-        }
-    }
-
-    return INVALID_KEY;
 }

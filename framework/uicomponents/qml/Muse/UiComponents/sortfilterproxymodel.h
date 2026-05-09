@@ -19,10 +19,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
 #include <qqmlintegration.h>
 
+#include <QHash>
+#include <QList>
 #include <QSortFilterProxyModel>
 
 #include "filtervalue.h"
@@ -36,7 +39,6 @@ class SortFilterProxyModel : public QSortFilterProxyModel
     QML_ELEMENT
 
     Q_PROPERTY(int rowCount READ rowCount NOTIFY rowCountChanged)
-
     Q_PROPERTY(QQmlListProperty<muse::uicomponents::FilterValue> filters READ filters CONSTANT)
     Q_PROPERTY(QQmlListProperty<muse::uicomponents::SorterValue> sorters READ sorters CONSTANT)
     Q_PROPERTY(QList<int> alwaysIncludeIndices READ alwaysIncludeIndices WRITE setAlwaysIncludeIndices NOTIFY alwaysIncludeIndicesChanged)
@@ -54,16 +56,13 @@ public:
     QList<int> alwaysExcludeIndices() const;
     void setAlwaysExcludeIndices(const QList<int>& indices);
 
+    int roleIdFromName(const QString&) const;
     QHash<int, QByteArray> roleNames() const override;
 
     void setSourceModel(QAbstractItemModel* sourceModel) override;
 
-    Q_INVOKABLE void refresh();
-
 signals:
     void rowCountChanged();
-
-    void filtersChanged(QQmlListProperty<muse::uicomponents::FilterValue> filters);
 
     void alwaysIncludeIndicesChanged();
     void alwaysExcludeIndicesChanged();
@@ -75,11 +74,9 @@ protected:
     bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 
 private:
-    void reset();
     void fillRoleIds();
 
     SorterValue* currentSorterValue() const;
-    int roleKey(const QString& roleName) const;
 
     QmlListProperty<FilterValue> m_filters;
     QHash<int, FilterValue*> m_roleIdToFilterValueHash;
