@@ -24,8 +24,10 @@
 
 #include <qqmlintegration.h>
 
-#include <QObject>
+#include <QString>
 #include <QVariant>
+
+#include "filter.h"
 
 namespace muse::uicomponents {
 namespace CompareType {
@@ -41,7 +43,7 @@ enum Type
 Q_ENUM_NS(Type)
 }
 
-class FilterValue : public QObject
+class FilterValue : public Filter
 {
     Q_OBJECT
     QML_ELEMENT
@@ -49,36 +51,24 @@ class FilterValue : public QObject
     Q_PROPERTY(QString roleName READ roleName WRITE setRoleName NOTIFY dataChanged)
     Q_PROPERTY(QVariant roleValue READ roleValue WRITE setRoleValue NOTIFY dataChanged)
     Q_PROPERTY(muse::uicomponents::CompareType::Type compareType READ compareType WRITE setCompareType NOTIFY dataChanged)
-    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY dataChanged)
-
-    /// Determines whether the SortFilterProxyModel should react asynchronously to the `dataChanged` signal.
-    Q_PROPERTY(bool async READ async WRITE setAsync NOTIFY dataChanged)
 
 public:
     explicit FilterValue(QObject* parent = nullptr);
 
+    bool acceptsRow(int sourceRow, const QModelIndex& sourceParent, const SortFilterProxyModel&) override;
+
     QString roleName() const;
-    QVariant roleValue() const;
-    CompareType::Type compareType() const;
-    bool enabled() const;
-
-    bool async() const;
-    void setAsync(bool async);
-
-public slots:
     void setRoleName(QString roleName);
-    void setRoleValue(QVariant roleValue);
-    void setCompareType(muse::uicomponents::CompareType::Type compareType);
-    void setEnabled(bool enabled);
 
-signals:
-    void dataChanged();
+    QVariant roleValue() const;
+    void setRoleValue(QVariant roleValue);
+
+    CompareType::Type compareType() const;
+    void setCompareType(muse::uicomponents::CompareType::Type compareType);
 
 private:
     QString m_roleName;
     QVariant m_roleValue;
     CompareType::Type m_compareType = CompareType::Equal;
-    bool m_enabled = true;
-    bool m_async = false;
 };
 }
