@@ -103,7 +103,7 @@ void ExtensionsUiEngine::setupV1()
     QmlIoCContext* qmlIoc = new QmlIoCContext(this);
     qmlIoc->ctx = iocContext();
 
-    QQmlContext* rootContext = m_engine->rootContext();
+    QQmlContext* rootContext = m_engineV1->rootContext();
     rootContext->setObjectName(QString("Root QQmlContext: %1").arg(qmlIoc->ctx->id));
     rootContext->setContextProperty("ioc_context", QVariant::fromValue(qmlIoc));
     m_engineV1->setProperty("ioc_context", QVariant::fromValue(qmlIoc));
