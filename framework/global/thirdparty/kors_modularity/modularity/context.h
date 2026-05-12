@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <memory>
 #include <functional>
+#include <cstdint>
 
 namespace kors::modularity {
 using IoCID = uint16_t;

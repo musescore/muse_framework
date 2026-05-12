@@ -34,7 +34,6 @@
 #include "global/globalmodule.h"
 
 #include "muse_framework_config.h"
-#include "app_config.h"
 
 using namespace muse;
 using namespace muse::ui;

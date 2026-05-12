@@ -25,8 +25,6 @@
 
 #include "settings.h"
 
-#include "app_config.h"
-
 using namespace muse;
 using namespace muse::update;
 

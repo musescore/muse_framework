@@ -22,7 +22,7 @@
 BUILD_TOOLS=$HOME/build_tools
 source $BUILD_TOOLS/environment.sh
 
-cd build.debug
+cd build/debug
 
 export GTEST_OUTPUT=xml:test-results
 export GTEST_COLOR=1

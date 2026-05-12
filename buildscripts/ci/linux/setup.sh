@@ -144,6 +144,9 @@ fi
 echo "ninja version"
 ninja --version
 
+# Qt 
+echo export QT_DIR="${QT_ROOT_DIR}" >> ${ENV_FILE}
+
 # Emscripten
 if [[ "$PACKARCH" == "wasm" ]]; then
   git clone https://github.com/emscripten-core/emsdk.git $BUILD_TOOLS/emsdk
