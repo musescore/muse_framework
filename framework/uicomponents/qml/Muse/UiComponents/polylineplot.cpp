@@ -643,21 +643,17 @@ qreal PolylinePlot::yNormalizedFromDomain(qreal yDomain) const
 {
     // simple linear mapping (no split)
     if (!hasValidYSplit()) {
-        return clamp01((yDomain - m_yFrom) / (m_yTo - m_yFrom));
+        return (yDomain - m_yFrom) / (m_yTo - m_yFrom);
     }
 
     const qreal splitNormalized = m_ySplitNormalized;
     const qreal splitValue      = m_ySplitValue;
 
-    const qreal minY = std::min(m_yFrom, m_yTo);
-    const qreal maxY = std::max(m_yFrom, m_yTo);
-    const qreal yClamped = std::clamp(yDomain, minY, maxY);
-
     const bool increasing = (m_yTo >= m_yFrom);
 
     const bool isInFirstSegment
-        =increasing ? (yClamped <= splitValue)
-          : (yClamped >= splitValue);
+        =increasing ? (yDomain <= splitValue)
+          : (yDomain >= splitValue);
 
     // ---- first segment ----
     if (isInFirstSegment) {
@@ -666,8 +662,8 @@ qreal PolylinePlot::yNormalizedFromDomain(qreal yDomain) const
             return splitNormalized;
         }
 
-        const qreal segmentN = (yClamped - m_yFrom) / segmentSize;
-        return clamp01(segmentN * splitNormalized);
+        const qreal segmentN = (yDomain - m_yFrom) / segmentSize;
+        return segmentN * splitNormalized;
     }
 
     // ---- second segment ----
@@ -676,8 +672,8 @@ qreal PolylinePlot::yNormalizedFromDomain(qreal yDomain) const
         return splitNormalized;
     }
 
-    const qreal segmentN = (yClamped - splitValue) / segmentSize;
-    return clamp01(splitNormalized + segmentN * (1.0 - splitNormalized));
+    const qreal segmentN = (yDomain - splitValue) / segmentSize;
+    return splitNormalized + segmentN * (1.0 - splitNormalized);
 }
 
 void PolylinePlot::updateBaselineFromDefaultValue()
@@ -766,7 +762,7 @@ QPointF PolylinePlot::normalizedFromDomain(const QPointF& p) const
     }
 
     const qreal xN = (p.x() - m_xFrom) / (m_xTo - m_xFrom);
-    qreal yN = yNormalizedFromDomain(p.y());
+    qreal yN = clamp01(yNormalizedFromDomain(p.y()));
 
     if (m_yAxisInverse) {
         yN = 1.0 - yN;
@@ -854,7 +850,7 @@ void PolylinePlot::rebuildVisiblePoints()
         if (m_yAxisInverse) {
             yn = 1.0 - yn;
         }
-        return std::clamp(yn, 0.0, 1.0);
+        return yn;
     };
 
     // interpolate at window edges
@@ -877,7 +873,7 @@ void PolylinePlot::rebuildVisiblePoints()
     // These are rendering-only points (no corresponding domain index).
 
     // left boundary (synthetic)
-    m_pointsNVisible.push_back(QPointF(-0.1, std::clamp(yAt0N, 0.0, 1.0)));
+    m_pointsNVisible.push_back(QPointF(-0.1, yAt0N));
     m_visibleToDomainIndex.push_back(INVALID_POINT_IDX);
 
     // interior real points
@@ -894,7 +890,7 @@ void PolylinePlot::rebuildVisiblePoints()
     }
 
     // right boundary (synthetic)
-    m_pointsNVisible.push_back(QPointF(1.1, std::clamp(yAt1N, 0.0, 1.0)));
+    m_pointsNVisible.push_back(QPointF(1.1, yAt1N));
     m_visibleToDomainIndex.push_back(INVALID_POINT_IDX);
 
     updateActivePoint();
@@ -932,8 +928,8 @@ QVector<QPointF> PolylinePlot::polylinePx() const
     const QPointF firstN = sorted.front();
     const QPointF lastN  = sorted.back();
 
-    const qreal firstYpx = toPxY(this, clamp01(firstN.y()));
-    const qreal lastYpx  = toPxY(this, clamp01(lastN.y()));
+    const qreal firstYpx = toPxY(this, firstN.y());
+    const qreal lastYpx  = toPxY(this, lastN.y());
 
     pts.reserve(sorted.size() + 2);
 
@@ -943,7 +939,7 @@ QVector<QPointF> PolylinePlot::polylinePx() const
     // actual points
     for (const auto& pN : sorted) {
         pts.push_back(QPointF(toPxX(this, clamp01(pN.x())),
-                              toPxY(this, clamp01(pN.y()))));
+                              toPxY(this, pN.y())));
     }
 
     // right horizontal segment end
