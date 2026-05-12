@@ -61,20 +61,19 @@ public:
     std::vector<samples_t> availableOutputDeviceBufferSizes() const override;
     std::vector<sample_rate_t> availableOutputDeviceSampleRates() const override;
 
+    struct Data;
+
 private:
-    static void OnFillBuffer(void* context, OpaqueAudioQueue* queue, AudioQueueBuffer* buffer);
     static void logError(const std::string message, OSStatus error);
 
     void initDeviceMapListener();
-    bool audioQueueSetDeviceName(const AudioDeviceID& deviceId);
     void doClose();
 
-    AudioDeviceID defaultDeviceId() const;
+    std::optional<int> getAudioDeviceId(const AudioDeviceID& deviceId) const;
+
     UInt32 osxDeviceId() const;
 
-    struct Data;
-
-    std::shared_ptr<Data> m_data = nullptr;
+    std::unique_ptr<Data> m_data = nullptr;
     async::Channel<Spec> m_activeSpecChanged;
     std::map<unsigned int, std::string> m_outputDevices = {}, m_inputDevices = {};
     mutable std::mutex m_devicesMutex;

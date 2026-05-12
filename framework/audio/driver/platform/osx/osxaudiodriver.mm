@@ -22,10 +22,22 @@
 
 #include "osxaudiodriver.h"
 
+#include <CoreAudio/AudioHardware.h>
+#include <CoreAudio/AudioHardwareBase.h>
+#include <CoreAudioTypes/CoreAudioBaseTypes.h>
+#include <MacTypes.h>
+#include <QtCore/qsemaphore.h>
+#include <Security/cssmconfig.h>
+#include <cstdint>
+#include <cstdlib>
 #include <mutex>
 
 #include <AudioToolbox/AudioToolbox.h>
+#include <optional>
+#include <string_view>
 
+#include "common/audiotypes.h"
+#include "thirdparty/kors_logger/src/log_base.h"
 #include "translation.h"
 #include "log.h"
 
@@ -34,10 +46,38 @@ typedef AudioDeviceID OSXAudioDeviceID;
 using namespace muse;
 using namespace muse::audio;
 
+struct ChannelBufferDetails {
+    int streamNumber;
+    unsigned int hardwareChannelNumber;
+    unsigned int dataOffsetSamples;
+    unsigned int dataStrideSamples;
+};
+
 struct OSXAudioDriver::Data {
     Spec format;
-    AudioQueueRef audioQueue = nullptr;
-    Callback callback;
+    AudioDeviceIOProcID procId{};
+    bool canBeDirectlyMapped = false;
+
+    OSXAudioDeviceID deviceId{};
+
+    std::atomic<bool> stopPending{ false };
+    std::atomic<bool> stopped{ false };
+
+    std::vector<ChannelBufferDetails> channelBufferOutputDetails;
+    std::vector<float> outBuffer;
+
+    Data& operator=(const Data& other)
+    {
+        format = other.format;
+        procId = other.procId;
+        canBeDirectlyMapped = other.canBeDirectlyMapped;
+        deviceId = other.deviceId;
+        stopPending = other.stopPending.load();
+        stopped = other.stopped.load();
+        channelBufferOutputDetails = other.channelBufferOutputDetails;
+        outBuffer = other.outBuffer;
+        return *this;
+    }
 
     void clear()
     {
@@ -46,7 +86,7 @@ struct OSXAudioDriver::Data {
 };
 
 OSXAudioDriver::OSXAudioDriver()
-    : m_data(std::make_shared<Data>())
+    : m_data(std::make_unique<Data>())
 {
     initDeviceMapListener();
     updateDeviceMap();
@@ -71,42 +111,357 @@ muse::audio::AudioDeviceID OSXAudioDriver::defaultDevice() const
     return DEFAULT_DEVICE_ID;
 }
 
-bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
+static uint32_t outputBufferSamplesPerChannel(const AudioBuffer& buffer)
 {
-    if (!m_data) {
+    if (buffer.mNumberChannels == 0) {
+        return 0;
+    }
+
+    return buffer.mDataByteSize / (buffer.mNumberChannels * sizeof(float));
+}
+
+static uint32_t callbackSamplesPerChannel(const AudioBufferList* outputData,
+                                          const std::vector<ChannelBufferDetails>& details)
+{
+    std::optional<uint32_t> result;
+
+    for (const ChannelBufferDetails& detail : details) {
+        if (detail.streamNumber < 0 || static_cast<UInt32>(detail.streamNumber) >= outputData->mNumberBuffers) {
+            continue;
+        }
+
+        const AudioBuffer& outputBuffer = outputData->mBuffers[detail.streamNumber];
+        const uint32_t frames = outputBufferSamplesPerChannel(outputBuffer);
+        if (frames == 0) {
+            continue;
+        }
+
+        result = result.has_value() ? std::min(result.value(), frames) : frames;
+    }
+
+    return result.value_or(0);
+}
+
+static std::optional<uint32_t> getSameRequestedSampleCount(const AudioBufferList* outOutputData,
+                                                           const std::vector<ChannelBufferDetails>& details)
+{
+    std::optional<uint32_t> sampleCount;
+
+    for (const ChannelBufferDetails& detail : details) {
+        if (detail.streamNumber < 0 || static_cast<UInt32>(detail.streamNumber) >= outOutputData->mNumberBuffers) {
+            continue;
+        }
+
+        const AudioBuffer& outputBuffer = outOutputData->mBuffers[detail.streamNumber];
+        const uint32_t frames = outputBufferSamplesPerChannel(outputBuffer);
+        if (frames == 0) {
+            continue;
+        }
+
+        if (!sampleCount.has_value()) {
+            sampleCount = frames;
+        } else if (sampleCount.value() != frames) {
+            return std::nullopt;
+        }
+    }
+
+    return sampleCount;
+}
+
+//TODO: make use of timing parameters
+static int coreAudioIOProc(AudioObjectID /* inDevice*/, const AudioTimeStamp* /* inNow */,
+                           const AudioBufferList* /* inInputData */,
+                           const AudioTimeStamp* /*  inInputTime */,
+                           AudioBufferList* outOutputData,
+                           const AudioTimeStamp* /* inOutputTime */,
+                           void* __nullable inClientData)
+{
+    auto* data = reinterpret_cast<OSXAudioDriver::Data*>(inClientData);
+    if (data->stopPending) {
+        AudioDeviceStop(data->deviceId, *data->procId);
+        data->stopPending = false;
+        data->stopped = true;
+        return noErr;
+    }
+    if (data->channelBufferOutputDetails.empty()) {
+        return noErr;
+    }
+
+    uint32_t samplesPerChannel = callbackSamplesPerChannel(outOutputData, data->channelBufferOutputDetails);
+    if (samplesPerChannel == 0) {
+        return noErr;
+    }
+
+    const uint32_t callbackDataStride = data->format.output.audioChannelCount;
+    int dataSize = static_cast<int>(samplesPerChannel * callbackDataStride * sizeof(float));
+    if (data->canBeDirectlyMapped && getSameRequestedSampleCount(outOutputData,
+                                                                 data->channelBufferOutputDetails).value_or(0) == samplesPerChannel) {
+        data->format.callback(
+            (uint8_t*)outOutputData
+            ->mBuffers[data->channelBufferOutputDetails[0].streamNumber]
+            .mData,
+            dataSize);
+        return 0;
+    }
+
+    if (data->outBuffer.size() < static_cast<size_t>(samplesPerChannel) * callbackDataStride) {
+        samplesPerChannel = static_cast<uint32_t>(data->outBuffer.size() / callbackDataStride);
+        dataSize = static_cast<int>(samplesPerChannel * callbackDataStride * sizeof(float));
+    }
+
+    data->format.callback((uint8_t*)data->outBuffer.data(), dataSize);
+
+    for (int ch = 0; ch < (int)data->channelBufferOutputDetails.size(); ++ch) {
+        const auto& details = data->channelBufferOutputDetails[ch];
+        auto& outputBuffer = outOutputData->mBuffers[details.streamNumber];
+        int stride = details.dataStrideSamples;
+        if (stride == 0) {
+            continue;
+        }
+
+        const uint64_t requiredSamples = details.dataOffsetSamples
+                                         + static_cast<uint64_t>(samplesPerChannel - 1) * stride
+                                         + 1;
+        if (outputBuffer.mDataByteSize < (requiredSamples * sizeof(float))) {
+            // this is very unexpected. Should always be the same as samplesPerChannel
+            continue;
+        }
+
+        float* src = data->outBuffer.data() + ch;
+        float* dest = static_cast<float*>(outputBuffer.mData)
+                      + details.dataOffsetSamples;
+        for (int j = samplesPerChannel; --j >= 0;) {
+            *dest = *src;
+            dest += stride;
+            src += callbackDataStride;
+        }
+    }
+    return 0;
+}
+
+std::optional<std::array<uint32_t, 2>> getPreferredStereoHardwareChannels(OSXAudioDeviceID deviceId)
+{
+    AudioObjectPropertyAddress addr{
+        kAudioDevicePropertyPreferredChannelsForStereo,
+        kAudioDevicePropertyScopeOutput, kAudioObjectPropertyElementMaster };
+    UInt32 stereo[2] = {};
+    UInt32 size = sizeof(stereo);
+
+    if (AudioObjectGetPropertyData(deviceId, &addr, 0, nullptr, &size, stereo) != noErr) {
+        return std::nullopt;
+    }
+    return std::array<uint32_t, 2> { stereo[0], stereo[1] };
+}
+
+bool filterAndReorderStereoHardwareChannels(const OSXAudioDeviceID& deviceId,
+                                            std::vector<ChannelBufferDetails>& details)
+{
+    auto stereoChannels = getPreferredStereoHardwareChannels(deviceId);
+    if (!stereoChannels.has_value()) {
         return false;
     }
+    details.erase(
+        std::remove_if(details.begin(), details.end(),
+                       [&stereoChannels](const ChannelBufferDetails& details) {
+        return details.hardwareChannelNumber
+               != stereoChannels->at(0)
+               && details.hardwareChannelNumber
+               != stereoChannels->at(1);
+    }),
+        details.end());
+    std::sort(details.begin(), details.end(),
+              [&stereoChannels](const ChannelBufferDetails& a,
+                                const ChannelBufferDetails& b) {
+        auto aIndex = (a.hardwareChannelNumber
+                       == stereoChannels->at(0))
+                      ? 0
+                      : 1;
+        auto bIndex = (b.hardwareChannelNumber
+                       == stereoChannels->at(0))
+                      ? 0
+                      : 1;
+        return aIndex < bIndex;
+    });
+    return true;
+}
 
-    if (isOpened()) {
-        return false;
+std::vector<ChannelBufferDetails> getChannelBufferDetails(const OSXAudioDeviceID& deviceId,
+                                                          const std::function<void(std::string, OSStatus)>& onError)
+{
+    std::vector<ChannelBufferDetails> result;
+
+    UInt32 size{};
+    AudioObjectPropertyAddress address = { kAudioDevicePropertyStreamConfiguration,
+                                           kAudioDevicePropertyScopeOutput,
+                                           kAudioObjectPropertyElementMaster };
+    if (auto status = AudioObjectGetPropertyDataSize(deviceId, &address, 0, nullptr, &size); status != noErr) {
+        onError("Failed to get device " + std::to_string(deviceId) + " stream configuration" + ", err: " + std::to_string(status), status);
+        return result;
     }
 
-    if (activeSpec) {
-        *activeSpec = spec;
+    std::vector<uint8_t> buf(size);
+
+    auto status = AudioObjectGetPropertyData(deviceId, &address, 0, nullptr,
+                                             &size, buf.data());
+    if (status != noErr) {
+        onError("Failed to get device " + std::to_string(deviceId) + " stream configuration" + ", err: " + std::to_string(status), status);
+        return result;
     }
 
-    AudioStreamBasicDescription audioFormat;
-    audioFormat.mSampleRate = spec.output.sampleRate;
-    audioFormat.mFormatID = kAudioFormatLinearPCM;
-    audioFormat.mFramesPerPacket = 1;
-    audioFormat.mChannelsPerFrame = spec.output.audioChannelCount;
-    audioFormat.mReserved = 0;
-    audioFormat.mBitsPerChannel = 32;
-    audioFormat.mFormatFlags = kLinearPCMFormatFlagIsFloat;
-    audioFormat.mBytesPerPacket = audioFormat.mBitsPerChannel * spec.output.audioChannelCount / 8;
-    audioFormat.mBytesPerFrame = audioFormat.mBytesPerPacket * audioFormat.mFramesPerPacket;
+    AudioBufferList* bufList = reinterpret_cast<AudioBufferList*>(buf.data());
 
-    m_data->format = spec;
-    m_data->callback = spec.callback;
+    const int numStreams = static_cast<int>(bufList->mNumberBuffers);
+    unsigned int hardwareChannelNumber = 1;
 
-    OSStatus result = AudioQueueNewOutput(&audioFormat, OnFillBuffer, m_data.get(), NULL, NULL, 0, &m_data->audioQueue);
+    for (int i = 0; i < numStreams; ++i) {
+        auto& b = bufList->mBuffers[i];
+        for (unsigned int j = 0; j < b.mNumberChannels; ++j) {
+            ChannelBufferDetails details {
+                .streamNumber = i,
+                .hardwareChannelNumber = hardwareChannelNumber++,
+                .dataOffsetSamples = j,
+                .dataStrideSamples
+                    =b.mNumberChannels };
+            result.push_back(details);
+        }
+    }
+
+    return result;
+}
+
+inline static bool canBeDirectlyMapped(const std::vector<ChannelBufferDetails>& details,
+                                       uint32_t callbackDataStride)
+{
+    std::optional<int> firstStreamNumber;
+    std::optional<uint32_t> expectedOffset;
+    for (int channel = 0; channel < (int)details.size(); ++channel) {
+        const auto& detail = details[channel];
+        if (detail.dataStrideSamples != callbackDataStride) {
+            return false;
+        }
+        if (!firstStreamNumber.has_value()) {
+            firstStreamNumber = detail.streamNumber;
+        }
+        if (firstStreamNumber.value() != detail.streamNumber) {
+            return false;
+        }
+        if (!expectedOffset.has_value()) {
+            expectedOffset = detail.dataOffsetSamples;
+        }
+        if (expectedOffset.value() != detail.dataOffsetSamples) {
+            return false;
+        }
+        *expectedOffset += 1;
+    }
+    return true;
+}
+
+static std::vector<ChannelBufferDetails> getFittingChannelStreamsFromDevice(OSXAudioDeviceID deviceId, int channelCount,
+                                                                            const std::function<void(std::string, OSStatus)>& logError)
+{
+    auto outputStreamInfos = getChannelBufferDetails(deviceId, logError);
+    if (outputStreamInfos.size()
+        < (unsigned int)channelCount) {
+        logError("Not enough channels are available with current device", noErr);
+        return {};
+    }
+    if (channelCount == 2) {
+        filterAndReorderStereoHardwareChannels(deviceId, outputStreamInfos);
+    }
+    if (outputStreamInfos.size() < (unsigned int)channelCount) {
+        logError("Not enough channels are available with current device after filtering for stereo preference", noErr);
+        return {};
+    }
+    if (outputStreamInfos.size()
+        > (unsigned int)channelCount) {
+        // if there are more hardware channels than requested, we just use the first ones. This is a fallback if filterStereoHardwareChannels was not successful
+        outputStreamInfos.resize(channelCount);
+    }
+    return outputStreamInfos;
+}
+
+static std::optional<Float64> closestAvailableSampleRate(OSXAudioDeviceID deviceId, Float64 requested,
+                                                         const std::function<void(std::string, OSStatus)>& onError)
+{
+    AudioObjectPropertyAddress address {
+        kAudioDevicePropertyAvailableNominalSampleRates,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster
+    };
+
+    UInt32 size = 0;
+    if (auto status = AudioObjectGetPropertyDataSize(deviceId, &address, 0, nullptr, &size); status != noErr || size == 0) {
+        onError("Failed to get device " + std::to_string(deviceId) + " available sample rates" + ", err: " + std::to_string(status),
+                status);
+        return std::nullopt;
+    }
+
+    std::vector<AudioValueRange> ranges(size / sizeof(AudioValueRange));
+    if (auto status = AudioObjectGetPropertyData(deviceId, &address, 0, nullptr, &size, ranges.data()); status != noErr) {
+        onError("Failed to get device " + std::to_string(deviceId) + " available sample rates" + ", err: " + std::to_string(status),
+                status);
+        return std::nullopt;
+    }
+
+    std::optional<Float64> best;
+    Float64 bestDistance = std::numeric_limits<Float64>::max();
+
+    for (const AudioValueRange& range : ranges) {
+        Float64 candidate = requested;
+
+        if (requested < range.mMinimum) {
+            candidate = range.mMinimum;
+        } else if (requested > range.mMaximum) {
+            candidate = range.mMaximum;
+        }
+
+        Float64 distance = std::abs(candidate - requested);
+        if (distance < bestDistance) {
+            best = candidate;
+            bestDistance = distance;
+        }
+    }
+
+    return best;
+}
+
+static std::optional<OutputSpec> prepareDeviceWithOutputSpec(OSXAudioDeviceID deviceId, const OutputSpec& spec,
+                                                             const std::function<void(std::string, OSStatus)>& logError)
+{
+    AudioObjectPropertyAddress requestedSampleRate{
+        kAudioDevicePropertyNominalSampleRate, kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster };
+
+    Float64 currentSampleRate = 0.0;
+    UInt32 sampleRateSize = sizeof(currentSampleRate);
+
+    OSStatus result
+        =AudioObjectGetPropertyData(deviceId, &requestedSampleRate, 0, nullptr,
+                                    &sampleRateSize, &currentSampleRate);
+
     if (result != noErr) {
-        m_data->clear();
-        logError("Failed to create Audio Queue Output, err: ", result);
-        return false;
+        logError("Failed to get current sample rate for device " + std::to_string(deviceId) + ", err: ", result);
+        return std::nullopt;
     }
 
-    audioQueueSetDeviceName(m_data->format.deviceId);
+    Float64 sampleRate = closestAvailableSampleRate(deviceId, spec.sampleRate, logError)
+                         .value_or(currentSampleRate);
+
+    if (std::abs(currentSampleRate - sampleRate) > 0.5) {
+        result = AudioObjectSetPropertyData(
+            deviceId,
+            &requestedSampleRate,
+            0,
+            nullptr,
+            sizeof(sampleRate),
+            &sampleRate);
+
+        if (result != noErr) {
+            sampleRate = currentSampleRate;
+        }
+    } else {
+        sampleRate = currentSampleRate;
+    }
 
     AudioValueRange bufferSizeRange = { 0, 0 };
     UInt32 bufferSizeRangeSize = sizeof(AudioValueRange);
@@ -116,16 +471,15 @@ bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
         .mElement = kAudioObjectPropertyElementMaster
     };
 
-    result = AudioObjectGetPropertyData(osxDeviceId(), &bufferSizeRangeAddress, 0, 0, &bufferSizeRangeSize, &bufferSizeRange);
+    result = AudioObjectGetPropertyData(deviceId, &bufferSizeRangeAddress, 0, 0, &bufferSizeRangeSize, &bufferSizeRange);
     if (result != noErr) {
-        m_data->clear();
         logError("Failed to create Audio Queue Output, err: ", result);
-        return false;
+        return std::nullopt;
     }
 
     samples_t minBufferSize = static_cast<samples_t>(bufferSizeRange.mMinimum);
     samples_t maxBufferSize = static_cast<samples_t>(bufferSizeRange.mMaximum);
-    UInt32 bufferSizeOut = std::min(maxBufferSize, std::max(minBufferSize, spec.output.samplesPerChannel));
+    UInt32 bufferSizeOut = std::min(maxBufferSize, std::max(minBufferSize, spec.samplesPerChannel));
 
     AudioObjectPropertyAddress preferredBufferSizeAddress = {
         .mSelector = kAudioDevicePropertyBufferFrameSize,
@@ -133,43 +487,85 @@ bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
         .mElement = kAudioObjectPropertyElementMaster
     };
 
-    result = AudioObjectSetPropertyData(osxDeviceId(), &preferredBufferSizeAddress, 0, 0, sizeof(bufferSizeOut), (void*)&bufferSizeOut);
+    result = AudioObjectSetPropertyData(deviceId, &preferredBufferSizeAddress, 0, 0, sizeof(bufferSizeOut), (void*)&bufferSizeOut);
     if (result != noErr) {
-        m_data->clear();
         logError("Failed to create Audio Queue Output, err: ", result);
+        return std::nullopt;
+    }
+
+    UInt32 actualBufferSizeOut = bufferSizeOut;
+    UInt32 actualBufferSizeOutSize = sizeof(actualBufferSizeOut);
+    result = AudioObjectGetPropertyData(deviceId, &preferredBufferSizeAddress, 0, 0, &actualBufferSizeOutSize, &actualBufferSizeOut);
+    if (result != noErr) {
+        logError("Failed to get Audio Device bufferFrameSize, err: ", result);
+        return std::nullopt;
+    }
+    bufferSizeOut = actualBufferSizeOut;
+
+    return OutputSpec {
+        .sampleRate = (uint64_t)sampleRate, .samplesPerChannel = bufferSizeOut, .audioChannelCount = spec.audioChannelCount
+    };
+}
+
+bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
+{
+    if (isOpened()) {
         return false;
     }
 
-    // Allocate 2 audio buffers. At the same time one used for writing, one for reading
-    for (unsigned int i = 0; i < 2; ++i) {
-        AudioQueueBufferRef buffer;
-        result = AudioQueueAllocateBuffer(m_data->audioQueue, spec.output.samplesPerChannel * audioFormat.mBytesPerFrame, &buffer);
-        if (result != noErr) {
-            m_data->clear();
-            logError("Failed to allocate Audio Buffer, err: ", result);
-            return false;
-        }
+    m_data->clear();
 
-        buffer->mAudioDataByteSize = spec.output.samplesPerChannel * audioFormat.mBytesPerFrame;
-
-        memset(buffer->mAudioData, 0, buffer->mAudioDataByteSize);
-
-        AudioQueueEnqueueBuffer(m_data->audioQueue, buffer, 0, NULL);
+    auto deviceId = getAudioDeviceId(spec.deviceId);
+    if (!deviceId) {
+        logError("Failed to find device " + spec.deviceId, noErr);
+        return false;
     }
 
-    // start playback
-    result = AudioQueueStart(m_data->audioQueue, NULL);
+    auto actualOutputSpec
+        =prepareDeviceWithOutputSpec(*deviceId, spec.output, &logError);
+    if (!actualOutputSpec) {
+        return false;
+    }
+    auto bestOutputStreamInfos = getFittingChannelStreamsFromDevice(
+        *deviceId, spec.output.audioChannelCount, &logError);
+    if (bestOutputStreamInfos.empty()) {
+        return false;
+    }
+    m_data->canBeDirectlyMapped = canBeDirectlyMapped(bestOutputStreamInfos,
+                                                      spec.output.audioChannelCount);
+    m_data->format = spec;
+    m_data->format.output = actualOutputSpec.value();
+    m_data->format.deviceId = QString::number(*deviceId).toStdString();
+    m_data->channelBufferOutputDetails = std::move(bestOutputStreamInfos);
+    m_data->outBuffer.resize(m_data->format.output.samplesPerChannel
+                             * m_data->format.output.audioChannelCount);
+    m_data->deviceId = *deviceId;
+
+    auto result = AudioDeviceCreateIOProcID(*deviceId, coreAudioIOProc, m_data.get(),
+                                            &m_data->procId);
     if (result != noErr) {
         m_data->clear();
-        logError("Failed to start  Audio Queue, err: ", result);
+        logError("Failed to create Audio Device IO Proc, err: ", result);
         return false;
+    }
+
+    result = AudioDeviceStart(*deviceId, m_data->procId);
+    if (result != noErr) {
+        AudioDeviceDestroyIOProcID(*deviceId, m_data->procId);
+        m_data->clear();
+        logError("Failed to start Audio Device, err: ", result);
+        return false;
+    }
+
+    if (activeSpec) {
+        *activeSpec = m_data->format;
     }
 
     m_activeSpecChanged.send(m_data->format);
 
     LOGI() << "Connected to " << m_data->format.deviceId
-           << " with bufferSize " << bufferSizeOut
-           << ", sampleRate " << spec.output.sampleRate;
+           << " with bufferSize " << m_data->format.output.samplesPerChannel
+           << ", sampleRate " << m_data->format.output.sampleRate;
 
     return true;
 }
@@ -181,16 +577,22 @@ void OSXAudioDriver::close()
 
 void OSXAudioDriver::doClose()
 {
-    if (m_data->audioQueue) {
-        AudioQueueStop(m_data->audioQueue, true);
-        AudioQueueDispose(m_data->audioQueue, true);
-        m_data->audioQueue = nullptr;
+    if (!isOpened()) {
+        return;
     }
+
+    m_data->stopPending = true;
+    // we spin while we wait for the callback to stop the device. That way we can be sure that data will no longer be used by the callback
+    for (int i = 0; i < 100 && !m_data->stopped; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    AudioDeviceDestroyIOProcID(m_data->deviceId, m_data->procId);
+    m_data->clear();
 }
 
 bool OSXAudioDriver::isOpened() const
 {
-    return m_data->audioQueue != nullptr;
+    return m_data->procId != nullptr;
 }
 
 const OSXAudioDriver::Spec& OSXAudioDriver::activeSpec() const
@@ -342,6 +744,7 @@ std::vector<samples_t> OSXAudioDriver::availableOutputDeviceBufferSizes() const
     return result;
 }
 
+//TODO: replace hardcoded values with truth
 std::vector<sample_rate_t> OSXAudioDriver::availableOutputDeviceSampleRates() const
 {
     return {
@@ -352,47 +755,7 @@ std::vector<sample_rate_t> OSXAudioDriver::availableOutputDeviceSampleRates() co
     };
 }
 
-bool OSXAudioDriver::audioQueueSetDeviceName(const AudioDeviceID& deviceId)
-{
-    if (deviceId.empty() || deviceId == DEFAULT_DEVICE_ID) {
-        return true; //default device used
-    }
-
-    std::lock_guard lock(m_devicesMutex);
-
-    uint deviceIdInt = QString::fromStdString(deviceId).toInt();
-    auto index = std::find_if(m_outputDevices.begin(), m_outputDevices.end(), [&deviceIdInt](auto& d) {
-        return d.first == deviceIdInt;
-    });
-
-    if (index == m_outputDevices.end()) {
-        LOGW() << "device " << deviceId << " not found";
-        return false;
-    }
-
-    OSXAudioDeviceID osxDeviceId = index->first;
-
-    CFStringRef deviceUID;
-    UInt32 deviceUIDSize = sizeof(deviceUID);
-    AudioObjectPropertyAddress propertyAddress;
-    propertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
-    propertyAddress.mScope = kAudioDevicePropertyScopeOutput;
-    propertyAddress.mElement = kAudioObjectPropertyElementMaster;
-
-    auto result = AudioObjectGetPropertyData(osxDeviceId, &propertyAddress, 0, NULL, &deviceUIDSize, &deviceUID);
-    if (result != noErr) {
-        logError("Failed to get device UID, err: ", result);
-        return false;
-    }
-    result = AudioQueueSetProperty(m_data->audioQueue, kAudioQueueProperty_CurrentDevice, &deviceUID, deviceUIDSize);
-    if (result != noErr) {
-        logError("Failed to set device by UID, err: ", result);
-        return false;
-    }
-    return true;
-}
-
-muse::audio::AudioDeviceID OSXAudioDriver::defaultDeviceId() const
+static std::optional<OSXAudioDeviceID> defaultDeviceId(const std::function<void(std::string, OSStatus)>& logError)
 {
     OSXAudioDeviceID osxDeviceId = kAudioObjectUnknown;
     UInt32 deviceIdSize = sizeof(osxDeviceId);
@@ -406,17 +769,21 @@ muse::audio::AudioDeviceID OSXAudioDriver::defaultDeviceId() const
     OSStatus result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &deviceNamePropertyAddress, 0, 0, &deviceIdSize, &osxDeviceId);
     if (result != noErr) {
         logError("Failed to get default device ID, err: ", result);
-        return AudioDeviceID();
+        return std::nullopt;
     }
 
-    return QString::number(osxDeviceId).toStdString();
+    return osxDeviceId;
 }
 
 UInt32 OSXAudioDriver::osxDeviceId() const
 {
     AudioDeviceID deviceId = m_data->format.deviceId;
     if (deviceId == DEFAULT_DEVICE_ID) {
-        deviceId = defaultDeviceId();
+        auto deviceId = defaultDeviceId(&logError);
+        if (!deviceId) {
+            logError("Failed to get default device ID, err: ", noErr);
+            return kAudioObjectUnknown;
+        }
     }
 
     return QString::fromStdString(deviceId).toInt();
@@ -468,10 +835,22 @@ void OSXAudioDriver::initDeviceMapListener()
     }
 }
 
-/*static*/
-void OSXAudioDriver::OnFillBuffer(void* context, AudioQueueRef, AudioQueueBufferRef buffer)
+std::optional<int> muse::audio::OSXAudioDriver::getAudioDeviceId(
+    const AudioDeviceID& deviceId) const
 {
-    Data* pData = (Data*)context;
-    pData->callback((uint8_t*)buffer->mAudioData, buffer->mAudioDataByteSize);
-    AudioQueueEnqueueBuffer(pData->audioQueue, buffer, 0, NULL);
+    if (deviceId.empty() || deviceId == DEFAULT_DEVICE_ID) {
+        return defaultDeviceId(&logError); //default device used
+    }
+
+    std::lock_guard lock(m_devicesMutex);
+
+    uint deviceIdInt = QString::fromStdString(deviceId).toInt();
+    auto index = std::find_if(m_outputDevices.begin(), m_outputDevices.end(), [&deviceIdInt](auto& d) {
+        return d.first == deviceIdInt;
+    });
+
+    if (index == m_outputDevices.end()) {
+        return std::nullopt;
+    }
+    return index->first;
 }
