@@ -74,7 +74,8 @@ QString FilePickerModel::selectDirectory()
 QString FilePickerModel::selectMultipleDirectories(const QString& selectedDirectoriesStr)
 {
     io::paths_t selectedDirectories = io::pathsFromString(selectedDirectoriesStr.toStdString());
-    io::paths_t directories = interactive()->selectMultipleDirectories(m_title.toStdString(), m_dir, selectedDirectories);
+    io::paths_t directories
+        = interactive()->selectMultipleDirectories(m_title.toStdString(), m_dir, selectedDirectories);
 
     QStringList result;
     for (const io::path_t& dir: directories) {

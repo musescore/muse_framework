@@ -75,7 +75,8 @@ QRect AccessibleItemInterface::rect() const
 QAccessibleInterface* AccessibleItemInterface::parent() const
 {
     QAccessibleInterface* iface = m_object->controller().lock()->parentIface(m_object->item());
-    MYLOG() << "item: " << m_object->item()->accessibleName() << ", parent: " << (iface ? iface->text(QAccessible::Name) : "null");
+    MYLOG() << "item: " << m_object->item()->accessibleName() << ", parent: " <<
+        (iface ? iface->text(QAccessible::Name) : "null");
     return iface;
 }
 
@@ -89,14 +90,16 @@ int AccessibleItemInterface::childCount() const
 QAccessibleInterface* AccessibleItemInterface::child(int index) const
 {
     QAccessibleInterface* iface = m_object->controller().lock()->child(m_object->item(), index);
-    MYLOG() << "item: " << m_object->item()->accessibleName() << ", child: " << index << " " << iface->text(QAccessible::Name);
+    MYLOG() << "item: " << m_object->item()->accessibleName() << ", child: " << index << " " << iface->text(
+        QAccessible::Name);
     return iface;
 }
 
 int AccessibleItemInterface::indexOfChild(const QAccessibleInterface* iface) const
 {
     int idx = m_object->controller().lock()->indexOfChild(m_object->item(), iface);
-    MYLOG() << "item: " << m_object->item()->accessibleName() << ", indexOfChild: " << iface->text(QAccessible::Name) << " = " << idx;
+    MYLOG() << "item: " << m_object->item()->accessibleName() << ", indexOfChild: " << iface->text(QAccessible::Name) <<
+        " = " << idx;
     return idx;
 }
 
@@ -109,7 +112,8 @@ QAccessibleInterface* AccessibleItemInterface::childAt(int, int) const
 QAccessibleInterface* AccessibleItemInterface::focusChild() const
 {
     QAccessibleInterface* child = m_object->controller().lock()->focusedChild(m_object->item());
-    MYLOG() << "item: " << m_object->item()->accessibleName() << ", focused child: " << (child ? child->text(QAccessible::Name) : "null");
+    MYLOG() << "item: " << m_object->item()->accessibleName() << ", focused child: " <<
+        (child ? child->text(QAccessible::Name) : "null");
     return child;
 }
 
@@ -432,13 +436,15 @@ QString AccessibleItemInterface::text(int startOffset, int endOffset) const
     return m_object->item()->accessibleText(startOffset, endOffset);
 }
 
-QString AccessibleItemInterface::textBeforeOffset(int offset, QAccessible::TextBoundaryType boundaryType, int* startOffset,
+QString AccessibleItemInterface::textBeforeOffset(int offset, QAccessible::TextBoundaryType boundaryType,
+                                                  int* startOffset,
                                                   int* endOffset) const
 {
     return m_object->item()->accessibleTextBeforeOffset(offset, muBoundaryType(boundaryType), startOffset, endOffset);
 }
 
-QString AccessibleItemInterface::textAfterOffset(int offset, QAccessible::TextBoundaryType boundaryType, int* startOffset,
+QString AccessibleItemInterface::textAfterOffset(int offset, QAccessible::TextBoundaryType boundaryType,
+                                                 int* startOffset,
                                                  int* endOffset) const
 {
     return m_object->item()->accessibleTextAfterOffset(offset, muBoundaryType(boundaryType), startOffset, endOffset);
@@ -552,7 +558,8 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
     return nullptr;
 }
 
-IAccessible::TextBoundaryType AccessibleItemInterface::muBoundaryType(QAccessible::TextBoundaryType qtBoundaryType) const
+IAccessible::TextBoundaryType AccessibleItemInterface::muBoundaryType(QAccessible::TextBoundaryType qtBoundaryType)
+const
 {
     switch (qtBoundaryType) {
     case QAccessible::TextBoundaryType::CharBoundary: return IAccessible::CharBoundary;

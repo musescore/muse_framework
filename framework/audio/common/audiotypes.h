@@ -476,7 +476,8 @@ struct SoundPreset
 
     bool operator==(const SoundPreset& other) const
     {
-        return code == other.code && name == other.name && isDefault == other.isDefault && attributes == other.attributes;
+        return code == other.code && name == other.name && isDefault == other.isDefault
+               && attributes == other.attributes;
     }
 
     bool isValid() const

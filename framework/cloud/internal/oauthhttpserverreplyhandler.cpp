@@ -324,11 +324,13 @@ OAuthHttpServerReplyHandler::OAuthHttpServerReplyHandler(const modularity::Conte
     : OAuthHttpServerReplyHandler(QHostAddress::Any, 0, iocCtx, parent)
 {}
 
-OAuthHttpServerReplyHandler::OAuthHttpServerReplyHandler(quint16 port, const modularity::ContextPtr& iocCtx, QObject* parent)
+OAuthHttpServerReplyHandler::OAuthHttpServerReplyHandler(quint16 port, const modularity::ContextPtr& iocCtx,
+                                                         QObject* parent)
     : OAuthHttpServerReplyHandler(QHostAddress::Any, port, iocCtx, parent)
 {}
 
-OAuthHttpServerReplyHandler::OAuthHttpServerReplyHandler(const QHostAddress& address, quint16 port, const modularity::ContextPtr& iocCtx,
+OAuthHttpServerReplyHandler::OAuthHttpServerReplyHandler(const QHostAddress& address, quint16 port,
+                                                         const modularity::ContextPtr& iocCtx,
                                                          QObject* parent)
     : QOAuthOobReplyHandler(parent), m_impl(std::make_unique<Impl>(this, iocCtx))
 {

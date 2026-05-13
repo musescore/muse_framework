@@ -33,7 +33,8 @@
 #include "../../isoundfontcontroller.h"
 
 namespace muse::audio {
-class GeneralSoundFontInstallScenario : public ISoundFontInstallScenario, public async::Asyncable, public muse::Contextable
+class GeneralSoundFontInstallScenario : public ISoundFontInstallScenario, public async::Asyncable,
+    public muse::Contextable
 {
     GlobalInject<IAudioConfiguration> configuration;
     GlobalInject<io::IFileSystem> fileSystem;

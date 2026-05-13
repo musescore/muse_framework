@@ -270,7 +270,8 @@ void Settings::setDescription(const Key& key, const std::string& value)
     item.description = value;
 }
 
-void Settings::setCanBeManuallyEdited(const Settings::Key& key, bool canBeManuallyEdited, const Val& minValue, const Val& maxValue)
+void Settings::setCanBeManuallyEdited(const Settings::Key& key, bool canBeManuallyEdited, const Val& minValue,
+                                      const Val& maxValue)
 {
     Item& item = findItem(key);
 

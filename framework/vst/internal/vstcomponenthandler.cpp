@@ -24,7 +24,8 @@
 using namespace muse::vst;
 using namespace muse::async;
 
-IMPLEMENT_FUNKNOWN_METHODS(VstAdvancedHandler, Steinberg::Vst::IComponentHandler2, Steinberg::Vst::IComponentHandler2::iid)
+IMPLEMENT_FUNKNOWN_METHODS(VstAdvancedHandler, Steinberg::Vst::IComponentHandler2,
+                           Steinberg::Vst::IComponentHandler2::iid)
 
 IMPLEMENT_REFCOUNT(VstComponentHandler)
 
@@ -60,7 +61,8 @@ Steinberg::tresult VstComponentHandler::beginEdit(Steinberg::Vst::ParamID /*id*/
     return Steinberg::kResultOk;
 }
 
-Steinberg::tresult VstComponentHandler::performEdit(Steinberg::Vst::ParamID id, Steinberg::Vst::ParamValue valueNormalized)
+Steinberg::tresult VstComponentHandler::performEdit(Steinberg::Vst::ParamID id,
+                                                    Steinberg::Vst::ParamValue valueNormalized)
 {
     m_paramChanged.send(std::move(id), std::move(valueNormalized));
 

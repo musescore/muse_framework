@@ -94,7 +94,8 @@ static UCKeyboardLayout* keyboardLayout()
     CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
 
     if (bundle) {
-        *(void**)& TISGetInputSourceProperty = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISGetInputSourceProperty"));
+        *(void**)& TISGetInputSourceProperty
+            = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISGetInputSourceProperty"));
         *(void**)& TISCopyCurrentKeyboardLayoutInputSource
             = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCopyCurrentKeyboardLayoutInputSource"));
     }
@@ -218,7 +219,8 @@ static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, bool& f
             }
         }
 
-        UCKeyToCharTableIndex* charTable = reinterpret_cast<UCKeyToCharTableIndex*>(data + table[i].keyToCharTableIndexOffset);
+        UCKeyToCharTableIndex* charTable
+            = reinterpret_cast<UCKeyToCharTableIndex*>(data + table[i].keyToCharTableIndexOffset);
         if (charTable->keyToCharTableIndexFormat != kUCKeyToCharTableIndexFormat) {
             continue;
         }
@@ -229,7 +231,8 @@ static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, bool& f
                 if (keyToChar[k] & kUCKeyOutputTestForIndexMask) {
                     long idx = keyToChar[k] & kUCKeyOutputGetIndexMask;
                     if (stateRec && idx < stateRec->keyStateRecordCount) {
-                        UCKeyStateRecord* rec = reinterpret_cast<UCKeyStateRecord*>(data + stateRec->keyStateRecordOffsets[idx]);
+                        UCKeyStateRecord* rec
+                            = reinterpret_cast<UCKeyStateRecord*>(data + stateRec->keyStateRecordOffsets[idx]);
                         if (rec->stateZeroCharData == keyCodeChar) {
                             return k;
                         }
@@ -378,12 +381,14 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
             QString untranslatedSequenceStr = QString::fromStdString(seq);
 
             // Ensure standard order of modifiers by converting to/from QKeySequence
-            QKeySequence untranslatedSequence = QKeySequence::fromString(untranslatedSequenceStr, QKeySequence::PortableText);
+            QKeySequence untranslatedSequence = QKeySequence::fromString(untranslatedSequenceStr,
+                                                                         QKeySequence::PortableText);
 
             // Attempt to translate from combination of keys to character, e.g., `Shift+.` becomes `>`, in the case of a QWERTY layout
             QKeySequence translatedSequence
                 = translateToCurrentKeyboardLayout(untranslatedSequence);
-            if (translatedSequence.isEmpty() || !(untranslatedSequence[0].key() & 0xff) || untranslatedSequence[0].key() == Qt::Key_A) {
+            if (translatedSequence.isEmpty() || !(untranslatedSequence[0].key() & 0xff)
+                || untranslatedSequence[0].key() == Qt::Key_A) {
                 QString untranslatedSequenceStrNormalised = untranslatedSequence.toString(QKeySequence::PortableText);
 
                 // Record the untranslated sequence

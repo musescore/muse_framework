@@ -25,7 +25,8 @@
 
 using namespace muse::accessibility;
 
-void QAccessibleInterfaceRegister::registerInterfaceGetter(const QString& className, const InterfaceGetter& interfaceGetter)
+void QAccessibleInterfaceRegister::registerInterfaceGetter(const QString& className,
+                                                           const InterfaceGetter& interfaceGetter)
 {
     IF_ASSERT_FAILED(!m_interfaceHash.contains(className)) {
         LOGW() << "class name " << className << " already register. Will be rewrite";
@@ -34,7 +35,8 @@ void QAccessibleInterfaceRegister::registerInterfaceGetter(const QString& classN
     m_interfaceHash[className] = interfaceGetter;
 }
 
-IQAccessibleInterfaceRegister::InterfaceGetter QAccessibleInterfaceRegister::interfaceGetter(const QString& className) const
+IQAccessibleInterfaceRegister::InterfaceGetter QAccessibleInterfaceRegister::interfaceGetter(const QString& className)
+const
 {
     if (!m_interfaceHash.contains(className)) {
         return InterfaceGetter();

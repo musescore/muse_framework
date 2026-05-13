@@ -230,7 +230,8 @@ bool AbstractTableViewModel::isColumnValid(int column) const
 }
 
 TableViewHeader* AbstractTableViewModel::makeHorizontalHeader(const QString& title, TableViewCellType::Type cellType,
-                                                              TableViewCellEditMode::Mode cellEditMode, int preferredWidth,
+                                                              TableViewCellEditMode::Mode cellEditMode,
+                                                              int preferredWidth,
                                                               const MenuItemList& availableFormats)
 {
     TableViewHeader* header = new TableViewHeader(this);

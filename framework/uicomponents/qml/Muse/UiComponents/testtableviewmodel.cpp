@@ -111,12 +111,15 @@ void TestTableViewModel::load()
     });
 
     QList<TableViewHeader*> hHeaders = {
-        makeHorizontalHeader("Column 1", TableViewCellType::Type::String, TableViewCellEditMode::Mode::DoubleClick, 100),
+        makeHorizontalHeader("Column 1", TableViewCellType::Type::String, TableViewCellEditMode::Mode::DoubleClick,
+                             100),
         makeHorizontalHeader("Column 2", TableViewCellType::Type::List, TableViewCellEditMode::Mode::DoubleClick, 100),
         makeHorizontalHeader("Column 3", static_cast<TableViewCellType::Type>(TestTableViewCellType::Type::Custom),
                              TableViewCellEditMode::Mode::StartInEdit, 200, makeAvailableFormats()),
-        makeHorizontalHeader("Column 4", TableViewCellType::Type::Double, TableViewCellEditMode::Mode::StartInEdit, 200),
-        makeHorizontalHeader("Column 5", TableViewCellType::Type::String, TableViewCellEditMode::Mode::StartInEdit, 300),
+        makeHorizontalHeader("Column 4", TableViewCellType::Type::Double, TableViewCellEditMode::Mode::StartInEdit,
+                             200),
+        makeHorizontalHeader("Column 5", TableViewCellType::Type::String, TableViewCellEditMode::Mode::StartInEdit,
+                             300),
         makeHorizontalHeader("Column 6", TableViewCellType::Type::List, TableViewCellEditMode::Mode::DoubleClick, 100),
     };
 

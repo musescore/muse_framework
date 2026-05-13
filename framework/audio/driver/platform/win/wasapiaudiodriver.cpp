@@ -192,12 +192,14 @@ static std::string hrToString(HRESULT hr)
     case AUDCLNT_E_DEVICE_IN_USE:            return "AUDCLNT_E_DEVICE_IN_USE - Device in use";
     case AUDCLNT_E_BUFFER_OPERATION_PENDING: return "AUDCLNT_E_BUFFER_OPERATION_PENDING - Buffer operation pending";
     case AUDCLNT_E_THREAD_NOT_REGISTERED:    return "AUDCLNT_E_THREAD_NOT_REGISTERED - Thread not registered";
-    case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED: return "AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED - Exclusive mode not allowed";
+    case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED: return
+            "AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED - Exclusive mode not allowed";
     case AUDCLNT_E_ENDPOINT_CREATE_FAILED:   return "AUDCLNT_E_ENDPOINT_CREATE_FAILED - Endpoint create failed";
     case AUDCLNT_E_SERVICE_NOT_RUNNING:      return "AUDCLNT_E_SERVICE_NOT_RUNNING - Audio service not running";
     case AUDCLNT_E_EVENTHANDLE_NOT_EXPECTED: return "AUDCLNT_E_EVENTHANDLE_NOT_EXPECTED - Event handle not expected";
     case AUDCLNT_E_EXCLUSIVE_MODE_ONLY:      return "AUDCLNT_E_EXCLUSIVE_MODE_ONLY - Exclusive mode only";
-    case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL: return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL - Buffer duration/period not equal";
+    case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL: return
+            "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL - Buffer duration/period not equal";
     case AUDCLNT_E_EVENTHANDLE_NOT_SET:      return "AUDCLNT_E_EVENTHANDLE_NOT_SET - Event handle not set";
     case AUDCLNT_E_INCORRECT_BUFFER_SIZE:    return "AUDCLNT_E_INCORRECT_BUFFER_SIZE - Incorrect buffer size";
     case AUDCLNT_E_BUFFER_SIZE_ERROR:        return "AUDCLNT_E_BUFFER_SIZE_ERROR - Buffer size error";

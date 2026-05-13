@@ -41,7 +41,8 @@ class ArticulationPatternSegmentItem : public QObject
 
     // Arrangement
     Q_PROPERTY(int durationFactor READ durationFactor WRITE setDurationFactor NOTIFY durationFactorChanged)
-    Q_PROPERTY(int timestampShiftFactor READ timestampShiftFactor WRITE setTimestampShiftFactor NOTIFY timestampShiftFactorChanged)
+    Q_PROPERTY(
+        int timestampShiftFactor READ timestampShiftFactor WRITE setTimestampShiftFactor NOTIFY timestampShiftFactorChanged)
 
     // Pitch
     Q_PROPERTY(QList<QPoint> pitchOffsets READ pitchOffsets NOTIFY pitchOffsetsChanged)
@@ -57,12 +58,14 @@ class ArticulationPatternSegmentItem : public QObject
     QML_UNCREATABLE("Must be created in C++ only")
 
 public:
-    explicit ArticulationPatternSegmentItem(QObject* parent, const ArticulationPatternSegment& segment, const int scopePositionFrom = 0,
+    explicit ArticulationPatternSegmentItem(QObject* parent, const ArticulationPatternSegment& segment,
+                                            const int scopePositionFrom = 0,
                                             const int scopePositionTo = HUNDRED_PERCENT);
 
     ArticulationPatternSegment patternSegmentData() const;
 
-    void load(const ArticulationPatternSegment& segment, const int scopePositionFrom = 0, const int scopePositionTo = HUNDRED_PERCENT);
+    void load(const ArticulationPatternSegment& segment, const int scopePositionFrom = 0,
+              const int scopePositionTo = HUNDRED_PERCENT);
 
     int durationFactor() const;
     void setDurationFactor(int newDurationFactor);

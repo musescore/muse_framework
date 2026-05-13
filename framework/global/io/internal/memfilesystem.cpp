@@ -142,7 +142,8 @@ muse::RetVal<uint64_t> MemFileSystem::fileSize(const muse::io::path_t& path) con
     }
 }
 
-muse::RetVal<muse::io::paths_t> MemFileSystem::scanFiles(const muse::io::path_t& /*rootDir*/, const std::vector<std::string>& /*filters*/,
+muse::RetVal<muse::io::paths_t> MemFileSystem::scanFiles(const muse::io::path_t& /*rootDir*/,
+                                                         const std::vector<std::string>& /*filters*/,
                                                          muse::io::ScanMode /*mode*/) const
 {
     NOT_IMPLEMENTED;

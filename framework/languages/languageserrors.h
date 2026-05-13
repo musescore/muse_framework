@@ -48,11 +48,15 @@ inline Ret make_ret(Err e)
     case Err::NoError: return Ret(retCode);
     case Err::UnknownError: return Ret(retCode);
     case Err::AlreadyUpToDate: return Ret(retCode, muse::trc("languages", "Up to date"));
-    case Err::ErrorInvalidServerLanguagesInfo: return Ret(retCode, muse::trc("languages", "Error while parsing response from server"));
+    case Err::ErrorInvalidServerLanguagesInfo: return Ret(retCode,
+                                                          muse::trc("languages",
+                                                                    "Error while parsing response from server"));
     case Err::ErrorDownloadLanguage: return Ret(retCode, muse::trc("languages", "Error while downloading language"));
     case Err::ErrorWriteLanguage: return Ret(retCode, muse::trc("languages", "Error while writing language files"));
     case Err::ErrorLanguageNotFound: return Ret(retCode, muse::trc("languages", "Language not found"));
-    case Err::ErrorRemoveLanguageDirectory: return Ret(retCode, muse::trc("languages", "Error while removing language directory"));
+    case Err::ErrorRemoveLanguageDirectory: return Ret(retCode,
+                                                       muse::trc("languages",
+                                                                 "Error while removing language directory"));
     case Err::ErrorAnotherOperationStarted: return Ret(retCode,
                                                        muse::trc("languages",
                                                                  "Another operation on this language has already been started"));

@@ -212,8 +212,10 @@ void EngineRpcController::init()
                 m_execOperation->execOperation(OperationType::QuickOperation, func);
             };
 
-            channel()->addReceiveStream(StreamName::PlaybackDataMainStream, mainStreamId, playbackData.mainStream, mainExec);
-            channel()->addReceiveStream(StreamName::PlaybackDataOffStream, offStreamId, playbackData.offStream, offExec);
+            channel()->addReceiveStream(StreamName::PlaybackDataMainStream, mainStreamId, playbackData.mainStream,
+                                        mainExec);
+            channel()->addReceiveStream(StreamName::PlaybackDataOffStream, offStreamId, playbackData.offStream,
+                                        offExec);
 
             auto addTrackAndSendResponse = [this](const Msg& msg, const TrackName& trackName,
                                                   const mpe::PlaybackData& playbackData, const TrackParams& params) {
@@ -465,11 +467,14 @@ void EngineRpcController::init()
         });
 
         acontext->fxChainParamsChanged().onReceive(this, [this, ctxId](TrackId trackId, const AudioFxChain& params) {
-            channel()->send(rpc::make_notification(ctxId, MsgCode::FxChainParamsChanged, RpcPacker::pack(trackId, params)));
+            channel()->send(rpc::make_notification(ctxId, MsgCode::FxChainParamsChanged,
+                                                   RpcPacker::pack(trackId, params)));
         });
 
-        acontext->sourceParamsChanged().onReceive(this, [this, ctxId](TrackId trackId, const AudioSourceParams& params) {
-            channel()->send(rpc::make_notification(ctxId, MsgCode::SourceParamsChanged, RpcPacker::pack(trackId, params)));
+        acontext->sourceParamsChanged().onReceive(this,
+                                                  [this, ctxId](TrackId trackId, const AudioSourceParams& params) {
+            channel()->send(rpc::make_notification(ctxId, MsgCode::SourceParamsChanged,
+                                                   RpcPacker::pack(trackId, params)));
         });
 
         // Input processing
@@ -499,7 +504,8 @@ void EngineRpcController::init()
                 RetVal<InputProcessingProgress> ret = actx->inputProcessingProgress(trackId);
                 StreamId streamId = 0;
                 if (ret.ret) {
-                    streamId = channel()->addSendStream(StreamName::InputProcessingProgressStream, ret.val.processedChannel);
+                    streamId
+                        = channel()->addSendStream(StreamName::InputProcessingProgressStream, ret.val.processedChannel);
                 }
                 return make_response(msg, RpcPacker::pack(ret.ret, ret.val.isStarted, streamId));
             } else {
@@ -758,8 +764,9 @@ void EngineRpcController::init()
                 });
 
                 if (m_saveSoundTrackProgressStreamId == 0) {
-                    m_saveSoundTrackProgressStreamId = channel()->addSendStream(StreamName::SaveSoundTrackProgressStream,
-                                                                                m_saveSoundTrackProgressStream);
+                    m_saveSoundTrackProgressStreamId
+                        = channel()->addSendStream(StreamName::SaveSoundTrackProgressStream,
+                                                   m_saveSoundTrackProgressStream);
                 }
 
                 return make_response_ret(msg, RetVal<StreamId>::make_ok(m_saveSoundTrackProgressStreamId));
@@ -806,7 +813,8 @@ void EngineRpcController::onQuickRequest(rpc::CtxId ctxId, rpc::MsgCode code, co
     onRequest(OperationType::QuickOperation, ctxId, code, h);
 }
 
-void EngineRpcController::onRequest(OperationType type, rpc::CtxId ctxId, rpc::MsgCode code, const RequestHandler& handler)
+void EngineRpcController::onRequest(OperationType type, rpc::CtxId ctxId, rpc::MsgCode code,
+                                    const RequestHandler& handler)
 {
     m_usedRequests.push_back({ ctxId, code });
 

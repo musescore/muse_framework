@@ -116,7 +116,8 @@ bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
         .mElement = kAudioObjectPropertyElementMaster
     };
 
-    result = AudioObjectGetPropertyData(osxDeviceId(), &bufferSizeRangeAddress, 0, 0, &bufferSizeRangeSize, &bufferSizeRange);
+    result = AudioObjectGetPropertyData(
+        osxDeviceId(), &bufferSizeRangeAddress, 0, 0, &bufferSizeRangeSize, &bufferSizeRange);
     if (result != noErr) {
         m_data->clear();
         logError("Failed to create Audio Queue Output, err: ", result);
@@ -133,7 +134,8 @@ bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
         .mElement = kAudioObjectPropertyElementMaster
     };
 
-    result = AudioObjectSetPropertyData(osxDeviceId(), &preferredBufferSizeAddress, 0, 0, sizeof(bufferSizeOut), (void*)&bufferSizeOut);
+    result = AudioObjectSetPropertyData(
+        osxDeviceId(), &preferredBufferSizeAddress, 0, 0, sizeof(bufferSizeOut), (void*)&bufferSizeOut);
     if (result != noErr) {
         m_data->clear();
         logError("Failed to create Audio Queue Output, err: ", result);
@@ -143,7 +145,8 @@ bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
     // Allocate 2 audio buffers. At the same time one used for writing, one for reading
     for (unsigned int i = 0; i < 2; ++i) {
         AudioQueueBufferRef buffer;
-        result = AudioQueueAllocateBuffer(m_data->audioQueue, spec.output.samplesPerChannel * audioFormat.mBytesPerFrame, &buffer);
+        result = AudioQueueAllocateBuffer(m_data->audioQueue,
+                                          spec.output.samplesPerChannel * audioFormat.mBytesPerFrame, &buffer);
         if (result != noErr) {
             m_data->clear();
             logError("Failed to allocate Audio Buffer, err: ", result);
@@ -249,7 +252,8 @@ void OSXAudioDriver::updateDeviceMap()
     };
 
     auto getStreamsCount
-        = [](const AudioObjectID& id, const AudioObjectPropertyScope& scope, const std::string& deviceName) -> unsigned int {
+        = [](const AudioObjectID& id, const AudioObjectPropertyScope& scope,
+             const std::string& deviceName) -> unsigned int {
         AudioObjectPropertyAddress propertyAddress = {
             .mSelector  = kAudioDevicePropertyStreamConfiguration,
             .mScope     = scope,
@@ -279,7 +283,8 @@ void OSXAudioDriver::updateDeviceMap()
     }
 
     audioObjects.resize(propertySize / sizeof(OSXAudioDeviceID));
-    result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &devicesPropertyAddress, 0, NULL, &propertySize, audioObjects.data());
+    result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &devicesPropertyAddress, 0, NULL, &propertySize,
+                                        audioObjects.data());
     if (result != noErr) {
         logError("Failed to get devices list, err: ", result);
         return;
@@ -322,7 +327,8 @@ std::vector<samples_t> OSXAudioDriver::availableOutputDeviceBufferSizes() const
 
     AudioValueRange range = { 0, 0 };
     UInt32 dataSize = sizeof(AudioValueRange);
-    OSStatus rangeResult = AudioObjectGetPropertyData(osxDeviceId, &bufferFrameSizePropertyAddress, 0, NULL, &dataSize, &range);
+    OSStatus rangeResult = AudioObjectGetPropertyData(osxDeviceId, &bufferFrameSizePropertyAddress, 0, NULL, &dataSize,
+                                                      &range);
     if (rangeResult != noErr) {
         logError("Failed to get device " + m_data->format.deviceId + " bufferFrameSize, err: ", rangeResult);
         return {};
@@ -403,7 +409,8 @@ muse::audio::AudioDeviceID OSXAudioDriver::defaultDeviceId() const
         .mElement = kAudioObjectPropertyElementMaster
     };
 
-    OSStatus result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &deviceNamePropertyAddress, 0, 0, &deviceIdSize, &osxDeviceId);
+    OSStatus result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &deviceNamePropertyAddress, 0, 0,
+                                                 &deviceIdSize, &osxDeviceId);
     if (result != noErr) {
         logError("Failed to get default device ID, err: ", result);
         return AudioDeviceID();
@@ -443,7 +450,8 @@ void OSXAudioDriver::logError(const std::string message, OSStatus error)
     }
 }
 
-static OSStatus onDeviceListChanged(AudioObjectID inObjectID, UInt32 inNumberAddresses, const AudioObjectPropertyAddress* inAddresses,
+static OSStatus onDeviceListChanged(AudioObjectID inObjectID, UInt32 inNumberAddresses,
+                                    const AudioObjectPropertyAddress* inAddresses,
                                     void* inClientData)
 {
     UNUSED(inObjectID);
@@ -462,7 +470,8 @@ void OSXAudioDriver::initDeviceMapListener()
     propertyAddress.mScope = kAudioObjectPropertyScopeGlobal;
     propertyAddress.mElement = kAudioObjectPropertyElementMaster;
 
-    auto result = AudioObjectAddPropertyListener(kAudioObjectSystemObject, &propertyAddress, &onDeviceListChanged, this);
+    auto result
+        = AudioObjectAddPropertyListener(kAudioObjectSystemObject, &propertyAddress, &onDeviceListChanged, this);
     if (result != noErr) {
         logError("Failed to add devices list listener, err: ", result);
     }

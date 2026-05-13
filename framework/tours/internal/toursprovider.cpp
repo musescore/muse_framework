@@ -104,7 +104,8 @@ void ToursProvider::doShow()
     //! NOTE: Avoid showing tooltip for control when tour for that control is shown
     setBlockShowingTooltipForItem(parentControlItem, true);
 
-    emit openTourStep(parentControlItem, step.title, step.description, step.previewImageOrGifUrl, step.videoExplanationUrl, index,
+    emit openTourStep(parentControlItem, step.title, step.description, step.previewImageOrGifUrl,
+                      step.videoExplanationUrl, index,
                       m_totalSteps);
 }
 

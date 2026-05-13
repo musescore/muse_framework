@@ -81,10 +81,12 @@ void ApiRegister::regApiCreator(const std::string& module, const std::string& ap
         return;
     }
 
-    qmlRegisterSingletonType(api.c_str(), 1, 0, name.c_str(), [this, api](QQmlEngine*, QJSEngine* jsengine) -> QJSValue {
+    qmlRegisterSingletonType(api.c_str(), 1, 0,
+                             name.c_str(), [this, api](QQmlEngine*, QJSEngine* jsengine) -> QJSValue {
         auto obj = createApi(api, makeApiEngine(jsengine));
         bool isNeedDelete = obj.second;
-        QJSEngine::setObjectOwnership(obj.first, isNeedDelete ? QJSEngine::JavaScriptOwnership : QJSEngine::CppOwnership);
+        QJSEngine::setObjectOwnership(obj.first,
+                                      isNeedDelete ? QJSEngine::JavaScriptOwnership : QJSEngine::CppOwnership);
         return jsengine->newQObject(obj.first);
     });
 }

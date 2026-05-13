@@ -216,7 +216,8 @@ private:
         float patternUnitRatio = PITCH_LEVEL_STEP / static_cast<float>(ONE_PERCENT);
 
         for (auto& pair : m_pitchCtx.pitchCurve) {
-            pair.second = static_cast<pitch_level_t>(RealRound(static_cast<float>(pair.second) * ratio * patternUnitRatio, 0));
+            pair.second
+                = static_cast<pitch_level_t>(RealRound(static_cast<float>(pair.second) * ratio * patternUnitRatio, 0));
         }
     }
 
@@ -237,9 +238,11 @@ private:
 
         constexpr dynamic_level_t naturalDynamicLevel = dynamicLevelFromType(DynamicType::Natural);
 
-        float dynamicAmplifyFactor = static_cast<float>(articulationDynamicLevel - naturalDynamicLevel) / DYNAMIC_LEVEL_STEP;
+        float dynamicAmplifyFactor = static_cast<float>(articulationDynamicLevel - naturalDynamicLevel)
+                                     / DYNAMIC_LEVEL_STEP;
 
-        dynamic_level_t amplificationDiff = mult(std::max(articulationsApplied.averageDynamicRange(), DYNAMIC_LEVEL_STEP),
+        dynamic_level_t amplificationDiff = mult(std::max(
+                                                     articulationsApplied.averageDynamicRange(), DYNAMIC_LEVEL_STEP),
                                                  dynamicAmplifyFactor);
 
         dynamic_level_t actualDynamicLevel = nominalDynamicLevel + amplificationDiff;

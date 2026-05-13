@@ -346,7 +346,8 @@ void QQmlSettingsPrivate::load()
                                        || (currentValue.canConvert(previousValue.metaType())
                                            && previousValue != currentValue))) {
             property.write(q, currentValue);
-            qCDebug(lcSettings) << "QQmlSettings: load" << property.name() << "setting:" << currentValue << "default:" << previousValue;
+            qCDebug(lcSettings) << "QQmlSettings: load" << property.name() << "setting:" << currentValue <<
+                "default:" << previousValue;
         }
 
         // ensure that a non-existent setting gets written

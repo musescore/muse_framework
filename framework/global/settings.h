@@ -99,8 +99,8 @@ public:
 
     void setDescription(const Key& key, const std::string& value);
 
-    void setCanBeManuallyEdited(const Settings::Key& key, bool canBeManuallyEdited, const Val& minValue = Val(),
-                                const Val& maxValue = Val());
+    void setCanBeManuallyEdited(const Settings::Key& key, bool canBeManuallyEdited,
+                                const Val& minValue = Val(), const Val& maxValue = Val());
 
     void beginTransaction(bool notifyToOtherInstances = true);
     void commitTransaction(bool notifyToOtherInstances = true);

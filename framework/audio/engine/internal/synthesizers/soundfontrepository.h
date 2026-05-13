@@ -39,7 +39,8 @@ public:
     async::Notification soundFontsChanged() const override;
 
 private:
-    void doAddSoundFont(const SoundFontUri& uri, const SoundFontsMap* cache = nullptr, std::function<void()> onFinished = nullptr);
+    void doAddSoundFont(const SoundFontUri& uri, const SoundFontsMap* cache = nullptr,
+                        std::function<void()> onFinished = nullptr);
 
     SoundFontsMap m_soundFonts;
     async::Notification m_soundFontsChanged;

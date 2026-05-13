@@ -24,7 +24,8 @@
 
 using namespace muse::ui;
 
-QNetworkReply* QmlNetworkAccessManager::createRequest(Operation operation, const QNetworkRequest& originalRequest, QIODevice* outgoingData)
+QNetworkReply* QmlNetworkAccessManager::createRequest(Operation operation, const QNetworkRequest& originalRequest,
+                                                      QIODevice* outgoingData)
 {
     QNetworkRequest request(originalRequest);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, true);

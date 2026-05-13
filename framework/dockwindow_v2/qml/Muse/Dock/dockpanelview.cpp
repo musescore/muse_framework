@@ -116,7 +116,8 @@ private:
 
     TranslatableString toggleFloatingActionTitle() const
     {
-        return m_panel->floating() ? TranslatableString("appshell/dock", "Dock") : TranslatableString("appshell/dock", "Undock");
+        return m_panel->floating() ? TranslatableString("appshell/dock", "Dock") : TranslatableString("appshell/dock",
+                                                                                                      "Undock");
     }
 
     void listenFloatingChanged()

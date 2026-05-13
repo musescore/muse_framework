@@ -669,7 +669,8 @@ const IAccessible* AccessibilityController::panel(const IAccessible* item) const
     return nullptr;
 }
 
-const AccessibilityController::Item& AccessibilityController::findSiblingItem(const Item& parent, const Item& current) const
+const AccessibilityController::Item& AccessibilityController::findSiblingItem(const Item& parent,
+                                                                              const Item& current) const
 {
     TRACEFUNC;
     static constexpr Item null;

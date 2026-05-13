@@ -47,7 +47,8 @@ public:
 
 private:
     muse::RetVal<muse::io::paths_t> scanDir(const std::string& dirName);
-    muse::Ret addFileToZip(const muse::io::path_t& filePath, muse::ZipWriter& zip, const std::string& destinationDirName = std::string());
+    muse::Ret addFileToZip(const muse::io::path_t& filePath, muse::ZipWriter& zip,
+                           const std::string& destinationDirName = std::string());
 };
 }
 

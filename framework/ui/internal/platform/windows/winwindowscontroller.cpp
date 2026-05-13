@@ -55,7 +55,8 @@ void WinWindowsController::finishRegWindow(WId winId)
     }
 
     SetWindowLongPtr(hWnd, GWL_STYLE,
-                     static_cast<LONG>(WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME
+                     static_cast<LONG>(WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+                                       | WS_THICKFRAME
                                        | WS_CLIPCHILDREN));
 
     const MARGINS shadow_on = { 1, 1, 1, 1 };
@@ -232,7 +233,8 @@ bool WinWindowsController::initWindowBackgroundColor(HWND hWnd)
 {
     HDC hdc = GetWindowDC(hWnd);
 
-    QColor bgColor = QColor(uiConfiguration()->currentTheme().values.value(muse::ui::BACKGROUND_PRIMARY_COLOR).toString());
+    QColor bgColor = QColor(uiConfiguration()->currentTheme().values.value(
+                                muse::ui::BACKGROUND_PRIMARY_COLOR).toString());
     COLORREF bgRGB = RGB(bgColor.red(), bgColor.green(), bgColor.blue());
 
     SetClassLongPtr(hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(bgRGB));

@@ -36,15 +36,18 @@ std::shared_ptr<IInteractive> TestflowInteractive::realInteractive() const
     return m_real;
 }
 
-IInteractive::Result TestflowInteractive::questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
-                                                       int defBtn, const Options& options, const std::string& dialogTitle)
+IInteractive::Result TestflowInteractive::questionSync(const std::string& contentTitle, const Text& text,
+                                                       const ButtonDatas& buttons,
+                                                       int defBtn, const Options& options,
+                                                       const std::string& dialogTitle)
 {
     return m_real->questionSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
 async::Promise<IInteractive::Result> TestflowInteractive::question(const std::string& contentTitle, const Text& text,
                                                                    const ButtonDatas& buttons, int defBtn,
-                                                                   const Options& options, const std::string& dialogTitle)
+                                                                   const Options& options,
+                                                                   const std::string& dialogTitle)
 {
     return m_real->question(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -54,7 +57,8 @@ IInteractive::ButtonData TestflowInteractive::buttonData(Button b) const
     return m_real->buttonData(b);
 }
 
-IInteractive::Result TestflowInteractive::infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+IInteractive::Result TestflowInteractive::infoSync(const std::string& contentTitle, const Text& text,
+                                                   const ButtonDatas& buttons,
                                                    int defBtn,
                                                    const Options& options, const std::string& dialogTitle)
 {
@@ -68,7 +72,8 @@ async::Promise<IInteractive::Result> TestflowInteractive::info(const std::string
     return m_real->info(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
-IInteractive::Result TestflowInteractive::warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+IInteractive::Result TestflowInteractive::warningSync(const std::string& contentTitle, const Text& text,
+                                                      const ButtonDatas& buttons,
                                                       int defBtn,
                                                       const Options& options, const std::string& dialogTitle)
 {
@@ -77,12 +82,14 @@ IInteractive::Result TestflowInteractive::warningSync(const std::string& content
 
 async::Promise<IInteractive::Result> TestflowInteractive::warning(const std::string& contentTitle, const Text& text,
                                                                   const ButtonDatas& buttons, int defBtn,
-                                                                  const Options& options, const std::string& dialogTitle)
+                                                                  const Options& options,
+                                                                  const std::string& dialogTitle)
 {
     return m_real->warning(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
-IInteractive::Result TestflowInteractive::errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+IInteractive::Result TestflowInteractive::errorSync(const std::string& contentTitle, const Text& text,
+                                                    const ButtonDatas& buttons,
                                                     int defBtn,
                                                     const Options& options, const std::string& dialogTitle)
 {

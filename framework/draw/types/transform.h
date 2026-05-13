@@ -82,7 +82,8 @@ public:
 
     const Matrix& toAffine() const { return m_affine; }
 
-    void setMatrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32, double m33);
+    void setMatrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32,
+                   double m33);
 
     void reset();
 
@@ -100,7 +101,8 @@ public:
 
 private:
 
-    Transform(double h11, double h12, double h13, double h21, double h22, double h23, double h31, double h32, double h33);
+    Transform(double h11, double h12, double h13, double h21, double h22, double h23, double h31, double h32,
+              double h33);
 
     inline double determinant() const
     {

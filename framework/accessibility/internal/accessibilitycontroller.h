@@ -49,8 +49,8 @@ class DiagnosticAccessibleModel;
 }
 
 namespace muse::accessibility {
-class AccessibilityController : public IAccessibilityController, public IAccessible, public muse::Contextable, public async::Asyncable,
-    public std::enable_shared_from_this<AccessibilityController>
+class AccessibilityController : public IAccessibilityController, public IAccessible, public muse::Contextable,
+    public async::Asyncable, public std::enable_shared_from_this<AccessibilityController>
 {
 public:
 
@@ -117,9 +117,12 @@ public:
     int accessibleCursorPosition() const override;
 
     QString accessibleText(int startOffset, int endOffset) const override;
-    QString accessibleTextBeforeOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const override;
-    QString accessibleTextAfterOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const override;
-    QString accessibleTextAtOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const override;
+    QString accessibleTextBeforeOffset(int offset, TextBoundaryType boundaryType, int* startOffset,
+                                       int* endOffset) const override;
+    QString accessibleTextAfterOffset(int offset, TextBoundaryType boundaryType, int* startOffset,
+                                      int* endOffset) const override;
+    QString accessibleTextAtOffset(int offset, TextBoundaryType boundaryType, int* startOffset,
+                                   int* endOffset) const override;
     int accessibleCharacterCount() const override;
 
     // ListView item Interface

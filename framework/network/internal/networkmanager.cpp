@@ -220,7 +220,8 @@ QNetworkRequest NetworkManager::prepareRequest(const QUrl& url, const RequestHea
     return request;
 }
 
-QNetworkReply* NetworkManager::sendRequest(RequestType type, const QNetworkRequest& request, const OutgoingDeviceVar& device)
+QNetworkReply* NetworkManager::sendRequest(RequestType type, const QNetworkRequest& request,
+                                           const OutgoingDeviceVar& device)
 {
     switch (type) {
     case GET_REQUEST: return m_manager->get(request);

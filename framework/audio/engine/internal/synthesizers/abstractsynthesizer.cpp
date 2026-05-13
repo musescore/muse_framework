@@ -116,7 +116,8 @@ void AbstractSynthesizer::clearCache()
     ONLY_AUDIO_ENGINE_THREAD;
 }
 
-muse::audio::msecs_t AbstractSynthesizer::samplesToMsecs(const samples_t samplesPerChannel, const samples_t sampleRate) const
+muse::audio::msecs_t AbstractSynthesizer::samplesToMsecs(const samples_t samplesPerChannel,
+                                                         const samples_t sampleRate) const
 {
     return samplesPerChannel * 1000000 / sampleRate;
 }

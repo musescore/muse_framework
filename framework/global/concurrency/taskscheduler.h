@@ -96,7 +96,8 @@ public:
         m_newTaskAvailableCv.notify_one();
     }
 
-    template<typename FuncT, typename ... ArgsT, typename ReturnT = std::invoke_result_t<std::decay_t<FuncT>, std::decay_t<ArgsT>...> >
+    template<typename FuncT, typename ... ArgsT, typename ReturnT = std::invoke_result_t<std::decay_t<FuncT>,
+                                                                                         std::decay_t<ArgsT>...> >
     std::future<ReturnT> submit(FuncT&& task, ArgsT&&... args)
     {
         std::function<ReturnT()> taskFunctor = std::bind(std::forward<FuncT>(task), std::forward<ArgsT>(args)...);

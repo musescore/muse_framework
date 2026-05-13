@@ -65,7 +65,8 @@ public:
         }
 
         if (m_version < minSupportedVersion) {
-            LOGE() << "MuseSampler " << m_version.toString() << " is not supported (too old -- update MuseSampler); ignoring";
+            LOGE() << "MuseSampler " << m_version.toString() <<
+                " is not supported (too old -- update MuseSampler); ignoring";
             return false;
         }
 
@@ -73,7 +74,8 @@ public:
         constexpr int maximumMajorVersion = 0;
 
         if (m_version.major() > maximumMajorVersion) {
-            LOGE() << "MuseSampler " << m_version.toString() << " is not supported (too new -- update MuseScore Studio); ignoring";
+            LOGE() << "MuseSampler " << m_version.toString() <<
+                " is not supported (too new -- update MuseScore Studio); ignoring";
             return false;
         }
 
@@ -143,7 +145,8 @@ public:
 
         stopAuditionNote = (ms_MuseSampler_stop_audition_note)libFunc("ms_MuseSampler_stop_audition_note");
 
-        addSyllableEvent = (ms_MuseSampler_add_track_syllable_event_2)libFunc("ms_MuseSampler_add_track_syllable_event_2");
+        addSyllableEvent = (ms_MuseSampler_add_track_syllable_event_2)libFunc(
+            "ms_MuseSampler_add_track_syllable_event_2");
 
         getInstrumentVendorName = (ms_Instrument_get_vendor_name)libFunc("ms_Instrument_get_vendor_name");
         getInstrumentPackName = (ms_Instrument_get_pack_name)libFunc("ms_Instrument_get_pack_name");
@@ -325,7 +328,8 @@ public:
                << "\n ms_MuseSampler_create_preset_change - " << reinterpret_cast<uint64_t>(createPresetChange)
                << "\n ms_MuseSampler_add_preset - " << reinterpret_cast<uint64_t>(addPreset)
                << "\n ms_get_text_articulations - " << reinterpret_cast<uint64_t>(getTextArticulations)
-               << "\n ms_MuseSampler_add_track_text_articulation_event - " << reinterpret_cast<uint64_t>(addTextArticulationEvent)
+               << "\n ms_MuseSampler_add_track_text_articulation_event - " <<
+            reinterpret_cast<uint64_t>(addTextArticulationEvent)
                << "\n ms_MuseSampler_create - " << reinterpret_cast<uint64_t>(create)
                << "\n ms_MuseSampler_destroy - " << reinterpret_cast<uint64_t>(destroy)
                << "\n ms_MuseSampler_add_track - " << reinterpret_cast<uint64_t>(addTrack)
@@ -338,7 +342,8 @@ public:
                << "\n ms_MuseSampler_add_pitch_bend - " << reinterpret_cast<uint64_t>(addPitchBend)
                << "\n ms_MuseSampler_add_vibrato - " << reinterpret_cast<uint64_t>(addVibrato)
                << "\n ms_MuseSampler_is_ranged_articulation - " << reinterpret_cast<uint64_t>(isRangedArticulation)
-               << "\n ms_MuseSampler_add_track_event_range_start - " << reinterpret_cast<uint64_t>(addTrackEventRangeStart)
+               << "\n ms_MuseSampler_add_track_event_range_start - " <<
+            reinterpret_cast<uint64_t>(addTrackEventRangeStart)
                << "\n ms_MuseSampler_add_track_event_range_end - " << reinterpret_cast<uint64_t>(addTrackEventRangeEnd)
                << "\n ms_MuseSampler_add_audition_cc_event - " << reinterpret_cast<uint64_t>(addAuditionCCEvent)
                << "\n ms_MuseSampler_add_track_syllable_event_2 - " << reinterpret_cast<uint64_t>(addSyllableEvent)
@@ -395,7 +400,8 @@ public:
 
     ms_MuseSampler_add_track_dynamics_event_2 addDynamicsEvent = nullptr;
     ms_MuseSampler_add_track_pedal_event_2 addPedalEvent = nullptr;
-    std::function<bool(ms_MuseSampler ms, ms_Track track, const NoteEvent& ev, long long& event_id)> addNoteEvent = nullptr;
+    std::function<bool(ms_MuseSampler ms, ms_Track track, const NoteEvent& ev,
+                       long long& event_id)> addNoteEvent = nullptr;
 
     ms_MuseSampler_is_ranged_articulation isRangedArticulation = nullptr;
     ms_MuseSampler_add_track_event_range_start addTrackEventRangeStart = nullptr;

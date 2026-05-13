@@ -66,7 +66,8 @@ QString muse::qtrc(const char* context, const String& key, const String& disambi
 {
     ByteArray keyutf8 = key.toUtf8();
     ByteArray disutf8 = disambiguation.toUtf8();
-    return QCoreApplication::translate(context, keyutf8.constChar(), disutf8.empty() ? nullptr : disutf8.constChar(), n);
+    return QCoreApplication::translate(context, keyutf8.constChar(), disutf8.empty() ? nullptr : disutf8.constChar(),
+                                       n);
 }
 
 #endif

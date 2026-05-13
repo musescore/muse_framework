@@ -35,8 +35,9 @@ public:
     void setRealInteractive(std::shared_ptr<IInteractive> real);
     std::shared_ptr<IInteractive> realInteractive() const;
 
-    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                        const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                        int defBtn = int(Button::NoButton), const Options& options = {},
+                        const std::string& dialogTitle = {}) override;
 
     async::Promise<Result> question(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
                                     int defBtn = int(Button::NoButton), const Options& options = {},
@@ -45,24 +46,27 @@ public:
     ButtonData buttonData(Button b) const override;
 
     // info
-    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                    const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                    int defBtn = int(Button::NoButton), const Options& options = {},
+                    const std::string& dialogTitle = {}) override;
 
     async::Promise<Result> info(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                 int defBtn = int(Button::NoButton), const Options& options = {},
                                 const std::string& dialogTitle = {}) override;
 
     // warning
-    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                       const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                       int defBtn = int(Button::NoButton), const Options& options = {},
+                       const std::string& dialogTitle = {}) override;
 
     async::Promise<Result> warning(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                    int defBtn = int(Button::NoButton), const Options& options = {},
                                    const std::string& dialogTitle = {}) override;
 
     // error
-    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                     const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                     int defBtn = int(Button::NoButton), const Options& options = {},
+                     const std::string& dialogTitle = {}) override;
 
     async::Promise<Result> error(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                  int defBtn = int(Button::NoButton), const Options& options = {},
@@ -74,19 +78,21 @@ public:
     // files
     virtual async::Promise<io::path_t> selectOpeningFile(const std::string& title, const io::path_t& dir,
                                                          const std::vector<std::string>& filter) override;
-    io::path_t selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                     const int options = 0) override;
-    io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                       const int options = 0) override;
-    io::path_t selectSavingFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                    bool confirmOverwrite = true) override;
+    io::path_t selectOpeningFileSync(const std::string& title, const io::path_t& dir,
+                                     const std::vector<std::string>& filter, const int options = 0) override;
+    io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir,
+                                       const std::vector<std::string>& filter, const int options = 0) override;
+    io::path_t selectSavingFileSync(const std::string& title, const io::path_t& dir,
+                                    const std::vector<std::string>& filter, bool confirmOverwrite = true) override;
 
     // dirs
     io::path_t selectDirectory(const std::string& title, const io::path_t& dir) override;
-    io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir, const io::paths_t& initialDirectories) override;
+    io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                          const io::paths_t& initialDirectories) override;
 
     // color
-    async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {}, bool allowAlpha = false) override;
+    async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {},
+                                      bool allowAlpha = false) override;
     bool isSelectColorOpened() const override;
 
     // custom

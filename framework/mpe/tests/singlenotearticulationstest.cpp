@@ -48,7 +48,8 @@ protected:
         m_nominalDynamic = dynamicLevelFromType(DynamicType::Natural);
 
         // [GIVEN] Articulation pattern "None", which means that note should be played without any modifications
-        m_standardPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+        m_standardPattern.arrangementPattern
+            = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
         m_standardPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
         m_standardPattern.expressionPattern = createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural));
     }
@@ -118,7 +119,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, StaccatoPattern)
 {
     // [GIVEN] Articulation pattern "Staccato", which instructs a performer to shorten duration of a note
     ArticulationPatternSegment staccatoArticulation;
-    staccatoArticulation.arrangementPattern = createArrangementPattern(5 * TEN_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    staccatoArticulation.arrangementPattern
+        = createArrangementPattern(5 * TEN_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     staccatoArticulation.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
     staccatoArticulation.expressionPattern
         = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
@@ -166,7 +168,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern)
 {
     // [GIVEN] Articulation pattern "Accent", which instructs a performer to play a note louder (usually on 1 dynamic level)
     ArticulationPatternSegment accentArticulation;
-    accentArticulation.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    accentArticulation.arrangementPattern
+        = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     accentArticulation.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
     accentArticulation.expressionPattern = createSimpleExpressionPattern(
         dynamicLevelFromType(DynamicType::mf) /* increasing a note's dynamic on a single level from Natural dynamic*/);
@@ -223,7 +226,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte)
 
     // [GIVEN] Articulation pattern "Accent", which instructs a performer to play a note louder (usually on 1 dynamic level)
     ArticulationPatternSegment accentArticulation;
-    accentArticulation.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    accentArticulation.arrangementPattern
+        = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     accentArticulation.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
     accentArticulation.expressionPattern = createSimpleExpressionPattern(
         dynamicLevelFromType(DynamicType::Natural)
@@ -277,7 +281,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, PocoTenuto)
 {
     // [GIVEN] Articulation pattern "Staccato", which instructs a performer to shorten duration of a note
     ArticulationPatternSegment staccatoPattern;
-    staccatoPattern.arrangementPattern = createArrangementPattern(5 * TEN_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    staccatoPattern.arrangementPattern
+        = createArrangementPattern(5 * TEN_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     staccatoPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
     staccatoPattern.expressionPattern
         = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
@@ -287,9 +292,11 @@ TEST_F(MPE_SingleNoteArticulationsTest, PocoTenuto)
 
     // [GIVEN] Articulation pattern "Tenuto", which instructs a performer to play a note for the whole nominal duration
     ArticulationPatternSegment tenutoPattern;
-    tenutoPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    tenutoPattern.arrangementPattern
+        = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     tenutoPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
-    tenutoPattern.expressionPattern = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
+    tenutoPattern.expressionPattern
+        = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
 
     ArticulationPattern tenutoScope;
     tenutoScope.emplace(0, tenutoPattern);
@@ -345,7 +352,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, QuickFall)
 {
     // [GIVEN] Articulation pattern "Tenuto", which instructs a performer to play a note for the whole nominal duration
     ArticulationPatternSegment quickFallPattern;
-    quickFallPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    quickFallPattern.arrangementPattern
+        = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
 
     // Linear decreasing pitch
     quickFallPattern.pitchPattern
@@ -398,12 +406,14 @@ TEST_F(MPE_SingleNoteArticulationsTest, Scoop)
     m_nominalTimestamp = 1000; //msecs
 
     ArticulationPatternSegment scoopPattern;
-    scoopPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, timestampOffset /*timestamp_offset*/);
+    scoopPattern.arrangementPattern
+        = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, timestampOffset /*timestamp_offset*/);
 
     // Linear increasing pitch
     scoopPattern.pitchPattern
         = createSimplePitchPattern(ArticulationMap::EXPECTED_SIZE /*increment_pitch_diff*/);
-    scoopPattern.expressionPattern = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
+    scoopPattern.expressionPattern
+        = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
 
     ArticulationPattern scope;
     scope.emplace(0, scoopPattern);
@@ -437,5 +447,6 @@ TEST_F(MPE_SingleNoteArticulationsTest, Scoop)
 
     // [THEN] We expect that actual timestamp of the note will consider timestamp offset from the articulation pattern
     //        In other words, we'll start to playback a note with pitch offset and then finally land on the note being played
-    EXPECT_EQ(event.arrangementCtx().actualTimestamp, m_nominalTimestamp + m_nominalDuration * percentageToFactor(timestampOffset));
+    EXPECT_EQ(event.arrangementCtx().actualTimestamp,
+              m_nominalTimestamp + m_nominalDuration * percentageToFactor(timestampOffset));
 }

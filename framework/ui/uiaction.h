@@ -87,15 +87,19 @@ struct UiAction
         : code(code), uiCtx(ctx), scCtx(scCtx), title(title), description(desc), iconCode(icon), checkable(ch) {}
 
     UiAction(const actions::ActionCode& code, const std::vector<actions::ActionCode>& children,
-             UiContext ctx, std::string scCtx, const MnemonicString& title, const TranslatableString& desc, IconCode::Code icon,
+             UiContext ctx, std::string scCtx, const MnemonicString& title, const TranslatableString& desc,
+             IconCode::Code icon,
              Checkable ch = Checkable::No)
-        : code(code), children(children), uiCtx(ctx), scCtx(scCtx), title(title), description(desc), iconCode(icon), checkable(ch) {}
+        : code(code), children(children), uiCtx(ctx), scCtx(scCtx), title(title), description(desc), iconCode(icon),
+        checkable(ch) {}
 
     UiAction(const actions::ActionCode& code, UiContext ctx, std::string scCtx, const MnemonicString& title,
              const TranslatableString& desc, IconCode::Code icon, QString iconColor, Checkable ch = Checkable::No)
-        : code(code), uiCtx(ctx), scCtx(scCtx), title(title), description(desc), iconCode(icon), iconColor(iconColor), checkable(ch) {}
+        : code(code), uiCtx(ctx), scCtx(scCtx), title(title), description(desc), iconCode(icon), iconColor(iconColor),
+        checkable(ch) {}
 
-    UiAction(const actions::ActionCode& code, UiContext ctx, std::string scCtx, const MnemonicString& title, IconCode::Code icon,
+    UiAction(const actions::ActionCode& code, UiContext ctx, std::string scCtx, const MnemonicString& title,
+             IconCode::Code icon,
              Checkable ch = Checkable::No)
         : code(code), uiCtx(ctx), scCtx(scCtx), title(title), iconCode(icon), checkable(ch) {}
 

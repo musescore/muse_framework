@@ -189,13 +189,15 @@ void FluidSynth::doFlushSound()
             upperBound = min(lastChannelIdx, 16);
         }
         for (int i = lowerBound; i < upperBound; i++) {
-            muse::midi::Event e(muse::midi::Event::Opcode::ControlChange, muse::midi::Event::MessageType::ChannelVoice20);
+            muse::midi::Event e(muse::midi::Event::Opcode::ControlChange,
+                                muse::midi::Event::MessageType::ChannelVoice20);
             e.setChannel(i);
             e.setIndex(123); // CC#123 = All notes off
             m_midiOutPort->sendEvent(e);
         }
         for (int i = lowerBound; i < upperBound; i++) {
-            muse::midi::Event e(muse::midi::Event::Opcode::ControlChange, muse::midi::Event::MessageType::ChannelVoice20);
+            muse::midi::Event e(muse::midi::Event::Opcode::ControlChange,
+                                muse::midi::Event::MessageType::ChannelVoice20);
             e.setChannel(i);
             e.setIndex(midi::SUSTAIN_PEDAL_CONTROLLER);
             e.setData(0);
@@ -345,7 +347,8 @@ void FluidSynth::setupSound(const PlaybackSetupData& setupData)
         fluid_synth_bank_select(m_fluid->synth, channelIdx, program.bank);
         fluid_synth_program_change(m_fluid->synth, channelIdx, program.program);
         fluid_synth_cc(m_fluid->synth, channelIdx, 7, DEFAULT_MIDI_VOLUME);
-        fluid_synth_cc(m_fluid->synth, channelIdx, muse::midi::EXPRESSION_CONTROLLER, m_sequencer.naturalExpressionLevel());
+        fluid_synth_cc(m_fluid->synth, channelIdx, muse::midi::EXPRESSION_CONTROLLER,
+                       m_sequencer.naturalExpressionLevel());
         fluid_synth_cc(m_fluid->synth, channelIdx, 74, 0);
         fluid_synth_set_portamento_mode(m_fluid->synth, channelIdx, FLUID_CHANNEL_PORTAMENTO_MODE_EACH_NOTE);
         fluid_synth_set_legato_mode(m_fluid->synth, channelIdx, FLUID_CHANNEL_LEGATO_MODE_RETRIGGER);

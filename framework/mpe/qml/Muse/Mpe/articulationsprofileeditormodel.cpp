@@ -136,7 +136,8 @@ void ArticulationsProfileEditorModel::loadItems()
     }
 }
 
-ArticulationPatternItem* ArticulationsProfileEditorModel::buildItem(const ArticulationType type, const bool isSingleNoteType)
+ArticulationPatternItem* ArticulationsProfileEditorModel::buildItem(const ArticulationType type,
+                                                                    const bool isSingleNoteType)
 {
     ArticulationPatternItem* item = new ArticulationPatternItem(this, type, isSingleNoteType);
 

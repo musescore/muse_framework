@@ -39,11 +39,15 @@ class ArticulationsProfileEditorModel : public QObject, public Contextable
     Q_OBJECT
 
     Q_PROPERTY(QString currentPath READ currentPath WRITE setCurrentPath NOTIFY currentPathChanged)
-    Q_PROPERTY(muse::mpe::ArticulationPatternItem * selectedItem READ selectedItem WRITE setSelectedItem NOTIFY selectedItemChanged)
+    Q_PROPERTY(
+        muse::mpe::ArticulationPatternItem
+        * selectedItem READ selectedItem WRITE setSelectedItem NOTIFY selectedItemChanged)
 
-    Q_PROPERTY(bool isArrangementVisible READ isArrangementVisible WRITE setIsArrangementVisible NOTIFY isArrangementVisibleChanged)
+    Q_PROPERTY(
+        bool isArrangementVisible READ isArrangementVisible WRITE setIsArrangementVisible NOTIFY isArrangementVisibleChanged)
     Q_PROPERTY(bool isPitchVisible READ isPitchVisible WRITE setIsPitchVisible NOTIFY isPitchVisibleChanged)
-    Q_PROPERTY(bool isExpressionVisible READ isExpressionVisible WRITE setIsExpressionVisible NOTIFY isExpressionVisibleChanged)
+    Q_PROPERTY(
+        bool isExpressionVisible READ isExpressionVisible WRITE setIsExpressionVisible NOTIFY isExpressionVisibleChanged)
 
     Q_PROPERTY(QList<muse::mpe::ArticulationPatternItem*> singleNoteItems READ singleNoteItems CONSTANT)
     Q_PROPERTY(QList<muse::mpe::ArticulationPatternItem*> multiNoteItems READ multiNoteItems CONSTANT)

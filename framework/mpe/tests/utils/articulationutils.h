@@ -56,7 +56,9 @@ inline ExpressionPattern createSimpleExpressionPattern(const dynamic_level_t amp
         duration_percentage_t currentPos = static_cast<int>(i) * TEN_PERCENT;
         dynamic_level_t value = amplitudeLevel - static_cast<dynamic_level_t>(std::pow(
                                                                                   (2
-                                                                                   * (amplitudeSqrt / static_cast<float>(HUNDRED_PERCENT))
+                                                                                   * (amplitudeSqrt
+                                                                                      / static_cast<float>(
+                                                                                          HUNDRED_PERCENT))
                                                                                    * currentPos) - amplitudeSqrt, 2));
 
         result.dynamicOffsetMap.insert_or_assign(currentPos, value);

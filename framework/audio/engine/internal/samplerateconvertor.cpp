@@ -31,7 +31,8 @@ SampleRateConvertor::SampleRateConvertor(const std::vector<float>& data,
                                          unsigned int channelsCount,
                                          unsigned int sampleRateIn,
                                          unsigned int sampleRateOut)
-    : m_data(data), m_fir(), m_channelsCount(channelsCount), m_sampleRateIn(sampleRateIn), m_sampleRateOut(sampleRateOut)
+    : m_data(data), m_fir(), m_channelsCount(channelsCount), m_sampleRateIn(sampleRateIn),
+    m_sampleRateOut(sampleRateOut)
 {
     m_fir.resize(FIR_LENGTH, 0);
     m_y.resize(FIR_LENGTH, 0);
@@ -114,7 +115,8 @@ float SampleRateConvertor::ySinc(unsigned int sample, unsigned int channel) cons
         if (currentSample < 0 || currentSample * m_channelsCount + channel >= m_data.size()) {
             continue;
         }
-        out += m_data.at(currentSample * m_channelsCount + channel) * sinc(currentOutputSampleTime - currentInputSampleTime);
+        out += m_data.at(currentSample * m_channelsCount + channel) * sinc(
+            currentOutputSampleTime - currentInputSampleTime);
     }
     return out;
 }

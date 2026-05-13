@@ -39,7 +39,8 @@ class EventAudioNode : public AudioSourceNode, public async::Asyncable
 public:
     using OnOffStreamEventsReceived = std::function<void ()>;
 
-    explicit EventAudioNode(TrackId trackId, const mpe::PlaybackData& playbackData, OnOffStreamEventsReceived onOffStreamReceived);
+    explicit EventAudioNode(TrackId trackId, const mpe::PlaybackData& playbackData,
+                            OnOffStreamEventsReceived onOffStreamReceived);
 
     ~EventAudioNode() override;
 

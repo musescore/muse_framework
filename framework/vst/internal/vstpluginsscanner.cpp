@@ -74,7 +74,8 @@ io::paths_t VstPluginsScanner::pluginPathsFromCustomLocations(const io::paths_t&
             continue;
         }
 
-        result.insert(result.end(), std::make_move_iterator(paths.val.begin()), std::make_move_iterator(paths.val.end()));
+        result.insert(result.end(), std::make_move_iterator(paths.val.begin()),
+                      std::make_move_iterator(paths.val.end()));
     }
 
     return result;

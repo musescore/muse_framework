@@ -63,7 +63,8 @@ void AbPaintProvider::beforeEndTargetHook(muse::draw::Painter* painter)
     }
 }
 
-void AbPaintProvider::paintData(muse::draw::IPaintProviderPtr provider, const muse::draw::DrawDataPtr& data, const QColor& overcolor)
+void AbPaintProvider::paintData(muse::draw::IPaintProviderPtr provider, const muse::draw::DrawDataPtr& data,
+                                const QColor& overcolor)
 {
     using namespace muse::draw;
 

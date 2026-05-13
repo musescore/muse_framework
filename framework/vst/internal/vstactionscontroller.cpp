@@ -39,7 +39,8 @@ void VstActionsController::init()
     dispatcher()->reg(this, "vst-use-newview", [this]() { useView(true); });
 
     dispatcher()->reg(this, actions::ActionQuery("action://vst/fx_editor"), this, &VstActionsController::fxEditor);
-    dispatcher()->reg(this, actions::ActionQuery("action://vst/instrument_editor"), this, &VstActionsController::instEditor);
+    dispatcher()->reg(this, actions::ActionQuery(
+                          "action://vst/instrument_editor"), this, &VstActionsController::instEditor);
 }
 
 void VstActionsController::fxEditor(const actions::ActionQuery& actionQuery)

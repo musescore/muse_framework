@@ -44,7 +44,8 @@ struct FFmpegVersionInfo {
 
     bool isValid() const
     {
-        return avFormatVersion != -1 && avUtilVersion != -1 && avCodecVersion != -1 && swScaleVersion != -1 && swResampleVersion != -1;
+        return avFormatVersion != -1 && avUtilVersion != -1 && avCodecVersion != -1 && swScaleVersion != -1
+               && swResampleVersion != -1;
     }
 };
 

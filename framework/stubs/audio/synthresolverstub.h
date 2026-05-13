@@ -30,7 +30,8 @@ class SynthResolverStub : public ISynthResolver
 public:
     void init(const AudioInputParams& defaultInputParams, const audio::OutputSpec& defaultOutputSpec) override;
 
-    ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams& params, const audio::OutputSpec& outputSpec,
+    ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams& params,
+                                 const audio::OutputSpec& outputSpec,
                                  const PlaybackSetupData& setupData) const override;
     ISynthesizerPtr resolveDefaultSynth(const TrackId trackId) const override;
     AudioInputParams resolveDefaultInputParams() const override;

@@ -36,7 +36,8 @@ public:
     bool isActive() const;
     void setIsActive(const bool active);
 
-    void process(const float linearRms, float* buffer, const audioch_t& audioChannelsCount, const samples_t samplesPerChannel);
+    void process(const float linearRms, float* buffer, const audioch_t& audioChannelsCount,
+                 const samples_t samplesPerChannel);
 private:
     float attackTimeCoefficient() const;
     float releaseTimeCoefficient() const;

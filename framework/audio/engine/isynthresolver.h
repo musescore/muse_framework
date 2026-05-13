@@ -44,7 +44,8 @@ public:
     public:
         virtual ~IResolver() = default;
 
-        virtual ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams& params, const OutputSpec& outputSpec) const = 0;
+        virtual ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams& params,
+                                             const OutputSpec& outputSpec) const = 0;
         virtual bool hasCompatibleResources(const PlaybackSetupData& setup) const = 0;
         virtual AudioResourceMetaList resolveResources() const = 0;
         virtual SoundPresetList resolveSoundPresets(const AudioResourceMeta& resourceMeta) const = 0;

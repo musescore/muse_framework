@@ -95,7 +95,8 @@ QVariantMap MidiDeviceMappingModel::midiMappingToObject(const MidiControlsMappin
     const UiAction& action = uiActionsRegister()->action(midiMapping.action);
 
     QVariantMap obj;
-    obj[TITLE_KEY] = !action.description.isEmpty() ? action.description.qTranslated() : action.title.qTranslatedWithoutMnemonic();
+    obj[TITLE_KEY]
+        = !action.description.isEmpty() ? action.description.qTranslated() : action.title.qTranslatedWithoutMnemonic();
     obj[ICON_KEY] = static_cast<int>(action.iconCode);
     obj[ENABLED_KEY] = midiMapping.isValid();
     obj[STATUS_KEY] = midiMapping.isValid() ? midiMapping.event.name().toQString() : muse::qtrc("global", "Inactive");

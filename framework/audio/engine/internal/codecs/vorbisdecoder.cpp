@@ -52,7 +52,8 @@ int VorbisDecoder::decode_memory(const unsigned char* mem, unsigned int len, sho
     return samples;
 }
 
-int VorbisDecoder::decode_file(const std::string& filepath, std::vector<float>& output, unsigned int* channels, unsigned int* sample_rate)
+int VorbisDecoder::decode_file(const std::string& filepath, std::vector<float>& output, unsigned int* channels,
+                               unsigned int* sample_rate)
 {
     int vorbis_error;
     stb_vorbis* decoder = stb_vorbis_open_filename(filepath.c_str(), &vorbis_error, NULL);

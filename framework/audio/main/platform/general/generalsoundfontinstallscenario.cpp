@@ -68,7 +68,8 @@ void GeneralSoundFontInstallScenario::installSoundFont(const synth::SoundFontUri
                 Ret ret = doAddSoundFont(path, newPath.val);
                 if (ret) {
                     interactive()->info(muse::trc("audio", "SoundFont installed"),
-                                        muse::trc("audio", "You can assign soundfonts to instruments using the mixer panel."),
+                                        muse::trc("audio",
+                                                  "You can assign soundfonts to instruments using the mixer panel."),
                                         {}, 0, IInteractive::Option::WithIcon);
                 } else {
                     LOGE() << "failed add soundfont, err: " << ret.toString();
@@ -78,7 +79,8 @@ void GeneralSoundFontInstallScenario::installSoundFont(const synth::SoundFontUri
             Ret ret = doAddSoundFont(path, newPath.val);
             if (ret) {
                 interactive()->info(muse::trc("audio", "SoundFont installed"),
-                                    muse::trc("audio", "You can assign soundfonts to instruments using the mixer panel."),
+                                    muse::trc("audio",
+                                              "You can assign soundfonts to instruments using the mixer panel."),
                                     {}, 0, IInteractive::Option::WithIcon);
             } else {
                 LOGE() << "failed add soundfont, err: " << ret.toString();

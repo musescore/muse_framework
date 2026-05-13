@@ -211,8 +211,10 @@ public:
     }
 
 protected:
-    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) = 0;
-    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) = 0;
+    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap& events,
+                                       const mpe::DynamicLevelLayers& dynamics) = 0;
+    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap& events,
+                                        const mpe::DynamicLevelLayers& dynamics) = 0;
 
     void resetAllIterators()
     {

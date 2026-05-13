@@ -690,8 +690,10 @@ struct ArticulationAppliedData {
         }
 
         float occupiedFactor = percentageToFactor(occupiedTo);
-        occupiedPitchChangesRange = static_cast<pitch_level_t>(static_cast<float>(meta.overallPitchChangesRange) * occupiedFactor);
-        occupiedDynamicChangesRange = static_cast<pitch_level_t>(static_cast<float>(meta.overallDynamicChangesRange) * occupiedFactor);
+        occupiedPitchChangesRange
+            = static_cast<pitch_level_t>(static_cast<float>(meta.overallPitchChangesRange) * occupiedFactor);
+        occupiedDynamicChangesRange
+            = static_cast<pitch_level_t>(static_cast<float>(meta.overallDynamicChangesRange) * occupiedFactor);
 
         const auto& lower = meta.pattern.lower_bound(occupiedFrom);
 
@@ -707,7 +709,8 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
 {
     static constexpr size_t EXPECTED_SIZE = (HUNDRED_PERCENT / TEN_PERCENT) + 1;
 
-    void updateOccupiedRange(const ArticulationType type, const duration_percentage_t occupiedFrom, const duration_percentage_t occupiedTo)
+    void updateOccupiedRange(const ArticulationType type, const duration_percentage_t occupiedFrom,
+                             const duration_percentage_t occupiedTo)
     {
         if (!contains(type)) {
             return;
@@ -833,7 +836,8 @@ private:
         // Dynamic offsets
         const ExpressionPattern& expPattern = segment.expressionPattern;
         const bool hasMeaningfulDynamicOffset = !expPattern.dynamicOffsetMap.empty()
-                                                && expPattern.maxAmplitudeLevel() != dynamicLevelFromType(DynamicType::Natural);
+                                                && expPattern.maxAmplitudeLevel() != dynamicLevelFromType(
+            DynamicType::Natural);
 
         if (hasMeaningfulDynamicOffset) {
             auto outIt = out.dynamicOffsetMap.begin();
@@ -876,8 +880,10 @@ private:
         int timestampChangesCount = 0;
 
         for (auto it = cbegin(); it != cend(); ++it) {
-            dynamic_level_t amplitudeDynamicLevel = it->second.appliedPatternSegment.expressionPattern.maxAmplitudeLevel();
-            dynamic_level_t dynamicLevelOffset = std::abs(amplitudeDynamicLevel - dynamicLevelFromType(DynamicType::Natural));
+            dynamic_level_t amplitudeDynamicLevel
+                = it->second.appliedPatternSegment.expressionPattern.maxAmplitudeLevel();
+            dynamic_level_t dynamicLevelOffset
+                = std::abs(amplitudeDynamicLevel - dynamicLevelFromType(DynamicType::Natural));
 
             if (dynamicLevelOffset != 0) {
                 dynamicChangesCount++;

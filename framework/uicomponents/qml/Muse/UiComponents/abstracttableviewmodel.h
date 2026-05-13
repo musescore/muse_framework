@@ -81,8 +81,8 @@ protected:
     bool isColumnValid(int column) const;
 
     TableViewHeader* makeHorizontalHeader(const QString& title, TableViewCellType::Type cellType,
-                                          TableViewCellEditMode::Mode cellEditMode = TableViewCellEditMode::Mode::StartInEdit,
-                                          int preferredWidth = -1, const MenuItemList& availableFormats = MenuItemList());
+                                          TableViewCellEditMode::Mode cellEditMode = TableViewCellEditMode::Mode::StartInEdit, int preferredWidth = -1,
+                                          const MenuItemList& availableFormats = MenuItemList());
 
     TableViewCell* makeCell(const Val& value, const Val& subValue = Val());
 

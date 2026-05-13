@@ -189,7 +189,8 @@ static QHttpMultiPartPtr makeMultiPartForScoreUpload(QIODevice* scoreData, int s
 
     QHttpPart filePart;
     filePart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/octet-stream"));
-    QString contentDisposition = QString("form-data; name=\"score_data\"; filename=\"temp_%1.mscz\"").arg(generateFileNameNumber());
+    QString contentDisposition = QString("form-data; name=\"score_data\"; filename=\"temp_%1.mscz\"").arg(
+        generateFileNameNumber());
     filePart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant(contentDisposition));
 
     filePart.setBodyDevice(scoreData);
@@ -202,7 +203,8 @@ static QHttpMultiPartPtr makeMultiPartForScoreUpload(QIODevice* scoreData, int s
         multiPart->append(scoreIdPart);
 
         if (revisionId) {
-            scoreIdPart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"last_revision_id\""));
+            scoreIdPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                                  QVariant("form-data; name=\"last_revision_id\""));
             scoreIdPart.setBody(QByteArray::number(revisionId));
             multiPart->append(scoreIdPart);
         }
@@ -226,7 +228,8 @@ static QHttpMultiPartPtr makeMultiPartForScoreUpload(QIODevice* scoreData, int s
     return multiPart;
 }
 
-static QHttpMultiPartPtr makeMultiPartForAudioUpload(QIODevice* audioData, const QString& audioFormat, const QUrl& sourceUrl)
+static QHttpMultiPartPtr makeMultiPartForAudioUpload(QIODevice* audioData, const QString& audioFormat,
+                                                     const QUrl& sourceUrl)
 {
     auto multiPart = std::make_shared<QHttpMultiPart>(QHttpMultiPart::FormDataType);
 
@@ -355,14 +358,16 @@ Promise<Ret> MuseScoreComService::updateTokens()
 
     return make_promise<Ret>([this](auto resolve, auto) {
         QHttpPart refreshTokenPart;
-        refreshTokenPart.setHeader(QNetworkRequest::ContentDispositionHeader, QString("form-data; name=\"refresh_token\""));
+        refreshTokenPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                                   QString("form-data; name=\"refresh_token\""));
         refreshTokenPart.setBody(refreshToken().toUtf8());
 
         auto multiPart = std::make_shared<QHttpMultiPart>(QHttpMultiPart::FormDataType);
         multiPart->append(refreshTokenPart);
         auto receivedData = std::make_shared<QBuffer>();
 
-        RetVal<Progress> progress = m_networkManager->post(serverConfig().refreshApiUrl, multiPart, receivedData, headers());
+        RetVal<Progress> progress
+            = m_networkManager->post(serverConfig().refreshApiUrl, multiPart, receivedData, headers());
         if (!progress.ret) {
             printServerReply(*receivedData);
             return resolve(progress.ret);
@@ -458,7 +463,8 @@ Promise<ScoresList> MuseScoreComService::downloadScoresList(int scoresPerBatch, 
             return reject(progress.ret.code(), progress.ret.toString());
         }
 
-        progress.val.finished().onReceive(this, [batchNumber, receivedData, resolve, reject](const ProgressResult& res) {
+        progress.val.finished().onReceive(this,
+                                          [batchNumber, receivedData, resolve, reject](const ProgressResult& res) {
             if (!res.ret) {
                 (void)reject(res.ret.code(), res.ret.toString());
                 return;
@@ -476,7 +482,8 @@ Promise<ScoresList> MuseScoreComService::downloadScoresList(int scoresPerBatch, 
     });
 }
 
-ProgressPtr MuseScoreComService::downloadScore(int scoreId, DevicePtr scoreData, const QString& hash, const QString& secret)
+ProgressPtr MuseScoreComService::downloadScore(int scoreId, DevicePtr scoreData, const QString& hash,
+                                               const QString& secret)
 {
     ProgressPtr progress = std::make_shared<Progress>();
     progress->start();
@@ -521,7 +528,8 @@ Promise<Ret> MuseScoreComService::doDownloadScore(int scoreId, DevicePtr scoreDa
             return resolve(getProgress.ret);
         }
 
-        getProgress.val.progressChanged().onReceive(this, [progress](int64_t current, int64_t total, const std::string& msg) {
+        getProgress.val.progressChanged().onReceive(this,
+                                                    [progress](int64_t current, int64_t total, const std::string& msg) {
             progress->progress(current, total, msg);
         });
 
@@ -533,7 +541,8 @@ Promise<Ret> MuseScoreComService::doDownloadScore(int scoreId, DevicePtr scoreDa
     });
 }
 
-ProgressPtr MuseScoreComService::uploadScore(DevicePtr scoreData, const QString& title, Visibility visibility, const QUrl& sourceUrl,
+ProgressPtr MuseScoreComService::uploadScore(DevicePtr scoreData, const QString& title, Visibility visibility,
+                                             const QUrl& sourceUrl,
                                              int revisionId)
 {
     ProgressPtr progress = std::make_shared<Progress>();
@@ -614,11 +623,15 @@ Promise<Ret> MuseScoreComService::doUploadScore(DevicePtr scoreData, const QStri
             return resolve(uploadProgress.ret);
         }
 
-        uploadProgress.val.progressChanged().onReceive(this, [progress](int64_t current, int64_t total, const std::string& msg) {
+        uploadProgress.val.progressChanged().onReceive(this,
+                                                       [progress](int64_t current, int64_t total,
+                                                                  const std::string& msg) {
             progress->progress(current, total, msg);
         });
 
-        uploadProgress.val.finished().onReceive(this, [this, alreadyUploaded, receivedData, resolve, progress](const ProgressResult& res) {
+        uploadProgress.val.finished().onReceive(this,
+                                                [this, alreadyUploaded, receivedData, resolve,
+                                                 progress](const ProgressResult& res) {
             if (!res.ret) {
                 (void)resolve(uploadingDownloadingRetFromRawRet(res.ret, alreadyUploaded.val));
                 return;
@@ -666,7 +679,9 @@ Promise<Ret> MuseScoreComService::doUploadAudio(DevicePtr audioData, const QStri
             return resolve(postProgress.ret);
         }
 
-        postProgress.val.progressChanged().onReceive(this, [progress](int64_t current, int64_t total, const std::string& msg) {
+        postProgress.val.progressChanged().onReceive(this,
+                                                     [progress](int64_t current, int64_t total,
+                                                                const std::string& msg) {
             progress->progress(current, total, msg);
         });
 

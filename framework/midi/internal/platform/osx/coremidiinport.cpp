@@ -169,8 +169,10 @@ void CoreMidiInPort::initCore()
                 break;
             }
 
-            if (CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyDisplayName, 0) == kCFCompareEqualTo
-                || CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyName, 0) == kCFCompareEqualTo) {
+            if (CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyDisplayName,
+                                0) == kCFCompareEqualTo
+                || CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyName,
+                                   0) == kCFCompareEqualTo) {
                 self->availableDevicesChanged().notify();
             }
         } break;
@@ -202,7 +204,8 @@ void CoreMidiInPort::initCore()
                 uint32_t pos = 0;
                 while (pos < packet->wordCount) {
                     uint32_t messageType = packet->words[pos] >> 28;
-                    size_t messageWordCount = Event::wordCountForMessageType(static_cast<Event::MessageType>(messageType));
+                    size_t messageWordCount = Event::wordCountForMessageType(
+                        static_cast<Event::MessageType>(messageType));
 
                     LOG_MIDI_D() << "Receiving midi message with " << messageWordCount << " words";
                     Event e = Event::fromMidi20Words(&packet->words[pos], messageWordCount);
@@ -217,7 +220,8 @@ void CoreMidiInPort::initCore()
         };
 
         result
-            = MIDIInputPortCreateWithProtocol(m_core->client, portName, kMIDIProtocol_2_0, &m_core->inputPort, receiveBlock);
+            = MIDIInputPortCreateWithProtocol(m_core->client, portName, kMIDIProtocol_2_0, &m_core->inputPort,
+                                              receiveBlock);
     } else {
         MIDIReadBlock readBlock = ^ (const MIDIPacketList* packetList, void* /*srcConnRefCon*/)
         {

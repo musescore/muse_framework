@@ -75,7 +75,8 @@ volume_db_t Compressor::computeGain(const volume_db_t& logarithmSample) const
            + ((logarithmSample - m_filterConfig.logarithmicThreshold()) / m_filterConfig.ratio());
 }
 
-void Compressor::process(const float linearRms, float* buffer, const audioch_t& audioChannelsCount, const samples_t samplesPerChannel)
+void Compressor::process(const float linearRms, float* buffer, const audioch_t& audioChannelsCount,
+                         const samples_t samplesPerChannel)
 {
     float dbGain = muse::linear_to_db(linearRms);
 

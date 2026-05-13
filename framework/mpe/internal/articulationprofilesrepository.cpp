@@ -171,7 +171,8 @@ std::vector<ArticulationFamily> ArticulationProfilesRepository::supportedFamilie
     return result;
 }
 
-QJsonArray ArticulationProfilesRepository::supportedFamiliesToJson(const std::vector<ArticulationFamily>& families) const
+QJsonArray ArticulationProfilesRepository::supportedFamiliesToJson(const std::vector<ArticulationFamily>& families)
+const
 {
     QJsonArray result;
 
@@ -191,9 +192,11 @@ ArticulationPattern ArticulationProfilesRepository::patternsScopeFromJson(const 
 
         duration_percentage_t position = patternObj.value(PATTERN_POS_KEY).toInt();
 
-        ArrangementPattern arrangementPattern = arrangementPatternFromJson(patternObj.value(ARRANGEMENT_PATTERN_KEY).toObject());
+        ArrangementPattern arrangementPattern = arrangementPatternFromJson(patternObj.value(
+                                                                               ARRANGEMENT_PATTERN_KEY).toObject());
         PitchPattern pitchPattern = pitchPatternFromJson(patternObj.value(PITCH_PATTERN_KEY).toObject());
-        ExpressionPattern expressionPattern = expressionPatternFromJson(patternObj.value(EXPRESSION_PATTERN).toObject());
+        ExpressionPattern expressionPattern
+            = expressionPatternFromJson(patternObj.value(EXPRESSION_PATTERN).toObject());
 
         ArticulationPatternSegment articulation;
         articulation.arrangementPattern = std::move(arrangementPattern);

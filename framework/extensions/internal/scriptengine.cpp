@@ -76,7 +76,8 @@ ScriptEngine::ScriptEngine(const modularity::ContextPtr& iocCtx, int apiversion)
 }
 
 ScriptEngine::ScriptEngine(ScriptEngine* engine)
-    : m_iocContext(engine->m_iocContext), m_engine(engine->m_engine), m_apiengine(engine->m_apiengine), m_api(engine->m_api),
+    : m_iocContext(engine->m_iocContext), m_engine(engine->m_engine), m_apiengine(engine->m_apiengine), m_api(
+        engine->m_api),
     m_moduleLoader(engine->m_moduleLoader),
     m_isRequireMode(true)
 {
@@ -251,7 +252,9 @@ Ret ScriptEngine::jsValueToRet(const QJSValue& val)
         if (err == "Error: abort") {
             return make_ret(Ret::Code::Cancel, QString("script is aborted"));
         }
-        Ret ret = make_ret(Ret::Code::UnknownError, QString("File: %1, Exception at line: %2, %3").arg(fileName).arg(line).arg(err));
+        Ret ret
+            = make_ret(Ret::Code::UnknownError,
+                       QString("File: %1, Exception at line: %2, %3").arg(fileName).arg(line).arg(err));
         ret.setData("file", fileName);
         ret.setData("line", line);
         ret.setData("err", err);

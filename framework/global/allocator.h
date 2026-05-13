@@ -48,7 +48,8 @@ public: \
         return muse::ObjectAllocator::enabled() ? allocator().not_supported("new[]") : ::operator new[](sz); \
     } \
     static void* operator new(size_t sz, void* ptr) { \
-        return muse::ObjectAllocator::enabled() ? allocator().not_supported("new(size_t, void*)") : ::operator new(sz, ptr); \
+        return muse::ObjectAllocator::enabled() ? allocator().not_supported("new(size_t, void*)") : ::operator new(sz, \
+                                                                                                                   ptr); \
     } \
     static void operator delete[](void* ptr) { \
         if (muse::ObjectAllocator::enabled()) { \

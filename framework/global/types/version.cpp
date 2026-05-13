@@ -203,7 +203,8 @@ bool Version::operator <(const Version& other) const
                     return s.startsWith(suffix);
                 });
 
-                auto updateIt = std::find_if(suffixes.cbegin(), suffixes.cend(), [suffix=other.suffix()](const String& s) {
+                auto updateIt = std::find_if(suffixes.cbegin(), suffixes.cend(),
+                                             [suffix=other.suffix()](const String& s) {
                     return s.startsWith(suffix);
                 });
 

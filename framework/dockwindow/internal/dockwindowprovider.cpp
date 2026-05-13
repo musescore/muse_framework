@@ -29,7 +29,8 @@ using namespace muse::async;
 
 void DockWindowProvider::init(IDockWindow* window)
 {
-    IF_ASSERT_FAILED_X(m_window == nullptr, "Window for this DockWindowProvider is already set. Refusing to set it again") {
+    IF_ASSERT_FAILED_X(m_window == nullptr,
+                       "Window for this DockWindowProvider is already set. Refusing to set it again") {
         return;
     }
 

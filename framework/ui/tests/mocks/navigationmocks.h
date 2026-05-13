@@ -52,7 +52,8 @@ public:
     MOCK_METHOD(async::Notification, panelsListChanged, (), (const, override));
 
     MOCK_METHOD(void, setOnActiveRequested, (const OnActiveRequested& func), (override));
-    MOCK_METHOD(void, requestActive, (INavigationPanel*, INavigationControl*, bool, INavigation::ActivationType), (override));
+    MOCK_METHOD(void, requestActive, (INavigationPanel*, INavigationControl*, bool, INavigation::ActivationType),
+                (override));
 };
 
 class NavigationPanelMock : public INavigationPanel

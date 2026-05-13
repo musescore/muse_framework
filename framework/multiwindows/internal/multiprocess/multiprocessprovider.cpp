@@ -182,7 +182,8 @@ bool MultiProcessProvider::isProjectAlreadyOpened(const io::path_t& projectPath)
     }
 
     int ret = 0;
-    m_ipcChannel->syncRequestToAll(METHOD_PROJECT_IS_OPENED, { projectPath.toQString() }, [&ret](const QStringList& args, const ID&) {
+    m_ipcChannel->syncRequestToAll(METHOD_PROJECT_IS_OPENED, { projectPath.toQString() },
+                                   [&ret](const QStringList& args, const ID&) {
         IF_ASSERT_FAILED(!args.empty()) {
             return false;
         }
@@ -242,7 +243,8 @@ void MultiProcessProvider::activateWindowWithoutProject(const QStringList& args)
 #endif
 
     ID idWithNoProject;
-    m_ipcChannel->syncRequestToAll(METHOD_IS_WITHOUT_PROJECT, {}, [&idWithNoProject](const QStringList& retArgs, const ID& srcId) {
+    m_ipcChannel->syncRequestToAll(METHOD_IS_WITHOUT_PROJECT, {},
+                                   [&idWithNoProject](const QStringList& retArgs, const ID& srcId) {
         IF_ASSERT_FAILED(!retArgs.empty()) {
             return false;
         }

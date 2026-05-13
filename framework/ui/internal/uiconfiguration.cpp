@@ -176,7 +176,8 @@ void UiConfiguration::correctUserFontIfNeeded()
     QString userFontFamily = QString::fromStdString(fontFamily());
     if (!QFontDatabase::hasFamily(userFontFamily)) {
         std::string fallbackFontFamily = defaultFontFamily();
-        LOGI() << "The user font " << userFontFamily << " is missing, we will use the fallback font " << fallbackFontFamily;
+        LOGI() << "The user font " << userFontFamily << " is missing, we will use the fallback font " <<
+            fallbackFontFamily;
 
         setFontFamily(fallbackFontFamily);
     }

@@ -72,9 +72,11 @@ private:
     Ret loadLanguage(Language& lang);
     Ret doLoadLanguage(Language& lang);
 
-    void downloadServerLanguagesInfo(const QString& languageCode, std::function<void(const RetVal<QJsonObject>&)> finished);
+    void downloadServerLanguagesInfo(const QString& languageCode,
+                                     std::function<void(const RetVal<QJsonObject>&)> finished);
     QStringList languagesToUpdate(const QString& mainLanguageCode, const QJsonObject& serverLanguagesInfo) const;
-    void doUpdateLanguages(const QStringList& languageCodes, Progress overallProgress, std::function<void(const Ret&)> overallFinished);
+    void doUpdateLanguages(const QStringList& languageCodes, Progress overallProgress,
+                           std::function<void(const Ret&)> overallFinished);
     void  doUpdateLanguage(const QString& languageCode, std::function<void(int64_t current, int64_t total,
                                                                            const std::string&)> progressCallback,
                            std::function<void(const Ret&)> finished);

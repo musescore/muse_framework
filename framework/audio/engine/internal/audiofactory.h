@@ -49,7 +49,8 @@ public:
     RetVal<synth::ISynthesizerPtr> makeDefaultSynth(const TrackId trackId) const override;
     void clearSynthSources() override;
 
-    RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const mpe::PlaybackData& playbackData, const AudioInputParams& params,
+    RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const mpe::PlaybackData& playbackData,
+                                               const AudioInputParams& params,
                                                const std::function<void()> onOffStreamReceived = nullptr) const override;
 
     // Make FX

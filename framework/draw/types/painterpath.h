@@ -86,7 +86,8 @@ public:
 
     void cubicTo(const PointF& ctrlPt1, const PointF& ctrlPt2, const PointF& endPt);
 
-    inline void cubicTo(double ctrlPt1x, double ctrlPt1y, double ctrlPt2x, double ctrlPt2y, double endPtx, double endPty)
+    inline void cubicTo(double ctrlPt1x, double ctrlPt1y, double ctrlPt2x, double ctrlPt2y, double endPtx,
+                        double endPty)
     {
         cubicTo(PointF(ctrlPt1x, ctrlPt1y), PointF(ctrlPt2x, ctrlPt2y), PointF(endPtx, endPty));
     }

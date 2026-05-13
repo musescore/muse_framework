@@ -76,7 +76,8 @@ void SignalNode::doSelfProcess(float* buffer, samples_t samplesPerChannel)
 
 void SignalNode::updateSignalValue(const audioch_t ch, const float newPeak)
 {
-    volume_dbfs_t newPressure = (newPeak > 0.f) ? volume_dbfs_t(muse::linear_to_db(newPeak)) : MINIMUM_OPERABLE_DBFS_LEVEL;
+    volume_dbfs_t newPressure
+        = (newPeak > 0.f) ? volume_dbfs_t(muse::linear_to_db(newPeak)) : MINIMUM_OPERABLE_DBFS_LEVEL;
     newPressure = std::max(newPressure, MINIMUM_OPERABLE_DBFS_LEVEL);
 
     AudioSignalVal& signalVal = m_signalValuesMap[ch];

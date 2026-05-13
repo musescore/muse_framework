@@ -41,7 +41,8 @@ std::vector<IFxProcessorPtr> AbstractFxResolver::resolveFxList(const TrackId tra
     return muse::values(fxMap);
 }
 
-std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec)
+std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const AudioFxChain& fxChain,
+                                                                     const OutputSpec& outputSpec)
 {
     if (fxChain.empty()) {
         LOGE() << "invalid master fx params";

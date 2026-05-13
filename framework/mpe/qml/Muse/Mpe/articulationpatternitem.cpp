@@ -34,7 +34,8 @@ static const QString MULTI_NOTE_MENU_ID = "1";
 static const QString SINGLE_NOTE_MENU_TITLE = "Single note";
 static const QString MULTI_NOTE_MENU_TITLE = "Multi note";
 
-ArticulationPatternItem::ArticulationPatternItem(QObject* parent, const ArticulationType type, const bool isSingleNoteType)
+ArticulationPatternItem::ArticulationPatternItem(QObject* parent, const ArticulationType type,
+                                                 const bool isSingleNoteType)
     : QAbstractListModel(parent), m_isSingleNoteType(isSingleNoteType)
 {
     updateType(type);
@@ -137,7 +138,8 @@ void ArticulationPatternItem::appendNewSegment()
     ArticulationPatternSegmentItem* newSegment = new ArticulationPatternSegmentItem(this,
                                                                                     buildBlankPatternSegment(),
                                                                                     m_currentPattern->positionTo(),
-                                                                                    m_currentPattern->positionTo() + halvedDuration);
+                                                                                    m_currentPattern->positionTo()
+                                                                                    + halvedDuration);
 
     int currentSegmentIndex = m_items.indexOf(m_currentPattern);
 

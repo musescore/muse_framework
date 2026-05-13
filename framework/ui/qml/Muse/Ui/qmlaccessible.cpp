@@ -217,7 +217,8 @@ static QString textLineBoundary(int beforeAtAfter, const QString& text, int offs
 }
 
 //! NOTE: qaccessible.cpp - textBeforeOffset
-QString AccessibleItem::accessibleTextBeforeOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const
+QString AccessibleItem::accessibleTextBeforeOffset(int offset, TextBoundaryType boundaryType, int* startOffset,
+                                                   int* endOffset) const
 {
     const QString txt = accessibleText(0, accessibleCharacterCount());
 
@@ -278,7 +279,8 @@ QString AccessibleItem::accessibleTextBeforeOffset(int offset, TextBoundaryType 
 }
 
 //! NOTE: qaccessible.cpp - textAfterOffset
-QString AccessibleItem::accessibleTextAfterOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const
+QString AccessibleItem::accessibleTextAfterOffset(int offset, TextBoundaryType boundaryType, int* startOffset,
+                                                  int* endOffset) const
 {
     const QString txt = accessibleText(0, accessibleCharacterCount());
 

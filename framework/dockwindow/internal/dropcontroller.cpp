@@ -94,7 +94,8 @@ DropController::DropController(KDDockWidgets::DropArea* dropArea, const modulari
 {
     const int ctx = iocCtx->id;
     KDDockWidgets::DragController::instance(ctx)->setResolveDropAreaFunc([ctx](const QPoint& globalPos) -> KDDockWidgets::DropArea* {
-        for (auto mainWindow : KDDockWidgets::DockRegistry::self(ctx)->mainwindows()) {
+        for (auto mainWindow : KDDockWidgets::DockRegistry::self(
+                 ctx)->mainwindows()) {
             if (mainWindow->windowGeometry().contains(globalPos)) {
                 return mainWindow->dropArea();
             }

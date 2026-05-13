@@ -222,7 +222,8 @@ samples_t VstSynthesiser::process(float* buffer, samples_t samplesPerChannel)
             break;
         }
 
-        processedSamples += processSequence(it->second, durationInSamples, buffer + sampleOffset * m_outputSpec.audioChannelCount);
+        processedSamples += processSequence(it->second, durationInSamples,
+                                            buffer + sampleOffset * m_outputSpec.audioChannelCount);
         sampleOffset += durationInSamples;
 
         if (active) {
@@ -233,7 +234,8 @@ samples_t VstSynthesiser::process(float* buffer, samples_t samplesPerChannel)
     return processedSamples;
 }
 
-samples_t VstSynthesiser::processSequence(const VstSequencer::EventSequence& sequence, const samples_t samples, float* buffer)
+samples_t VstSynthesiser::processSequence(const VstSequencer::EventSequence& sequence, const samples_t samples,
+                                          float* buffer)
 {
     for (const VstSequencer::EventType& event : sequence) {
         if (std::holds_alternative<VstEvent>(event)) {

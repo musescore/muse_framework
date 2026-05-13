@@ -54,7 +54,8 @@ public:
 
     void flushSound();
 
-    audio::samples_t process(float* output, audio::samples_t samplesPerChannel, audio::samples_t playbackPositionSamples = 0);
+    audio::samples_t process(float* output, audio::samples_t samplesPerChannel,
+                             audio::samples_t playbackPositionSamples = 0);
 
     ParamsMapping paramsMapping(const std::set<Steinberg::Vst::CtrlNumber>& controllers) const;
 

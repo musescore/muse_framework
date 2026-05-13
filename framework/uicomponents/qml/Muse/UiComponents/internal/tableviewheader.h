@@ -70,7 +70,8 @@ class TableViewHeader : public QObject
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
 
     Q_PROPERTY(muse::uicomponents::TableViewCellType::Type cellType READ cellType NOTIFY cellTypeChanged FINAL)
-    Q_PROPERTY(muse::uicomponents::TableViewCellEditMode::Mode cellEditMode READ cellEditMode NOTIFY cellEditModeChanged FINAL)
+    Q_PROPERTY(
+        muse::uicomponents::TableViewCellEditMode::Mode cellEditMode READ cellEditMode NOTIFY cellEditModeChanged FINAL)
 
     Q_PROPERTY(int preferredWidth READ preferredWidth WRITE setPreferredWidth NOTIFY preferredWidthChanged FINAL)
 

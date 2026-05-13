@@ -34,8 +34,9 @@ public:
     MOCK_METHOD(Result, questionSync, (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
                                        const std::string&), (override));
 
-    MOCK_METHOD(async::Promise<Result>, question, (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
-                                                   const std::string&), (override));
+    MOCK_METHOD(async::Promise<Result>, question,
+                (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
+                 const std::string&), (override));
 
     MOCK_METHOD(ButtonData, buttonData, (Button), (const, override));
 
@@ -46,26 +47,32 @@ public:
 
     MOCK_METHOD(Result, warningSync, (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
                                       const std::string&), (override));
-    MOCK_METHOD(async::Promise<Result>, warning, (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
-                                                  const std::string&), (override));
+    MOCK_METHOD(async::Promise<Result>, warning,
+                (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
+                 const std::string&), (override));
 
     MOCK_METHOD(Result, errorSync, (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
                                     const std::string&), (override));
-    MOCK_METHOD(async::Promise<Result>, error, (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
-                                                const std::string&), (override));
+    MOCK_METHOD(async::Promise<Result>, error,
+                (const std::string&, const Text&, const ButtonDatas&, int, const Options&,
+                 const std::string&), (override));
 
     MOCK_METHOD(void, showProgress, (const std::string&, Progress), (override));
 
     MOCK_METHOD(async::Promise<io::path_t>, selectOpeningFile, (const std::string& title, const io::path_t& dir,
                                                                 const std::vector<std::string>& filter), (override));
-    MOCK_METHOD(io::path_t, selectOpeningFileSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, const int),
+    MOCK_METHOD(io::path_t, selectOpeningFileSync, (const std::string&, const io::path_t&,
+                                                    const std::vector<std::string>&, const int),
                 (override));
-    MOCK_METHOD(io::paths_t, selectOpeningFilesSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, const int),
+    MOCK_METHOD(io::paths_t, selectOpeningFilesSync, (const std::string&, const io::path_t&,
+                                                      const std::vector<std::string>&, const int),
                 (override));
-    MOCK_METHOD(io::path_t, selectSavingFileSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, bool),
+    MOCK_METHOD(io::path_t, selectSavingFileSync,
+                (const std::string&, const io::path_t&, const std::vector<std::string>&, bool),
                 (override));
     MOCK_METHOD(io::path_t, selectDirectory, (const std::string&, const io::path_t&), (override));
-    MOCK_METHOD(io::paths_t, selectMultipleDirectories, (const std::string&, const io::path_t&, const io::paths_t&), (override));
+    MOCK_METHOD(io::paths_t, selectMultipleDirectories, (const std::string&, const io::path_t&, const io::paths_t&),
+                (override));
 
     MOCK_METHOD(async::Promise<Color>, selectColor, (const Color&, const std::string&, bool), (override));
     MOCK_METHOD(bool, isSelectColorOpened, (), (const, override));

@@ -28,7 +28,8 @@ namespace muse::network {
 class NetworkManagerStub : public INetworkManager
 {
 public:
-    RetVal<Progress> get(const QUrl& url, IncomingDevicePtr incomingData, const RequestHeaders& headers = RequestHeaders()) override;
+    RetVal<Progress> get(const QUrl& url, IncomingDevicePtr incomingData,
+                         const RequestHeaders& headers = RequestHeaders()) override;
     RetVal<Progress> head(const QUrl& url, const RequestHeaders& headers = RequestHeaders()) override;
     RetVal<Progress> post(const QUrl& url, OutgoingDeviceVar outgoingData, IncomingDevicePtr incomingData,
                           const RequestHeaders& headers = RequestHeaders()) override;
@@ -36,6 +37,7 @@ public:
                          const RequestHeaders& headers = RequestHeaders()) override;
     RetVal<Progress> patch(const QUrl& url, OutgoingDeviceVar outgoingData, IncomingDevicePtr incomingData,
                            const RequestHeaders& headers = RequestHeaders()) override;
-    RetVal<Progress> del(const QUrl& url, IncomingDevicePtr incomingData, const RequestHeaders& headers = RequestHeaders()) override;
+    RetVal<Progress> del(const QUrl& url, IncomingDevicePtr incomingData,
+                         const RequestHeaders& headers = RequestHeaders()) override;
 };
 }

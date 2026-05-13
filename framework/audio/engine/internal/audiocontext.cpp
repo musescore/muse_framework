@@ -193,7 +193,8 @@ RetVal2<TrackId, TrackParams> AudioContext::addTrack(const std::string& trackNam
     };
 
     // Make source
-    RetVal<AudioSourceNodePtr> source = audioFactory()->makeEventSource(trackId, playbackData, params.source, onOffStreamReceived);
+    RetVal<AudioSourceNodePtr> source = audioFactory()->makeEventSource(trackId, playbackData, params.source,
+                                                                        onOffStreamReceived);
     if (!source.ret) {
         return RetType::make_ret(source.ret);
     }
@@ -829,7 +830,8 @@ void AudioContext::listenInputProcessing(std::function<void(const Ret&)> complet
                 m_saveSoundTracksProgress.aborted.disconnect(this);
                 completed(make_ok());
             } else if (tracksBeingProcessedCount == 1) {
-                m_saveSoundTracksProgress.progress.send(info.current, info.total, SaveSoundTrackStage::ProcessingOnlineSounds);
+                m_saveSoundTracksProgress.progress.send(info.current, info.total,
+                                                        SaveSoundTrackStage::ProcessingOnlineSounds);
             } else {
                 const int64_t percentage = 100 - (100 / *soundsInProgress) * tracksBeingProcessedCount;
                 m_saveSoundTracksProgress.progress.send(percentage, 100, SaveSoundTrackStage::ProcessingOnlineSounds);

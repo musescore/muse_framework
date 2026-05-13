@@ -380,7 +380,8 @@ static ASIOError create_asio_buffers(long bufferSize, long outputChannels, long 
     for (long i = 0; i < inputChannels; i++) {
         s_adata.bufferInfos[outputChannels + i].isInput = ASIOTrue;
         s_adata.bufferInfos[outputChannels + i].channelNum = i;
-        s_adata.bufferInfos[outputChannels + i].buffers[0] = s_adata.bufferInfos[outputChannels + i].buffers[1] = nullptr;
+        s_adata.bufferInfos[outputChannels
+                            + i].buffers[0] = s_adata.bufferInfos[outputChannels + i].buffers[1] = nullptr;
     }
 
     // Create buffers

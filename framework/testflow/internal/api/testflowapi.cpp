@@ -57,7 +57,8 @@ bool TestflowApi::pause(bool immediately)
 {
     if (immediately) {
         IInteractive::Result res = interactive()->questionSync("Pause", "Continue?",
-                                                               { IInteractive::Button::Continue, IInteractive::Button::Abort });
+                                                               { IInteractive::Button::Continue,
+                                                                 IInteractive::Button::Abort });
 
         if (res.standardButton() == IInteractive::Button::Abort) {
             abort();

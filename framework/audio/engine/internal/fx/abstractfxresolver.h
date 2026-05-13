@@ -31,15 +31,18 @@ namespace muse::audio::fx {
 class AbstractFxResolver : public IFxResolver::IResolver
 {
 public:
-    std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
-    std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
+    std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain& fxChain,
+                                               const OutputSpec& outputSpec) override;
+    std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain,
+                                                     const OutputSpec& outputSpec) override;
 
     void refresh() override;
     void clearAllFx() override;
 
 protected:
     virtual IFxProcessorPtr createMasterFx(const AudioFxParams& fxParams, const OutputSpec& outputSpec) const = 0;
-    virtual IFxProcessorPtr createTrackFx(const TrackId trackId, const AudioFxParams& fxParams, const OutputSpec& outputSpec) const = 0;
+    virtual IFxProcessorPtr createTrackFx(const TrackId trackId, const AudioFxParams& fxParams,
+                                          const OutputSpec& outputSpec) const = 0;
 
     virtual void removeMasterFx(const AudioResourceId& resoureId, AudioFxChainOrder order);
     virtual void removeTrackFx(const TrackId trackId, const AudioResourceId& resoureId, AudioFxChainOrder order);
@@ -48,7 +51,8 @@ private:
     using FxMap = std::map<AudioFxChainOrder, IFxProcessorPtr>;
 
     void updateMasterFxMap(const AudioFxChain& newFxChain, const OutputSpec& outputSpec);
-    void updateTrackFxMap(FxMap& fxMap, const TrackId trackId, const AudioFxChain& newFxChain, const audio::OutputSpec& outputSpec);
+    void updateTrackFxMap(FxMap& fxMap, const TrackId trackId, const AudioFxChain& newFxChain,
+                          const audio::OutputSpec& outputSpec);
 
     void fxChainToRemove(const AudioFxChain& currentFxChain, const AudioFxChain& newFxChain, AudioFxChain& resultChain);
     void fxChainToCreate(const AudioFxChain& currentFxChain, const AudioFxChain& newFxChain, AudioFxChain& resultChain);

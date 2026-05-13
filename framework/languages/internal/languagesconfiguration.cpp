@@ -86,7 +86,8 @@ io::path_t LanguagesConfiguration::builtinLanguagesJsonPath() const
     return languagesAppDataPath() + "/languages.json";
 }
 
-io::path_t LanguagesConfiguration::builtinLanguageFilePath(const QString& resourceName, const QString& languageCode) const
+io::path_t LanguagesConfiguration::builtinLanguageFilePath(const QString& resourceName,
+                                                           const QString& languageCode) const
 {
     return languagesAppDataPath() + QString("/%1_%2.qm").arg(resourceName, languageCode);
 }

@@ -42,8 +42,8 @@ class DropController : public KDDockWidgets::Core::ClassicIndicatorWindowViewInt
     ContextInject<IDockWindowProvider> dockWindowProvider = { this };
 
 public:
-    explicit DropController(KDDockWidgets::Core::ClassicDropIndicatorOverlay* classicIndicators, KDDockWidgets::Core::View* parent,
-                            const modularity::ContextPtr& iocCtx);
+    explicit DropController(KDDockWidgets::Core::ClassicDropIndicatorOverlay* classicIndicators,
+                            KDDockWidgets::Core::View* parent, const modularity::ContextPtr& iocCtx);
 
     // ClassicIndicatorWindowViewInterface
     void setObjectName(const QString&) override {}
@@ -61,7 +61,8 @@ private:
     void endHover();
 
     bool isMouseOverDock(const QPoint& mouseLocalPos, const DockBase* dock) const;
-    void updateToolBarOrientation(DockToolBarView* draggedToolBar, const DropDestination& dropDestination = DropDestination());
+    void updateToolBarOrientation(DockToolBarView* draggedToolBar,
+                                  const DropDestination& dropDestination = DropDestination());
     void setCurrentDropDestination(const DockBase* draggedDock, const DropDestination& dropDestination);
 
     DropDestination resolveDropDestination(const DockBase* draggedDock, const QPoint& localPos) const;

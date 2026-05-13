@@ -143,7 +143,8 @@ Promise<RetVal<ReleaseInfo> > AppUpdateService::checkForUpdate()
             return resolve(m_lastCheckResult);
         }
 
-        progress.val.finished().onReceive(this, [this, historyPath, historyRv, buff, resolve](const ProgressResult& res) {
+        progress.val.finished().onReceive(this,
+                                          [this, historyPath, historyRv, buff, resolve](const ProgressResult& res) {
             if (!res.ret) {
                 m_lastCheckResult.ret = res.ret;
                 (void)resolve(m_lastCheckResult);
@@ -226,7 +227,8 @@ RetVal<Progress> AppUpdateService::downloadRelease()
     });
 
     downloadProgress.val.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string& msg) {
-        m_updateProgress.progress(current, total, msg);
+        m_updateProgress.progress(current, total,
+                                  msg);
     });
 
     downloadProgress.val.finished().onReceive(this, [this, info, buff](const ProgressResult& res) {
@@ -288,7 +290,8 @@ RetVal<AppUpdateService::UpdateRequestHistory> AppUpdateService::readUpdateReque
     return RetVal<UpdateRequestHistory>::make_ok(updateRequestHistory);
 }
 
-Ret AppUpdateService::writeUpdateRequestHistory(const io::path_t& path, const UpdateRequestHistory& updateRequestHistory)
+Ret AppUpdateService::writeUpdateRequestHistory(const io::path_t& path,
+                                                const UpdateRequestHistory& updateRequestHistory)
 {
     if (!updateRequestHistory.isValid()) {
         return make_ret(Ret::Code::UnknownError);
@@ -380,7 +383,8 @@ QJsonObject AppUpdateService::resolveReleaseAsset(const QJsonObject& release) co
     return QJsonObject();
 }
 
-void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished)
+void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersion,
+                                                     const PrevReleaseNotesCallback& finished)
 {
     QUrl url = QString::fromStdString(configuration()->previousAppReleasesNotesUrl());
     auto buff = std::make_shared<QBuffer>();

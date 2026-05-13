@@ -144,9 +144,11 @@ bool JackAudioDriver::open(const Spec& spec, Spec* activeSpec)
 
     s_jackData->jackDeviceHandle = handle;
 
-    jack_port_t* output_port_left = jack_port_register(handle, "audio_out_left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+    jack_port_t* output_port_left = jack_port_register(handle, "audio_out_left", JACK_DEFAULT_AUDIO_TYPE,
+                                                       JackPortIsOutput, 0);
     s_jackData->outputPorts.push_back(output_port_left);
-    jack_port_t* output_port_right = jack_port_register(handle, "audio_out_right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+    jack_port_t* output_port_right = jack_port_register(handle, "audio_out_right", JACK_DEFAULT_AUDIO_TYPE,
+                                                        JackPortIsOutput, 0);
     s_jackData->outputPorts.push_back(output_port_right);
 
     s_jackData->samples = jack_get_buffer_size(handle);
@@ -155,7 +157,8 @@ bool JackAudioDriver::open(const Spec& spec, Spec* activeSpec)
     unsigned int jackSamplerate = jack_get_sample_rate(handle);
     LOGI() << "sampleRate used by jack: " << jackSamplerate;
     if (spec.output.sampleRate != jackSamplerate) {
-        LOGW() << "Musescores samplerate: " << spec.output.sampleRate << ", is NOT the same as jack's: " << jackSamplerate;
+        LOGW() << "Musescores samplerate: " << spec.output.sampleRate << ", is NOT the same as jack's: " <<
+            jackSamplerate;
         // FIX: enable this if it is possible for user to adjust samplerate (AUDIO_SAMPLE_RATE_KEY)
         //jack_client_close(handle);
         //return false;

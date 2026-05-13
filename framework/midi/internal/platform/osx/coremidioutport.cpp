@@ -126,8 +126,10 @@ void CoreMidiOutPort::initCore()
                 break;
             }
 
-            if (CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyDisplayName, 0) == kCFCompareEqualTo
-                || CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyName, 0) == kCFCompareEqualTo) {
+            if (CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyDisplayName,
+                                0) == kCFCompareEqualTo
+                || CFStringCompare(propertyChangeNotification->propertyName, kMIDIPropertyName,
+                                   0) == kCFCompareEqualTo) {
                 self->availableDevicesChanged().notify();
             }
         } break;

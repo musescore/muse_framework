@@ -45,7 +45,8 @@ class QmlToolTip : public QObject, public Contextable, public async::Asyncable
 public:
     explicit QmlToolTip(QObject* parent, const modularity::ContextPtr& iocCtx);
 
-    Q_INVOKABLE void show(QQuickItem* item, const QString& title, const QString& description = "", const QString& shortcut = "");
+    Q_INVOKABLE void show(QQuickItem* item, const QString& title, const QString& description = "",
+                          const QString& shortcut = "");
     Q_INVOKABLE void hide(QQuickItem* item, bool force = false);
 
     void close();

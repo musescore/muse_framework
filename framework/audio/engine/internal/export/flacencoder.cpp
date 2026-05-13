@@ -44,7 +44,8 @@ public:
     }
 
 protected:
-    FLAC__StreamEncoderWriteStatus write_callback(const FLAC__byte buffer[], const size_t bytes, uint32_t, uint32_t) override
+    FLAC__StreamEncoderWriteStatus write_callback(const FLAC__byte buffer[], const size_t bytes, uint32_t,
+                                                  uint32_t) override
     {
         if (m_outDev->write(buffer, bytes) != bytes) {
             return FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR;
@@ -144,7 +145,8 @@ size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float* input
     std::vector<FLAC__int32> blockBuffer(static_cast<size_t>(BLOCK_FRAMES) * channels);
 
     for (samples_t frameStart = 0; frameStart < samplesPerChannel;) {
-        const uint32_t framesCount = static_cast<uint32_t>(std::min<samples_t>(BLOCK_FRAMES, samplesPerChannel - frameStart));
+        const uint32_t framesCount
+            = static_cast<uint32_t>(std::min<samples_t>(BLOCK_FRAMES, samplesPerChannel - frameStart));
 
         for (size_t frame = 0; frame < framesCount; ++frame) {
             for (audioch_t c = 0; c < channels; ++c) {

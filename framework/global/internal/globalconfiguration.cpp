@@ -117,7 +117,8 @@ io::path_t GlobalConfiguration::userBackupPath() const
 
 io::path_t GlobalConfiguration::userDataPath() const
 {
-    static io::path_t p = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/" + QCoreApplication::applicationName();
+    static io::path_t p = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/"
+                          + QCoreApplication::applicationName();
     return p;
 }
 

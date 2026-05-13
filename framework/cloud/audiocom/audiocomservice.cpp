@@ -202,12 +202,15 @@ Promise<Ret> AudioComService::updateTokens()
             json.insert(key, serverConfig.refreshParameters.value(key).toString());
         }
 
-        QByteArray jsonData = QString::fromStdString(QJsonDocument(json).toJson(QJsonDocument::JsonFormat::Compact).toStdString()).toUtf8();
+        QByteArray jsonData
+            = QString::fromStdString(QJsonDocument(json).toJson(
+                                         QJsonDocument::JsonFormat::Compact).toStdString()).toUtf8();
         auto outgoingData = std::make_shared<QBuffer>();
         outgoingData->setData(jsonData);
         auto receivedData = std::make_shared<QBuffer>();
 
-        RetVal<Progress> progress = m_networkManager->post(serverConfig.refreshApiUrl, outgoingData, receivedData, headers());
+        RetVal<Progress> progress
+            = m_networkManager->post(serverConfig.refreshApiUrl, outgoingData, receivedData, headers());
         if (!progress.ret) {
             return resolve(progress.ret);
         }
@@ -236,7 +239,8 @@ Promise<Ret> AudioComService::updateTokens()
     });
 }
 
-ProgressPtr AudioComService::uploadAudio(DevicePtr audioData, const QString& audioFormat, const QString& title, const QUrl& existingUrl,
+ProgressPtr AudioComService::uploadAudio(DevicePtr audioData, const QString& audioFormat, const QString& title,
+                                         const QUrl& existingUrl,
                                          Visibility visibility, bool replaceExisting)
 {
     ProgressPtr progress = std::make_shared<Progress>();
@@ -280,7 +284,8 @@ ProgressPtr AudioComService::uploadAudio(DevicePtr audioData, const QString& aud
     return progress;
 }
 
-Promise<Ret> AudioComService::uploadNewAudio(DevicePtr audioData, const QString& audioFormat, const QString& title, const QUrl& url,
+Promise<Ret> AudioComService::uploadNewAudio(DevicePtr audioData, const QString& audioFormat, const QString& title,
+                                             const QUrl& url,
                                              Visibility visibility, ProgressPtr progress)
 {
     std::weak_ptr<QIODevice> audioDataWeakPtr = audioData; // prevents memory leak
@@ -301,7 +306,8 @@ Promise<Ret> AudioComService::uploadNewAudio(DevicePtr audioData, const QString&
     });
 }
 
-Promise<Ret> AudioComService::replaceExistingAudio(DevicePtr audioData, const QString& audioFormat, const QString& title, const QUrl& url,
+Promise<Ret> AudioComService::replaceExistingAudio(DevicePtr audioData, const QString& audioFormat,
+                                                   const QString& title, const QUrl& url,
                                                    Visibility visibility, ProgressPtr progress)
 {
     std::weak_ptr<QIODevice> audioDataWeakPtr = audioData; // prevents memory leak
@@ -369,7 +375,8 @@ Promise<Ret> AudioComService::doUploadAudio(DevicePtr audioData, const QString& 
             return resolve(putProgress.ret);
         }
 
-        putProgress.val.progressChanged().onReceive(this, [progress](int64_t current, int64_t total, const std::string& msg) {
+        putProgress.val.progressChanged().onReceive(this,
+                                                    [progress](int64_t current, int64_t total, const std::string& msg) {
             progress->progress(current, total, msg);
         });
 
@@ -394,7 +401,9 @@ async::Promise<Ret> AudioComService::doUpdateVisibility(const QUrl& url, Visibil
 
         QJsonObject json;
         json["public"] = visibility == Visibility::Public;
-        QByteArray jsonData = QString::fromStdString(QJsonDocument(json).toJson(QJsonDocument::JsonFormat::Compact).toStdString()).toUtf8();
+        QByteArray jsonData
+            = QString::fromStdString(QJsonDocument(json).toJson(
+                                         QJsonDocument::JsonFormat::Compact).toStdString()).toUtf8();
 
         auto outgoingData = std::make_shared<QBuffer>();
         outgoingData->setData(jsonData);
@@ -418,7 +427,8 @@ Promise<Ret> AudioComService::doCreateAudio(const QString& title, int size,
 {
     TRACEFUNC;
 
-    return make_promise<Ret>([this, title, size, audioFormat, existingUrl, visibility, replaceExisting](auto resolve, auto) {
+    return make_promise<Ret>([this, title, size, audioFormat, existingUrl, visibility, replaceExisting](auto resolve,
+                                                                                                        auto) {
         QJsonObject json;
         QString mime = audioMime(audioFormat);
         json["mime"] = mime;
@@ -435,7 +445,9 @@ Promise<Ret> AudioComService::doCreateAudio(const QString& title, int size,
             postUrl = AUDIOCOM_UPLOAD_AUDIO_API_URL;
         }
 
-        QByteArray jsonData = QString::fromStdString(QJsonDocument(json).toJson(QJsonDocument::JsonFormat::Compact).toStdString()).toUtf8();
+        QByteArray jsonData
+            = QString::fromStdString(QJsonDocument(json).toJson(
+                                         QJsonDocument::JsonFormat::Compact).toStdString()).toUtf8();
         auto outgoingData = std::make_shared<QBuffer>();
         outgoingData->setData(jsonData);
         auto receivedData = std::make_shared<QBuffer>();

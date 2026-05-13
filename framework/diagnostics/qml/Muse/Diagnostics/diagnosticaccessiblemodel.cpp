@@ -251,7 +251,8 @@ void DiagnosticAccessibleModel::onItemChanged(QObject* accessibleObject)
     emit dataChanged(index, index, { rItemData });
 }
 
-DiagnosticAccessibleModel::Item* DiagnosticAccessibleModel::findItemForIface(const QAccessibleInterface* iface, Item* rootItem) const
+DiagnosticAccessibleModel::Item* DiagnosticAccessibleModel::findItemForIface(const QAccessibleInterface* iface,
+                                                                             Item* rootItem) const
 {
     if (!rootItem) {
         return nullptr;

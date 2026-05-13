@@ -113,7 +113,8 @@ std::vector<MidiDevice> AlsaMidiOutPort::availableDevices() const
             uint32_t types = snd_seq_port_info_get_type(pinfo);
             uint32_t caps = snd_seq_port_info_get_capability(pinfo);
 
-            bool canConnect = ((caps & cap) == cap) && (((types & type_hw) == type_hw) || ((types & type_sw) == type_sw));
+            bool canConnect = ((caps & cap) == cap)
+                              && (((types & type_hw) == type_hw) || ((types & type_sw) == type_sw));
 
             if (canConnect) {
                 MidiDevice dev;
@@ -166,7 +167,8 @@ Ret AlsaMidiOutPort::connect(const MidiDeviceID& deviceID)
         }
         snd_seq_set_client_name(m_alsa->midiOut, "MuseScore");
 
-        int port = snd_seq_create_simple_port(m_alsa->midiOut, "MuseScore Port-0", SND_SEQ_PORT_CAP_READ, SND_SEQ_PORT_TYPE_MIDI_GENERIC);
+        int port = snd_seq_create_simple_port(m_alsa->midiOut, "MuseScore Port-0", SND_SEQ_PORT_CAP_READ,
+                                              SND_SEQ_PORT_TYPE_MIDI_GENERIC);
         if (port < 0) {
             return make_ret(Err::MidiFailedConnect, "failed create port");
         }

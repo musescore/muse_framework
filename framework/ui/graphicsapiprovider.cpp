@@ -248,7 +248,8 @@ GraphicsApi GraphicsApiProvider::requiredGraphicsApi()
 
     //! NOTE For the new version, we will repeat the check starting with the default API
     if (m_appVersion.toString() != data.appVersion) {
-        LOGI() << "Graphics GraphicsApi data from another version, the check will be repeated starting from the default API,"
+        LOGI() <<
+            "Graphics GraphicsApi data from another version, the check will be repeated starting from the default API,"
                << " data app version: " << data.appVersion
                << " current app version: " << m_appVersion.toString();
         return GraphicsApi::Default;

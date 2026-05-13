@@ -235,7 +235,8 @@ ToolBarItem* AbstractToolBarModel::makeItem(const ActionCode& actionCode, const 
     return item;
 }
 
-ToolBarItem* AbstractToolBarModel::makeMenuItem(const TranslatableString& title, const ActionCodeList& subitemsActionCodesList,
+ToolBarItem* AbstractToolBarModel::makeMenuItem(const TranslatableString& title,
+                                                const ActionCodeList& subitemsActionCodesList,
                                                 const QString& menuId, bool enabled)
 {
     ToolBarItem* item = new ToolBarItem(this);

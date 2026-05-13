@@ -27,7 +27,8 @@ using namespace muse;
 using namespace muse::diagnostics;
 
 static const Settings::Key IS_DUMP_UPLOAD_ALLOWED("diagnostics", "diagnostics/is_dump_upload_allowed");
-static const Settings::Key SHOULD_WARN_BEFORE_SAVING_DIAGNOSTIC_FILES("diagnostics", "diagnostics/shouldWarnBeforeSavingDiagnosticFiles");
+static const Settings::Key SHOULD_WARN_BEFORE_SAVING_DIAGNOSTIC_FILES("diagnostics",
+                                                                      "diagnostics/shouldWarnBeforeSavingDiagnosticFiles");
 
 void DiagnosticsConfiguration::init()
 {

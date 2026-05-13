@@ -120,7 +120,8 @@ void VstModulesRepository::refresh()
 {
 }
 
-muse::audio::AudioResourceMetaList VstModulesRepository::modulesMetaList(const audioplugins::AudioPluginType& type) const
+muse::audio::AudioResourceMetaList VstModulesRepository::modulesMetaList(const audioplugins::AudioPluginType& type)
+const
 {
     auto infoAccepted = [type](const audioplugins::AudioPluginInfo& info) {
         return info.type == type && info.meta.type == muse::audio::AudioResourceType::VstPlugin && info.enabled;

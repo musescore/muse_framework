@@ -57,7 +57,8 @@ class DockBase : public QQuickItem, public Contextable
     Q_PROPERTY(int contentHeight READ contentHeight WRITE setContentHeight NOTIFY contentSizeChanged)
 
     Q_PROPERTY(int location READ locationProperty WRITE setLocation NOTIFY locationChanged)
-    Q_PROPERTY(QVariantList dropDestinations READ dropDestinationsProperty WRITE setDropDestinations NOTIFY dropDestinationsChanged)
+    Q_PROPERTY(
+        QVariantList dropDestinations READ dropDestinationsProperty WRITE setDropDestinations NOTIFY dropDestinationsChanged)
 
     Q_PROPERTY(bool floatable READ floatable WRITE setFloatable NOTIFY floatableChanged)
     Q_PROPERTY(bool closable READ closable WRITE setClosable NOTIFY closableChanged)
@@ -65,7 +66,8 @@ class DockBase : public QQuickItem, public Contextable
     Q_PROPERTY(bool separatorsVisible READ separatorsVisible WRITE setSeparatorsVisible NOTIFY separatorsVisibleChanged)
 
     Q_PROPERTY(bool isCompact READ isCompact WRITE setIsCompact NOTIFY isCompactChanged FINAL)
-    Q_PROPERTY(int compactPriorityOrder READ compactPriorityOrder WRITE setCompactPriorityOrder NOTIFY compactPriorityOrderChanged FINAL)
+    Q_PROPERTY(
+        int compactPriorityOrder READ compactPriorityOrder WRITE setCompactPriorityOrder NOTIFY compactPriorityOrderChanged FINAL)
 
     Q_PROPERTY(bool floating READ floating NOTIFY floatingChanged)
 
@@ -73,7 +75,8 @@ class DockBase : public QQuickItem, public Contextable
 
     Q_PROPERTY(muse::ui::NavigationSection * navigationSection
                READ navigationSection_property WRITE setNavigationSection NOTIFY navigationSectionChanged)
-    Q_PROPERTY(int contentNavigationPanelOrderStart READ contentNavigationPanelOrderStart NOTIFY contentNavigationPanelOrderStartChanged)
+    Q_PROPERTY(
+        int contentNavigationPanelOrderStart READ contentNavigationPanelOrderStart NOTIFY contentNavigationPanelOrderStartChanged)
 
     QML_ELEMENT
 

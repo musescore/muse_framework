@@ -45,15 +45,15 @@ class FFmpegLibHandler
 public:
     FFmpegLibHandler() = default;
 
-    bool loadLib(const io::path_t& avUtilPath, const io::path_t& avCodecPath, const io::path_t& avFormatPath, const io::path_t& swScalePath,
-                 const io::path_t& swResamplePath);
+    bool loadLib(const io::path_t& avUtilPath, const io::path_t& avCodecPath, const io::path_t& avFormatPath,
+                 const io::path_t& swScalePath, const io::path_t& swResamplePath);
     bool loadApi();
     void unload();
 
     // libavutil
     int64_t (*av_rescale_q)(int64_t a, AVRational bq, AVRational cq) = nullptr;
-    int (*av_image_fill_arrays)(uint8_t* dst_data[4], int dst_linesize[4], const uint8_t* src, AVPixelFormat pix_fmt, int width, int height,
-                                int align) = nullptr;
+    int (*av_image_fill_arrays)(uint8_t* dst_data[4], int dst_linesize[4], const uint8_t* src, AVPixelFormat pix_fmt,
+                                int width, int height, int align) = nullptr;
     int (*av_image_get_buffer_size)(AVPixelFormat pix_fmt, int width, int height, int align) = nullptr;
     int (*av_opt_set_int)(void* obj, const char* name, int64_t val, int search_flags) = nullptr;
     void*(*av_malloc)(size_t size) = nullptr;
@@ -65,7 +65,8 @@ public:
     int (*avio_open)(AVIOContext** s, const char* url, int flags) = nullptr;
     int (*avio_close)(AVIOContext* s) = nullptr;
     int (*av_interleaved_write_frame)(AVFormatContext* s, AVPacket* pkt) = nullptr;
-    int (*avformat_open_input)(AVFormatContext** ctx, const char* url, const AVInputFormat* fmt, AVDictionary** options) = nullptr;
+    int (*avformat_open_input)(AVFormatContext** ctx, const char* url, const AVInputFormat* fmt,
+                               AVDictionary** options) = nullptr;
     int (*avformat_find_stream_info)(AVFormatContext* ic, AVDictionary** options) = nullptr;
     void (*avformat_close_input)(AVFormatContext** s) = nullptr;
     void (*avformat_free_context)(AVFormatContext* s) = nullptr;
@@ -100,11 +101,12 @@ public:
     void (*av_packet_rescale_ts)(AVPacket* pkt, AVRational tb_src, AVRational tb_dst) = nullptr;
 
     // libswscale
-    SwsContext*(*sws_getCachedContext)(SwsContext* context, int srcW, int srcH, AVPixelFormat srcFormat, int dstW, int dstH,
-                                       AVPixelFormat dstFormat, int flags, SwsFilter* srcFilter, SwsFilter* dstFilter,
+    SwsContext*(*sws_getCachedContext)(SwsContext* context, int srcW, int srcH, AVPixelFormat srcFormat, int dstW,
+                                       int dstH, AVPixelFormat dstFormat, int flags, SwsFilter* srcFilter,
+                                       SwsFilter* dstFilter,
                                        const double* param) = nullptr;
-    int (*sws_scale)(struct SwsContext* c, const uint8_t* const srcSlice[], const int srcStride[], int srcSliceY, int srcSliceH,
-                     uint8_t* const dst[], const int dstStride[]) = nullptr;
+    int (*sws_scale)(struct SwsContext* c, const uint8_t* const srcSlice[], const int srcStride[], int srcSliceY,
+                     int srcSliceH, uint8_t* const dst[], const int dstStride[]) = nullptr;
     void (*sws_freeContext)(SwsContext* swsContext) = nullptr;
 
 private: void* getSymbol(void* lib, const char* name) const;

@@ -50,8 +50,8 @@ public:
     bool canControlTourPopupClosing() const;
 
 signals:
-    void openTourStep(const QQuickItem* parentItem, const QString& title, const QString& description, const QString& previewImageOrGifUrl,
-                      const QString& videoExplanationUrl, int index, int total);
+    void openTourStep(const QQuickItem* parentItem, const QString& title, const QString& description,
+                      const QString& previewImageOrGifUrl, const QString& videoExplanationUrl, int index, int total);
     void closeCurrentTourStep();
 
 private:

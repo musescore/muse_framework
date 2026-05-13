@@ -45,7 +45,8 @@ public:
 private:
     AbPaintProvider() = default;
 
-    void paintData(muse::draw::IPaintProviderPtr provider, const muse::draw::DrawDataPtr& data, const QColor& overcolor);
+    void paintData(muse::draw::IPaintProviderPtr provider, const muse::draw::DrawDataPtr& data,
+                   const QColor& overcolor);
 
     muse::draw::DrawDataPtr m_notationViewDrawData;
 

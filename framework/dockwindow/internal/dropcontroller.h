@@ -51,7 +51,8 @@ private:
     void endHover();
 
     bool isMouseOverDock(const QPoint& mouseLocalPos, const DockBase* dock) const;
-    void updateToolBarOrientation(DockToolBarView* draggedToolBar, const DropDestination& dropDestination = DropDestination());
+    void updateToolBarOrientation(DockToolBarView* draggedToolBar,
+                                  const DropDestination& dropDestination = DropDestination());
     void setCurrentDropDestination(const DockBase* draggedDock, const DropDestination& dropDestination);
 
     DropDestination resolveDropDestination(const DockBase* draggedDock, const QPoint& localPos) const;

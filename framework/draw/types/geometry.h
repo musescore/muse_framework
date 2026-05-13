@@ -89,7 +89,10 @@ public:
 
     inline T manhattanLength() const { return std::abs(m_x) + std::abs(m_y); }
 
-    static inline double dotProduct(const PointX<T>& p1, const PointX<T>& p2) { return p1.m_x * p2.m_x + p1.m_y * p2.m_y; }
+    static inline double dotProduct(const PointX<T>& p1, const PointX<T>& p2)
+    {
+        return p1.m_x * p2.m_x + p1.m_y * p2.m_y;
+    }
 
     inline void normalize()
     {
@@ -193,7 +196,10 @@ public:
     inline bool operator==(const LineX<T>& l) const { return m_p1 == l.m_p1 && m_p2 == l.m_p2; }
     inline bool operator!=(const LineX<T>& l) const { return !this->operator ==(l); }
 
-    inline PointX<T> pointAt(T t) const { return PointX<T>(m_p1.x() + (m_p2.x() - m_p1.x()) * t, m_p1.y() + (m_p2.y() - m_p1.y()) * t); }
+    inline PointX<T> pointAt(T t) const
+    {
+        return PointX<T>(m_p1.x() + (m_p2.x() - m_p1.x()) * t, m_p1.y() + (m_p2.y() - m_p1.y()) * t);
+    }
 
     inline void translate(const PointX<T>& point) { m_p1 += point; m_p2 += point; }
     inline LineX<T> translated(const PointX<T>& p) const { return LineX<T>(m_p1 + p, m_p2 + p); }
@@ -252,7 +258,11 @@ template<typename T>
 inline SizeX<T> operator*(double c, const SizeX<T>& s) { return SizeX<T>(s.width() * c, s.height() * c); }
 
 template<typename T>
-inline SizeX<T> operator/(const SizeX<T>& s, T c) { assert(!isEqual(c, T())); return SizeX<T>(s.width() / c, s.height() / c); }
+inline SizeX<T> operator/(const SizeX<T>& s, T c)
+{
+    assert(!isEqual(c, T()));
+    return SizeX<T>(s.width() / c, s.height() / c);
+}
 
 using Size = SizeX<int>;
 using SizeF = SizeX<double>;
@@ -303,7 +313,10 @@ public:
     inline PointX<T> bottomRight() const { return PointX<T>(m_x + m_w, m_y + m_h); }
     inline PointX<T> topRight() const { return PointX<T>(m_x + m_w, m_y); }
     inline PointX<T> bottomLeft() const { return PointX<T>(m_x, m_y + m_h); }
-    inline PointX<T> center() const { return PointX<T>(m_x + m_w / number_t<T>::cast(2), m_y + m_h / number_t<T>::cast(2)); }
+    inline PointX<T> center() const
+    {
+        return PointX<T>(m_x + m_w / number_t<T>::cast(2), m_y + m_h / number_t<T>::cast(2));
+    }
 
     inline void setCoords(T xp1, T yp1, T xp2, T yp2) { m_x = xp1; m_y = yp1; m_w = xp2 - xp1; m_h = yp2 - yp1; }
     inline void setRect(double ax, double ay, double aaw, double aah) { m_x = ax; m_y = ay; m_w = aaw; m_h = aah; }
@@ -333,7 +346,12 @@ public:
 
     inline void moveTo(double ax, double ay) { m_x = ax; m_y = ay; }
     inline void moveTo(const PointX<T>& p) { m_x = p.x(); m_y = p.y(); }
-    inline void moveCenter(const PointX<T>& p) { m_x = p.x() - m_w / number_t<T>::cast(2); m_y = p.y() - m_h / number_t<T>::cast(2); }
+    inline void moveCenter(const PointX<T>& p)
+    {
+        m_x = p.x() - m_w / number_t<T>::cast(2);
+        m_y = p.y() - m_h / number_t<T>::cast(2);
+    }
+
     inline void moveTop(double pos) { m_y = pos; }
 
     inline void translate(T dx, T dy) { m_x += dx; m_y += dy; }
@@ -342,8 +360,18 @@ public:
     inline RectX<T> translated(T dx, T dy) const { return RectX<T>(m_x + dx, m_y + dy, m_w, m_h); }
     inline RectX<T> translated(const PointX<T>& p) const { return RectX<T>(m_x + p.x(), m_y + p.y(), m_w, m_h); }
 
-    inline void adjust(double xp1, double yp1, double xp2, double yp2) { m_x += xp1; m_y += yp1; m_w += xp2 - xp1; m_h += yp2 - yp1; }
-    inline RectX<T> adjusted(T xp1, T yp1, T xp2, T yp2) const { return RectX<T>(m_x + xp1, m_y + yp1, m_w + xp2 - xp1, m_h + yp2 - yp1); }
+    inline void adjust(double xp1, double yp1, double xp2, double yp2)
+    {
+        m_x += xp1;
+        m_y += yp1;
+        m_w += xp2 - xp1;
+        m_h += yp2 - yp1;
+    }
+
+    inline RectX<T> adjusted(T xp1, T yp1, T xp2, T yp2) const
+    {
+        return RectX<T>(m_x + xp1, m_y + yp1, m_w + xp2 - xp1, m_h + yp2 - yp1);
+    }
 
     inline void pad(double p) { adjust(-p, -p, p, p); }
     inline RectX<T> padded(double p) const { return adjusted(-p, -p, p, p); }
@@ -388,7 +416,14 @@ public:
     inline QRectF toQRectF() const { return QRectF(m_x, m_y, m_w, m_h); }
     inline QRect toQRect() const { return QRect(m_x, m_y, m_w, m_h); }
 
-    inline RectX<T>& operator=(const QRectF& r) { m_x = r.x(); m_y = r.y(); m_w = r.width(); m_h = r.height(); return *this; }
+    inline RectX<T>& operator=(const QRectF& r)
+    {
+        m_x = r.x();
+        m_y = r.y();
+        m_w = r.width();
+        m_h = r.height();
+        return *this;
+    }
 
     inline RectX<T> united(const QRectF& r) const { return united(RectX<T>(r)); }
 #endif

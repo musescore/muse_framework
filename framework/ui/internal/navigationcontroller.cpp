@@ -222,7 +222,8 @@ static T* nextEnabled(const std::set<T*>& set, const INavigation::Index& current
 }
 
 template<class T>
-static T* prevEnabled(const std::set<T*>& set, const INavigation::Index& currentIndex, MoveDirection direction = MoveDirection::Left)
+static T* prevEnabled(const std::set<T*>& set, const INavigation::Index& currentIndex,
+                      MoveDirection direction = MoveDirection::Left)
 {
     if (set.empty()) {
         return nullptr;
@@ -304,7 +305,8 @@ void NavigationController::reg(INavigationSection* section)
     //! TODO add check on valid state
     TRACEFUNC;
     m_sections.insert(section);
-    section->setOnActiveRequested([this](INavigationSection* section, INavigationPanel* panel, INavigationControl* control,
+    section->setOnActiveRequested([this](INavigationSection* section, INavigationPanel* panel,
+                                         INavigationControl* control,
                                          bool enableHighlight, ActivationType activationType) {
         if (control && activationType == ActivationType::ByMouse) {
             if (section->type() != INavigationSection::Type::Exclusive) {
@@ -580,7 +582,8 @@ void NavigationController::doActivateControl(INavigationControl* ctrl)
     }
 
     ctrl->setActive(true);
-    MYLOG() << "activated control: " << ctrl->name() << ", row: " << ctrl->index().row << ", column: " << ctrl->index().column;
+    MYLOG() << "activated control: " << ctrl->name() << ", row: " << ctrl->index().row << ", column: " <<
+        ctrl->index().column;
 }
 
 void NavigationController::doDeactivateControl(INavigationControl* ctrl)
@@ -654,14 +657,16 @@ const INavigationSection* NavigationController::findSection(const std::string& s
     return sec;
 }
 
-const INavigationPanel* NavigationController::findPanel(const std::string& sectionName, const std::string& panelName) const
+const INavigationPanel* NavigationController::findPanel(const std::string& sectionName,
+                                                        const std::string& panelName) const
 {
     const INavigationSection* sec = findByName(m_sections, QString::fromStdString(sectionName));
     const INavigationPanel* pnl = sec ? findByName(sec->panels(), QString::fromStdString(panelName)) : nullptr;
     return pnl;
 }
 
-const INavigationControl* NavigationController::findControl(const std::string& sectionName, const std::string& panelName,
+const INavigationControl* NavigationController::findControl(const std::string& sectionName,
+                                                            const std::string& panelName,
                                                             const std::string& controlName) const
 {
     const INavigationSection* sec = findByName(m_sections, QString::fromStdString(sectionName));
@@ -1257,7 +1262,8 @@ void NavigationController::doTriggerControl()
     activeCtrl->trigger();
 }
 
-bool NavigationController::requestActivateByName(const std::string& sectName, const std::string& panelName, const std::string& controlName)
+bool NavigationController::requestActivateByName(const std::string& sectName, const std::string& panelName,
+                                                 const std::string& controlName)
 {
     INavigationSection* section = findByName(m_sections, QString::fromStdString(sectName));
     if (!section) {
@@ -1273,7 +1279,8 @@ bool NavigationController::requestActivateByName(const std::string& sectName, co
 
     INavigationControl* control = findByName(panel->controls(), QString::fromStdString(controlName));
     if (!control) {
-        LOGE() << "not found control with name: " << controlName << ", panel: " << panelName << ", section: " << sectName;
+        LOGE() << "not found control with name: " << controlName << ", panel: " << panelName << ", section: " <<
+            sectName;
         QString has = "has:\n";
         for (const INavigationControl* c : panel->controls()) {
             has += c->name() + "\n";
@@ -1303,7 +1310,8 @@ bool NavigationController::requestActivateByIndex(const std::string& sectName, c
 
     INavigationControl* control = findByIndex(panel->controls(), controlIndex);
     if (!control) {
-        LOGE() << "not found control with index: " << controlIndex.to_string() << ", panel: " << panelName << ", section: " << sectName;
+        LOGE() << "not found control with index: " << controlIndex.to_string() << ", panel: " << panelName <<
+            ", section: " << sectName;
         std::string has = "has:\n";
         for (const INavigationControl* c : panel->controls()) {
             has += c->index().to_string() + "\n";
@@ -1316,7 +1324,8 @@ bool NavigationController::requestActivateByIndex(const std::string& sectName, c
     return true;
 }
 
-void NavigationController::onActiveRequested(INavigationSection* sect, INavigationPanel* panel, INavigationControl* ctrl, bool force)
+void NavigationController::onActiveRequested(INavigationSection* sect, INavigationPanel* panel,
+                                             INavigationControl* ctrl, bool force)
 {
     TRACEFUNC;
     UNUSED(force);
@@ -1379,7 +1388,8 @@ void NavigationController::onActiveRequested(INavigationSection* sect, INavigati
     if (!ctrl->active()) {
         ctrl->setActive(true);
         isChanged = true;
-        MYLOG() << "activated control: " << ctrl->name() << ", row: " << ctrl->index().row << ", column: " << ctrl->index().column;
+        MYLOG() << "activated control: " << ctrl->name() << ", row: " << ctrl->index().row << ", column: " <<
+            ctrl->index().column;
     }
 }
 

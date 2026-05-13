@@ -44,7 +44,8 @@ class SoundTrackWriter : public async::Asyncable
     muse::GlobalInject<rpc::IRpcChannel> rpcChannel;
 
 public:
-    SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format, const secs_t totalDuration, IAudioNodePtr source);
+    SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format, const secs_t totalDuration,
+                     IAudioNodePtr source);
 
     Ret write();
     void abort();

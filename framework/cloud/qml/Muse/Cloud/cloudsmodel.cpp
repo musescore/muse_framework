@@ -186,7 +186,8 @@ QVariant CloudsModel::dialogText(const QString& cloudCode, const QString& existi
 
         if (!existingScoreOrAudioUrl.isEmpty()) {
             //: The text between `<a href=\"%1\">` and `</a>` will be a clickable link to the online score in question
-            dialogTextMap[prv::REPLACE_BUTTON_TEXT] = muse::qtrc("project/save", "Replace the existing <a href=\"%1\">online score</a>")
+            dialogTextMap[prv::REPLACE_BUTTON_TEXT] = muse::qtrc("project/save",
+                                                                 "Replace the existing <a href=\"%1\">online score</a>")
                                                       .arg(existingScoreOrAudioUrl);
 
             dialogTextMap[prv::NEW_BUTTON_TEXT] = muse::qtrc("project/save", "Publish as new online score");
@@ -200,7 +201,8 @@ QVariant CloudsModel::dialogText(const QString& cloudCode, const QString& existi
 
         if (!existingScoreOrAudioUrl.isEmpty()) {
             //: The text between `<a href=\"%1\">` and `</a>` will be a clickable link to the online audio in question
-            dialogTextMap[prv::REPLACE_BUTTON_TEXT] = muse::qtrc("project/save", "Replace the <a href=\"%1\">existing audio</a>")
+            dialogTextMap[prv::REPLACE_BUTTON_TEXT] = muse::qtrc("project/save",
+                                                                 "Replace the <a href=\"%1\">existing audio</a>")
                                                       .arg(existingScoreOrAudioUrl);
 
             dialogTextMap[prv::NEW_BUTTON_TEXT] = muse::qtrc("project/save", "Upload as new audio file");

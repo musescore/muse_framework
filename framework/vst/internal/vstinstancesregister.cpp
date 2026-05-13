@@ -56,8 +56,9 @@ IVstPluginInstancePtr VstInstancesRegister::makeAndRegisterFxPlugin(const muse::
     return instance;
 }
 
-IVstPluginInstancePtr VstInstancesRegister::makeAndRegisterMasterFxPlugin(const muse::audio::AudioResourceId& resourceId,
-                                                                          const muse::audio::AudioFxChainOrder chainOrder)
+IVstPluginInstancePtr VstInstancesRegister::makeAndRegisterMasterFxPlugin(
+    const muse::audio::AudioResourceId& resourceId,
+    const muse::audio::AudioFxChainOrder chainOrder)
 {
     std::shared_ptr<VstPluginInstance> instance = std::make_shared<VstPluginInstance>(resourceId);
 
@@ -168,7 +169,8 @@ void VstInstancesRegister::unregisterById(const VstPluginInstanceId id)
     });
 }
 
-void VstInstancesRegister::unregisterInstrPlugin(const muse::audio::AudioResourceId& resourceId, const muse::audio::TrackId trackId)
+void VstInstancesRegister::unregisterInstrPlugin(const muse::audio::AudioResourceId& resourceId,
+                                                 const muse::audio::TrackId trackId)
 {
     std::lock_guard lock(m_mutex);
 
@@ -184,7 +186,8 @@ void VstInstancesRegister::unregisterFxPlugin(const muse::audio::AudioResourceId
     m_instances.erase({ Type::Effect, resourceId, trackId, chainOrder });
 }
 
-void VstInstancesRegister::unregisterMasterFxPlugin(const muse::audio::AudioResourceId& resourceId, const AudioFxChainOrder chainOrder)
+void VstInstancesRegister::unregisterMasterFxPlugin(const muse::audio::AudioResourceId& resourceId,
+                                                    const AudioFxChainOrder chainOrder)
 {
     unregisterFxPlugin(resourceId, -1, chainOrder);
 }

@@ -123,7 +123,8 @@ bool VideoEncoder::open(const muse::io::path_t& fileName, const Options& options
     m_ffmpeg->width = options.width;
     m_ffmpeg->height = options.height;
 
-    if (m_ffmpegHandler->avformat_alloc_output_context2(&m_ffmpeg->formatCtx, nullptr, options.format.c_str(), fileName.c_str()) < 0
+    if (m_ffmpegHandler->avformat_alloc_output_context2(&m_ffmpeg->formatCtx, nullptr, options.format.c_str(),
+                                                        fileName.c_str()) < 0
         || !m_ffmpeg->formatCtx) {
         LOGE() << "failed to allocate output context";
         return false;
@@ -341,7 +342,8 @@ bool VideoEncoder::encodeImage(const QImage& img)
 
     convertImage_sws(img);
 
-    m_ffmpeg->ppicture->pts = m_ffmpegHandler->av_rescale_q(m_ffmpeg->codecCtx->frame_number, m_ffmpeg->codecCtx->time_base,
+    m_ffmpeg->ppicture->pts = m_ffmpegHandler->av_rescale_q(m_ffmpeg->codecCtx->frame_number,
+                                                            m_ffmpeg->codecCtx->time_base,
                                                             m_ffmpeg->videoStream->time_base);
 
     int ret = m_ffmpegHandler->avcodec_send_frame(m_ffmpeg->codecCtx, m_ffmpeg->ppicture);
@@ -647,7 +649,8 @@ bool VideoEncoder::addAudio(const io::path_t& audioPath)
         return false;
     }
 
-    if (m_ffmpegHandler->avformat_alloc_output_context2(&outputFmtCtx, nullptr, "mp4", tmpPath.c_str()) < 0 || !outputFmtCtx) {
+    if (m_ffmpegHandler->avformat_alloc_output_context2(&outputFmtCtx, nullptr, "mp4",
+                                                        tmpPath.c_str()) < 0 || !outputFmtCtx) {
         LOGE() << "addAudio: failed to allocate output context";
         return false;
     }
@@ -756,9 +759,11 @@ bool VideoEncoder::convertImage_sws(const QImage& img)
         return false;
     }
 
-    m_ffmpeg->img_convert_ctx = m_ffmpegHandler->sws_getCachedContext(m_ffmpeg->img_convert_ctx, m_ffmpeg->width, m_ffmpeg->height,
+    m_ffmpeg->img_convert_ctx = m_ffmpegHandler->sws_getCachedContext(m_ffmpeg->img_convert_ctx, m_ffmpeg->width,
+                                                                      m_ffmpeg->height,
                                                                       AV_PIX_FMT_BGRA,
-                                                                      m_ffmpeg->width, m_ffmpeg->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC,
+                                                                      m_ffmpeg->width, m_ffmpeg->height,
+                                                                      AV_PIX_FMT_YUV420P, SWS_BICUBIC,
                                                                       NULL, NULL, NULL);
 
     if (!m_ffmpeg->img_convert_ctx) {
@@ -776,7 +781,8 @@ bool VideoEncoder::convertImage_sws(const QImage& img)
     srcstride[1] = 0;
     srcstride[2 ]= 0;
 
-    m_ffmpegHandler->sws_scale(m_ffmpeg->img_convert_ctx, srcplanes, srcstride, 0, m_ffmpeg->height, m_ffmpeg->ppicture->data,
+    m_ffmpegHandler->sws_scale(m_ffmpeg->img_convert_ctx, srcplanes, srcstride, 0, m_ffmpeg->height,
+                               m_ffmpeg->ppicture->data,
                                m_ffmpeg->ppicture->linesize);
 
     return true;

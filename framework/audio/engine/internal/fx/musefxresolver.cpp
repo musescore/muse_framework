@@ -55,7 +55,8 @@ IFxProcessorPtr MuseFxResolver::createMasterFx(const AudioFxParams& fxParams, co
     return createFxProcessor(fxParams, outputSpec);
 }
 
-IFxProcessorPtr MuseFxResolver::createTrackFx(const TrackId, const AudioFxParams& fxParams, const OutputSpec& outputSpec) const
+IFxProcessorPtr MuseFxResolver::createTrackFx(const TrackId, const AudioFxParams& fxParams,
+                                              const OutputSpec& outputSpec) const
 {
     return createFxProcessor(fxParams, outputSpec);
 }

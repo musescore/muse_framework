@@ -31,7 +31,8 @@ class QmlTranslation : public QObject
 public:
     QmlTranslation(QObject* parent = nullptr);
 
-    Q_INVOKABLE QString translate(const QString& context, const QString& text, const QString& disambiguation = QString(), int n = -1) const;
+    Q_INVOKABLE QString translate(const QString& context, const QString& text,
+                                  const QString& disambiguation = QString(), int n = -1) const;
 };
 }
 

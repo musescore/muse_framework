@@ -33,7 +33,8 @@ public:
 
 private:
     IFxProcessorPtr createMasterFx(const AudioFxParams& fxParams, const OutputSpec& outputSpec) const override;
-    IFxProcessorPtr createTrackFx(const TrackId trackId, const AudioFxParams& fxParams, const OutputSpec& outputSpec) const override;
+    IFxProcessorPtr createTrackFx(const TrackId trackId, const AudioFxParams& fxParams,
+                                  const OutputSpec& outputSpec) const override;
 };
 }
 

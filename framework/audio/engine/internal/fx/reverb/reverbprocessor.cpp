@@ -356,7 +356,8 @@ void ReverbProcessor::process(float* buffer, samples_t sampleCount, samples_t)
     for (samples_t sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex) {
         size_t offset = sampleIndex * m_processor._audioChannelsCount;
 
-        for (audioch_t audioChannelIndex = 0; audioChannelIndex < m_processor._audioChannelsCount; ++audioChannelIndex) {
+        for (audioch_t audioChannelIndex = 0; audioChannelIndex < m_processor._audioChannelsCount;
+             ++audioChannelIndex) {
             m_signalBuffers[audioChannelIndex][sampleIndex] = buffer[offset + audioChannelIndex];
         }
     }
@@ -375,7 +376,8 @@ void ReverbProcessor::process(float* buffer, samples_t sampleCount, samples_t)
     for (samples_t sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex) {
         size_t offset = sampleIndex * m_processor._audioChannelsCount;
 
-        for (audioch_t audioChannelIndex = 0; audioChannelIndex < m_processor._audioChannelsCount; ++audioChannelIndex) {
+        for (audioch_t audioChannelIndex = 0; audioChannelIndex < m_processor._audioChannelsCount;
+             ++audioChannelIndex) {
             buffer[offset + audioChannelIndex] = m_signalBuffers[audioChannelIndex][sampleIndex];
         }
     }
@@ -419,8 +421,10 @@ void ReverbProcessor::calculateTailParams()
         float gain_m = std::exp(delay_time * decay_per_sample_m);
         float gain_h = std::exp(delay_time * decay_per_sample_h);
         IirBiquadFilter::Coeffs<float> cf1, cf2;
-        IirBiquadFilter::create3BandToneControl4P<float>(getParameter(XoverLowMid), getParameter(XoverMidHigh),
-                                                         gain_l, gain_m, gain_h, (float)m_processor._sampleRate, cf1, cf2);
+        IirBiquadFilter::create3BandToneControl4P<float>(getParameter(XoverLowMid), getParameter(
+                                                             XoverMidHigh),
+                                                         gain_l, gain_m, gain_h, (float)m_processor._sampleRate, cf1,
+                                                         cf2);
 
         float ag_gain = std::exp(delay_time * decay_per_sample_h * 0.5f); // at feedbacktop use half the 'high' delay time
         auto ag_cf = reverbfilters::onePoleCoeffsLowpass1Point<float>(getParameter(FeedbackTop), ag_gain,
@@ -466,7 +470,8 @@ void ReverbProcessor::setParameter(int32_t index, float newValue)
     // Store
     assert(index >= 0 && index <= static_cast<int32_t>(m_processor._param.size()));
     auto clampedValue
-        =std::min(m_processor._param[index].valueRange.second, std::max(m_processor._param[index].valueRange.first, newValue));
+        =std::min(m_processor._param[index].valueRange.second,
+                  std::max(m_processor._param[index].valueRange.first, newValue));
     m_processor._param[index].currentValue = clampedValue;
 
     // Update
@@ -501,7 +506,8 @@ void ReverbProcessor::setParameter(int32_t index, float newValue)
     case Params::PeakGain:
     case Params::PeakQ:
         d->peakFilter.setTargetCoefficients(IirBiquadFilter::createBandShelfMatched(
-                                                getParameter(PeakFreq), getParameter(PeakQ), fromDecibel(getParameter(PeakGain)),
+                                                getParameter(PeakFreq), getParameter(PeakQ),
+                                                fromDecibel(getParameter(PeakGain)),
                                                 m_processor._sampleRate));
         break;
 
@@ -518,7 +524,8 @@ void ReverbProcessor::setParameter(int32_t index, float newValue)
             (newValue > m_processor._param[Params::ERLevel].valueRange.first) ? fromDecibel(newValue) : 0.f);
         break;
     case Params::ERtoLate:
-        m_erToLateGain = (newValue > m_processor._param[Params::ERtoLate].valueRange.first) ? fromDecibel(newValue) : 0.f;
+        m_erToLateGain
+            = (newValue > m_processor._param[Params::ERtoLate].valueRange.first) ? fromDecibel(newValue) : 0.f;
         break;
     case Params::Quality:
         switch (int(newValue)) {

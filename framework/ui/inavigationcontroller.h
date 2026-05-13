@@ -37,8 +37,10 @@ public:
     virtual void reg(INavigationSection* section) = 0;
     virtual void unreg(INavigationSection* section) = 0;
 
-    virtual bool requestActivateByName(const std::string& section, const std::string& panel, const std::string& controlName) = 0;
-    virtual bool requestActivateByIndex(const std::string& section, const std::string& panel, const INavigation::Index& controlIndex) = 0;
+    virtual bool requestActivateByName(const std::string& section, const std::string& panel,
+                                       const std::string& controlName) = 0;
+    virtual bool requestActivateByIndex(const std::string& section, const std::string& panel,
+                                        const INavigation::Index& controlIndex) = 0;
 
     virtual void resetNavigation() = 0;
 

@@ -213,7 +213,8 @@ size_t AacEncoder::encode(samples_t samplesPerChannel, const float* input)
         }
 
         if (outArgs.numOutBytes > 0) {
-            const size_t written = m_dstDevice->write(m_handler->outputBuffer.data(), static_cast<size_t>(outArgs.numOutBytes));
+            const size_t written
+                = m_dstDevice->write(m_handler->outputBuffer.data(), static_cast<size_t>(outArgs.numOutBytes));
             if (written != static_cast<size_t>(outArgs.numOutBytes)) {
                 return 0;
             }
@@ -281,7 +282,8 @@ size_t AacEncoder::end()
         }
 
         if (outArgs.numOutBytes > 0) {
-            const size_t written = m_dstDevice->write(m_handler->outputBuffer.data(), static_cast<size_t>(outArgs.numOutBytes));
+            const size_t written
+                = m_dstDevice->write(m_handler->outputBuffer.data(), static_cast<size_t>(outArgs.numOutBytes));
             totalBytesWritten += written;
         }
     }

@@ -42,7 +42,8 @@ void VstiResolver::refresh()
     pluginModulesRepo()->refresh();
 }
 
-VstSynthPtr VstiResolver::createSynth(const TrackId trackId, const AudioInputParams& params, const OutputSpec& outputSpec) const
+VstSynthPtr VstiResolver::createSynth(const TrackId trackId, const AudioInputParams& params,
+                                      const OutputSpec& outputSpec) const
 {
     if (!pluginModulesRepo()->exists(params.resourceMeta.id)) {
         return nullptr;

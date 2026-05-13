@@ -48,7 +48,8 @@ class FilterValue : public QObject
 
     Q_PROPERTY(QString roleName READ roleName WRITE setRoleName NOTIFY dataChanged)
     Q_PROPERTY(QVariant roleValue READ roleValue WRITE setRoleValue NOTIFY dataChanged)
-    Q_PROPERTY(muse::uicomponents::CompareType::Type compareType READ compareType WRITE setCompareType NOTIFY dataChanged)
+    Q_PROPERTY(
+        muse::uicomponents::CompareType::Type compareType READ compareType WRITE setCompareType NOTIFY dataChanged)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY dataChanged)
 
     /// Determines whether the SortFilterProxyModel should react asynchronously to the `dataChanged` signal.

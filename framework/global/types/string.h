@@ -158,7 +158,11 @@ public:
     inline bool isLowSurrogate() const { return isLowSurrogate(m_ch); }
     inline bool isSurrogate() const { return isSurrogate(m_ch); }
 
-    static constexpr char32_t surrogateToUcs4(char16_t high, char16_t low) { return (char32_t(high) << 10) + low - 0x35fdc00; }
+    static constexpr char32_t surrogateToUcs4(char16_t high, char16_t low)
+    {
+        return (char32_t(high) << 10) + low - 0x35fdc00;
+    }
+
     static constexpr char32_t surrogateToUcs4(Char high, Char low) { return surrogateToUcs4(high.m_ch, low.m_ch); }
     static constexpr bool isHighSurrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xd800; }
     static constexpr bool isLowSurrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xdc00; }
@@ -305,8 +309,10 @@ public:
     StringList split(const Char& ch, SplitBehavior behavior = KeepEmptyParts) const;
     StringList split(const String& str, SplitBehavior behavior = KeepEmptyParts) const;
     StringList split(const std::regex& re, SplitBehavior behavior = KeepEmptyParts) const;
-    StringList search(const std::regex& re, std::initializer_list<int> matches, SplitBehavior behavior = KeepEmptyParts) const;
-    StringList search(const std::wregex& re, std::initializer_list<int> matches, SplitBehavior behavior = KeepEmptyParts) const;
+    StringList search(const std::regex& re, std::initializer_list<int> matches,
+                      SplitBehavior behavior = KeepEmptyParts) const;
+    StringList search(const std::wregex& re, std::initializer_list<int> matches,
+                      SplitBehavior behavior = KeepEmptyParts) const;
     String& replace(const String& before, const String& after);
     String& replace(char16_t before, char16_t after);
     String& replace(const std::regex& re, const String& after);
@@ -325,7 +331,8 @@ public:
     String arg(const String& val1, const String& val2) const;
     String arg(const String& val1, const String& val2, const String& val3) const;
     String arg(const String& val1, const String& val2, const String& val3, const String& val4) const;
-    String arg(const String& val1, const String& val2, const String& val3, const String& val4, const String& val5) const;
+    String arg(const String& val1, const String& val2, const String& val3, const String& val4,
+               const String& val5) const;
 
     String arg(int val) const { return arg(number(val)); }
     String arg(int val1, int val2) const { return arg(number(val1), number(val2)); }
@@ -436,7 +443,11 @@ public:
         : m_size(str.size()), m_data(str.c_str()) {}
 
 #ifndef NO_QT_SUPPORT
-    static AsciiStringView fromQLatin1String(const QLatin1String& str) { return AsciiStringView(str.latin1(), str.size()); }
+    static AsciiStringView fromQLatin1String(const QLatin1String& str)
+    {
+        return AsciiStringView(str.latin1(), str.size());
+    }
+
     QLatin1String toQLatin1String() const { return QLatin1String(m_data, static_cast<int>(m_size)); }
 #endif
 
@@ -447,7 +458,11 @@ public:
         return std::string_view(m_data, m_size);
     }
 
-    inline bool operator ==(const AsciiStringView& s) const { return m_size == s.m_size && std::memcmp(m_data, s.m_data, m_size) == 0; }
+    inline bool operator ==(const AsciiStringView& s) const
+    {
+        return m_size == s.m_size && std::memcmp(m_data, s.m_data, m_size) == 0;
+    }
+
     inline bool operator !=(const AsciiStringView& s) const { return !this->operator ==(s); }
     inline bool operator ==(const char* s) const
     {

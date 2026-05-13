@@ -202,10 +202,12 @@ IInteractive::Result Interactive::makeResult(const Val& val) const
     return IInteractive::Result(btn, showAgain);
 }
 
-async::Promise<IInteractive::Result> Interactive::openStandardAsync(const std::string& type, const std::string& contentTitle,
+async::Promise<IInteractive::Result> Interactive::openStandardAsync(const std::string& type,
+                                                                    const std::string& contentTitle,
                                                                     const Text& text,
                                                                     const ButtonDatas& buttons, int defBtn,
-                                                                    const Options& options, const std::string& dialogTitle)
+                                                                    const Options& options,
+                                                                    const std::string& dialogTitle)
 {
     UriQuery q = makeQuery(type, contentTitle, text, buttons, defBtn, options, dialogTitle);
 
@@ -354,7 +356,8 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
 {
 #ifndef Q_OS_LINUX
     return async::make_promise<io::path_t>([title, dir, filter](auto resolve, auto reject) {
-        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
+        QFileDialog* dlg
+            = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
         dlg->setFileMode(QFileDialog::ExistingFile);
 
@@ -396,12 +399,14 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
 #endif
 }
 
-io::path_t Interactive::selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+io::path_t Interactive::selectOpeningFileSync(const std::string& title, const io::path_t& dir,
+                                              const std::vector<std::string>& filter,
                                               const int options)
 {
 #ifndef Q_OS_LINUX
     const QFileDialog::Options qoptions = QFileDialog::Options::fromInt(options);
-    QString result = QFileDialog::getOpenFileName(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
+    QString result = QFileDialog::getOpenFileName(nullptr, QString::fromStdString(title),
+                                                  dir.toQString(), filterToString(
                                                       filter), nullptr, qoptions);
     return result;
 #else
@@ -416,12 +421,14 @@ io::path_t Interactive::selectOpeningFileSync(const std::string& title, const io
 #endif
 }
 
-io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const io::path_t& dir,
+                                                const std::vector<std::string>& filter,
                                                 const int options)
 {
 #ifndef Q_OS_LINUX
     const QFileDialog::Options qoptions = QFileDialog::Options::fromInt(options);
-    const QStringList result = QFileDialog::getOpenFileNames(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
+    const QStringList result = QFileDialog::getOpenFileNames(nullptr, QString::fromStdString(title),
+                                                             dir.toQString(), filterToString(
                                                                  filter), nullptr, qoptions);
 
     io::paths_t paths;
@@ -437,19 +444,22 @@ io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const 
 #endif
 }
 
-io::path_t Interactive::selectSavingFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+io::path_t Interactive::selectSavingFileSync(const std::string& title, const io::path_t& dir,
+                                             const std::vector<std::string>& filter,
                                              bool confirmOverwrite)
 {
 #ifndef Q_OS_LINUX
     QFileDialog::Options options;
     options.setFlag(QFileDialog::DontConfirmOverwrite, !confirmOverwrite);
-    QString result = QFileDialog::getSaveFileName(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
+    QString result = QFileDialog::getSaveFileName(nullptr, QString::fromStdString(title),
+                                                  dir.toQString(), filterToString(
                                                       filter), nullptr, options);
     return result;
 #else
 
     UriQuery q
-        = makeSelectFileQuery(FileDialogMode::SaveFile, title, dir, filter, !confirmOverwrite ? QFileDialog::DontConfirmOverwrite : 0);
+        = makeSelectFileQuery(FileDialogMode::SaveFile, title, dir, filter,
+                              !confirmOverwrite ? QFileDialog::DontConfirmOverwrite : 0);
 
     RetVal<Val> rv = openSync(q);
     if (!rv.ret) {
@@ -480,7 +490,8 @@ io::path_t Interactive::selectDirectory(const std::string& title, const io::path
 #endif
 }
 
-io::paths_t Interactive::selectMultipleDirectories(const std::string& title, const io::path_t& dir, const io::paths_t& selectedDirectories)
+io::paths_t Interactive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                   const io::paths_t& selectedDirectories)
 {
     UriQuery q("muse://interactive/selectmultipledirectories");
     q.set("title", title)
@@ -1191,7 +1202,8 @@ void Interactive::onOpen(const QVariant& type, const QVariant& objectId, QObject
     m_openingObject.objectId = objectId;
     m_openingObject.window = window;
     if (!m_openingObject.window) {
-        m_openingObject.window = (containerMeta == ContainerMeta::PrimaryPage) ? mainWindow()->qWindow() : qApp->focusWindow();
+        m_openingObject.window
+            = (containerMeta == ContainerMeta::PrimaryPage) ? mainWindow()->qWindow() : qApp->focusWindow();
     }
 
     if (m_openingObject.query.param("floating").toBool()) {
@@ -1290,7 +1302,8 @@ std::vector<Interactive::ObjectInfo> Interactive::allOpenObjects() const
     return result;
 }
 
-std::vector<Interactive::ObjectInfo> Interactive::collectOpenObjects(std::function<bool(const ObjectInfo&)> accepted) const
+std::vector<Interactive::ObjectInfo> Interactive::collectOpenObjects(std::function<bool(const ObjectInfo&)> accepted)
+const
 {
     std::vector<ObjectInfo> result;
     for (const ObjectInfo& obj : allOpenObjects()) {

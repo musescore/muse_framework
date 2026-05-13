@@ -786,13 +786,15 @@ void Transform::mapElement(double& nx, double& ny, TransformationType t) const
 #ifndef NO_QT_SUPPORT
 QTransform Transform::toQTransform(const Transform& transform)
 {
-    return QTransform(transform.m_affine.m_11, transform.m_affine.m_12, transform.m_13, transform.m_affine.m_21, transform.m_affine.m_22,
+    return QTransform(transform.m_affine.m_11, transform.m_affine.m_12, transform.m_13, transform.m_affine.m_21,
+                      transform.m_affine.m_22,
                       transform.m_23, transform.m_affine.m_dx, transform.m_affine.m_dy, transform.m_33);
 }
 
 Transform Transform::fromQTransform(const QTransform& transform)
 {
-    return Transform(transform.m11(), transform.m12(), transform.m13(), transform.m21(), transform.m22(), transform.m23(),
+    return Transform(transform.m11(), transform.m12(), transform.m13(), transform.m21(), transform.m22(),
+                     transform.m23(),
                      transform.m31(), transform.m32(), transform.m33());
 }
 

@@ -223,7 +223,8 @@ void StartAudioController::startAudioProcessing(const IApplication::RunMode& mod
 
     AudioEngineConfig conf = configuration()->engineConfig();
     auto sendEngineInit = [this, activeSpec, conf]() {
-        m_rpcChannel->send(rpc::make_request(rpc::GLOBAL_CTX_ID, MsgCode::EngineInit, RpcPacker::pack(activeSpec.output, conf)),
+        m_rpcChannel->send(rpc::make_request(rpc::GLOBAL_CTX_ID, MsgCode::EngineInit,
+                                             RpcPacker::pack(activeSpec.output, conf)),
                            [this](const Msg&) {
             m_isAudioStarted.set(true);
         });

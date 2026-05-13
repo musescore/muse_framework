@@ -114,7 +114,8 @@ void SoundFontRepository::addSoundFontData(const SoundFontUri& uri, const ByteAr
     m_soundFontsChanged.notify();
 }
 
-void SoundFontRepository::doAddSoundFont(const SoundFontUri& uri, const SoundFontsMap* cache, std::function<void()> onFinished)
+void SoundFontRepository::doAddSoundFont(const SoundFontUri& uri, const SoundFontsMap* cache,
+                                         std::function<void()> onFinished)
 {
     if (cache) {
         auto it = cache->find(uri);

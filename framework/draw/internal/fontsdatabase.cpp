@@ -88,7 +88,8 @@ FontDataKey FontsDatabase::actualFont(const FontDataKey& requireKey, Font::Type 
     }
 
     FontDataKey def = defaultFont(type);
-    LOGW() << "not found required font: " << requireKey.family().id() << ", will be using default: " << def.family().id();
+    LOGW() << "not found required font: " << requireKey.family().id() << ", will be using default: " <<
+        def.family().id();
     return def;
 }
 

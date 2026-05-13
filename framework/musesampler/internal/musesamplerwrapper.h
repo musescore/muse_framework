@@ -38,7 +38,8 @@ namespace muse::musesampler {
 class MuseSamplerWrapper : public audio::synth::AbstractSynthesizer, public IMuseSamplerTracks
 {
 public:
-    MuseSamplerWrapper(MuseSamplerLibHandlerPtr samplerLib, const InstrumentInfo& instrument, const muse::audio::AudioSourceParams& params);
+    MuseSamplerWrapper(MuseSamplerLibHandlerPtr samplerLib, const InstrumentInfo& instrument,
+                       const muse::audio::AudioSourceParams& params);
     ~MuseSamplerWrapper() override;
 
     void setMode(const muse::audio::ProcessMode mode) override;

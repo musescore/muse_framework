@@ -222,11 +222,13 @@ void VstPluginInstance::rescanParams()
     muse::audio::AudioUnitConfig updatedConfig;
 
     if (m_componentStateBuffer.getSize() > 0) {
-        updatedConfig.emplace(COMPONENT_STATE_KEY, std::string(m_componentStateBuffer.getData(), m_componentStateBuffer.getSize()));
+        updatedConfig.emplace(COMPONENT_STATE_KEY,
+                              std::string(m_componentStateBuffer.getData(), m_componentStateBuffer.getSize()));
     }
 
     if (m_controllerStateBuffer.getSize() > 0) {
-        updatedConfig.emplace(CONTROLLER_STATE_KEY, std::string(m_controllerStateBuffer.getData(), m_controllerStateBuffer.getSize()));
+        updatedConfig.emplace(CONTROLLER_STATE_KEY,
+                              std::string(m_controllerStateBuffer.getData(), m_controllerStateBuffer.getSize()));
     }
 
     m_pluginSettingsChanges.send(updatedConfig);
@@ -350,7 +352,8 @@ void VstPluginInstance::updatePluginConfig(const muse::audio::AudioUnitConfig& c
 
     try {
         if (componentState != config.end() && !componentState->second.empty()) {
-            stateBufferFromString(m_componentStateBuffer, const_cast<char*>(componentState->second.c_str()), componentState->second.size());
+            stateBufferFromString(m_componentStateBuffer,
+                                  const_cast<char*>(componentState->second.c_str()), componentState->second.size());
 
             if (component->setState(&m_componentStateBuffer) == Steinberg::kResultOk) {
                 m_componentStateBuffer.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);

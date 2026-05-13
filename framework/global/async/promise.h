@@ -31,7 +31,8 @@ using Promise = kors::async::Promise<T...>;
 using PromiseType = kors::async::PromiseType;
 
 template<typename ... T>
-inline Promise<T...> make_promise(typename Promise<T...>::BodyResolveReject f, PromiseType type = PromiseType::AsyncByPromise)
+inline Promise<T...> make_promise(typename Promise<T...>::BodyResolveReject f,
+                                  PromiseType type = PromiseType::AsyncByPromise)
 {
     return kors::async::make_promise<T...>(f, type);
 }

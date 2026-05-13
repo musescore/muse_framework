@@ -97,7 +97,8 @@ void GuiApplication::setupGraphicsApi()
                 gApiProvider->setGraphicsApiStatus(required, GraphicsApiProvider::Status::Checked);
             } else {
                 GraphicsApi next = gApiProvider->switchToNextGraphicsApi(required);
-                LOGE() << "Detected problems with graphics api; switching from " << GraphicsApiProvider::apiName(required)
+                LOGE() << "Detected problems with graphics api; switching from " <<
+                    GraphicsApiProvider::apiName(required)
                        << " to " << GraphicsApiProvider::apiName(next);
 
                 this->restart();

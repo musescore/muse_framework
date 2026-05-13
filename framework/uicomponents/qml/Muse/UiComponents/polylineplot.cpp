@@ -78,7 +78,8 @@ static qreal pointToSegmentDistance(const QPointF& point, const QPointF& segment
     return std::hypot(point.x() - closestPoint.x(), point.y() - closestPoint.y());
 }
 
-static GhostPoint ghostPointToSegmentDistance(const QPointF& point, const QPointF& segmentStart, const QPointF& segmentEnd)
+static GhostPoint ghostPointToSegmentDistance(const QPointF& point, const QPointF& segmentStart,
+                                              const QPointF& segmentEnd)
 {
     const QPointF segment = segmentEnd - segmentStart;
     const qreal segmentLengthSquared = QPointF::dotProduct(segment, segment);
@@ -604,7 +605,8 @@ bool PolylinePlot::hasValidYRange() const
 
 bool PolylinePlot::hasValidYSplit() const
 {
-    return hasValidYRange() && !muse::RealIsEqualOrLess(m_ySplitNormalized, 0.0) && !muse::RealIsEqualOrMore(m_ySplitNormalized, 1.0);
+    return hasValidYRange() && !muse::RealIsEqualOrLess(m_ySplitNormalized, 0.0) && !muse::RealIsEqualOrMore(
+        m_ySplitNormalized, 1.0);
 }
 
 qreal PolylinePlot::yDomainFromNormalized(qreal yNormalized) const

@@ -45,7 +45,8 @@ struct AudioContextTag
 
 namespace muse::audio::engine {
 class ContextPlayer;
-class AudioContext : public AudioNode<AudioContextTag>, public IAudioContext, public IGetTrackSource, public async::Asyncable
+class AudioContext : public AudioNode<AudioContextTag>, public IAudioContext, public IGetTrackSource,
+    public async::Asyncable
 {
     GlobalInject<IAudioFactory> audioFactory;
     GlobalInject<IAudioEngineConfiguration> configuration;
@@ -64,7 +65,8 @@ public:
     AudioResourceMetaList availableOutputResources() const override;
 
     // Tracks
-    RetVal2<TrackId, TrackParams> addTrack(const std::string& trackName, io::IODevice* playbackData, const TrackParams& params) override;
+    RetVal2<TrackId, TrackParams> addTrack(const std::string& trackName, io::IODevice* playbackData,
+                                           const TrackParams& params) override;
     RetVal2<TrackId, TrackParams> addTrack(const std::string& trackName, const mpe::PlaybackData& playbackData,
                                            const TrackParams& params) override;
     RetVal2<TrackId, TrackParams> addAuxTrack(const std::string& trackName, const TrackParams& params) override;

@@ -48,14 +48,18 @@ public:
 
         KDDockWidgets::FloatingWindow* floatingWindow = m_dockWidget->floatingWindow();
         if (floatingWindow) {
-            return std::unique_ptr<KDDockWidgets::WindowBeingDragged>(new KDDockWidgets::WindowBeingDragged(m_ctx, floatingWindow, this));
+            return std::unique_ptr<KDDockWidgets::WindowBeingDragged>(new KDDockWidgets::WindowBeingDragged(m_ctx,
+                                                                                                            floatingWindow,
+                                                                                                            this));
         }
 
         m_dockWidget->setFloating(true);
         floatingWindow = m_dockWidget->floatingWindow();
 
         auto draggable = static_cast<KDDockWidgets::Draggable*>(this);
-        return std::unique_ptr<KDDockWidgets::WindowBeingDragged>(new KDDockWidgets::WindowBeingDragged(m_ctx, floatingWindow, draggable));
+        return std::unique_ptr<KDDockWidgets::WindowBeingDragged>(new KDDockWidgets::WindowBeingDragged(m_ctx,
+                                                                                                        floatingWindow,
+                                                                                                        draggable));
     }
 
     KDDockWidgets::DockWidgetBase* singleDockWidget() const override

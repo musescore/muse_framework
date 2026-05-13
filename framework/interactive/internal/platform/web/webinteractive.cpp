@@ -198,7 +198,8 @@ async::Promise<io::path_t> WebInteractive::selectOpeningFile(const std::string& 
 #endif
 }
 
-io::path_t WebInteractive::selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+io::path_t WebInteractive::selectOpeningFileSync(const std::string& title, const io::path_t& dir,
+                                                 const std::vector<std::string>& filter,
                                                  const int options)
 {
 #ifdef Q_OS_WASM
@@ -228,7 +229,8 @@ muse::io::paths_t WebInteractive::selectOpeningFilesSync(const std::string& titl
 #endif
 }
 
-io::path_t WebInteractive::selectSavingFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+io::path_t WebInteractive::selectSavingFileSync(const std::string& title, const io::path_t& dir,
+                                                const std::vector<std::string>& filter,
                                                 bool confirmOverwrite)
 {
 #ifdef Q_OS_WASM
@@ -269,7 +271,8 @@ io::paths_t WebInteractive::selectMultipleDirectories(const std::string& title, 
 #endif
 }
 
-muse::async::Promise<muse::Color> WebInteractive::selectColor(const muse::Color& color, const std::string& title, bool allowAlpha)
+muse::async::Promise<muse::Color> WebInteractive::selectColor(const muse::Color& color, const std::string& title,
+                                                              bool allowAlpha)
 {
     return m_origin->selectColor(color, title, allowAlpha);
 }

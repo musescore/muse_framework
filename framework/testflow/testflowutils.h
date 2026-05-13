@@ -39,7 +39,9 @@ inline Ret jsValueToRet(const QJSValue& val)
         if (err == "Error: abort") {
             return make_ret(Ret::Code::Cancel, QString("script is aborted"));
         }
-        Ret ret = make_ret(Ret::Code::UnknownError, QString("File: %1, Exception at line: %2, %3").arg(fileName).arg(line).arg(err));
+        Ret ret
+            = make_ret(Ret::Code::UnknownError, QString("File: %1, Exception at line: %2, %3").arg(fileName).arg(
+                           line).arg(err));
         ret.setData("file", fileName);
         ret.setData("line", line);
         ret.setData("err", err);

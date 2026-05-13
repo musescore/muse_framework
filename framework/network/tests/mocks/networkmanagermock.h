@@ -32,9 +32,12 @@ class NetworkManagerMock : public INetworkManager
 public:
     MOCK_METHOD(RetVal<Progress>, get, (const QUrl&, IncomingDevicePtr, const RequestHeaders&), (override));
     MOCK_METHOD(RetVal<Progress>, head, (const QUrl&, const RequestHeaders&), (override));
-    MOCK_METHOD(RetVal<Progress>, post, (const QUrl&, OutgoingDeviceVar, IncomingDevicePtr, const RequestHeaders&), (override));
-    MOCK_METHOD(RetVal<Progress>, put, (const QUrl&, OutgoingDeviceVar, IncomingDevicePtr, const RequestHeaders&), (override));
-    MOCK_METHOD(RetVal<Progress>, patch, (const QUrl&, OutgoingDeviceVar, IncomingDevicePtr, const RequestHeaders&), (override));
+    MOCK_METHOD(RetVal<Progress>, post, (const QUrl&, OutgoingDeviceVar, IncomingDevicePtr, const RequestHeaders&),
+                (override));
+    MOCK_METHOD(RetVal<Progress>, put, (const QUrl&, OutgoingDeviceVar, IncomingDevicePtr, const RequestHeaders&),
+                (override));
+    MOCK_METHOD(RetVal<Progress>, patch, (const QUrl&, OutgoingDeviceVar, IncomingDevicePtr, const RequestHeaders&),
+                (override));
     MOCK_METHOD(RetVal<Progress>, del, (const QUrl&, IncomingDevicePtr, const RequestHeaders&), (override));
 };
 }

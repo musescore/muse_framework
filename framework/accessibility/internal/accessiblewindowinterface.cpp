@@ -84,14 +84,16 @@ int AccessibleWindowInterface::childCount() const
 QAccessibleInterface* AccessibleWindowInterface::child(int index) const
 {
     QAccessibleInterface* iface = m_children->controller().lock()->child(m_children->item(), index);
-    MYLOG() << "item: " << m_children->item()->accessibleName() << ", child: " << index << " " << iface->text(QAccessible::Name);
+    MYLOG() << "item: " << m_children->item()->accessibleName() << ", child: " << index << " " << iface->text(
+        QAccessible::Name);
     return iface;
 }
 
 int AccessibleWindowInterface::indexOfChild(const QAccessibleInterface* iface) const
 {
     int idx = m_children->controller().lock()->indexOfChild(m_children->item(), iface);
-    MYLOG() << "item: " << m_children->item()->accessibleName() << ", indexOfChild: " << iface->text(QAccessible::Name) << " = " << idx;
+    MYLOG() << "item: " << m_children->item()->accessibleName() << ", indexOfChild: " <<
+        iface->text(QAccessible::Name) << " = " << idx;
     return idx;
 }
 
@@ -104,7 +106,8 @@ QAccessibleInterface* AccessibleWindowInterface::childAt(int, int) const
 QAccessibleInterface* AccessibleWindowInterface::focusChild() const
 {
     QAccessibleInterface* child = m_children->controller().lock()->focusedChild(m_children->item());
-    MYLOG() << "item: " << m_children->item()->accessibleName() << ", focused child: " << (child ? child->text(QAccessible::Name) : "null");
+    MYLOG() << "item: " << m_children->item()->accessibleName() << ", focused child: " <<
+        (child ? child->text(QAccessible::Name) : "null");
     return child;
 }
 

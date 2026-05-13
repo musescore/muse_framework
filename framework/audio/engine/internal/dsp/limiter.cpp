@@ -62,7 +62,8 @@ volume_db_t Limiter::computeGain(const volume_db_t& logarithmSample) const
         return logarithmSample;
     }
 
-    if (logarithmSample >= m_filterConfig.softThresholdLower() && logarithmSample <= m_filterConfig.softThresholdUpper()) {
+    if (logarithmSample >= m_filterConfig.softThresholdLower()
+        && logarithmSample <= m_filterConfig.softThresholdUpper()) {
         return logarithmSample
                - (std::pow((logarithmSample - m_filterConfig.softThresholdUpper()), 2)
                   / (2 * m_filterConfig.kneeWidth()));

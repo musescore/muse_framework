@@ -44,7 +44,8 @@ public:
 
         virtual std::vector<IFxProcessorPtr> resolveFxList(const audio::TrackId trackId, const AudioFxChain& fxChain,
                                                            const OutputSpec& outputSpec) = 0;
-        virtual std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec) = 0;
+        virtual std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain,
+                                                                 const OutputSpec& outputSpec) = 0;
         virtual AudioResourceMetaList resolveResources() const = 0;
 
         virtual void refresh() = 0;
@@ -52,7 +53,8 @@ public:
     };
     using IResolverPtr = std::shared_ptr<IResolver>;
 
-    virtual std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec) = 0;
+    virtual std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain,
+                                                             const OutputSpec& outputSpec) = 0;
     virtual std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain& fxChain,
                                                        const OutputSpec& outputSpec) = 0;
     virtual AudioResourceMetaList resolveAvailableResources() const = 0;

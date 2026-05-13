@@ -142,7 +142,9 @@ void RegisterAudioPluginsScenario::processPluginsRegistration(const io::paths_t&
         LOGD() << "--register-audio-plugin " << pluginPathStr;
         int code = process()->execute(appPath, { "--register-audio-plugin", pluginPathStr });
         if (code != 0) {
-            code = process()->execute(appPath, { "--register-failed-audio-plugin", pluginPathStr, "--", std::to_string(code) });
+            code
+                = process()->execute(appPath, { "--register-failed-audio-plugin", pluginPathStr, "--", std::to_string(
+                                                    code) });
         }
 
         if (code != 0) {

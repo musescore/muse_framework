@@ -63,7 +63,8 @@ void DialogView::initView()
                 return;
             }
 
-            QString bgColorStr = uiConfiguration()->currentTheme().values.value(ui::BACKGROUND_PRIMARY_COLOR).toString();
+            QString bgColorStr
+                = uiConfiguration()->currentTheme().values.value(ui::BACKGROUND_PRIMARY_COLOR).toString();
             m_view->setColor(QColor(bgColorStr));
         };
 

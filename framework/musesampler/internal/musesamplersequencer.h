@@ -28,11 +28,13 @@
 #include "internal/libhandler.h"
 
 namespace muse::musesampler {
-class MuseSamplerSequencer : public audio::engine::AbstractEventSequencer<mpe::NoteEvent, AuditionStartNoteEvent, AuditionStopNoteEvent,
+class MuseSamplerSequencer : public audio::engine::AbstractEventSequencer<mpe::NoteEvent, AuditionStartNoteEvent,
+                                                                          AuditionStopNoteEvent,
                                                                           AuditionCCEvent>
 {
 public:
-    void init(MuseSamplerLibHandlerPtr samplerLib, ms_MuseSampler sampler, IMuseSamplerTracks* tracks, std::string&& defaultPresetCode);
+    void init(MuseSamplerLibHandlerPtr samplerLib, ms_MuseSampler sampler, IMuseSamplerTracks* tracks,
+              std::string&& defaultPresetCode);
 
 private:
     void updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;

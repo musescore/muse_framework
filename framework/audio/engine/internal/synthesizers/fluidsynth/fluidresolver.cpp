@@ -52,7 +52,8 @@ FluidResolver::~FluidResolver()
     fluid::FluidVorbisDecoder::decoder = nullptr;
 }
 
-ISynthesizerPtr FluidResolver::resolveSynth(const TrackId /*trackId*/, const AudioInputParams& params, const OutputSpec& spec) const
+ISynthesizerPtr FluidResolver::resolveSynth(const TrackId /*trackId*/, const AudioInputParams& params,
+                                            const OutputSpec& spec) const
 {
     ONLY_AUDIO_ENGINE_THREAD;
 
@@ -121,7 +122,8 @@ void FluidResolver::refresh()
             };
             chooseAutomaticMeta.hasNativeEditorSupport = false;
 
-            m_resourcesCache.emplace(id, SoundFontResource { soundFont.path, std::nullopt, std::move(chooseAutomaticMeta) });
+            m_resourcesCache.emplace(id, SoundFontResource { soundFont.path, std::nullopt, std::move(
+                                                                 chooseAutomaticMeta) });
         }
 
         for (const SoundFontPreset& preset : soundFont.presets) {

@@ -263,7 +263,8 @@ Steinberg::tresult VstView::resizeView(Steinberg::IPlugView* view, Steinberg::Vi
     const int requiredHeight = requiredSize->getHeight() / m_screenMetrics.devicePixelRatio;
 
     const int availableWidth = m_screenMetrics.availableSize.width() - 2 * m_sidePadding;
-    const int availableHeight = m_screenMetrics.availableSize.height() - titleBarHeight - m_topPadding - m_bottomPadding;
+    const int availableHeight = m_screenMetrics.availableSize.height() - titleBarHeight - m_topPadding
+                                - m_bottomPadding;
 
     const int newWidth = std::min(requiredWidth, availableWidth);
     const int newHeight = std::min(requiredHeight, availableHeight);

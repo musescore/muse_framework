@@ -30,7 +30,8 @@
 #include "iarticulationprofilesrepository.h"
 
 namespace muse::mpe {
-class ArticulationProfilesRepository : public IArticulationProfilesRepository, public Contextable, public async::Asyncable
+class ArticulationProfilesRepository : public IArticulationProfilesRepository, public Contextable,
+    public async::Asyncable
 {
     GlobalInject<io::IFileSystem> fileSystem;
 

@@ -92,7 +92,8 @@ void WindowView::initView()
     //! NOTE It is important that there is a connection to this signal with an error,
     //! otherwise the default action will be performed - displaying a message and terminating.
     //! We will not be able to switch to another backend.
-    QObject::connect(m_view, &QQuickWindow::sceneGraphError, this, [this](QQuickWindow::SceneGraphError, const QString& msg) {
+    QObject::connect(m_view, &QQuickWindow::sceneGraphError, this,
+                     [this](QQuickWindow::SceneGraphError, const QString& msg) {
         LOGE() << "[" << objectName() << "] scene graph error: " << msg;
     });
 

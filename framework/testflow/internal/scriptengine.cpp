@@ -51,7 +51,8 @@ ScriptEngine::ScriptEngine(const modularity::ContextPtr& iocContext)
 }
 
 ScriptEngine::ScriptEngine(ScriptEngine* engine)
-    : m_iocContext(engine->m_iocContext), m_engine(engine->m_engine), m_apiengine(engine->m_apiengine), m_api(engine->m_api),
+    : m_iocContext(engine->m_iocContext), m_engine(engine->m_engine), m_apiengine(engine->m_apiengine), m_api(
+        engine->m_api),
     m_moduleLoader(engine->m_moduleLoader),
     m_isRequireMode(true)
 {

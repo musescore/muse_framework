@@ -349,7 +349,8 @@ std::vector<Instrument> MuseSamplerResolver::instruments() const
         instrument.staffLines = obj.value("StaffLines", "5").toString().toInt();
         instrument.staffType = muse::value(STAFF_NAME_LOWER_CASE_TO_TYPE, obj.value(
                                                "DefaultStaffType").toString().toLower(), StaffType::Standard);
-        instrument.clefType = muse::value(CLEF_NAME_LOWER_CASE_TO_TYPE, obj.value("DefaultClef").toString().toLower(), ClefType::Treble);
+        instrument.clefType = muse::value(CLEF_NAME_LOWER_CASE_TO_TYPE, obj.value(
+                                              "DefaultClef").toString().toLower(), ClefType::Treble);
 
         result.emplace_back(std::move(instrument));
     }
@@ -357,7 +358,8 @@ std::vector<Instrument> MuseSamplerResolver::instruments() const
     return result;
 }
 
-void MuseSamplerResolver::loadSoundPresetAttributes(SoundPresetAttributes& attributes, int instrumentId, const char* presetCode) const
+void MuseSamplerResolver::loadSoundPresetAttributes(SoundPresetAttributes& attributes, int instrumentId,
+                                                    const char* presetCode) const
 {
     const char* articulations_cstr = m_libHandler->getTextArticulations(instrumentId, presetCode);
     if (articulations_cstr) {

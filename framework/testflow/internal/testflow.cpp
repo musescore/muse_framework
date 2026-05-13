@@ -108,7 +108,8 @@ void Testflow::restoreAffectOnServices()
     muse::draw::Font::g_disableFontMerging = m_affectedServiceState.fontDisabledMerging;
 }
 
-void Testflow::loadContext(ITestCaseContextPtr ctx, const io::path_t& context, const std::string& contextVal, ScriptEngine* e)
+void Testflow::loadContext(ITestCaseContextPtr ctx, const io::path_t& context, const std::string& contextVal,
+                           ScriptEngine* e)
 {
     auto loadFromJson = [ctx, e](const ByteArray& json) {
         std::string err;

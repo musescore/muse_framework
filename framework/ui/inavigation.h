@@ -82,7 +82,10 @@ public:
 
         inline bool operator ==(const Index& idx) const { return column == idx.column && row == idx.row; }
 
-        std::string to_string() const { return std::string("[") + std::to_string(row) + "," + std::to_string(column) + "]"; }
+        std::string to_string() const
+        {
+            return std::string("[") + std::to_string(row) + "," + std::to_string(column) + "]";
+        }
     };
 
     enum class ActivationType {
@@ -144,7 +147,8 @@ public:
                                INavigation::ActivationType activationType = INavigation::ActivationType::None) = 0;
 };
 
-using OnActiveRequested = std::function<void (INavigationSection* sec, INavigationPanel* panel, INavigationControl* ctrl,
+using OnActiveRequested = std::function<void (INavigationSection* sec, INavigationPanel* panel,
+                                              INavigationControl* ctrl,
                                               bool enableHighlight, INavigation::ActivationType activationType)>;
 
 class INavigationSection : public INavigation
@@ -168,7 +172,8 @@ public:
     virtual async::Notification panelsListChanged() const = 0;
 
     virtual void setOnActiveRequested(const OnActiveRequested& func) = 0;
-    virtual void requestActive(INavigationPanel* panel = nullptr, INavigationControl* control = nullptr, bool enableHighlight = false,
+    virtual void requestActive(INavigationPanel* panel = nullptr, INavigationControl* control = nullptr,
+                               bool enableHighlight = false,
                                INavigation::ActivationType activationType = INavigation::ActivationType::None) = 0;
 };
 }

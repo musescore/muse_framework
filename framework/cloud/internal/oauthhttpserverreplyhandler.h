@@ -38,8 +38,8 @@ class OAuthHttpServerReplyHandler : public QOAuthOobReplyHandler
 public:
     explicit OAuthHttpServerReplyHandler(const modularity::ContextPtr& iocCtx, QObject* parent = nullptr);
     explicit OAuthHttpServerReplyHandler(quint16 port, const modularity::ContextPtr& iocCtx, QObject* parent = nullptr);
-    explicit OAuthHttpServerReplyHandler(const QHostAddress& address, quint16 port, const modularity::ContextPtr& iocCtx,
-                                         QObject* parent = nullptr);
+    explicit OAuthHttpServerReplyHandler(const QHostAddress& address, quint16 port,
+                                         const modularity::ContextPtr& iocCtx, QObject* parent = nullptr);
     ~OAuthHttpServerReplyHandler();
 
     QString callback() const override;

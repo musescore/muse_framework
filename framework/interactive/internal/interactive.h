@@ -40,7 +40,8 @@
 #include "iinteractiveuriregister.h"
 
 namespace muse::interactive {
-class Interactive : public QObject, public IInteractive, public IInteractiveProvider, public Contextable, public async::Asyncable
+class Interactive : public QObject, public IInteractive, public IInteractiveProvider, public Contextable,
+    public async::Asyncable
 {
     Q_OBJECT
 
@@ -56,32 +57,36 @@ public:
     ButtonData buttonData(Button b) const override;
 
     // question
-    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                        const Options& options = {}, const std::string& dialogTitle = "") override;
+    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                        int defBtn = int(Button::NoButton), const Options& options = {},
+                        const std::string& dialogTitle = "") override;
 
     async::Promise<Result> question(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
                                     int defBtn = int(Button::NoButton), const Options& options = {},
                                     const std::string& dialogTitle = "") override;
 
     // info
-    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                    const Options& options = {}, const std::string& dialogTitle = "") override;
+    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                    int defBtn = int(Button::NoButton), const Options& options = {},
+                    const std::string& dialogTitle = "") override;
 
     async::Promise<Result> info(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                 int defBtn = int(Button::NoButton), const Options& options = {},
                                 const std::string& dialogTitle = "") override;
 
     // warning
-    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                       const Options& options = {}, const std::string& dialogTitle = "") override;
+    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                       int defBtn = int(Button::NoButton), const Options& options = {},
+                       const std::string& dialogTitle = "") override;
 
     async::Promise<Result> warning(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                    int defBtn = int(Button::NoButton), const Options& options = {},
                                    const std::string& dialogTitle = "") override;
 
     // error
-    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                     const Options& options = { WithIcon }, const std::string& dialogTitle = "") override;
+    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                     int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
+                     const std::string& dialogTitle = "") override;
 
     async::Promise<Result> error(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                  int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
@@ -93,19 +98,21 @@ public:
     // files
     async::Promise<io::path_t> selectOpeningFile(const std::string& title, const io::path_t& dir,
                                                  const std::vector<std::string>& filter) override;
-    io::path_t selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                     const int options) override;
-    io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                       const int options) override;
-    io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
-                                    bool confirmOverwrite = true) override;
+    io::path_t selectOpeningFileSync(const std::string& title, const io::path_t& dir,
+                                     const std::vector<std::string>& filter, const int options) override;
+    io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir,
+                                       const std::vector<std::string>& filter, const int options) override;
+    io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path,
+                                    const std::vector<std::string>& filter, bool confirmOverwrite = true) override;
 
     // dirs
     io::path_t selectDirectory(const std::string& title, const io::path_t& dir) override;
-    io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir, const io::paths_t& selectedDirectories) override;
+    io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                          const io::paths_t& selectedDirectories) override;
 
     // color
-    async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {}, bool allowAlpha = false) override;
+    async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {},
+                                      bool allowAlpha = false) override;
     bool isSelectColorOpened() const override;
 
     // custom
@@ -187,17 +194,19 @@ private:
     void notifyAboutCurrentUriChanged();
     void notifyAboutCurrentUriWillBeChanged();
 
-    UriQuery makeQuery(const std::string& type, const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn,
-                       const Options& options, const std::string& dialogTitle) const;
+    UriQuery makeQuery(const std::string& type, const std::string& contentTitle, const Text& text,
+                       const ButtonDatas& buttons, int defBtn, const Options& options,
+                       const std::string& dialogTitle) const;
 
     IInteractive::Result makeResult(const Val& val) const;
 
-    async::Promise<IInteractive::Result> openStandardAsync(const std::string& type, const std::string& contentTitle, const Text& text,
-                                                           const ButtonDatas& buttons, int defBtn, const Options& options,
-                                                           const std::string& dialogTitle);
+    async::Promise<IInteractive::Result> openStandardAsync(const std::string& type, const std::string& contentTitle,
+                                                           const Text& text, const ButtonDatas& buttons, int defBtn,
+                                                           const Options& options, const std::string& dialogTitle);
 
     IInteractive::Result openStandardSync(const std::string& type, const std::string& contentTitle, const Text& text,
-                                          const ButtonDatas& buttons, int defBtn, const Options& options, const std::string& dialogTitle);
+                                          const ButtonDatas& buttons, int defBtn, const Options& options,
+                                          const std::string& dialogTitle);
 
     ObjectInfo m_openingObject;
 

@@ -139,7 +139,8 @@ static QString makeCleanType(const QString& type)
     return str;
 }
 
-static QString sigToString(const IApiRegister::Dump::Sig& sig, IApiRegister::Dump::MethodType type, const QString& prefix = QString())
+static QString sigToString(const IApiRegister::Dump::Sig& sig, IApiRegister::Dump::MethodType type,
+                           const QString& prefix = QString())
 {
     QString str;
     switch (type) {

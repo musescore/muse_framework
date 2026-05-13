@@ -516,7 +516,8 @@ static bool contains(const std::vector<T>& v1, const T& val, DrawDataComp::Toler
 }
 
 template<class T>
-static void difference(std::vector<T>& diff, const std::vector<T>& v1, const std::vector<T>& v2, DrawDataComp::Tolerance tolerance)
+static void difference(std::vector<T>& diff, const std::vector<T>& v1, const std::vector<T>& v2,
+                       DrawDataComp::Tolerance tolerance)
 {
     for (size_t i = 0; i < v1.size(); ++i) {
         const T& t = v1.at(i);
@@ -538,7 +539,8 @@ static bool contains(const std::list<T>& v1, const T& val, DrawDataComp::Toleran
 }
 
 template<class T>
-static void difference(std::list<T>& diff, const std::list<T>& v1, const std::list<T>& v2, DrawDataComp::Tolerance tolerance)
+static void difference(std::list<T>& diff, const std::list<T>& v1, const std::list<T>& v2,
+                       DrawDataComp::Tolerance tolerance)
 {
     for (const T& t : v1) {
         if (!contains(v2, t, tolerance)) {

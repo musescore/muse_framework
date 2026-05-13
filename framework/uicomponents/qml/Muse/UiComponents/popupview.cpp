@@ -410,7 +410,8 @@ void PopupView::updateGeometry()
         moveLeft();
     } else {
         // move to the right of the parent and move to top to an area that doesn't fit
-        movePos(parentTopLeft.x() + parent->width(), m_globalPos.y() - (viewRect.bottom() - anchorRect.bottom()) + padding());
+        movePos(parentTopLeft.x() + parent->width(),
+                m_globalPos.y() - (viewRect.bottom() - anchorRect.bottom()) + padding());
         setPopupPosition(PopupPosition::Right);
     }
 

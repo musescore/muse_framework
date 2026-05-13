@@ -27,7 +27,8 @@
 using namespace muse::uicomponents;
 
 // Recursively traverse a flyout tree, collect all "leaves" (items without a sub item)...
-static void flattenTreeModel(const QVariant& treeModel, const QString& categoryTitle, QVariantList& result, QVariant& alwaysAppend)
+static void flattenTreeModel(const QVariant& treeModel, const QString& categoryTitle, QVariantList& result,
+                             QVariant& alwaysAppend)
 {
     for (const QVariant& item : treeModel.toList()) {
         QVariantMap menuItem = item.toMap();

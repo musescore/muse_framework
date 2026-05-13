@@ -38,7 +38,8 @@ public:
         : QNetworkAccessManager(parent) {}
 
 protected:
-    QNetworkReply* createRequest(Operation operation, const QNetworkRequest& originalRequest, QIODevice* outgoingData) override;
+    QNetworkReply* createRequest(Operation operation, const QNetworkRequest& originalRequest,
+                                 QIODevice* outgoingData) override;
 };
 
 class QmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory

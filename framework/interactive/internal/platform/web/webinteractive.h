@@ -32,35 +32,40 @@ public:
     ButtonData buttonData(Button b) const override;
 
     // question
-    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                        const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                        int defBtn = int(Button::NoButton), const Options& options = {},
+                        const std::string& dialogTitle = {}) override;
 
     muse::async::Promise<Result> question(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
                                           int defBtn = int(Button::NoButton), const Options& options = {},
                                           const std::string& dialogTitle = {}) override;
 
     // info
-    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                    const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                    int defBtn = int(Button::NoButton), const Options& options = {},
+                    const std::string& dialogTitle = {}) override;
 
-    muse::async::Promise<Result> info(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
-                                      int defBtn = int(Button::NoButton), const Options& options = {},
-                                      const std::string& dialogTitle = {}) override;
+    muse::async::Promise<Result> info(const std::string& contentTitle, const Text& text,
+                                      const ButtonDatas& buttons = {}, int defBtn = int(Button::NoButton),
+                                      const Options& options = {}, const std::string& dialogTitle = {}) override;
 
     // warning
-    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                       const Options& options = {}, const std::string& dialogTitle = {}) override;
+    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                       int defBtn = int(Button::NoButton), const Options& options = {},
+                       const std::string& dialogTitle = {}) override;
 
-    muse::async::Promise<Result> warning(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
-                                         int defBtn = int(Button::NoButton), const Options& options = {},
-                                         const std::string& dialogTitle = {}) override;
+    muse::async::Promise<Result> warning(const std::string& contentTitle, const Text& text,
+                                         const ButtonDatas& buttons = {}, int defBtn = int(Button::NoButton),
+                                         const Options& options = {}, const std::string& dialogTitle = {}) override;
 
     // error
-    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                     const Options& options = { WithIcon }, const std::string& dialogTitle = {}) override;
+    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
+                     int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
+                     const std::string& dialogTitle = {}) override;
 
-    muse::async::Promise<Result> error(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
-                                       int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
+    muse::async::Promise<Result> error(const std::string& contentTitle, const Text& text,
+                                       const ButtonDatas& buttons = {}, int defBtn = int(Button::NoButton),
+                                       const Options& options = { WithIcon },
                                        const std::string& dialogTitle = {}) override;
 
     // progress
@@ -69,12 +74,13 @@ public:
     // files
     muse::async::Promise<muse::io::path_t> selectOpeningFile(const std::string& title, const muse::io::path_t& dir,
                                                              const std::vector<std::string>& filter) override;
-    muse::io::path_t selectOpeningFileSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
-                                           const int options = 0) override;
-    muse::io::paths_t selectOpeningFilesSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
-                                             const int options = 0) override;
+    muse::io::path_t selectOpeningFileSync(const std::string& title, const muse::io::path_t& dir,
+                                           const std::vector<std::string>& filter, const int options = 0) override;
+    muse::io::paths_t selectOpeningFilesSync(const std::string& title, const muse::io::path_t& dir,
+                                             const std::vector<std::string>& filter, const int options = 0) override;
 
-    muse::io::path_t selectSavingFileSync(const std::string& title, const muse::io::path_t& path, const std::vector<std::string>& filter,
+    muse::io::path_t selectSavingFileSync(const std::string& title, const muse::io::path_t& path,
+                                          const std::vector<std::string>& filter,
                                           bool confirmOverwrite = true) override;
 
     // dirs
@@ -83,8 +89,8 @@ public:
                                                 const muse::io::paths_t& selectedDirectories) override;
 
     // color
-    muse::async::Promise<muse::Color> selectColor(const muse::Color& color = muse::Color::WHITE, const std::string& title = {},
-                                                  bool allowAlpha = false) override;
+    muse::async::Promise<muse::Color> selectColor(const muse::Color& color = muse::Color::WHITE,
+                                                  const std::string& title = {}, bool allowAlpha = false) override;
     bool isSelectColorOpened() const override;
 
     // custom

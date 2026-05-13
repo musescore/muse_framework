@@ -42,7 +42,8 @@ static muse::testing::SuiteEnvironment workspace_se
     ON_CALL(*workspaceConfigMock, defaultWorkspaceName())
     .WillByDefault(Return(testCfg.defaultWorkspaceName()));
 
-    muse::modularity::globalIoc()->registerExport<muse::workspace::IWorkspaceConfiguration>("utests", workspaceConfigMock);
+    muse::modularity::globalIoc()->registerExport<muse::workspace::IWorkspaceConfiguration>("utests",
+                                                                                            workspaceConfigMock);
 }).setDeInit([](){
     muse::modularity::globalIoc()->unregister<muse::workspace::IWorkspaceConfiguration>("utests");
 });

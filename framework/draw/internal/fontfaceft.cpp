@@ -356,7 +356,8 @@ f26dot6_t FontFaceFT::xHeight() const
 {
     TT_OS2* os2 = (TT_OS2*)FT_Get_Sfnt_Table(m_data->face, ft_sfnt_os2);
     if (os2 && os2->sxHeight) {
-        f26dot6_t result = std::round(os2->sxHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double)m_data->face->units_per_EM);
+        f26dot6_t result = std::round(
+            os2->sxHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double)m_data->face->units_per_EM);
         return result;
     }
 
@@ -376,7 +377,8 @@ f26dot6_t FontFaceFT::capHeight() const
 {
     TT_OS2* os2 = (TT_OS2*)FT_Get_Sfnt_Table(m_data->face, ft_sfnt_os2);
     if (os2 && os2->sCapHeight) {
-        f26dot6_t result = std::round(os2->sCapHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double)m_data->face->units_per_EM);
+        f26dot6_t result = std::round(
+            os2->sCapHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double)m_data->face->units_per_EM);
         return result;
     }
 

@@ -66,8 +66,8 @@ private:
         DELETE_REQUEST
     };
 
-    RetVal<Progress> execRequest(RequestType requestType, const QUrl& url, IncomingDevicePtr incomingData, OutgoingDeviceVar outgoingData,
-                                 const RequestHeaders& headers);
+    RetVal<Progress> execRequest(RequestType requestType, const QUrl& url, IncomingDevicePtr incomingData,
+                                 OutgoingDeviceVar outgoingData, const RequestHeaders& headers);
 
     QNetworkRequest prepareRequest(const QUrl& url, const RequestHeaders& headers) const;
     QNetworkReply* sendRequest(RequestType type, const QNetworkRequest& request, const OutgoingDeviceVar& device);

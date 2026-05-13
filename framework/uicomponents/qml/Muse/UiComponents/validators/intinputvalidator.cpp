@@ -54,7 +54,8 @@ QValidator::State IntInputValidator::validate(QString& inputStr, int& cursorPos)
                                   ? std::floor(std::log10(maxAbsoluteValue)) + 1
                                   : 1;
     if (inputStr.contains(QRegularExpression(QString("^\\-?\\d{1,%1}$").arg(maxNumberOfDigits)))) {
-        if ((maxNumberOfDigits >= 2 && inputStr.contains(QRegularExpression(QString("^\\-?0{2,%1}").arg(maxNumberOfDigits))))
+        if ((maxNumberOfDigits >= 2
+             && inputStr.contains(QRegularExpression(QString("^\\-?0{2,%1}").arg(maxNumberOfDigits))))
             || (inputStr.startsWith("-") && muse::RealIsNull(inputStr.toDouble()))) {
             state = Intermediate;
         } else {

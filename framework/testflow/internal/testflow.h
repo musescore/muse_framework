@@ -83,7 +83,8 @@ public:
 
 private:
 
-    void loadContext(ITestCaseContextPtr ctx, const io::path_t& context, const std::string& contextVal, ScriptEngine* e);
+    void loadContext(ITestCaseContextPtr ctx, const io::path_t& context, const std::string& contextVal,
+                     ScriptEngine* e);
     QJSValueList parseFuncArgs(const std::string& funcArgs, ScriptEngine* e) const;
 
     void affectOnServices();

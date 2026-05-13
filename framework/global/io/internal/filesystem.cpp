@@ -278,7 +278,8 @@ RetVal<uint64_t> FileSystem::fileSize(const io::path_t& path) const
     return rv;
 }
 
-RetVal<io::paths_t> FileSystem::scanFiles(const io::path_t& rootDir, const std::vector<std::string>& nameFilters, ScanMode mode) const
+RetVal<io::paths_t> FileSystem::scanFiles(const io::path_t& rootDir, const std::vector<std::string>& nameFilters,
+                                          ScanMode mode) const
 {
     RetVal<io::paths_t> result;
     Ret ret = exists(rootDir);
@@ -394,7 +395,8 @@ Ret FileSystem::copyRecursively(const io::path_t& src, const io::path_t& dst) co
             return make_ret(Err::FSMakingError);
         }
         QDir srcDir(srcPath);
-        const QStringList fileNames = srcDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
+        const QStringList fileNames = srcDir.entryList(
+            QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
         for (const QString& fileName : fileNames) {
             const QString newSrcPath = srcPath + QLatin1Char('/') + fileName;
             const QString newDstPath = dstPath + QLatin1Char('/') + fileName;

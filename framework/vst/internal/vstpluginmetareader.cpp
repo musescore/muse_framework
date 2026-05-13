@@ -59,7 +59,8 @@ RetVal<AudioResourceMetaList> VstPluginMetaReader::readMeta(const io::path_t& pl
         muse::audio::AudioResourceMeta meta;
         meta.id = io::completeBasename(pluginPath).toStdString();
         meta.type = muse::audio::AudioResourceType::VstPlugin;
-        meta.attributes.emplace(muse::audio::CATEGORIES_ATTRIBUTE, String::fromStdString(classInfo.subCategoriesString()));
+        meta.attributes.emplace(muse::audio::CATEGORIES_ATTRIBUTE, String::fromStdString(
+                                    classInfo.subCategoriesString()));
         meta.vendor = classInfo.vendor();
         meta.hasNativeEditorSupport = true;
 

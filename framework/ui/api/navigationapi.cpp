@@ -74,7 +74,8 @@ bool NavigationApi::goToControl(const QString& section, const QString& panel, co
 {
     bool ok = false;
     if (controlNameOrIndex.isString()) {
-        ok = navigation()->requestActivateByName(section.toStdString(), panel.toStdString(), controlNameOrIndex.toString().toStdString());
+        ok = navigation()->requestActivateByName(section.toStdString(), panel.toStdString(),
+                                                 controlNameOrIndex.toString().toStdString());
     } else if (controlNameOrIndex.isArray()) {
         if (controlNameOrIndex.property("length").toInt() == 2) {
             INavigation::Index idx;

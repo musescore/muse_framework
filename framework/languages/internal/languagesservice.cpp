@@ -408,7 +408,8 @@ async::Channel<bool> LanguagesService::restartRequiredToApplyLanguageChanged() c
     return m_restartRequiredToApplyLanguageChanged;
 }
 
-void LanguagesService::downloadServerLanguagesInfo(const QString& languageCode, std::function<void(const RetVal<QJsonObject>&)> finished)
+void LanguagesService::downloadServerLanguagesInfo(const QString& languageCode,
+                                                   std::function<void(const RetVal<QJsonObject>&)> finished)
 {
     auto buff = std::make_shared<QBuffer>();
     RetVal<Progress> progress = m_networkManager->get(configuration()->languagesUpdateUrl().toString(), buff);
@@ -434,7 +435,8 @@ void LanguagesService::downloadServerLanguagesInfo(const QString& languageCode, 
     });
 }
 
-QStringList LanguagesService::languagesToUpdate(const QString& mainLanguageCode, const QJsonObject& serverLanguagesInfo) const
+QStringList LanguagesService::languagesToUpdate(const QString& mainLanguageCode,
+                                                const QJsonObject& serverLanguagesInfo) const
 {
     QStringList languagesToUpdate;
 
@@ -478,9 +480,11 @@ void LanguagesService::doUpdateLanguages(const QStringList& languageCodes, Progr
     // instead. The type of this parameter cannot be written directly, as it
     // would be a recursive type.
     auto updateLanguage
-        = [this, languageCodes, overallProgress, overallFinished](int languageIndex, auto updateNextLanguage) mutable -> void {
+        = [this, languageCodes, overallProgress, overallFinished](int languageIndex,
+                                                                  auto updateNextLanguage) mutable -> void {
         auto progressCallback
-            = [languageCodes, overallProgress, languageIndex](int64_t current, int64_t total, const std::string& msg) mutable {
+            = [languageCodes, overallProgress, languageIndex](int64_t current, int64_t total,
+                                                              const std::string& msg) mutable {
             const int64_t overallTotal = languageCodes.size() * 10000;
             const int64_t overallCurrent = languageIndex * 10000 + current * 10000 / total;
             overallProgress.progress(overallCurrent, overallTotal, msg);
@@ -506,7 +510,8 @@ void LanguagesService::doUpdateLanguages(const QStringList& languageCodes, Progr
 }
 
 void LanguagesService::doUpdateLanguage(const QString& languageCode,
-                                        std::function<void(int64_t current, int64_t total, const std::string&)> progressCallback,
+                                        std::function<void(int64_t current, int64_t total,
+                                                           const std::string&)> progressCallback,
                                         std::function<void(const Ret&)> finished)
 {
     auto qbuff = std::make_shared<QBuffer>();
@@ -521,12 +526,15 @@ void LanguagesService::doUpdateLanguage(const QString& languageCode,
     progressCallback(0, 1, downloadingMsg);
 
     downloadProgress.val.progressChanged().onReceive(this,
-                                                     [progressCallback, downloadingMsg](int64_t current, int64_t total, const std::string&) {
+                                                     [progressCallback, downloadingMsg](int64_t current, int64_t total,
+                                                                                        const std::string&) {
         progressCallback(current, total,
                          downloadingMsg);
     });
 
-    downloadProgress.val.finished().onReceive(this, [this, progressCallback, finished, languageCode, qbuff](const ProgressResult& res) {
+    downloadProgress.val.finished().onReceive(this,
+                                              [this, progressCallback, finished, languageCode,
+                                               qbuff](const ProgressResult& res) {
         if (!res.ret) {
             finished(make_ret(Err::ErrorDownloadLanguage));
             return;

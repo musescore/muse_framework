@@ -268,7 +268,11 @@ struct Event {
         return m_data < other.m_data;
     }
 
-    bool isChannelVoice() const { return messageType() == MessageType::ChannelVoice10 || messageType() == MessageType::ChannelVoice20; }
+    bool isChannelVoice() const
+    {
+        return messageType() == MessageType::ChannelVoice10 || messageType() == MessageType::ChannelVoice20;
+    }
+
     bool isChannelVoice20() const { return messageType() == MessageType::ChannelVoice20; }
     bool isMessageTypeIn(const std::set<MessageType>& types) const { return types.find(messageType()) != types.end(); }
     bool isOpcodeIn(const std::set<Opcode>& opcodes) const { return opcodes.find(opcode()) != opcodes.end(); }
@@ -278,7 +282,8 @@ struct Event {
     {
         switch (messageType()) {
         case MessageType::Utility: {
-            std::set<UtilityStatus> statuses = { UtilityStatus::NoOperation, UtilityStatus::JRClock, UtilityStatus::JRTimestamp };
+            std::set<UtilityStatus> statuses
+                = { UtilityStatus::NoOperation, UtilityStatus::JRClock, UtilityStatus::JRTimestamp };
             return statuses.find(static_cast<UtilityStatus>(status())) != statuses.end();
         }
 
@@ -288,7 +293,8 @@ struct Event {
             return true;
 
         case MessageType::ChannelVoice10:
-            return isOpcodeIn({ Opcode::NoteOff, Opcode::NoteOn, Opcode::PolyPressure, Opcode::ControlChange, Opcode::ProgramChange,
+            return isOpcodeIn({ Opcode::NoteOff, Opcode::NoteOn, Opcode::PolyPressure, Opcode::ControlChange,
+                                Opcode::ProgramChange,
                                 Opcode::ChannelPressure, Opcode::PitchBend });
 
         case MessageType::ChannelVoice20:
@@ -1055,7 +1061,8 @@ struct Event {
                        + " attr type: " + std::to_string(static_cast<uint32_t>(attributeType()))
                        + " attr value: " + std::to_string(attribute());
                 if (attributeType() == AttributeType::Pitch) {
-                    str += "pitch: note:" + std::to_string(pitchNote()) + " " + std::to_string(pitchTuning()) + " semitone";
+                    str += "pitch: note:" + std::to_string(pitchNote()) + " " + std::to_string(pitchTuning())
+                           + " semitone";
                 }
                 break;
             case Opcode::PolyPressure:

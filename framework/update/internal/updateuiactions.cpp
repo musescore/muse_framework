@@ -37,7 +37,8 @@ const UiActionList UpdateUiActions::m_actions = {
              )
 };
 
-UpdateUiActions::UpdateUiActions(std::shared_ptr<UpdateActionController> controller, const modularity::ContextPtr& iocCtx)
+UpdateUiActions::UpdateUiActions(std::shared_ptr<UpdateActionController> controller,
+                                 const modularity::ContextPtr& iocCtx)
     : Contextable(iocCtx), m_controller(controller)
 {
 }

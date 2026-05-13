@@ -284,19 +284,23 @@ typedef ms_Result (* ms_MuseSampler_finalize_track)(ms_MuseSampler ms, ms_Track 
 typedef ms_Result (* ms_MuseSampler_clear_track)(ms_MuseSampler ms, ms_Track track);
 
 // Added in 0.4
-typedef ms_Result (* ms_MuseSampler_add_track_dynamics_event_2)(ms_MuseSampler ms, ms_Track track, ms_DynamicsEvent_2 evt);
+typedef ms_Result (* ms_MuseSampler_add_track_dynamics_event_2)(ms_MuseSampler ms, ms_Track track,
+                                                                ms_DynamicsEvent_2 evt);
 typedef ms_Result (* ms_MuseSampler_add_track_pedal_event_2)(ms_MuseSampler ms, ms_Track track, ms_PedalEvent_2 evt);
 
 typedef int (* ms_MuseSampler_is_ranged_articulation)(ms_NoteArticulation);
-typedef ms_Result (* ms_MuseSampler_add_track_event_range_start)(ms_MuseSampler, ms_Track, int voice, ms_NoteArticulation);
-typedef ms_Result (* ms_MuseSampler_add_track_event_range_end)(ms_MuseSampler, ms_Track, int voice, ms_NoteArticulation);
+typedef ms_Result (* ms_MuseSampler_add_track_event_range_start)(ms_MuseSampler, ms_Track, int voice,
+                                                                 ms_NoteArticulation);
+typedef ms_Result (* ms_MuseSampler_add_track_event_range_end)(ms_MuseSampler, ms_Track, int voice,
+                                                               ms_NoteArticulation);
 
 // Added in 0.5
 typedef ms_Result (* ms_MuseSampler_add_pitch_bend)(ms_MuseSampler ms, ms_Track track, ms_PitchBendInfo info);
 typedef ms_Result (* ms_MuseSampler_add_vibrato)(ms_MuseSampler ms, ms_Track track, ms_VibratoInfo info);
 
 // Added in 0.3
-typedef ms_Result (* ms_MuseSampler_stop_audition_note)(ms_MuseSampler ms, ms_Track track, ms_AuditionStopNoteEvent evt);
+typedef ms_Result (* ms_MuseSampler_stop_audition_note)(ms_MuseSampler ms, ms_Track track,
+                                                        ms_AuditionStopNoteEvent evt);
 
 // Added in 0.3
 typedef ms_Result (* ms_MuseSampler_start_offline_mode)(ms_MuseSampler ms, double sample_rate);
@@ -314,11 +318,14 @@ typedef const char*(* ms_Instrument_get_pack_name)(ms_InstrumentInfo);
 typedef const char*(* ms_Instrument_get_vendor_name)(ms_InstrumentInfo);
 typedef const char*(* ms_Instrument_get_info_json)(ms_InstrumentInfo);
 
-typedef ms_PresetChange (* ms_MuseSampler_create_preset_change)(ms_MuseSampler ms, ms_Track track, long long location_us);
-typedef ms_Result (* ms_MuseSampler_add_preset)(ms_MuseSampler ms, ms_Track track, ms_PresetChange preset_change, const char* preset_name);
+typedef ms_PresetChange (* ms_MuseSampler_create_preset_change)(ms_MuseSampler ms, ms_Track track,
+                                                                long long location_us);
+typedef ms_Result (* ms_MuseSampler_add_preset)(ms_MuseSampler ms, ms_Track track, ms_PresetChange preset_change,
+                                                const char* preset_name);
 
 typedef const char*(* ms_get_text_articulations)(int instrument_id, const char* preset_name);
-typedef ms_Result (* ms_MuseSampler_add_track_text_articulation_event)(ms_MuseSampler ms, ms_Track track, ms_TextArticulationEvent evt);
+typedef ms_Result (* ms_MuseSampler_add_track_text_articulation_event)(ms_MuseSampler ms, ms_Track track,
+                                                                       ms_TextArticulationEvent evt);
 
 typedef const char*(* ms_get_drum_mapping)(int instrument_id);
 
@@ -351,7 +358,8 @@ typedef struct ms_SyllableEvent2
     bool _hyphened_to_next;
 } ms_SyllableEvent2;
 
-typedef ms_Result (* ms_MuseSampler_add_track_syllable_event_2)(ms_MuseSampler ms, ms_Track track, ms_SyllableEvent2 evt);
+typedef ms_Result (* ms_MuseSampler_add_track_syllable_event_2)(ms_MuseSampler ms, ms_Track track,
+                                                                ms_SyllableEvent2 evt);
 
 typedef enum ms_RenderingState
 {
@@ -387,8 +395,10 @@ typedef void (* ms_MuseSampler_clear_online_cache)(ms_MuseSampler ms);
 
 typedef ms_Result (* ms_MuseSampler_add_audition_cc_event)(ms_MuseSampler ms, ms_Track track, int cc, float value);
 
-typedef ms_Result (* ms_MuseSampler_add_track_note_event_6)(ms_MuseSampler ms, ms_Track track, ms_NoteEvent_5 evt, long long& event_id);
-typedef ms_Result (* ms_MuseSampler_start_audition_note_5)(ms_MuseSampler ms, ms_Track track, ms_AuditionStartNoteEvent_5 evt);
+typedef ms_Result (* ms_MuseSampler_add_track_note_event_6)(ms_MuseSampler ms, ms_Track track, ms_NoteEvent_5 evt,
+                                                            long long& event_id);
+typedef ms_Result (* ms_MuseSampler_start_audition_note_5)(ms_MuseSampler ms, ms_Track track,
+                                                           ms_AuditionStartNoteEvent_5 evt);
 // ------------------------------------------------------------
 
 // Added in 0.103
@@ -398,7 +408,8 @@ typedef void (* ms_rendering_state_changed_callback)(void* user_data, ms_Renderi
 typedef ms_RenderRangeInfo2 (* ms_RenderProgressInfo2_get_next)(ms_RenderingRangeList range_list);
 
 typedef void (* ms_MuseSampler_set_lazy_render)(ms_MuseSampler ms, bool enabled);
-typedef void (* ms_MuseSampler_set_rendering_state_changed_callback_2)(ms_MuseSampler ms, ms_rendering_state_changed_callback callback,
+typedef void (* ms_MuseSampler_set_rendering_state_changed_callback_2)(ms_MuseSampler ms,
+                                                                       ms_rendering_state_changed_callback callback,
                                                                        void* user_data);
 
 namespace muse::musesampler {

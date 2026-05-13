@@ -35,7 +35,8 @@
 #include "audiocom/iaudiocomservice.h"
 
 namespace muse::cloud {
-class AudioComService : public IAudioComService, public AbstractCloudService, public std::enable_shared_from_this<AudioComService>
+class AudioComService : public IAudioComService, public AbstractCloudService,
+    public std::enable_shared_from_this<AudioComService>
 {
     muse::GlobalInject<ICloudConfiguration> configuration;
     muse::GlobalInject<network::INetworkManagerCreator> networkManagerCreator;
@@ -60,15 +61,15 @@ private:
 
     network::RequestHeaders headers(const QString& token = QString()) const;
 
-    async::Promise<Ret> uploadNewAudio(DevicePtr audioData, const QString& audioFormat, const QString& title, const QUrl& url,
-                                       Visibility visibility, ProgressPtr progress);
+    async::Promise<Ret> uploadNewAudio(DevicePtr audioData, const QString& audioFormat, const QString& title,
+                                       const QUrl& url, Visibility visibility, ProgressPtr progress);
 
-    async::Promise<Ret> replaceExistingAudio(DevicePtr audioData, const QString& audioFormat, const QString& title, const QUrl& url,
-                                             Visibility visibility, ProgressPtr progress);
+    async::Promise<Ret> replaceExistingAudio(DevicePtr audioData, const QString& audioFormat, const QString& title,
+                                             const QUrl& url, Visibility visibility, ProgressPtr progress);
 
     async::Promise<Ret> doUploadAudio(DevicePtr audioData, const QString& audioFormat, ProgressPtr progress);
-    async::Promise<Ret> doCreateAudio(const QString& title, int size, const QString& audioFormat, const QUrl& existingUrl,
-                                      Visibility visibility, bool replaceExisting);
+    async::Promise<Ret> doCreateAudio(const QString& title, int size, const QString& audioFormat,
+                                      const QUrl& existingUrl, Visibility visibility, bool replaceExisting);
 
     async::Promise<Ret> doUpdateVisibility(const QUrl& url, Visibility visibility);
 

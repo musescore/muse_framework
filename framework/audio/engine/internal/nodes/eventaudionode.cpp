@@ -135,7 +135,8 @@ void EventAudioNode::applyInputParams(const AudioInputParams& requiredParams)
         m_playbackData = m_synth->playbackData();
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audioFactory()->makeSynth(m_trackId, requiredParams, m_playbackData.setupData);
+    RetVal<synth::ISynthesizerPtr> synth
+        = audioFactory()->makeSynth(m_trackId, requiredParams, m_playbackData.setupData);
 
     if (!synth.ret) {
         synth = audioFactory()->makeDefaultSynth(m_trackId);

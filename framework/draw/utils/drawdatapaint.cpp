@@ -26,7 +26,8 @@
 using namespace muse;
 using namespace muse::draw;
 
-static void drawItem(IPaintProviderPtr& provider, const DrawData::Item& item, const std::map<int, DrawData::State>& states,
+static void drawItem(IPaintProviderPtr& provider, const DrawData::Item& item, const std::map<int,
+                                                                                             DrawData::State>& states,
                      const Color& overlay)
 {
     // first draw obj itself

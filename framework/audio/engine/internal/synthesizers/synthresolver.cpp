@@ -42,7 +42,8 @@ void SynthResolver::init(const AudioInputParams& defaultInputParams, const Outpu
     m_defaultOutputSpec = defaultOutputSpec;
 }
 
-ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioInputParams& params, const audio::OutputSpec& spec,
+ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioInputParams& params,
+                                            const audio::OutputSpec& spec,
                                             const PlaybackSetupData& setupData) const
 {
     ONLY_AUDIO_ENGINE_THREAD;

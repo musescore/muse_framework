@@ -60,7 +60,8 @@ public:
     virtual async::Promise<TrackIdList> trackIdList() const = 0;
     virtual async::Promise<RetVal<TrackName> > trackName(const TrackId trackId) const = 0;
 
-    virtual async::Promise<TrackId, TrackParams> addTrack(const TrackName& name, io::IODevice* data, const TrackParams& params) = 0;
+    virtual async::Promise<TrackId, TrackParams> addTrack(const TrackName& name, io::IODevice* data,
+                                                          const TrackParams& params) = 0;
     virtual async::Promise<TrackId, TrackParams> addTrack(const TrackName& name, const mpe::PlaybackData& data,
                                                           const TrackParams& params) = 0;
 

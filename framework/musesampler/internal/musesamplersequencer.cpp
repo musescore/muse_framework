@@ -287,7 +287,8 @@ void MuseSamplerSequencer::loadDynamicEvents(const DynamicLevelLayers& changes)
         }
 
         for (const auto& dynamic : layer.second) {
-            m_samplerLib->addDynamicsEvent(m_sampler, track, DynamicEvent { dynamic.first, dynamicLevelRatio(dynamic.second) });
+            m_samplerLib->addDynamicsEvent(m_sampler, track,
+                                           DynamicEvent { dynamic.first, dynamicLevelRatio(dynamic.second) });
         }
     }
 }
@@ -448,7 +449,8 @@ void MuseSamplerSequencer::addSyllableEvent(const mpe::SyllableEvent& event, lon
 
 void MuseSamplerSequencer::addPitchBends(const mpe::NoteEvent& noteEvent, long long noteEventId, ms_Track track)
 {
-    auto addPitchBendEvent = [this, noteEventId, track](long long startUs, long long durationUs, pitch_level_t pitchOffset) {
+    auto addPitchBendEvent
+        = [this, noteEventId, track](long long startUs, long long durationUs, pitch_level_t pitchOffset) {
         ms_PitchBendInfo pitchBend;
         pitchBend.event_id = noteEventId;
         pitchBend._start_us = startUs;
@@ -641,7 +643,8 @@ double MuseSamplerSequencer::dynamicLevelRatio(const dynamic_level_t level) cons
     auto level_it = std::next(prev_level);
     while (level_it != last_level) {
         if (level >= prev_level->first && level <= level_it->first) {
-            auto alpha = static_cast<double>(level - prev_level->first) / static_cast<double>(level_it->first - prev_level->first);
+            auto alpha = static_cast<double>(level - prev_level->first)
+                         / static_cast<double>(level_it->first - prev_level->first);
             return alpha * level_it->second + (1.0 - alpha) * prev_level->second;
         }
         prev_level = level_it;
@@ -703,7 +706,8 @@ void MuseSamplerSequencer::parseAuditionParams(const mpe::PlaybackEvent& event, 
     if (std::holds_alternative<mpe::TextArticulationEvent>(event)) {
         const mpe::TextArticulationEvent& artEvent = std::get<mpe::TextArticulationEvent>(event);
         out.textArticulation = artEvent.text.toStdString();
-        out.textArticulationStartsAtNote = artEvent.flags.testFlag(mpe::TextArticulationEvent::StartsAtPlaybackPosition);
+        out.textArticulationStartsAtNote
+            = artEvent.flags.testFlag(mpe::TextArticulationEvent::StartsAtPlaybackPosition);
     } else if (std::holds_alternative<mpe::SoundPresetChangeEvent>(event)) {
         const mpe::SoundPresetChangeEvent& soundPresetEvent = std::get<mpe::SoundPresetChangeEvent>(event);
 

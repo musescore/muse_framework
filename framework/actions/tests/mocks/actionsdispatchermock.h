@@ -38,7 +38,8 @@ public:
 
     MOCK_METHOD(void, unReg, (Actionable*), (override));
     MOCK_METHOD(void, reg, (Actionable*, const ActionCode&, const ActionCallBackWithNameAndData&), (override));
-    MOCK_METHOD(void, reg, (Actionable * client, const ActionQuery& actionQuery, const ActionCallBackWithQuery& call), (override));
+    MOCK_METHOD(void, reg, (Actionable * client, const ActionQuery& actionQuery, const ActionCallBackWithQuery& call),
+                (override));
     MOCK_METHOD(bool, isReg, (Actionable*), (const, override));
     MOCK_METHOD(ActionCodeList, actionList, (), (const, override));
 };

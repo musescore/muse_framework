@@ -101,9 +101,10 @@ size_t Mp3Encoder::encode(const samples_t samplesPerChannel, const float* input)
         return 0;
     }
 
-    const int encodedBytes = lame_encode_buffer_interleaved_ieee_float(m_handler->flags, input, static_cast<int>(samplesPerChannel),
-                                                                       m_outputBuffer.data(),
-                                                                       static_cast<int>(m_outputBuffer.size()));
+    const int encodedBytes
+        = lame_encode_buffer_interleaved_ieee_float(m_handler->flags, input, static_cast<int>(samplesPerChannel),
+                                                    m_outputBuffer.data(),
+                                                    static_cast<int>(m_outputBuffer.size()));
 
     if (encodedBytes < 0) {
         LOGE() << "LAME encoder failed: " << encodedBytes;

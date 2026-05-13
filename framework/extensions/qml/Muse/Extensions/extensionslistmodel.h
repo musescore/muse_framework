@@ -37,7 +37,8 @@
 #include "shortcuts/ishortcutsregister.h"
 
 namespace muse::extensions {
-class ExtensionsListModel : public QAbstractListModel, public QQmlParserStatus, public Contextable, public async::Asyncable
+class ExtensionsListModel : public QAbstractListModel, public QQmlParserStatus, public Contextable,
+    public async::Asyncable
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)

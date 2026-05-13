@@ -125,7 +125,8 @@ private:
         bool isLeftSide = false;
 
         LayoutButton(QString _text, int _buttonType,  ButtonRole _buttonRole, bool _isAccent, bool _isLeftSide = false)
-            : text(_text), buttonType(_buttonType),  buttonRole(_buttonRole), isAccent(_isAccent), isLeftSide(_isLeftSide)
+            : text(_text), buttonType(_buttonType),  buttonRole(_buttonRole), isAccent(_isAccent), isLeftSide(
+                _isLeftSide)
         {
         }
     };
@@ -133,45 +134,74 @@ private:
     LayoutButton* layoutButton(const QQuickItem* item) const;
 
     QHash<ButtonType, LayoutButton*> m_layoutButtons {
-        { NoButton,        new LayoutButton(muse::qtrc("uicomponents", "No button"),        NoButton,        RejectRole,      true) },
-        { Ok,              new LayoutButton(muse::qtrc("uicomponents", "OK"),               Ok,              AcceptRole,      true) },
-        { Save,            new LayoutButton(muse::qtrc("uicomponents", "Save"),             Save,            ApplyRole,       true) },
-        { SaveAll,         new LayoutButton(muse::qtrc("uicomponents", "Save all"),         SaveAll,         ApplyRole,       false) },
-        { DontSave,        new LayoutButton(muse::qtrc("uicomponents", "Don’t save"),       DontSave,        DestructiveRole, false) },
-        { Open,            new LayoutButton(muse::qtrc("uicomponents", "Open"),             Open,            AcceptRole,      true) },
-        { Yes,             new LayoutButton(muse::qtrc("uicomponents", "Yes"),              Yes,             AcceptRole,      true) },
-        { YesToAll,        new LayoutButton(muse::qtrc("uicomponents", "Yes to all"),       YesToAll,        AcceptRole,      false) },
-        { No,              new LayoutButton(muse::qtrc("uicomponents", "No"),               No,              RejectRole,      false) },
-        { NoToAll,         new LayoutButton(muse::qtrc("uicomponents", "No to all"),        NoToAll,         RejectRole,      false) },
-        { Abort,           new LayoutButton(muse::qtrc("uicomponents", "Abort"),            Abort,           RejectRole,      false) },
-        { Retry,           new LayoutButton(muse::qtrc("uicomponents", "Retry"),            Retry,           RetryRole,       false) },
-        { Ignore,          new LayoutButton(muse::qtrc("uicomponents", "Ignore"),           Ignore,          DestructiveRole, false) },
-        { Close,           new LayoutButton(muse::qtrc("uicomponents", "Close"),            Close,           RejectRole,      false) },
-        { Cancel,          new LayoutButton(muse::qtrc("uicomponents", "Cancel"),           Cancel,          RejectRole,      false) },
-        { Discard,         new LayoutButton(muse::qtrc("uicomponents", "Discard"),          Discard,         DestructiveRole, false) },
-        { Help,            new LayoutButton(muse::qtrc("uicomponents", "Help"),             Help,            HelpRole,        false) },
-        { Apply,           new LayoutButton(muse::qtrc("uicomponents", "Apply"),            Apply,           ApplyRole,       false) },
-        { Reset,           new LayoutButton(muse::qtrc("uicomponents", "Reset"),            Reset,           ResetRole,       false) },
-        { RestoreDefaults, new LayoutButton(muse::qtrc("uicomponents", "Restore defaults"), RestoreDefaults, ResetRole,       false) },
-        { Continue,        new LayoutButton(muse::qtrc("uicomponents", "Continue"),         Continue,        ContinueRole,    true) },
-        { Next,            new LayoutButton(muse::qtrc("uicomponents", "Next"),             Next,            ContinueRole,    false) },
-        { Back,            new LayoutButton(muse::qtrc("uicomponents", "Back"),             Back,            BackRole,        false) },
-        { Select,          new LayoutButton(muse::qtrc("uicomponents", "Select"),           Select,          AcceptRole,      true) },
-        { Clear,           new LayoutButton(muse::qtrc("uicomponents", "Clear"),            Clear,           DestructiveRole, false) },
-        { Done,            new LayoutButton(muse::qtrc("uicomponents", "Done"),             Done,            AcceptRole,      true) }
+        { NoButton,        new LayoutButton(muse::qtrc("uicomponents",
+                                                       "No button"),        NoButton,        RejectRole,      true) },
+        { Ok,              new LayoutButton(muse::qtrc("uicomponents",
+                                                       "OK"),               Ok,              AcceptRole,      true) },
+        { Save,            new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Save"),             Save,            ApplyRole,       true) },
+        { SaveAll,         new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Save all"),         SaveAll,         ApplyRole,       false) },
+        { DontSave,        new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Don’t save"),       DontSave,        DestructiveRole, false) },
+        { Open,            new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Open"),             Open,            AcceptRole,      true) },
+        { Yes,             new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Yes"),              Yes,             AcceptRole,      true) },
+        { YesToAll,        new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Yes to all"),       YesToAll,        AcceptRole,      false) },
+        { No,              new LayoutButton(muse::qtrc("uicomponents",
+                                                       "No"),               No,              RejectRole,      false) },
+        { NoToAll,         new LayoutButton(muse::qtrc("uicomponents",
+                                                       "No to all"),        NoToAll,         RejectRole,      false) },
+        { Abort,           new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Abort"),            Abort,           RejectRole,      false) },
+        { Retry,           new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Retry"),            Retry,           RetryRole,       false) },
+        { Ignore,          new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Ignore"),           Ignore,          DestructiveRole, false) },
+        { Close,           new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Close"),            Close,           RejectRole,      false) },
+        { Cancel,          new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Cancel"),           Cancel,          RejectRole,      false) },
+        { Discard,         new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Discard"),          Discard,         DestructiveRole, false) },
+        { Help,            new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Help"),             Help,            HelpRole,        false) },
+        { Apply,           new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Apply"),            Apply,           ApplyRole,       false) },
+        { Reset,           new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Reset"),            Reset,           ResetRole,       false) },
+        { RestoreDefaults, new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Restore defaults"), RestoreDefaults, ResetRole,       false) },
+        { Continue,        new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Continue"),         Continue,        ContinueRole,    true) },
+        { Next,            new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Next"),             Next,            ContinueRole,    false) },
+        { Back,            new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Back"),             Back,            BackRole,        false) },
+        { Select,          new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Select"),           Select,          AcceptRole,      true) },
+        { Clear,           new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Clear"),            Clear,           DestructiveRole, false) },
+        { Done,            new LayoutButton(muse::qtrc("uicomponents",
+                                                       "Done"),             Done,            AcceptRole,      true) }
     };
 
     std::vector<std::vector<ButtonRole> > buttonRoleLayouts = {
         // WinLayout
-        std::vector <ButtonRole> { CustomRole, ResetRole, RetryRole, BackRole, AcceptRole, ApplyRole, ContinueRole, DestructiveRole,
+        std::vector <ButtonRole> { CustomRole, ResetRole, RetryRole, BackRole, AcceptRole, ApplyRole, ContinueRole,
+                                   DestructiveRole,
                                    RejectRole, HelpRole },
 
         // MacLayout
-        std::vector <ButtonRole> { CustomRole, HelpRole, RetryRole, DestructiveRole, RejectRole, ResetRole, BackRole, AcceptRole,
+        std::vector <ButtonRole> { CustomRole, HelpRole, RetryRole, DestructiveRole, RejectRole, ResetRole, BackRole,
+                                   AcceptRole,
                                    ApplyRole, ContinueRole },
 
         // LinuxLayout
-        std::vector <ButtonRole> { CustomRole, HelpRole, RetryRole, DestructiveRole, RejectRole, ResetRole, BackRole, AcceptRole,
+        std::vector <ButtonRole> { CustomRole, HelpRole, RetryRole, DestructiveRole, RejectRole, ResetRole, BackRole,
+                                   AcceptRole,
                                    ApplyRole, ContinueRole }
     };
 

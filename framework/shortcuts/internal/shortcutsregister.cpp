@@ -211,7 +211,8 @@ void ShortcutsRegister::expandStandardKeys(ShortcutList& shortcuts) const
     ShortcutList notbonded;
 
     for (Shortcut& shortcut : shortcuts) {
-        QKeySequence ignoredSeq = QKeySequence(muse::value(SHORTCUTS_EXPAND_IGNORE_MAP, shortcut.standardKey, Qt::Key_unknown));
+        QKeySequence ignoredSeq
+            = QKeySequence(muse::value(SHORTCUTS_EXPAND_IGNORE_MAP, shortcut.standardKey, Qt::Key_unknown));
 
         if (!shortcut.sequences.empty()) {
             std::string ignoredSeqStr = ignoredSeq.toString().toStdString();
@@ -255,7 +256,8 @@ void ShortcutsRegister::expandStandardKeys(ShortcutList& shortcuts) const
     }
 
     if (!expanded.empty()) {
-        LOGD() << "added " << expanded.size() << " shortcut, because they are alternative shortcuts for the given standard keys";
+        LOGD() << "added " << expanded.size() <<
+            " shortcut, because they are alternative shortcuts for the given standard keys";
 
         shortcuts.splice(shortcuts.end(), expanded);
     }

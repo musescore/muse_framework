@@ -28,9 +28,11 @@
 using namespace muse::uicomponents;
 
 SelectMultipleDirectoriesModel::SelectMultipleDirectoriesModel(QObject* parent)
-    : QAbstractListModel(parent), muse::Contextable(muse::iocCtxForQmlObject(this)), m_selectionModel(new ItemMultiSelectionModel(this))
+    : QAbstractListModel(parent), muse::Contextable(muse::iocCtxForQmlObject(this)), m_selectionModel(new ItemMultiSelectionModel(
+                                                                                                          this))
 {
-    connect(m_selectionModel, &ItemMultiSelectionModel::selectionChanged, this, &SelectMultipleDirectoriesModel::selectionChanged);
+    connect(m_selectionModel, &ItemMultiSelectionModel::selectionChanged, this,
+            &SelectMultipleDirectoriesModel::selectionChanged);
 }
 
 QVariant SelectMultipleDirectoriesModel::data(const QModelIndex& index, int role) const

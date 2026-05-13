@@ -30,7 +30,8 @@ QmlTranslation::QmlTranslation(QObject* parent)
 {
 }
 
-QString QmlTranslation::translate(const QString& context, const QString& text, const QString& disambiguation, int n) const
+QString QmlTranslation::translate(const QString& context, const QString& text, const QString& disambiguation,
+                                  int n) const
 {
     return muse::qtrc(context.toUtf8().constData(),
                       text.toUtf8().constData(),

@@ -72,7 +72,8 @@ protected:
         fourthNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Articulation pattern "Standard", which means that note should be played without any modifications
-        m_standardPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+        m_standardPattern.arrangementPattern
+            = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
         m_standardPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
         m_standardPattern.expressionPattern = createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural));
     }
@@ -167,8 +168,10 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern)
     pitch_level_t pitchDiff = m_initialData[0].nominalPitchLevel - m_initialData[1].nominalPitchLevel;
 
     ArticulationPatternSegment glissandoPattern;
-    glissandoPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
-    glissandoPattern.pitchPattern = createSimplePitchPattern(pitchDiff / (MAX_PITCH_LEVEL / TEN_PERCENT) /*increment_pitch_diff*/);
+    glissandoPattern.arrangementPattern
+        = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+    glissandoPattern.pitchPattern
+        = createSimplePitchPattern(pitchDiff / (MAX_PITCH_LEVEL / TEN_PERCENT) /*increment_pitch_diff*/);
     glissandoPattern.expressionPattern
         = createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural) /* no dynamic changes comparing to the natural one*/);
 
@@ -273,7 +276,8 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
 
     for (int i = 0; i <= dynamicSegmentsCount; ++i) {
         ArticulationPatternSegment crescendoPattern;
-        crescendoPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+        crescendoPattern.arrangementPattern
+            = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
         crescendoPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
         crescendoPattern.expressionPattern = createSimpleExpressionPattern(dynamicLevelFromType(
                                                                                DynamicType::Natural) + i * DYNAMIC_LEVEL_STEP
@@ -320,7 +324,8 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
         // [THEN] We expect that ExpressionCurve of every note will be adapted to the applied CrescendoPattern
         //        That means that every note will be played louder on 125% than the previous one
 
-        dynamic_level_t actualResult = dynamicLevelFromType(DynamicType::f) + i * static_cast<dynamic_level_t>(dynamicLevelDiff)
+        dynamic_level_t actualResult = dynamicLevelFromType(DynamicType::f) + i
+                                       * static_cast<dynamic_level_t>(dynamicLevelDiff)
                                        / dynamicSegmentsCount;
         EXPECT_EQ(noteEvents.at(i).expressionCtx().expressionCurve.maxAmplitudeLevel(),
                   actualResult);

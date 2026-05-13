@@ -409,7 +409,8 @@ public:
     }
 
     template<typename ... Types>
-    void addReceiveStream(StreamName name, rpc::StreamId id, const async::Channel<Types...>& ch, const RpcStreamExec& exec = nullptr)
+    void addReceiveStream(StreamName name, rpc::StreamId id, const async::Channel<Types...>& ch,
+                          const RpcStreamExec& exec = nullptr)
     {
         auto s = new RpcStream<Types...>(this, name, id, StreamType::Receive, ch, exec);
         addStream(std::shared_ptr<IRpcStream>(s));

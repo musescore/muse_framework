@@ -190,7 +190,8 @@ void EditShortcutModel::checkNewSequenceForConflicts()
     for (const QVariant& shortcut : m_potentialConflictShortcuts) {
         QVariantMap map = shortcut.toMap();
 
-        std::vector<std::string> toCheckSequences = Shortcut::sequencesFromString(map.value("sequence").toString().toStdString());
+        std::vector<std::string> toCheckSequences = Shortcut::sequencesFromString(map.value(
+                                                                                      "sequence").toString().toStdString());
 
         for (const std::string& toCheckSequence : toCheckSequences) {
             if (input == toCheckSequence) {
@@ -240,7 +241,8 @@ void EditShortcutModel::trySave()
         return;
     }
 
-    QString str = conflictWarn + "<br><br>" + muse::qtrc("shortcuts", "Are you sure you want to assign it to <b>%1</b> instead?")
+    QString str = conflictWarn + "<br><br>" + muse::qtrc("shortcuts",
+                                                         "Are you sure you want to assign it to <b>%1</b> instead?")
                   .arg(m_originShortcutTitle);
 
     IInteractive::Text text(str.toStdString(), IInteractive::TextFormat::RichText);

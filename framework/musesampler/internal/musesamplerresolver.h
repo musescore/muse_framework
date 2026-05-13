@@ -61,7 +61,8 @@ public:
     std::vector<Instrument> instruments() const override;
 
 private:
-    void loadSoundPresetAttributes(audio::SoundPresetAttributes& attributes, int instrumentId, const char* presetCode) const;
+    void loadSoundPresetAttributes(audio::SoundPresetAttributes& attributes, int instrumentId,
+                                   const char* presetCode) const;
 
     String buildMuseInstrumentId(const String& category, const String& name, int uniqueId) const;
 

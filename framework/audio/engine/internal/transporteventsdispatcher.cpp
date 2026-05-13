@@ -42,7 +42,8 @@ void TransportEventsDispatcher::init()
     m_eventsReceived.onReceive(this, [this](const TransportEvents& events) {
         for (const TransportEvent& event : events) {
             //! TODO These events are contextual, we need to add context passing here
-            Msg msg = rpc::make_notification(rpc::GLOBAL_CTX_ID, MsgCode::TransportEventReceived, RpcPacker::pack(event));
+            Msg msg = rpc::make_notification(rpc::GLOBAL_CTX_ID, MsgCode::TransportEventReceived, RpcPacker::pack(
+                                                 event));
             rpcChannel()->send(msg);
         }
     });

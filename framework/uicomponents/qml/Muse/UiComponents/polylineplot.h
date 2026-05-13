@@ -43,7 +43,8 @@ struct GhostPoint {
     qreal distToSegment = 1e18;
 };
 
-class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, public muse::actions::Actionable, public muse::Contextable
+class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, public muse::actions::Actionable,
+    public muse::Contextable
 {
     Q_OBJECT
 
@@ -54,7 +55,8 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
     Q_PROPERTY(qreal pointRadius READ pointRadius WRITE setPointRadius NOTIFY pointRadiusChanged)
     Q_PROPERTY(qreal ghostPointRadius READ ghostPointRadius WRITE setGhostPointRadius NOTIFY ghostPointRadiusChanged)
     Q_PROPERTY(qreal pointOutlineWidth READ pointOutlineWidth WRITE setPointOutlineWidth NOTIFY pointOutlineWidthChanged)
-    Q_PROPERTY(QColor pointOutlineColor READ pointOutlineColor WRITE setPointOutlineColor NOTIFY pointOutlineColorChanged)
+    Q_PROPERTY(
+        QColor pointOutlineColor READ pointOutlineColor WRITE setPointOutlineColor NOTIFY pointOutlineColorChanged)
     Q_PROPERTY(QColor pointCentreColor READ pointCentreColor WRITE setPointCentreColor NOTIFY pointCentreColorChanged)
     Q_PROPERTY(
         QColor ghostPointOutlineColor READ ghostPointOutlineColor WRITE setGhostPointOutlineColor NOTIFY ghostPointOutlineColorChanged)

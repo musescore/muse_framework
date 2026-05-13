@@ -615,7 +615,8 @@ void ProxyStyle::drawPrimitive(QStyle::PrimitiveElement element, const QStyleOpt
     case QStyle::PE_FrameFocusRect: {
         bool isTreeWidget = option->styleObject && option->styleObject->inherits("QTreeWidget");
         if (isTreeWidget) {
-            drawRoundedRect(painter, option->rect, 1, NO_FILL, QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
+            drawRoundedRect(painter, option->rect, 1, NO_FILL,
+                            QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
         }
 
         //! NOTE: need for removing frame focus rectangle
@@ -652,7 +653,8 @@ void ProxyStyle::drawPrimitive(QStyle::PrimitiveElement element, const QStyleOpt
 
     // Menu
     case QStyle::PE_PanelMenu: {
-        drawRoundedRect(painter, option->rect, 1, m_theme->backgroundPrimaryColor(), QPen(m_theme->strokeColor(), m_theme->borderWidth()));
+        drawRoundedRect(painter, option->rect, 1, m_theme->backgroundPrimaryColor(),
+                        QPen(m_theme->strokeColor(), m_theme->borderWidth()));
     } break;
     case QStyle::PE_FrameMenu: {
         drawRoundedRect(painter, option->rect, 1, NO_FILL, QPen(m_theme->strokeColor(), m_theme->borderWidth()));
@@ -661,11 +663,13 @@ void ProxyStyle::drawPrimitive(QStyle::PrimitiveElement element, const QStyleOpt
     case QStyle::PE_Frame: {
         if (qobject_cast<const QTextEdit*>(widget) != nullptr) {
             if (styleState.enabled) {
-                drawRoundedRect(painter, option->rect, DEFAULT_RADIUS, NO_FILL, QPen(m_theme->strokeColor(), m_theme->borderWidth()));
+                drawRoundedRect(painter, option->rect, DEFAULT_RADIUS, NO_FILL,
+                                QPen(m_theme->strokeColor(), m_theme->borderWidth()));
             } else {
                 QColor penBorderColor = m_theme->strokeColor();
                 penBorderColor.setAlphaF(m_theme->itemOpacityDisabled());
-                drawRoundedRect(painter, option->rect, DEFAULT_RADIUS, NO_FILL, QPen(penBorderColor, m_theme->borderWidth()));
+                drawRoundedRect(painter, option->rect, DEFAULT_RADIUS, NO_FILL,
+                                QPen(penBorderColor, m_theme->borderWidth()));
             }
         }
     } break;
@@ -678,7 +682,8 @@ void ProxyStyle::drawPrimitive(QStyle::PrimitiveElement element, const QStyleOpt
     painter->restore();
 }
 
-void ProxyStyle::drawComplexControl(QStyle::ComplexControl control, const QStyleOptionComplex* option, QPainter* painter,
+void ProxyStyle::drawComplexControl(QStyle::ComplexControl control, const QStyleOptionComplex* option,
+                                    QPainter* painter,
                                     const QWidget* widget) const
 {
     StyleState styleState;
@@ -718,7 +723,8 @@ void ProxyStyle::drawComplexControl(QStyle::ComplexControl control, const QStyle
     }
 }
 
-QRect ProxyStyle::subControlRect(QStyle::ComplexControl control, const QStyleOptionComplex* option, QStyle::SubControl subControl,
+QRect ProxyStyle::subControlRect(QStyle::ComplexControl control, const QStyleOptionComplex* option,
+                                 QStyle::SubControl subControl,
                                  const QWidget* widget) const
 {
     //QRect commonStyleRect = QCommonStyle::subControlRect(control, option, subControl, widget);
@@ -736,12 +742,16 @@ QRect ProxyStyle::subControlRect(QStyle::ComplexControl control, const QStyleOpt
 
             if (checkable) {
                 const bool isRadioButtonGroupBox
-                    =widget && strcmp(widget->metaObject()->className(), "muse::uicomponents::RadioButtonGroupBox") == 0;
+                    =widget
+                      && strcmp(widget->metaObject()->className(), "muse::uicomponents::RadioButtonGroupBox") == 0;
 
-                indicatorWidth = pixelMetric(isRadioButtonGroupBox ? PM_ExclusiveIndicatorWidth : PM_IndicatorWidth, option, widget);
-                indicatorHeight = pixelMetric(isRadioButtonGroupBox ? PM_ExclusiveIndicatorHeight : PM_IndicatorHeight, option, widget);
+                indicatorWidth = pixelMetric(isRadioButtonGroupBox ? PM_ExclusiveIndicatorWidth : PM_IndicatorWidth,
+                                             option, widget);
+                indicatorHeight = pixelMetric(isRadioButtonGroupBox ? PM_ExclusiveIndicatorHeight : PM_IndicatorHeight,
+                                              option, widget);
                 indicatorSpacing
-                    = pixelMetric(isRadioButtonGroupBox ? PM_RadioButtonLabelSpacing : PM_CheckBoxLabelSpacing, option, widget);
+                    = pixelMetric(isRadioButtonGroupBox ? PM_RadioButtonLabelSpacing : PM_CheckBoxLabelSpacing, option,
+                                  widget);
             }
 
             if (subControl == SC_GroupBoxFrame) {
@@ -838,7 +848,8 @@ QSize ProxyStyle::sizeFromContents(QStyle::ContentsType type, const QStyleOption
             const bool isRadioButtonGroupBox
                 =widget && strcmp(widget->metaObject()->className(), "muse::uicomponents::RadioButtonGroupBox") == 0;
 
-            int pm = pixelMetric(isRadioButtonGroupBox ? PM_ExclusiveIndicatorHeight : PM_IndicatorHeight, option, widget);
+            int pm = pixelMetric(isRadioButtonGroupBox ? PM_ExclusiveIndicatorHeight : PM_IndicatorHeight, option,
+                                 widget);
             return commonStyleSize + QSize(0, std::max(pm, option->fontMetrics.height()));
         }
 
@@ -860,7 +871,8 @@ QSize ProxyStyle::sizeFromContents(QStyle::ContentsType type, const QStyleOption
     return proxyStyleSize;
 }
 
-QIcon ProxyStyle::standardIcon(QStyle::StandardPixmap standardIcon, const QStyleOption* option, const QWidget* widget) const
+QIcon ProxyStyle::standardIcon(QStyle::StandardPixmap standardIcon, const QStyleOption* option,
+                               const QWidget* widget) const
 {
     switch (standardIcon) {
     case SP_DialogOkButton:
@@ -886,7 +898,8 @@ QIcon ProxyStyle::standardIcon(QStyle::StandardPixmap standardIcon, const QStyle
     }
 }
 
-int ProxyStyle::styleHint(QStyle::StyleHint hint, const QStyleOption* option, const QWidget* widget, QStyleHintReturn* returnData) const
+int ProxyStyle::styleHint(QStyle::StyleHint hint, const QStyleOption* option, const QWidget* widget,
+                          QStyleHintReturn* returnData) const
 {
     switch (hint) {
     case SH_DitherDisabledText:
@@ -905,7 +918,8 @@ int ProxyStyle::styleHint(QStyle::StyleHint hint, const QStyleOption* option, co
 // QStyle elements drawing
 // ====================================================
 
-void ProxyStyle::drawButtonBackground(QPainter* painter, const QRect& rect, const StyleState& styleState, bool accentButton, bool flat,
+void ProxyStyle::drawButtonBackground(QPainter* painter, const QRect& rect, const StyleState& styleState,
+                                      bool accentButton, bool flat,
                                       const QColor& defaultBackground) const
 {
     QColor backgroundColor(accentButton ? m_theme->accentColor() : defaultBackground);
@@ -922,7 +936,8 @@ void ProxyStyle::drawButtonBackground(QPainter* painter, const QRect& rect, cons
                                      : styleState.hovered ? m_theme->buttonOpacityHover()
                                      : m_theme->buttonOpacityNormal());
 
-            drawRoundedRect(painter, rect, DEFAULT_RADIUS, backgroundColor, QPen(penBorderColor, m_theme->borderWidth()));
+            drawRoundedRect(painter, rect, DEFAULT_RADIUS, backgroundColor,
+                            QPen(penBorderColor, m_theme->borderWidth()));
         } else {
             drawRoundedRect(painter, rect, DEFAULT_RADIUS, backgroundColor, NO_BORDER);
         }
@@ -933,11 +948,13 @@ void ProxyStyle::drawButtonBackground(QPainter* painter, const QRect& rect, cons
     }
 
     if (styleState.focused) {
-        drawRoundedRect(painter, rect, DEFAULT_RADIUS, NO_FILL, QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
+        drawRoundedRect(painter, rect, DEFAULT_RADIUS, NO_FILL,
+                        QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
     }
 }
 
-void ProxyStyle::drawCheckboxIndicator(QPainter* painter, const QRect& rect, const StyleState& styleState, bool checked, bool indeterminate,
+void ProxyStyle::drawCheckboxIndicator(QPainter* painter, const QRect& rect, const StyleState& styleState, bool checked,
+                                       bool indeterminate,
                                        bool inMenu) const
 {
     QColor backgroundColor = m_theme->buttonColor();
@@ -955,7 +972,8 @@ void ProxyStyle::drawCheckboxIndicator(QPainter* painter, const QRect& rect, con
             penBorderColor = m_theme->strokeColor();
             penBorderWidth = styleState.enabled ? m_theme->borderWidth() : 0;
         } else {
-            penBorderWidth = styleState.enabled && (styleState.hovered || styleState.pressed) ? m_theme->borderWidth() : 0;
+            penBorderWidth = styleState.enabled
+                             && (styleState.hovered || styleState.pressed) ? m_theme->borderWidth() : 0;
         }
 
         penBorderColor.setAlphaF(
@@ -964,7 +982,8 @@ void ProxyStyle::drawCheckboxIndicator(QPainter* painter, const QRect& rect, con
     }
 
     if (styleState.focused) {
-        drawRoundedRect(painter, rect, borderRadius, NO_FILL, QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
+        drawRoundedRect(painter, rect, borderRadius, NO_FILL,
+                        QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
     }
 
     if (checked || indeterminate) {
@@ -979,7 +998,8 @@ void ProxyStyle::drawCheckboxIndicator(QPainter* painter, const QRect& rect, con
     }
 }
 
-void ProxyStyle::drawRadioButtonIndicator(QPainter* painter, const QRect& rect, const StyleState& styleState, bool selected) const
+void ProxyStyle::drawRadioButtonIndicator(QPainter* painter, const QRect& rect, const StyleState& styleState,
+                                          bool selected) const
 {
     QColor borderColor = m_theme->fontPrimaryColor();
     QColor backgroundColor = m_theme->textFieldColor();
@@ -1020,13 +1040,16 @@ void ProxyStyle::drawRadioButtonIndicator(QPainter* painter, const QRect& rect, 
     }
 }
 
-void ProxyStyle::drawLineEditBackground(QPainter* painter, const QRect& rect, const StyleState& styleState, bool editing) const
+void ProxyStyle::drawLineEditBackground(QPainter* painter, const QRect& rect, const StyleState& styleState,
+                                        bool editing) const
 {
     QColor backgroundColor = m_theme->textFieldColor();
-    backgroundColor.setAlphaF(!styleState.enabled ? m_theme->itemOpacityDisabled() : (editing ? 1 : (styleState.hovered ? 0.6 : 1)));
+    backgroundColor.setAlphaF(!styleState.enabled ? m_theme->itemOpacityDisabled() : (editing ? 1 : (styleState.hovered
+                                                                                                     ? 0.6 : 1)));
 
     if (styleState.focused) {
-        drawRoundedRect(painter, rect, DEFAULT_RADIUS, NO_FILL, QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
+        drawRoundedRect(painter, rect, DEFAULT_RADIUS, NO_FILL,
+                        QPen(m_theme->fontPrimaryColor(), m_theme->navCtrlBorderWidth()));
     }
 
     QRect editRect = rect.adjusted(m_theme->navCtrlBorderWidth(), m_theme->navCtrlBorderWidth(),
@@ -1074,13 +1097,15 @@ void ProxyStyle::drawIndicatorIcon(QPainter* painter, const QRect& rect, const S
     drawRoundedRect(painter, rect, 1, NO_FILL, QPen(m_theme->strokeColor(), m_theme->borderWidth())); //does nothing apparently
 }
 
-void ProxyStyle::drawViewItemBackground(QPainter* painter, const QRect& rect, const StyleState& styleState, bool selected) const
+void ProxyStyle::drawViewItemBackground(QPainter* painter, const QRect& rect, const StyleState& styleState,
+                                        bool selected) const
 {
     QColor backgroundColor(Qt::transparent);
     if (selected) {
         backgroundColor = m_theme->accentColor();
         backgroundColor.setAlphaF(
-            styleState.enabled ? m_theme->accentOpacityHit() : m_theme->accentOpacityHit() * m_theme->itemOpacityDisabled());
+            styleState.enabled ? m_theme->accentOpacityHit() : m_theme->accentOpacityHit()
+            * m_theme->itemOpacityDisabled());
     } else if (styleState.enabled && styleState.pressed) {
         backgroundColor = m_theme->buttonColor();
         backgroundColor.setAlphaF(m_theme->buttonOpacityHit());

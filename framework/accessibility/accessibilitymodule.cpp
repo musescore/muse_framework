@@ -88,7 +88,8 @@ void AccessibilityContext::registerExports()
     m_controller = std::make_shared<AccessibilityController>(iocContext());
     ioc()->registerExport<IAccessibilityController>(mname, m_controller);
 
-    ioc()->registerExport<IAccessibilityContextConfiguration>(mname, new AccessibilityContextConfiguration(iocContext()));
+    ioc()->registerExport<IAccessibilityContextConfiguration>(mname,
+                                                              new AccessibilityContextConfiguration(iocContext()));
 }
 
 void AccessibilityContext::onPreInit(const IApplication::RunMode&)

@@ -292,7 +292,8 @@ void PwRegistry::roundtripDone(uint32_t id, int seq)
     }
 }
 
-void PwRegistry::c_register_global(void* data, uint32_t id, uint32_t /* permissions*/, const char* type, uint32_t /*version*/,
+void PwRegistry::c_register_global(void* data, uint32_t id, uint32_t /* permissions*/, const char* type,
+                                   uint32_t /*version*/,
                                    const struct spa_dict* props)
 {
     auto registry = static_cast<PwRegistry*>(data);

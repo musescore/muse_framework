@@ -37,8 +37,10 @@ static const muse::UriQuery GRAPHICSINFO_URI("muse://diagnostics/system/graphics
 static const muse::UriQuery PROFILER_URI("muse://diagnostics/system/profiler?modal=false&floating=true");
 static const muse::UriQuery NAVIGATION_TREE_URI("muse://diagnostics/navigation/tree?modal=false&floating=true");
 static const muse::UriQuery ACCESSIBLE_TREE_URI("muse://diagnostics/accessible/tree?modal=false&floating=true");
-static const muse::UriQuery ENGRAVING_ELEMENTS_URI("musescore://diagnostics/engraving/elements?modal=false&floating=true");
-static const muse::UriQuery ENGRAVING_UNDOSTACK_URI("musescore://diagnostics/engraving/undostack?modal=false&floating=true");
+static const muse::UriQuery ENGRAVING_ELEMENTS_URI(
+    "musescore://diagnostics/engraving/elements?modal=false&floating=true");
+static const muse::UriQuery ENGRAVING_UNDOSTACK_URI(
+    "musescore://diagnostics/engraving/undostack?modal=false&floating=true");
 static const muse::UriQuery ENGRAVING_STYLE_URI("musescore://diagnostics/engraving/style?modal=false&floating=true");
 static const muse::UriQuery ACTIONS_LIST_URI("muse://diagnostics/actions/list?modal=false&floating=true");
 
@@ -51,13 +53,18 @@ void DiagnosticsActionsController::init()
     dispatcher()->reg(this, "diagnostic-show-accessible-tree", [this]() { openUri(ACCESSIBLE_TREE_URI); });
     dispatcher()->reg(this, "diagnostic-accessible-tree-dump", []() { DiagnosticAccessibleModel().dumpTree(); });
     dispatcher()->reg(this, "diagnostic-show-engraving-elements", [this]() { openUri(ENGRAVING_ELEMENTS_URI, false); });
-    dispatcher()->reg(this, "diagnostic-show-engraving-undostack", [this]() { openUri(ENGRAVING_UNDOSTACK_URI, false); });
+    dispatcher()->reg(this, "diagnostic-show-engraving-undostack",
+                      [this]() { openUri(ENGRAVING_UNDOSTACK_URI, false); });
     dispatcher()->reg(this, "diagnostic-show-engraving-style", [this]() { openUri(ENGRAVING_STYLE_URI, false); });
-    dispatcher()->reg(this, "diagnostic-save-diagnostic-files", this, &DiagnosticsActionsController::saveDiagnosticFiles);
+    dispatcher()->reg(this, "diagnostic-save-diagnostic-files", this,
+                      &DiagnosticsActionsController::saveDiagnosticFiles);
     dispatcher()->reg(this, "diagnostic-show-actions", [this]() { openUri(ACTIONS_LIST_URI); });
 
-    dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query"), this, &DiagnosticsActionsController::onActionQuery);
-    dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query_params1"), this, &DiagnosticsActionsController::onActionQuery);
+    dispatcher()->reg(this, ActionQuery(
+                          "action://diagnostic/actions/query"), this, &DiagnosticsActionsController::onActionQuery);
+    dispatcher()->reg(this, ActionQuery(
+                          "action://diagnostic/actions/query_params1"), this,
+                      &DiagnosticsActionsController::onActionQuery);
     dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query_params2?param1=val1"),
                       this, &DiagnosticsActionsController::onActionQuery);
 }

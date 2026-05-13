@@ -323,7 +323,8 @@ void BufferedPaintProvider::drawTiledPixmap(const RectF& rect, const Pixmap& pm,
 #ifndef NO_QT_SUPPORT
 void BufferedPaintProvider::drawPixmap(const PointF& p, const QPixmap& pm)
 {
-    editableData().pixmaps.push_back(DrawPixmap { DrawPixmap::Single, RectF(p, SizeF()), Pixmap::fromQPixmap(pm), PointF() });
+    editableData().pixmaps.push_back(DrawPixmap { DrawPixmap::Single, RectF(p, SizeF()), Pixmap::fromQPixmap(pm),
+                                                  PointF() });
 }
 
 void BufferedPaintProvider::drawTiledPixmap(const RectF& rect, const QPixmap& pm, const PointF& offset)

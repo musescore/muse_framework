@@ -389,7 +389,9 @@ static void generateSdf(GlyphImage& out, glyph_idx_t glyphIdx, const IFontFace* 
     out.sdf.bitmap = mu::ByteArray(sdf.takeMemoryAway(), SDF_WIDTH * SDF_HEIGHT);
     out.sdf.width = SDF_WIDTH;
     out.sdf.height = SDF_HEIGHT;
-    out.sdf.hash = std::hash<std::string_view> {}({ reinterpret_cast<const char*>(out.sdf.bitmap.data()), out.sdf.bitmap.size() });
+    out.sdf.hash
+        = std::hash<std::string_view> {}({ reinterpret_cast<const char*>(out.sdf.bitmap.data()),
+                                           out.sdf.bitmap.size() });
 
     out.rect.setTop(top);
     out.rect.setLeft(left);
@@ -607,7 +609,8 @@ std::vector<FontsEngine::TextBlock> FontsEngine::splitTextByLines(const std::u32
     return lines;
 }
 
-std::vector<FontsEngine::TextBlock> FontsEngine::splitTextByFontFaces(const RequireFace* rf, const TextBlock& text) const
+std::vector<FontsEngine::TextBlock> FontsEngine::splitTextByFontFaces(const RequireFace* rf,
+                                                                      const TextBlock& text) const
 {
     std::vector<TextBlock> textBlocks;
 

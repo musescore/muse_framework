@@ -35,8 +35,8 @@
 #include "../inavigationcontroller.h"
 
 namespace muse::ui {
-class NavigationController : public QObject, public INavigationController, public Contextable, public actions::Actionable,
-    public async::Asyncable
+class NavigationController : public QObject, public INavigationController, public Contextable,
+    public actions::Actionable, public async::Asyncable
 {
 public:
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
@@ -59,8 +59,10 @@ public:
     void reg(INavigationSection* section) override;
     void unreg(INavigationSection* section) override;
 
-    bool requestActivateByName(const std::string& section, const std::string& panel, const std::string& controlName) override;
-    bool requestActivateByIndex(const std::string& section, const std::string& panel, const INavigation::Index& controlIndex) override;
+    bool requestActivateByName(const std::string& section, const std::string& panel,
+                               const std::string& controlName) override;
+    bool requestActivateByIndex(const std::string& section, const std::string& panel,
+                                const INavigation::Index& controlIndex) override;
 
     INavigationSection* activeSection() const override;
     INavigationPanel* activePanel() const override;
@@ -129,7 +131,8 @@ private:
     void onEscape();
 
     void doTriggerControl();
-    void onActiveRequested(INavigationSection* sect, INavigationPanel* panel, INavigationControl* ctrl, bool force = false);
+    void onActiveRequested(INavigationSection* sect, INavigationPanel* panel, INavigationControl* ctrl,
+                           bool force = false);
 
     void doActivateSection(INavigationSection* sect, bool isActivateLastPanel = false);
     void doDeactivateSection(INavigationSection* sect);

@@ -34,7 +34,8 @@ class NavigationPopupPanel : public NavigationPanel
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(NavigationControl* parentControl READ parentControl_property WRITE setParentControl NOTIFY parentControlChanged)
+    Q_PROPERTY(
+        NavigationControl* parentControl READ parentControl_property WRITE setParentControl NOTIFY parentControlChanged)
 
 public:
     explicit NavigationPopupPanel(QObject* parent = nullptr);

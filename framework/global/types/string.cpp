@@ -1231,7 +1231,8 @@ String String::arg(const String& val1, const String& val2, const String& val3, c
     return s;
 }
 
-String String::arg(const String& val1, const String& val2, const String& val3, const String& val4, const String& val5) const
+String String::arg(const String& val1, const String& val2, const String& val3, const String& val4,
+                   const String& val5) const
 {
     String s;
     doArgs(s.mutStr(), { std::u16string_view(val1.constStr()),
