@@ -27,8 +27,8 @@
 #include "../itrackeditactionscontroller.h"
 
 namespace au::trackedit {
-class TrackeditActionsController : public ITrackeditActionsController, public muse::actions::Actionable, public muse::async::Asyncable,
-    public muse::Contextable
+class TrackeditActionsController : public ITrackeditActionsController, public muse::actions::Actionable,
+    public muse::async::Asyncable, public muse::Contextable
 {
     muse::GlobalInject<projectscene::IProjectSceneConfiguration> projectSceneConfiguration;
     muse::GlobalInject<trackedit::ITrackeditConfiguration> configuration;

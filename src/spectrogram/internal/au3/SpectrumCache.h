@@ -88,8 +88,8 @@ private:
     };
 
     // Calculate one column of the spectrum
-    bool CalculateOneSpectrum(const Au3SpectrogramSettings& settings, IClipChannelReader& reader, const SpectrumParams& spectrumParams,
-                              const ClipParams& clipParams) const;
+    bool CalculateOneSpectrum(const Au3SpectrogramSettings& settings, IClipChannelReader& reader,
+                              const SpectrumParams& spectrumParams, const ClipParams& clipParams) const;
 };
 
 class SpecPxCache

@@ -14,7 +14,8 @@ class NyquistParameterExtractorService : public IParameterExtractorService
 public:
     EffectFamily family() const override { return EffectFamily::Nyquist; }
 
-    ParameterInfoList extractParameters(EffectInstance* instance, EffectSettingsAccessPtr settingsAccess = nullptr) const override;
+    ParameterInfoList extractParameters(EffectInstance* instance,
+                                        EffectSettingsAccessPtr settingsAccess = nullptr) const override;
 
     ParameterInfo getParameter(EffectInstance* instance, const muse::String& parameterId) const override;
 
@@ -38,7 +39,8 @@ public:
     //! @param commandText The Nyquist code to set
     //! @param settingsAccess Optional settings access to persist the change
     //! @return true if successful
-    bool setPromptCommandText(EffectInstance* instance, const muse::String& commandText, EffectSettingsAccessPtr settingsAccess = nullptr);
+    bool setPromptCommandText(EffectInstance* instance, const muse::String& commandText,
+                              EffectSettingsAccessPtr settingsAccess = nullptr);
 
     //! Enable debug mode for the Nyquist effect
     //! @param instance The effect instance

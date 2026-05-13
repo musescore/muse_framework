@@ -146,7 +146,8 @@ std::vector<double> getTicksValues(double maxFreq, double minFreq, double step, 
     return ticks;
 }
 
-std::vector<SpectrogramRulerTick> toTicks(const std::vector<double>& values, const NumberScale& numberScale, double reservedHeight,
+std::vector<SpectrogramRulerTick> toTicks(const std::vector<double>& values, const NumberScale& numberScale,
+                                          double reservedHeight,
                                           double rulerHeight)
 {
     std::vector<SpectrogramRulerTick> ticks;
@@ -171,7 +172,8 @@ std::vector<SpectrogramRulerTick> toTicks(const std::vector<double>& values, con
     return ticks;
 }
 
-std::vector<SpectrogramRulerTick> getTicks(ISpectrogramConfiguration& config, const NumberScale& numberScale, double reservedHeight,
+std::vector<SpectrogramRulerTick> getTicks(ISpectrogramConfiguration& config, const NumberScale& numberScale,
+                                           double reservedHeight,
                                            double rulerHeight, double step)
 {
     const std::vector<double> values = getTicksValues(config.maxFreq(), config.minFreq(), step, config.scale());
@@ -179,7 +181,8 @@ std::vector<SpectrogramRulerTick> getTicks(ISpectrogramConfiguration& config, co
 }
 }
 
-au::spectrogram::SpectrogramRulerTicks au::spectrogram::spectrogramRulerTicks(ISpectrogramConfiguration& config, double labelHeight,
+au::spectrogram::SpectrogramRulerTicks au::spectrogram::spectrogramRulerTicks(ISpectrogramConfiguration& config,
+                                                                              double labelHeight,
                                                                               double rulerHeight)
 {
     const auto range = config.maxFreq() - config.minFreq();

@@ -781,7 +781,8 @@ Ret Au3Record::doRecord(Au3Project& project,
                 }
                 transportSequences.captureSequences.push_back(pending->SharedPointer<Au3WaveTrack>());
 
-                m_recordData.push_back(RecordData { trackedit::ClipKey(wt->GetId(), newClip->GetId()), newClip->GetId(), false, false });
+                m_recordData.push_back(RecordData { trackedit::ClipKey(wt->GetId(), newClip->GetId()),
+                                                    newClip->GetId(), false, false });
                 rebuildRecordingClipKeys();
 
                 trackedit::Clip _newClip = DomConverter::clip(pending, newClip.get());
@@ -899,7 +900,8 @@ Ret Au3Record::doRecord(Au3Project& project,
             }
             transportSequences.captureSequences.push_back(pending->SharedPointer<Au3WaveTrack>());
 
-            m_recordData.push_back(RecordData { trackedit::ClipKey(newTrack->GetId(), newClip->GetId()), newClip->GetId(), false, false });
+            m_recordData.push_back(RecordData { trackedit::ClipKey(newTrack->GetId(), newClip->GetId()),
+                                                newClip->GetId(), false, false });
             rebuildRecordingClipKeys();
 
             trackedit::ITrackeditProjectPtr prj = globalContext()->currentTrackeditProject();
@@ -910,7 +912,8 @@ Ret Au3Record::doRecord(Au3Project& project,
     }
 
     int token
-        = audioEngine()->startStream(transportSequences, t0, t1, t1, project, false, audioStreamSampleRate, leadInTime, crossfadeData);
+        = audioEngine()->startStream(transportSequences, t0, t1, t1, project, false, audioStreamSampleRate, leadInTime,
+                                     crossfadeData);
 
     success = (token != 0);
 

@@ -799,7 +799,8 @@ TEST_F(Au3LabelsInteractionsTests, RemoveLabelsWithEmptyList)
 
     //! [THEN] The original label is still present
     ASSERT_EQ(labelTrack->GetNumLabels(), 1) << "Original label should still be present";
-    ASSERT_EQ(labelTrack->GetLabels().front().GetId(), labelTrack->GetLabel(0)->GetId()) << "Original label should still be present by id";
+    ASSERT_EQ(labelTrack->GetLabels().front().GetId(),
+              labelTrack->GetLabel(0)->GetId()) << "Original label should still be present by id";
 }
 
 TEST_F(Au3LabelsInteractionsTests, RemoveLabelsWithSomeInvalidKeys)

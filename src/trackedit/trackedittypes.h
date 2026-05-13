@@ -41,7 +41,10 @@ struct TrackItemKey
 
     inline bool operator==(const TrackItemKey& k) const { return trackId == k.trackId && itemId == k.itemId; }
     inline bool operator!=(const TrackItemKey& k) const { return !this->operator==(k); }
-    inline bool operator<(const TrackItemKey& k) const { return trackId < k.trackId || (trackId == k.trackId && itemId < k.itemId); }
+    inline bool operator<(const TrackItemKey& k) const
+    {
+        return trackId < k.trackId || (trackId == k.trackId && itemId < k.itemId);
+    }
 };
 
 using TrackItemKeyList = std::vector<TrackItemKey>;

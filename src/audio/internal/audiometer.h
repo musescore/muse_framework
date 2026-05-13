@@ -30,7 +30,8 @@ public:
      */
     AudioMeter(std::unique_ptr<ITimer> playingTimer, std::unique_ptr<ITimer> stoppingTimer);
 
-    void push(uint8_t channel, const IAudioMeter::InterleavedSampleData& sampleData, const std::optional<TrackId>& trackId) override;
+    void push(uint8_t channel, const IAudioMeter::InterleavedSampleData& sampleData,
+              const std::optional<TrackId>& trackId) override;
     void start(double sampleRate) override;
     void stop() override;
 

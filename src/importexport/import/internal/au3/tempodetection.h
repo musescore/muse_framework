@@ -51,8 +51,8 @@ public:
 
     /// Run tempo detection on the given imported tracks and show appropriate dialogs.
     void onFilesImported(const std::vector<muse::io::path_t>& filePaths, const std::vector<WaveTrack*>& waveTracks,
-                         const std::vector<trackedit::TrackId>& dstTrackIds, const std::optional<LibFileFormats::AcidizerTags>& acidTags,
-                         bool projectWasEmpty);
+                         const std::vector<trackedit::TrackId>& dstTrackIds,
+                         const std::optional<LibFileFormats::AcidizerTags>& acidTags, bool projectWasEmpty);
 
 private:
     std::optional<TempoDetectionResult> detectTempo(const muse::io::path_t& filePath, const WaveTrack& track,

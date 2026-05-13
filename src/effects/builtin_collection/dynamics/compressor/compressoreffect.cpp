@@ -16,7 +16,8 @@ const ComponentInterfaceSymbol CompressorEffect::Symbol { XO("Compressor") };
 const EffectParameterMethods& CompressorEffect::Parameters() const
 {
     static CapturedParameters<
-        CompressorEffect, thresholdDb, makeupGainDb, kneeWidthDb, compressionRatio, lookaheadMs, attackMs, releaseMs, showInput, showOutput,
+        CompressorEffect, thresholdDb, makeupGainDb, kneeWidthDb, compressionRatio, lookaheadMs, attackMs, releaseMs, showInput,
+        showOutput,
         showActual, showTarget> parameters;
     return parameters;
 }

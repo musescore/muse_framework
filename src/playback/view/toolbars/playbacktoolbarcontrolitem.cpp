@@ -5,7 +5,8 @@
 
 using namespace au::playback;
 
-PlaybackToolBarControlItem::PlaybackToolBarControlItem(const muse::ui::UiAction& action, muse::uicomponents::ToolBarItemType::Type type,
+PlaybackToolBarControlItem::PlaybackToolBarControlItem(const muse::ui::UiAction& action,
+                                                       muse::uicomponents::ToolBarItemType::Type type,
                                                        QObject* parent)
     : muse::uicomponents::ToolBarItem(action, type, parent)
 {

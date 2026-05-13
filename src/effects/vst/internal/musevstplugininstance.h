@@ -13,7 +13,8 @@ namespace au::effects {
 class MuseVstPluginInstance : public muse::vst::IVstPluginInstance
 {
 public:
-    MuseVstPluginInstance(const EffectId& effectId, const EffectInstanceId& instanceId, std::shared_ptr<VST3Instance> auVstInstance);
+    MuseVstPluginInstance(const EffectId& effectId, const EffectInstanceId& instanceId,
+                          std::shared_ptr<VST3Instance> auVstInstance);
 
     const muse::audio::AudioResourceId& resourceId() const override;
     const std::string& name() const override;

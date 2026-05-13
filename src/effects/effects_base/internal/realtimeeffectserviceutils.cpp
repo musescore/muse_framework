@@ -45,7 +45,8 @@ std::optional<au::effects::EffectChainLinkIndex> au::effects::utils::effectIndex
     return {};
 }
 
-std::optional<au::effects::utils::UtilData> au::effects::utils::utilData(const project::IAudacityProjectPtr& project, TrackId trackId)
+std::optional<au::effects::utils::UtilData> au::effects::utils::utilData(const project::IAudacityProjectPtr& project,
+                                                                         TrackId trackId)
 {
     if (!project) {
         return {};

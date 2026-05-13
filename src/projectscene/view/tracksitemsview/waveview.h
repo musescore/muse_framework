@@ -24,7 +24,8 @@ class WaveView : public QQuickPaintedItem, public muse::async::Asyncable, public
     Q_PROPERTY(QColor clipColor READ clipColor WRITE setClipColor NOTIFY clipColorChanged FINAL)
     Q_PROPERTY(QColor clipSelectedColor READ clipSelectedColor WRITE setClipSelectedColor NOTIFY clipSelectedColorChanged FINAL)
     Q_PROPERTY(bool clipSelected READ clipSelected WRITE setClipSelected NOTIFY clipSelectedChanged FINAL)
-    Q_PROPERTY(double channelHeightRatio READ channelHeightRatio WRITE setChannelHeightRatio NOTIFY channelHeightRatioChanged FINAL)
+    Q_PROPERTY(
+        double channelHeightRatio READ channelHeightRatio WRITE setChannelHeightRatio NOTIFY channelHeightRatioChanged FINAL)
 
     Q_PROPERTY(double startTime READ startTime NOTIFY clipTimeChanged)
     Q_PROPERTY(double endTime READ endTime NOTIFY clipTimeChanged)
@@ -116,7 +117,8 @@ private:
     void updateView();
     void onWaveZoomChanged();
     IWavePainter::Params getWavePainterParams() const;
-    void applyColorfulStyle(IWavePainter::Params& params, const QColor& clipColor, const QColor& clipSelectedColor, bool selected) const;
+    void applyColorfulStyle(IWavePainter::Params& params, const QColor& clipColor, const QColor& clipSelectedColor,
+                            bool selected) const;
     void applyClassicStyle(IWavePainter::Params& params, bool selected) const;
     void pushProjectHistorySampleEdit();
 

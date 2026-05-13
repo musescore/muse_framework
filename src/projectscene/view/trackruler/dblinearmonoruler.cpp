@@ -51,13 +51,15 @@ std::vector<TrackRulerFullStep> DbLinearMonoRuler::fullStepsForHalfWave() const
     }
 
     const std::vector<int> valuesList = fullStepValues(m_height);
-    std::vector<TrackRulerFullStep> steps { TrackRulerFullStep { m_dbRange, 0, 1, IsBold::NO, IsFullWidthTick::YES, IsNegativeSample::NO },
+    std::vector<TrackRulerFullStep> steps { TrackRulerFullStep { m_dbRange, 0, 1, IsBold::NO, IsFullWidthTick::YES,
+                                                                 IsNegativeSample::NO },
                                             TrackRulerFullStep { maxDisplayValueDB, 0, -1, IsBold::YES, IsFullWidthTick::NO,
                                                                  IsNegativeSample::NO }
     };
 
     for (const int stepValue : valuesList) {
-        steps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), 0, 0, IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::NO });
+        steps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), 0, 0, IsBold::NO, IsFullWidthTick::NO,
+                                             IsNegativeSample::NO });
     }
 
     return steps;
@@ -72,7 +74,8 @@ std::vector<TrackRulerFullStep> DbLinearMonoRuler::fullStepsForFullWave() const
     const double maxDisplayValueDB = muse::linear_to_db(m_maxDisplayValue);
 
     const std::vector<int> valuesList = fullStepValues(m_height);
-    std::vector<TrackRulerFullStep> steps { TrackRulerFullStep { m_dbRange, 0, 0, IsBold::NO, IsFullWidthTick::YES, IsNegativeSample::NO },
+    std::vector<TrackRulerFullStep> steps { TrackRulerFullStep { m_dbRange, 0, 0, IsBold::NO, IsFullWidthTick::YES,
+                                                                 IsNegativeSample::NO },
                                             TrackRulerFullStep { maxDisplayValueDB, 0, -1, IsBold::YES, IsFullWidthTick::NO,
                                                                  IsNegativeSample::NO }
     };
@@ -80,7 +83,8 @@ std::vector<TrackRulerFullStep> DbLinearMonoRuler::fullStepsForFullWave() const
     steps.push_back(TrackRulerFullStep { maxDisplayValueDB, 0, 1, IsBold::YES, IsFullWidthTick::NO, IsNegativeSample::YES });
 
     for (const int stepValue : valuesList) {
-        steps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), 0, 0, IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::NO });
+        steps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), 0, 0, IsBold::NO, IsFullWidthTick::NO,
+                                             IsNegativeSample::NO });
         steps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), 0, 0, IsBold::NO, IsFullWidthTick::NO,
                                              IsNegativeSample::YES });
     }
@@ -93,7 +97,8 @@ std::vector<TrackRulerSmallStep> DbLinearMonoRuler::smallSteps() const
     const double maxDisplayValueDB = muse::linear_to_db(m_maxDisplayValue);
 
     if (m_collapsed) {
-        return m_isHalfWave ? std::vector<TrackRulerSmallStep> { TrackRulerSmallStep { maxDisplayValueDB, 0, IsNegativeSample::NO } }
+        return m_isHalfWave ? std::vector<TrackRulerSmallStep> { TrackRulerSmallStep { maxDisplayValueDB, 0,
+                                                                                       IsNegativeSample::NO } }
                : std::vector<TrackRulerSmallStep> { TrackRulerSmallStep { maxDisplayValueDB, 0, IsNegativeSample::NO },
                                                     TrackRulerSmallStep { maxDisplayValueDB, 0, IsNegativeSample::YES } };
     }

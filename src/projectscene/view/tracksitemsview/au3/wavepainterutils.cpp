@@ -8,7 +8,8 @@ static constexpr auto PIXELS_PER_SAMPLE_WHEN_CONNECTING_POINTS = 0.5;
 static constexpr auto PIXELS_PER_SAMPLE_WHEN_INDIVIDUAL_POINTS = 4;
 
 namespace au::projectscene::wavepainterutils {
-IWavePainter::PlotType getPlotType(std::shared_ptr<au::project::IAudacityProject> project, const trackedit::ClipKey& clipKey, double zoom)
+IWavePainter::PlotType getPlotType(std::shared_ptr<au::project::IAudacityProject> project, const trackedit::ClipKey& clipKey,
+                                   double zoom)
 {
     au::au3::Au3Project* au3Project = reinterpret_cast<au::au3::Au3Project*>(project->au3ProjectPtr());
     WaveTrack* track = au::au3::DomAccessor::findWaveTrack(*au3Project, TrackId(clipKey.trackId));
@@ -73,7 +74,8 @@ WaveMetrics getWaveMetrics(std::shared_ptr<au::project::IAudacityProject> projec
             return std::round(time * multiplier) / multiplier;
         };
 
-        wm.selectionStartTime = (snapToSamples ? snapToSampleTimeConv(relativeStartTime) : relativeStartTime) + waveClip->GetTrimLeft();
+        wm.selectionStartTime = (snapToSamples ? snapToSampleTimeConv(relativeStartTime) : relativeStartTime)
+                                + waveClip->GetTrimLeft();
         wm.selectionEndTime = (snapToSamples ? snapToSampleTimeConv(relativeEndTime) : relativeEndTime) + waveClip->GetTrimLeft();
     }
 

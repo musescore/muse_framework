@@ -151,7 +151,8 @@ QString WorkspaceLayoutPageModel::availableWorkspaceText()
 
 QString WorkspaceLayoutPageModel::additionalInfoText()
 {
-    return qtrc("appshell/gettingstarted", "You can change between these layouts at any time using our new ‘workspaces’ feature.");
+    return qtrc("appshell/gettingstarted",
+                "You can change between these layouts at any time using our new ‘workspaces’ feature.");
 }
 
 QString WorkspaceLayoutPageModel::additionalInfoAccessibleName()
@@ -166,7 +167,8 @@ QString WorkspaceLayoutPageModel::previewAccessibleName()
 
 QString WorkspaceLayoutPageModel::previewAccessibleDescription()
 {
-    return qtrc("appshell/gettingstarted", "Preview of the selected workspace layout showing the arrangement of interface elements");
+    return qtrc("appshell/gettingstarted",
+                "Preview of the selected workspace layout showing the arrangement of interface elements");
 }
 
 QString WorkspaceLayoutPageModel::formatNavigationDescription(const QString& description, bool selected) const

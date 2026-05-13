@@ -19,7 +19,8 @@ public:
               std::chrono::seconds timeout = std::chrono::seconds(0), std::vector<ToastAction> actions = {});
 
     ToastItem(const std::string& title, const std::string& message, muse::ui::IconCode::Code iconCode, bool dismissible,
-              std::vector<ToastAction> actions = {}, std::shared_ptr<muse::Progress> progress = nullptr, bool showProgressInfo = false);
+              std::vector<ToastAction> actions = {}, std::shared_ptr<muse::Progress> progress = nullptr,
+              bool showProgressInfo = false);
     ~ToastItem() = default;
 
     int id() const;

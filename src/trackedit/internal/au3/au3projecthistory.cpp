@@ -52,12 +52,14 @@ void au::trackedit::Au3ProjectHistory::pushHistoryState(const std::string& longD
     pushHistoryState(longDescription, shortDescription, UndoPushType::NONE);
 }
 
-void Au3ProjectHistory::pushHistoryState(const std::string& longDescription, const std::string& shortDescription, UndoPushType flags)
+void Au3ProjectHistory::pushHistoryState(const std::string& longDescription, const std::string& shortDescription,
+                                         UndoPushType flags)
 {
     LOGI() << "pushHistoryState(\"" << shortDescription << "\", " << flags << ")";
     auto& project = projectRef();
     UndoPush undoFlags = static_cast<UndoPush>(flags);
-    ::ProjectHistory::Get(project).PushState(TranslatableString { longDescription, {} }, TranslatableString { shortDescription, {} },
+    ::ProjectHistory::Get(project).PushState(TranslatableString { longDescription, {} }, TranslatableString { shortDescription,
+                                                                                                              {} },
                                              undoFlags);
 
     m_interactionOngoing = false;

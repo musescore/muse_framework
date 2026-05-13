@@ -58,9 +58,11 @@ bool PasteBehaviorPanelModel::userMustChoosePasteInsertBehavior() const
 QVariantList PasteBehaviorPanelModel::pasteInsertBehaviors() const
 {
     QVariantList behaviors;
-    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences", "Pasting audio pushes other clips on the same track") },
+    behaviors.append(QVariantMap { { "text",
+                         muse::qtrc("trackedit/preferences", "Pasting audio pushes other clips on the same track") },
                          { "value", static_cast<int>(PasteInsertBehavior::PasteInsert) } });
-    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences", "Pasting audio pushes all clips on all tracks") },
+    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences",
+                                                        "Pasting audio pushes all clips on all tracks") },
                          { "value", static_cast<int>(PasteInsertBehavior::PasteInsertRipple) } });
     return behaviors;
 }

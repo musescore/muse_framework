@@ -10,7 +10,8 @@
 #include "async/asyncable.h"
 
 namespace au::projectscene {
-class RealtimeEffectPanelTrackSelection : public IRealtimeEffectPanelTrackSelection, muse::async::Asyncable, public muse::Contextable
+class RealtimeEffectPanelTrackSelection : public IRealtimeEffectPanelTrackSelection, muse::async::Asyncable,
+    public muse::Contextable
 {
     muse::ContextInject<trackedit::ISelectionController> selectionController{ this };
     muse::ContextInject<context::IGlobalContext> globalContext{ this };

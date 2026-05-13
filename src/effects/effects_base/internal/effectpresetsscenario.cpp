@@ -132,7 +132,9 @@ void EffectPresetsScenario::importPreset(const EffectInstanceId& effectInstanceI
         if (ret.code() == (int)Err::PresetNotValid) {
             msg = muse::mtrc("effects", "%1: is not a valid presets file.").arg(path.toString()).toStdString();
         } else if (ret.code() == (int)Err::PresetMismatch) {
-            msg = muse::mtrc("effects", "%1: is for a different Effect, Generator or Analyzer.").arg(path.toString()).toStdString();
+            msg
+                = muse::mtrc("effects",
+                             "%1: is for a different Effect, Generator or Analyzer.").arg(path.toString()).toStdString();
         }
 
         showError(ret, msg);

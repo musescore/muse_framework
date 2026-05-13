@@ -14,7 +14,8 @@ ToastTestsModel::ToastTestsModel(QObject* parent)
 {
 }
 
-void ToastTestsModel::showToastWithTimeout(const QString& title, const QString& message, int iconCode, int timeoutSeconds, bool dismissible)
+void ToastTestsModel::showToastWithTimeout(const QString& title, const QString& message, int iconCode, int timeoutSeconds,
+                                           bool dismissible)
 {
     toastService()->showWithTimeout(
         title.toStdString(),
@@ -61,7 +62,8 @@ void ToastTestsModel::showToastWithAction(const QString& title, const QString& m
     });
 }
 
-void ToastTestsModel::showWithProgress(const QString& title, const QString& message, int iconCode, bool dismissible, bool showProgressInfo)
+void ToastTestsModel::showWithProgress(const QString& title, const QString& message, int iconCode, bool dismissible,
+                                       bool showProgressInfo)
 {
     if (m_progress) {
         //Just to make things easy on testing

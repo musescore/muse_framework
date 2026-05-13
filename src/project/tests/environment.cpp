@@ -22,7 +22,8 @@ static muse::testing::SuiteEnvironment audacityproject_se
       .setDependencyModules({ new au::au3::Au3WrapModule()
                             })
       .setPreInit([](){
-    std::shared_ptr<ProjectConfigurationMock> projectConfigurator(new ProjectConfigurationMock(), [](ProjectConfigurationMock*){});
+    std::shared_ptr<ProjectConfigurationMock> projectConfigurator(
+        new ProjectConfigurationMock(), [](ProjectConfigurationMock*){});
 
     ON_CALL(*projectConfigurator, temporaryDir())
     .WillByDefault(::testing::Return(""));
@@ -55,8 +56,11 @@ static muse::testing::SuiteEnvironment audacityproject_se
         projectViewStateCreatorMock
         );
 
-    std::shared_ptr<::testing::NiceMock<au::projectscene::ProjectSceneConfigurationMock> > projectSceneConfigurator(new ::testing::NiceMock<au::projectscene::ProjectSceneConfigurationMock>(),
-                                                                                                                    [](au::projectscene::
+    std::shared_ptr<::testing::NiceMock<au::projectscene::ProjectSceneConfigurationMock> > projectSceneConfigurator(new ::testing
+                                                                                                                    ::NiceMock<au::projectscene::ProjectSceneConfigurationMock>(),
+                                                                                                                    [](au::
+                                                                                                                       projectscene
+                                                                                                                       ::
                                                                                                                        ProjectSceneConfigurationMock
                                                                                                                        *)
     {
@@ -79,7 +83,8 @@ static muse::testing::SuiteEnvironment audacityproject_se
     .WillByDefault(::testing::Return(muse::Color(0xFF, 0x80, 0x80)));
 
     muse::modularity::globalIoc()->unregister<au::projectscene::IProjectSceneConfiguration>("utests");
-    muse::modularity::globalIoc()->registerExport<au::projectscene::IProjectSceneConfiguration>("utests", projectSceneConfigurator);
+    muse::modularity::globalIoc()->registerExport<au::projectscene::IProjectSceneConfiguration>("utests",
+                                                                                                projectSceneConfigurator);
 
     std::shared_ptr<au::trackedit::ClipboardMock> clipboardMock(
         new au::trackedit::ClipboardMock(),

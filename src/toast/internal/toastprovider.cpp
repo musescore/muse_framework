@@ -119,7 +119,8 @@ void ToastProvider::checkTimer(int id)
             timer->setSingleShot(false);
             timer->start();
             timer->callOnTimeout([this, item, timeoutMs, interval]() {
-                double currentProgress = item->currentProgress() + ((static_cast<double>(interval) / static_cast<double>(timeoutMs)) * 100.0);
+                double currentProgress = item->currentProgress()
+                                         + ((static_cast<double>(interval) / static_cast<double>(timeoutMs)) * 100.0);
                 item->setCurrentProgress(currentProgress);
                 if (currentProgress >= 100.0) {
                     dismissToast(item->id());

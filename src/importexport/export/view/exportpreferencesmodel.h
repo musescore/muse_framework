@@ -46,7 +46,8 @@ class ExportPreferencesModel : public QObject, public muse::async::Asyncable, pu
     Q_PROPERTY(QString currentFormat READ currentFormat NOTIFY currentFormatChanged)
     Q_PROPERTY(QStringList formatsList READ formatsList NOTIFY formatsListChanged)
 
-    Q_PROPERTY(importexport::ExportChannelsPref::ExportChannels exportChannelsType READ exportChannelsType NOTIFY exportChannelsTypeChanged)
+    Q_PROPERTY(
+        importexport::ExportChannelsPref::ExportChannels exportChannelsType READ exportChannelsType NOTIFY exportChannelsTypeChanged)
     Q_PROPERTY(int maxExportChannels READ maxExportChannels NOTIFY maxExportChannelsChanged)
 
     Q_PROPERTY(QString exportSampleRate READ exportSampleRate NOTIFY exportSampleRateChanged)

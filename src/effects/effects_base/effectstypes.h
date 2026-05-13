@@ -257,6 +257,7 @@ public:
     virtual ~IEffectMenuItemFactory() = default;
     virtual muse::uicomponents::MenuItem* makeMenuSeparator() = 0;
     virtual muse::uicomponents::MenuItem* makeMenuEffectItem(const EffectId& effectId) = 0;
-    virtual muse::uicomponents::MenuItem* makeMenuEffect(const muse::String& title, const muse::uicomponents::MenuItemList& items) = 0;
+    virtual muse::uicomponents::MenuItem* makeMenuEffect(const muse::String& title,
+                                                         const muse::uicomponents::MenuItemList& items) = 0;
 };
 }

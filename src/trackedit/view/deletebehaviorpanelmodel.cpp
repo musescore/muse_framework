@@ -58,11 +58,14 @@ bool DeleteBehaviorPanelModel::userMustChooseCloseGapBehavior() const
 QVariantList DeleteBehaviorPanelModel::closeGapBehaviors() const
 {
     QVariantList behaviors;
-    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences", "The selected clip moves back to fill the gap") },
+    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences",
+                                                        "The selected clip moves back to fill the gap") },
                          { "value", static_cast<int>(CloseGapBehavior::ClipRipple) } });
-    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences", "All clips on the same track move back to fill the gap") },
+    behaviors.append(QVariantMap { { "text",
+                         muse::qtrc("trackedit/preferences", "All clips on the same track move back to fill the gap") },
                          { "value", static_cast<int>(CloseGapBehavior::TrackRipple) } });
-    behaviors.append(QVariantMap { { "text", muse::qtrc("trackedit/preferences", "All clips on all tracks move back to fill the gap") },
+    behaviors.append(QVariantMap { { "text",
+                         muse::qtrc("trackedit/preferences", "All clips on all tracks move back to fill the gap") },
                          { "value", static_cast<int>(CloseGapBehavior::AllTracksRipple) } });
     return behaviors;
 }

@@ -50,7 +50,8 @@ au::au3::Au3TrackId TrackTemplateFactory::addTrackToProject(std::shared_ptr<Wave
     return track->GetId();
 }
 
-au::au3::Au3TrackId TrackTemplateFactory::addTrackFromTemplate(const std::string& name, const std::vector<ClipTemplate>& clipTemplates)
+au::au3::Au3TrackId TrackTemplateFactory::addTrackFromTemplate(const std::string& name,
+                                                               const std::vector<ClipTemplate>& clipTemplates)
 {
     auto track = createTrackFromTemplate(name, clipTemplates);
     return addTrackToProject(track);

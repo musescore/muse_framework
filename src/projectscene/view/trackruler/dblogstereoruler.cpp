@@ -83,7 +83,8 @@ std::vector<TrackRulerFullStep> DbLogStereoRuler::fullStepsForHalfWave() const
     std::vector<TrackRulerFullStep> steps;
     for (size_t channel = 0; channel < channelHeights.size(); ++channel) {
         if (channelHeights[channel] < MIN_CHANNEL_HEIGHT) {
-            steps.push_back(TrackRulerFullStep { m_dbRange, channel, 0, IsBold::YES, IsFullWidthTick::YES, IsNegativeSample::NO });
+            steps.push_back(TrackRulerFullStep { m_dbRange, channel, 0, IsBold::YES, IsFullWidthTick::YES,
+                                                 IsNegativeSample::NO });
             continue;
         }
 
@@ -103,7 +104,8 @@ std::vector<TrackRulerFullStep> DbLogStereoRuler::fullStepsForFullWave() const
     std::vector<TrackRulerFullStep> steps;
     for (size_t channel = 0; channel < channelHeights.size(); ++channel) {
         if (channelHeights[channel] < MIN_CHANNEL_HEIGHT) {
-            steps.push_back(TrackRulerFullStep { m_dbRange, channel, 0, IsBold::YES, IsFullWidthTick::YES, IsNegativeSample::NO });
+            steps.push_back(TrackRulerFullStep { m_dbRange, channel, 0, IsBold::YES, IsFullWidthTick::YES,
+                                                 IsNegativeSample::NO });
             continue;
         }
 
@@ -185,7 +187,8 @@ std::vector<TrackRulerSmallStep> DbLogStereoRuler::smallStepsForFullWave() const
                 }) != fullSteps.end()) {
                     continue;
                 }
-                steps.push_back(TrackRulerSmallStep { value, channel, isNegativeSample ? IsNegativeSample::YES : IsNegativeSample::NO });
+                steps.push_back(TrackRulerSmallStep { value, channel,
+                                                      isNegativeSample ? IsNegativeSample::YES : IsNegativeSample::NO });
             }
         }
     }

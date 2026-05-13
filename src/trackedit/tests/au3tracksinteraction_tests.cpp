@@ -114,7 +114,8 @@ TEST_F(Au3TracksInteractionTests, SplitRangeSelectionAtSilencesOnValidInterval)
     ASSERT_EQ(track->NIntervals(), 1) << "Precondition failed: The number of intervals is not 1";
 
     //! [WHEN] Disjoin within the clip bondaries
-    m_tracksInteraction->splitRangeSelectionAtSilences({ track->GetId() }, TRACK_MIN_SILENCE_CLIP_START, TRACK_MIN_SILENCE_CLIP_END);
+    m_tracksInteraction->splitRangeSelectionAtSilences(
+        { track->GetId() }, TRACK_MIN_SILENCE_CLIP_START, TRACK_MIN_SILENCE_CLIP_END);
 
     //! [THEN] The number of intervals is 2
     ASSERT_EQ(track->NIntervals(), 2) << "The number of intervals after the split range operation is not 2";
@@ -169,7 +170,8 @@ TEST_F(Au3TracksInteractionTests, SplitRangeSelectionAtSilencesOnIntervalWithSho
     ASSERT_EQ(track->NIntervals(), 1) << "Precondition failed: The number of intervals is not 1";
 
     //! [WHEN] Disjoin the clip with a small silence
-    m_tracksInteraction->splitRangeSelectionAtSilences({ track->GetId() }, TRACK_SMALL_SILENCE_CLIP_START, TRACK_SMALL_SILENCE_CLIP_END);
+    m_tracksInteraction->splitRangeSelectionAtSilences(
+        { track->GetId() }, TRACK_SMALL_SILENCE_CLIP_START, TRACK_SMALL_SILENCE_CLIP_END);
 
     //! [THEN] The number of intervals is 1 once the silence is less than 0.01s
     ASSERT_EQ(track->NIntervals(), 1) << "The number of intervals after the split range operation is not 1";
@@ -220,7 +222,8 @@ TEST_F(Au3TracksInteractionTests, SplitRangeSelectionIntoNewTracks)
     ASSERT_EQ(track->NIntervals(), 2) << "Precondition failed: The number of intervals is not 2";
 
     //! [WHEN] Splitting into new tracks
-    m_tracksInteraction->splitRangeSelectionIntoNewTracks({ track->GetId() }, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP2_END);
+    m_tracksInteraction->splitRangeSelectionIntoNewTracks(
+        { track->GetId() }, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP2_END);
 
     //! [THEN] The number of intervals now is 0
     ASSERT_EQ(track->NIntervals(), 0) << "The number of intervals after the split range operation is not 0";
@@ -260,7 +263,8 @@ TEST_F(Au3TracksInteractionTests, SplitRangeSelectionIntoNewTracksOutOfClipBound
     ASSERT_EQ(track->NIntervals(), 2) << "Precondition failed: The number of intervals is not 2";
 
     //! [WHEN] Splitting into new tracks outside the clip bounds
-    m_tracksInteraction->splitRangeSelectionIntoNewTracks({ track->GetId() }, TRACK_TWO_CLIPS_CLIP2_END, TRACK_TWO_CLIPS_CLIP2_END + 1.0);
+    m_tracksInteraction->splitRangeSelectionIntoNewTracks(
+        { track->GetId() }, TRACK_TWO_CLIPS_CLIP2_END, TRACK_TWO_CLIPS_CLIP2_END + 1.0);
 
     //! [THEN] The number of intervals is still 2
     ASSERT_EQ(track->NIntervals(), 2) << "The number of intervals after the split range operation is not 2";
@@ -429,8 +433,10 @@ TEST_F(Au3TracksInteractionTests, SplitDeleteOnRangeSelection)
 
     const WaveTrack::IntervalConstHolder firstSplittedClip = track->GetSortedClipByIndex(0);
     const WaveTrack::IntervalConstHolder secondSplittedClip = track->GetSortedClipByIndex(1);
-    ValidateClipProperties(firstSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, TRACK_TWO_CLIPS_CLIP1_START, begin);
-    ValidateClipProperties(secondSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, end, TRACK_TWO_CLIPS_CLIP1_END);
+    ValidateClipProperties(firstSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, TRACK_TWO_CLIPS_CLIP1_START,
+                           begin);
+    ValidateClipProperties(secondSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, end,
+                           TRACK_TWO_CLIPS_CLIP1_END);
 
     // Cleanup
     removeTrack(trackTwoClipsId);
@@ -464,8 +470,10 @@ TEST_F(Au3TracksInteractionTests, SpliCutOnRangeSelection)
     const WaveTrack::IntervalConstHolder secondSplittedClip = track->GetSortedClipByIndex(1);
     ASSERT_NE(secondSplittedClip, nullptr) << "The second splitted clip is not found";
     ASSERT_NE(firstSplittedClip, secondSplittedClip) << "The first and second splitted clips are the same";
-    ValidateClipProperties(firstSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, TRACK_TWO_CLIPS_CLIP1_START, begin);
-    ValidateClipProperties(secondSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, end, TRACK_TWO_CLIPS_CLIP1_END);
+    ValidateClipProperties(firstSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, TRACK_TWO_CLIPS_CLIP1_START,
+                           begin);
+    ValidateClipProperties(secondSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, end,
+                           TRACK_TWO_CLIPS_CLIP1_END);
 
     // Cleanup
     removeTrack(trackTwoClipsId);
@@ -511,8 +519,10 @@ TEST_F(Au3TracksInteractionTests, SplitTracksOnClipData)
     ASSERT_NE(firstSplittedClip, secondSplittedClip) << "The first and second splitted clips are the same";
 
     ValidateClipProperties(untouchedClip, TRACK_TWO_CLIPS_CLIP2_START, TRACK_TWO_CLIPS_CLIP2_END);
-    ValidateClipProperties(firstSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, TRACK_TWO_CLIPS_CLIP1_START, pivot);
-    ValidateClipProperties(secondSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, pivot, TRACK_TWO_CLIPS_CLIP1_END);
+    ValidateClipProperties(firstSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, TRACK_TWO_CLIPS_CLIP1_START,
+                           pivot);
+    ValidateClipProperties(secondSplittedClip, TRACK_TWO_CLIPS_CLIP1_START, TRACK_TWO_CLIPS_CLIP1_END, pivot,
+                           TRACK_TWO_CLIPS_CLIP1_END);
 
     // Cleanup
     removeTrack(trackTwoClipsId);
@@ -593,7 +603,8 @@ TEST_F(Au3TracksInteractionTests, RemoveTracksDataRipplePerClip)
 
     //! [THEN] The second clip is splitted and moved forward
     const WaveTrack::IntervalConstHolder secondClip = track->GetSortedClipByIndex(1);
-    ValidateClipProperties(secondClip, TRACK_THREE_CLIPS_CLIP2_START, (TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP2_END) / 2,
+    ValidateClipProperties(secondClip, TRACK_THREE_CLIPS_CLIP2_START,
+                           (TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP2_END) / 2,
                            TRACK_THREE_CLIPS_CLIP2_START,
                            (TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP2_END) / 2);
 
@@ -624,7 +635,8 @@ TEST_F(Au3TracksInteractionTests, RemoveTracksDataRipplePerTrack)
 
     //! [THEN] The second clip is splitted and moved forward
     const WaveTrack::IntervalConstHolder secondClip = track->GetSortedClipByIndex(1);
-    ValidateClipProperties(secondClip, TRACK_THREE_CLIPS_CLIP2_START, (TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP2_END) / 2,
+    ValidateClipProperties(secondClip, TRACK_THREE_CLIPS_CLIP2_START,
+                           (TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP2_END) / 2,
                            TRACK_THREE_CLIPS_CLIP2_START,
                            (TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP2_END) / 2);
 
@@ -710,7 +722,8 @@ TEST_F(Au3TracksInteractionTests, DuplicateRangeSelectionOnNewTrack)
     EXPECT_CALL(*m_trackEditProject, notifyAboutTrackAdded(_)).Times(1);
 
     //! [WHEN] Duplicate the range selection
-    m_tracksInteraction->duplicateSelectedOnTracks({ track->GetId() }, TRACK_THREE_CLIPS_CLIP2_START, TRACK_THREE_CLIPS_CLIP2_END);
+    m_tracksInteraction->duplicateSelectedOnTracks({ track->GetId() }, TRACK_THREE_CLIPS_CLIP2_START,
+                                                   TRACK_THREE_CLIPS_CLIP2_END);
 
     //! [THEN] The number of tracks is 2
     ASSERT_EQ(projectTracks.Size(), 2) << "The number of tracks after the duplicate operation is not 2";

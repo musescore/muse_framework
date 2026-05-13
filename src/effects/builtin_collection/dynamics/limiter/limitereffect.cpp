@@ -13,7 +13,8 @@ const ComponentInterfaceSymbol LimiterEffect::Symbol { XO("Limiter") };
 
 const EffectParameterMethods& LimiterEffect::Parameters() const
 {
-    static CapturedParameters<LimiterEffect, thresholdDb, makeupTargetDb, kneeWidthDb, lookaheadMs, releaseMs, showInput, showOutput,
+    static CapturedParameters<LimiterEffect, thresholdDb, makeupTargetDb, kneeWidthDb, lookaheadMs, releaseMs, showInput,
+                              showOutput,
                               showActual, showTarget> parameters;
     return parameters;
 }

@@ -20,11 +20,13 @@ class ClipChannelSpectrogramView : public QQuickPaintedItem, public muse::async:
     Q_PROPERTY(int clipId READ clipId WRITE setClipId NOTIFY clipIdChanged FINAL)
     Q_PROPERTY(int trackId READ trackId WRITE setTrackId NOTIFY trackIdChanged FINAL)
     Q_PROPERTY(int channel READ channel WRITE setChannel NOTIFY channelChanged FINAL)
-    Q_PROPERTY(int timelineIndentWidth READ timelineIndentWidth WRITE setTimelineIndentWidth NOTIFY timelineIndentWidthChanged FINAL)
+    Q_PROPERTY(
+        int timelineIndentWidth READ timelineIndentWidth WRITE setTimelineIndentWidth NOTIFY timelineIndentWidthChanged FINAL)
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY zoomChanged FINAL)
     Q_PROPERTY(double frameStartTime READ frameStartTime WRITE setFrameStartTime NOTIFY frameStartTimeChanged FINAL)
     Q_PROPERTY(double frameEndTime READ frameEndTime WRITE setFrameEndTime NOTIFY frameEndTimeChanged FINAL)
-    Q_PROPERTY(double selectionStartTime READ selectionStartTime WRITE setSelectionStartTime NOTIFY selectionStartTimeChanged FINAL)
+    Q_PROPERTY(
+        double selectionStartTime READ selectionStartTime WRITE setSelectionStartTime NOTIFY selectionStartTimeChanged FINAL)
     Q_PROPERTY(double selectionEndTime READ selectionEndTime WRITE setSelectionEndTime NOTIFY selectionEndTimeChanged FINAL)
     Q_PROPERTY(
         double selectionStartFrequency READ selectionStartFrequency WRITE setSelectionStartFrequency NOTIFY selectionFrequencyChanged FINAL)

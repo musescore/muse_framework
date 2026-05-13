@@ -47,8 +47,8 @@ private:
     bool removeClip(const trackedit::ClipKey& clipKey) override;
     bool removeClips(const ClipKeyList& clipKeyList, bool moveClips) override;
     bool removeTracksData(const TrackIdList& tracksIds, secs_t begin, secs_t end, bool moveClips) override;
-    muse::RetVal<ClipKeyList> moveClips(const ClipKeyList& clipKeyList, secs_t timePositionOffset, int trackPositionOffset, bool completed,
-                                        bool&) override;
+    muse::RetVal<ClipKeyList> moveClips(const ClipKeyList& clipKeyList, secs_t timePositionOffset, int trackPositionOffset,
+                                        bool completed, bool&) override;
     bool moveRangeSelection(secs_t timePositionOffset, bool completed) override;
     void cancelItemDragEdit() override;
     bool splitTracksAt(const TrackIdList& tracksIds, std::vector<secs_t> pivots) override;
@@ -64,7 +64,8 @@ private:
     bool clipSplitDelete(const ClipKey& clipKey) override;
     bool splitCutSelectedOnTracks(const TrackIdList tracksIds, secs_t begin, secs_t end) override;
     bool splitDeleteSelectedOnTracks(const TrackIdList tracksIds, secs_t begin, secs_t end) override;
-    bool trimClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed, UndoPushType type) override;
+    bool trimClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed,
+                       UndoPushType type) override;
     bool trimClipsRight(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed,
                         UndoPushType type) override;
     bool stretchClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed,
@@ -129,7 +130,8 @@ private:
     bool moveLabels(const LabelKeyList& labelKeys, secs_t timePositionOffset, bool completed) override;
     muse::RetVal<LabelKeyList> moveLabels(const LabelKeyList& labelKeys, secs_t timePositionOffset, int trackPositionOffset,
                                           bool completed) override;
-    muse::RetVal<LabelKeyList> moveLabelsToTrack(const LabelKeyList& labelKeys, const TrackId& toTrackId, bool completed) override;
+    muse::RetVal<LabelKeyList> moveLabelsToTrack(const LabelKeyList& labelKeys, const TrackId& toTrackId,
+                                                 bool completed) override;
 
     bool stretchLabelLeft(const LabelKey& labelKey, secs_t newStartTime, bool completed) override;
     bool stretchLabelsLeft(const LabelKeyList& labelKeyList, secs_t deltaSec, bool completed) override;

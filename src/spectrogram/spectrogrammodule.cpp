@@ -56,7 +56,8 @@ void SpectrogramModule::resolveImports()
 {
     auto ir = globalIoc()->resolve<muse::interactive::IInteractiveUriRegister>(mname);
     if (ir) {
-        ir->registerQmlUri(muse::Uri(TRACK_SPECTROGRAM_SETTINGS_ACTION), "Audacity/Spectrogram/TrackSpectrogramSettingsDialog.qml");
+        ir->registerQmlUri(muse::Uri(TRACK_SPECTROGRAM_SETTINGS_ACTION),
+                           "Audacity/Spectrogram/TrackSpectrogramSettingsDialog.qml");
     }
 }
 

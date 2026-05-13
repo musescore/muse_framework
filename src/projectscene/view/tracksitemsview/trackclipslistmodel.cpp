@@ -440,7 +440,9 @@ bool TrackClipsListModel::moveSelectedClips(const ClipKey& key, bool completed)
     } else if ((completed && m_autoScrollConnection)) {
         disconnectAutoScroll();
     } else if (!m_autoScrollConnection && !completed) {
-        m_autoScrollConnection = connect(m_context, &TimelineContext::frameTimeChanged, [this, key](){ moveSelectedClips(key, false); });
+        m_autoScrollConnection = connect(m_context, &TimelineContext::frameTimeChanged, [this, key](){
+            moveSelectedClips(key, false);
+        });
     }
 
     return clipsMovedToOtherTrack;
@@ -758,7 +760,8 @@ void TrackClipsListModel::selectClip(const ClipKey& key)
         if (modifiers.testFlag(Qt::ShiftModifier)) {
             const auto groupedClips = trackeditInteraction()->clipsInGroup(clipGroupId);
             const auto selectedClips = selectionController()->selectedClips();
-            const bool allGroupClipsSelected = std::all_of(groupedClips.cbegin(), groupedClips.cend(), [&](const auto& groupClipKey) {
+            const bool allGroupClipsSelected
+                = std::all_of(groupedClips.cbegin(), groupedClips.cend(), [&](const auto& groupClipKey) {
                 return muse::contains(selectedClips, groupClipKey);
             });
 

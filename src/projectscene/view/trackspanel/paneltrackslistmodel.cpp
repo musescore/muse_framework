@@ -194,7 +194,8 @@ void PanelTracksListModel::moveSelectedRowsUp()
 
     const QModelIndex& sourceRowFirst = selectedIndexList.first();
 
-    moveRows(sourceRowFirst.parent(), sourceRowFirst.row(), selectedIndexList.count(), sourceRowFirst.parent(), sourceRowFirst.row() - 1);
+    moveRows(sourceRowFirst.parent(), sourceRowFirst.row(), selectedIndexList.count(), sourceRowFirst.parent(),
+             sourceRowFirst.row() - 1);
 }
 
 void PanelTracksListModel::moveSelectedRowsDown()
@@ -215,7 +216,8 @@ void PanelTracksListModel::moveSelectedRowsDown()
     const QModelIndex& sourceRowFirst = selectedIndexList.first();
     const QModelIndex& sourceRowLast = selectedIndexList.last();
 
-    moveRows(sourceRowFirst.parent(), sourceRowFirst.row(), selectedIndexList.count(), sourceRowFirst.parent(), sourceRowLast.row() + 1);
+    moveRows(sourceRowFirst.parent(), sourceRowFirst.row(), selectedIndexList.count(), sourceRowFirst.parent(),
+             sourceRowLast.row() + 1);
 }
 
 void PanelTracksListModel::removeSelectedRows()
@@ -252,7 +254,8 @@ void PanelTracksListModel::requestTracksMove(QVariantList trackIndexes, int to)
     trackeditInteraction()->moveTracksTo(tracksToMove, to);
 }
 
-bool PanelTracksListModel::moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,
+bool PanelTracksListModel::moveRows(const QModelIndex& sourceParent, int sourceRow, int count,
+                                    const QModelIndex& destinationParent,
                                     int destinationChild)
 {
     UNUSED(sourceParent);

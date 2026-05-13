@@ -158,7 +158,8 @@ void WaveView::applyClassicStyle(IWavePainter::Params& params, bool selected) co
 {
     params.style.blankBrush = selected ? CLASSIC_BACKGROUND_SELECTED_COLOR : CLASSIC_BACKGROUND_COLOR;
     params.style.normalBackground = params.style.blankBrush;
-    params.style.selectedBackground = selected ? transformColor(CLASSIC_BACKGROUND_SELECTED_COLOR) : CLASSIC_BACKGROUND_SELECTED_COLOR;
+    params.style.selectedBackground
+        = selected ? transformColor(CLASSIC_BACKGROUND_SELECTED_COLOR) : CLASSIC_BACKGROUND_SELECTED_COLOR;
 
     params.style.envelopeBackground = params.style.blankBrush;
     params.style.selectedEnvelopeBackground
@@ -471,8 +472,9 @@ void WaveView::setLastMousePos(const unsigned int x, const unsigned int y)
     }
 
     const auto params = getWavePainterParams();
-    m_currentChannel =  samplespainterutils::hitNearestSampleChannelIndex(globalContext()->currentProject(), m_clipKey.key, QPoint(x,
-                                                                                                                                   y),
+    m_currentChannel =  samplespainterutils::hitNearestSampleChannelIndex(globalContext()->currentProject(), m_clipKey.key, QPoint(
+                                                                              x,
+                                                                              y),
                                                                           params);
     setIsNearSample(m_currentChannel.has_value());
 }
@@ -521,7 +523,8 @@ void WaveView::smoothLastClickPos(unsigned int x, const unsigned int y)
     const auto currentPosition = QPoint(x, y);
     const auto params = getWavePainterParams();
 
-    auto channel = samplespainterutils::hitChannelIndex(globalContext()->currentProject(), m_clipKey.key, currentPosition, params);
+    auto channel
+        = samplespainterutils::hitChannelIndex(globalContext()->currentProject(), m_clipKey.key, currentPosition, params);
 
     if (!channel) {
         return;

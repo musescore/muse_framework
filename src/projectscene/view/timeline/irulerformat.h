@@ -28,6 +28,7 @@ public:
     virtual ~IRulerFormat() = default;
 
     virtual IntervalInfo intervalInfo(TimelineContext* context) = 0;
-    virtual QString label(double d, const IntervalInfo& timeIntervalInfo, TickType tickType, TimelineContext* context = nullptr) = 0;
+    virtual QString label(double d, const IntervalInfo& timeIntervalInfo, TickType tickType,
+                          TimelineContext* context = nullptr) = 0;
 };
 }

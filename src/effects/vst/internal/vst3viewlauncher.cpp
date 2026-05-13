@@ -32,7 +32,8 @@ void Vst3ViewLauncher::registerFxPlugin(const EffectInstanceId& instanceId) cons
 
     const auto effectId = instancesRegister()->effectIdByInstanceId(instanceId);
 
-    std::shared_ptr<MuseVstPluginInstance> museVstInstance = std::make_shared<MuseVstPluginInstance>(effectId, instanceId, auVst3Instance);
+    std::shared_ptr<MuseVstPluginInstance> museVstInstance = std::make_shared<MuseVstPluginInstance>(effectId, instanceId,
+                                                                                                     auVst3Instance);
     museInstancesRegister()->registerFxPlugin(0, 0, museVstInstance);
 }
 

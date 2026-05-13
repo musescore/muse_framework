@@ -187,7 +187,8 @@ void DynamicsTimeline::resetSequences()
     areaColor.setAlphaF(0.5);
     QColor lineColor = uiConfiguration()->currentTheme().values.value(muse::ui::WHITE_COLOR).value<QColor>();
     lineColor.setAlphaF(0.5);
-    QColor compressionDbLineColor = uiConfiguration()->currentTheme().extra["dynamics_timeline_compression_db_color"].value<QColor>();
+    QColor compressionDbLineColor
+        = uiConfiguration()->currentTheme().extra["dynamics_timeline_compression_db_color"].value<QColor>();
     compressionDbLineColor.setAlphaF(0.5);
     auto inputDb = createSequenceData(areaColor, DrawerType::Area, showInputDb());
     auto outputDb = createSequenceData(areaColor, DrawerType::Area, showOutputDb());

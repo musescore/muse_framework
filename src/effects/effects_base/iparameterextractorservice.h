@@ -20,7 +20,8 @@ public:
     //! Extract all parameters from an effect instance
     //! @param instance The effect instance
     //! @param settingsAccess Optional settings access to apply stored settings before extraction
-    virtual ParameterInfoList extractParameters(EffectInstance* instance, EffectSettingsAccessPtr settingsAccess = nullptr) const = 0;
+    virtual ParameterInfoList extractParameters(EffectInstance* instance,
+                                                EffectSettingsAccessPtr settingsAccess = nullptr) const = 0;
 
     //! Get a single parameter by ID
     //! @return ParameterInfo for the parameter, or invalid ParameterInfo if not found
@@ -53,7 +54,8 @@ public:
     }
 
     //! Get formatted string representation of a parameter value
-    virtual muse::String getParameterValueString(EffectInstance* instance, const muse::String& parameterId, double value) const = 0;
+    virtual muse::String getParameterValueString(EffectInstance* instance, const muse::String& parameterId,
+                                                 double value) const = 0;
 
     //! Begin parameter gesture (e.g., user starts dragging a slider)
     //! Called when interactive editing of a parameter begins

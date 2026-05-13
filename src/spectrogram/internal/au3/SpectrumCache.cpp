@@ -587,7 +587,8 @@ void SpecCache::PopulateConstantQ(const Au3SpectrogramSettings& settings, const 
             memset(&floats[0], 0, missingLeft * sizeof(float));
         }
         Au3ClipChannelReader reader(clip);
-        reader.readSamples((fromView - nPre).as_long_long(), myBufferLen - missingRight - missingLeft, &floats[missingLeft], mayThrow);
+        reader.readSamples(
+            (fromView - nPre).as_long_long(), myBufferLen - missingRight - missingLeft, &floats[missingLeft], mayThrow);
 
         // do transform in parallel sequences
         // Lambda to sampleCount int to double

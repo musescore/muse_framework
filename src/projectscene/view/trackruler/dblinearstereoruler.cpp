@@ -21,7 +21,8 @@ constexpr double HALF_WAVE_OFFSET_DB = 6.0;
 }
 
 DbLinearStereoRuler::DbLinearStereoRuler()
-    : DbLinearBaseRuler(DbLinearRulerUiSettings { MIN_ADJACENT_STEPS_HEIGHT, MIN_FULL_STEP_TO_INF_HEIGHT, MIN_FULL_STEP_TO_ZERO_HEIGHT,
+    : DbLinearBaseRuler(DbLinearRulerUiSettings { MIN_ADJACENT_STEPS_HEIGHT, MIN_FULL_STEP_TO_INF_HEIGHT,
+                                                  MIN_FULL_STEP_TO_ZERO_HEIGHT,
                                                   std::vector<int>(FULL_STEP_SIZES.begin(), FULL_STEP_SIZES.end()) })
 {
 }
@@ -71,15 +72,18 @@ std::vector<TrackRulerFullStep> DbLinearStereoRuler::fullStepsForHalfWave() cons
             continue;
         }
 
-        std::vector<TrackRulerFullStep> channelSteps { TrackRulerFullStep { m_dbRange, channel, 1, IsBold::NO, IsFullWidthTick::YES,
+        std::vector<TrackRulerFullStep> channelSteps { TrackRulerFullStep { m_dbRange, channel, 1, IsBold::NO,
+                                                                            IsFullWidthTick::YES,
                                                                             IsNegativeSample::NO },
                                                        TrackRulerFullStep { maxDisplayValueDB, channel,
-                                                                            -1, IsBold::YES, IsFullWidthTick::NO, IsNegativeSample::NO },
+                                                                            -1, IsBold::YES, IsFullWidthTick::NO,
+                                                                            IsNegativeSample::NO },
         };
 
         auto valuesList = fullStepValues(channelHeights[channel]);
         for (const auto& stepValue : valuesList) {
-            channelSteps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), channel, 0, IsBold::NO, IsFullWidthTick::NO,
+            channelSteps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), channel, 0, IsBold::NO,
+                                                        IsFullWidthTick::NO,
                                                         IsNegativeSample::NO });
         }
 
@@ -103,26 +107,32 @@ std::vector<TrackRulerFullStep> DbLinearStereoRuler::fullStepsForFullWave() cons
 
     for (size_t channel = 0; channel < channelHeights.size(); ++channel) {
         if (channelHeights[channel] < MIN_CHANNEL_HEIGHT) {
-            steps.push_back(TrackRulerFullStep { m_dbRange, channel, 0, IsBold::YES, IsFullWidthTick::YES, IsNegativeSample::NO });
+            steps.push_back(TrackRulerFullStep { m_dbRange, channel, 0, IsBold::YES, IsFullWidthTick::YES,
+                                                 IsNegativeSample::NO });
             continue;
         }
 
-        std::vector<TrackRulerFullStep> channelSteps { TrackRulerFullStep { m_dbRange, channel, 0, IsBold::NO, IsFullWidthTick::YES,
+        std::vector<TrackRulerFullStep> channelSteps { TrackRulerFullStep { m_dbRange, channel, 0, IsBold::NO,
+                                                                            IsFullWidthTick::YES,
                                                                             IsNegativeSample::NO },
                                                        TrackRulerFullStep { maxDisplayValueDB, channel,
                                                                             channel == 0 ? -1 : 0, IsBold::YES,
-                                                                            channel == 1 ? IsFullWidthTick::YES : IsFullWidthTick::NO,
+                                                                            channel
+                                                                            == 1 ? IsFullWidthTick::YES : IsFullWidthTick::NO,
                                                                             IsNegativeSample::NO },
         };
 
         channelSteps.push_back(TrackRulerFullStep { maxDisplayValueDB, channel, channel == 1 ? 1 : 0, IsBold::YES,
-                                                    channel == 0 ? IsFullWidthTick::YES : IsFullWidthTick::NO, IsNegativeSample::YES });
+                                                    channel == 0 ? IsFullWidthTick::YES : IsFullWidthTick::NO,
+                                                    IsNegativeSample::YES });
 
         auto valuesList = fullStepValues(channelHeights[channel]);
         for (const auto& stepValue : valuesList) {
-            channelSteps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), channel, 0, IsBold::NO, IsFullWidthTick::NO,
+            channelSteps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), channel, 0, IsBold::NO,
+                                                        IsFullWidthTick::NO,
                                                         IsNegativeSample::NO });
-            channelSteps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), channel, 0, IsBold::NO, IsFullWidthTick::NO,
+            channelSteps.push_back(TrackRulerFullStep { static_cast<double>(stepValue), channel, 0, IsBold::NO,
+                                                        IsFullWidthTick::NO,
                                                         IsNegativeSample::YES });
         }
 

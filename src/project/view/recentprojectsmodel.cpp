@@ -75,7 +75,8 @@ void RecentProjectsModel::updateRecentProjects()
         std::string suffix = io::suffix(file.path);
 
         RetVal<uint64_t> fileSize = fileSystem()->fileSize(file.path);
-        QString fileSizeString = (fileSize.ret && fileSize.val > 0) ? DataFormatter::formatFileSize(fileSize.val).toQString() : QString();
+        QString fileSizeString
+            = (fileSize.ret && fileSize.val > 0) ? DataFormatter::formatFileSize(fileSize.val).toQString() : QString();
 
         obj[NAME_KEY] = file.displayName(false);
         obj[PATH_KEY] = file.path.toQString();

@@ -63,7 +63,8 @@ void CommandLineParser::init()
 
     // Audio plugins
     m_parser.addOption(QCommandLineOption("register-audio-plugin",
-                                          "Check an audio plugin for compatibility with the application and register it", "path"));
+                                          "Check an audio plugin for compatibility with the application and register it",
+                                          "path"));
     m_parser.addOption(QCommandLineOption("register-failed-audio-plugin", "Register an incompatible audio plugin", "path"));
     m_parser.addOption(QCommandLineOption("plugin-registration-self-test",
                                           "Run plugin registration app self-test (verify initialization)"));

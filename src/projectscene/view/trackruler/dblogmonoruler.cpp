@@ -52,7 +52,8 @@ std::vector<TrackRulerFullStep> DbLogMonoRuler::fullStepsForHalfWave() const
     result.reserve(steps.size());
     for (double value : steps) {
         result.push_back(TrackRulerFullStep { value, 0, getAlignment(value, false),
-                                              isBold(value) ? IsBold::YES : IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::NO });
+                                              isBold(
+                                                  value) ? IsBold::YES : IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::NO });
     }
     return result;
 }
@@ -69,9 +70,12 @@ std::vector<TrackRulerFullStep> DbLogMonoRuler::fullStepsForFullWave() const
     result.reserve((steps.size() * 2) + 1);
     for (double value : steps) {
         result.push_back(TrackRulerFullStep { value, 0, getAlignment(value, false),
-                                              isBold(value) ? IsBold::YES : IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::NO });
+                                              isBold(
+                                                  value) ? IsBold::YES : IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::NO });
         result.push_back(TrackRulerFullStep { value, 0, getAlignment(value, true),
-                                              isBold(value) ? IsBold::YES : IsBold::NO, IsFullWidthTick::NO, IsNegativeSample::YES });
+                                              isBold(
+                                                  value) ? IsBold::YES : IsBold::NO, IsFullWidthTick::NO,
+                                              IsNegativeSample::YES });
     }
     result.push_back(TrackRulerFullStep { m_dbRange, 0, 0, IsBold::YES, IsFullWidthTick::YES, IsNegativeSample::NO });
 

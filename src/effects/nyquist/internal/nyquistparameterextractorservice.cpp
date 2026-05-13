@@ -178,7 +178,8 @@ NyqControl* findControl(std::vector<NyqControl>& controls, const String& varName
 } // anonymous namespace
 
 ParameterInfoList NyquistParameterExtractorService::extractParameters(EffectInstance* instance,
-                                                                      [[maybe_unused]] EffectSettingsAccessPtr settingsAccess) const
+                                                                      [[maybe_unused]] EffectSettingsAccessPtr settingsAccess)
+const
 {
     NyquistBase* nyquist = getNyquistBase(instance);
     if (!nyquist) {

@@ -57,8 +57,8 @@ public:
     ITrackDataPtr copyClip(const trackedit::ClipKey& clipKey) override;
     std::optional<TimeSpan> removeClip(const trackedit::ClipKey& clipKey) override;
     bool removeClips(const trackedit::ClipKeyList& clipKeyList, bool moveClips) override;
-    muse::RetVal<ClipKeyList> moveClips(const ClipKeyList& clipKeyList, secs_t timePositionOffset, int trackPositionOffset, bool completed,
-                                        bool& clipsMovedToOtherTracks) override;
+    muse::RetVal<ClipKeyList> moveClips(const ClipKeyList& clipKeyList, secs_t timePositionOffset, int trackPositionOffset,
+                                        bool completed, bool& clipsMovedToOtherTracks) override;
     void cancelClipDragEdit() override;
 
     bool splitClipsAtSilences(const ClipKeyList& clipKeyList) override;
@@ -106,7 +106,8 @@ private:
 
     NeedsDownmixing moveSelectedClipsUpOrDown(ClipKeyList& clipKeyList, int offset);
 
-    void trimOrDeleteOverlapping(::WaveTrack* waveTrack, muse::secs_t begin, muse::secs_t end, std::shared_ptr<::WaveClip> otherClip);
+    void trimOrDeleteOverlapping(::WaveTrack* waveTrack, muse::secs_t begin, muse::secs_t end,
+                                 std::shared_ptr<::WaveClip> otherClip);
 
     std::optional<secs_t> shortestClipDuration(const ClipKeyList& clipKeys) const;
     std::optional<secs_t> leftmostClipStartTime(const ClipKeyList& clipKeys) const;

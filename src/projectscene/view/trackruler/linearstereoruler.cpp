@@ -13,7 +13,8 @@ namespace {
 constexpr double MIN_CHANNEL_HEIGHT = 40.0;
 }
 
-double LinearStereoRuler::stepToPosition(double step, [[maybe_unused]] size_t channel, [[maybe_unused]] bool isNegativeSample) const
+double LinearStereoRuler::stepToPosition(double step, [[maybe_unused]] size_t channel,
+                                         [[maybe_unused]] bool isNegativeSample) const
 {
     return channel == 0 ? valueToPosition(step, m_height * m_channelHeightRatio)
            : valueToPosition(step, m_height * (1.0 - m_channelHeightRatio)) + (m_height * m_channelHeightRatio);
@@ -70,7 +71,8 @@ std::vector<TrackRulerSmallStep> LinearStereoRuler::smallSteps() const
         const auto values = smallStepsValues(channelHeight[ch]);
         const auto fullSteps = fullStepsValues(channelHeight[ch]);
         for (double v : values) {
-            if (std::find_if(fullSteps.begin(), fullSteps.end(), [v](double fs) { return muse::RealIsEqual(v, fs); }) != fullSteps.end()) {
+            if (std::find_if(fullSteps.begin(), fullSteps.end(),
+                             [v](double fs) { return muse::RealIsEqual(v, fs); }) != fullSteps.end()) {
                 continue;
             }
             steps.push_back(TrackRulerSmallStep { v, ch, v < 0.0 ? IsNegativeSample::YES : IsNegativeSample::NO });

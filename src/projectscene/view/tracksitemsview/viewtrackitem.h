@@ -23,10 +23,12 @@ class ViewTrackItem : public QObject
     Q_PROPERTY(double x READ x WRITE setX NOTIFY xChanged FINAL)
     Q_PROPERTY(double width READ width WRITE setWidth NOTIFY widthChanged FINAL)
     Q_PROPERTY(double leftVisibleMargin READ leftVisibleMargin WRITE setLeftVisibleMargin NOTIFY leftVisibleMarginChanged FINAL)
-    Q_PROPERTY(double rightVisibleMargin READ rightVisibleMargin WRITE setRightVisibleMargin NOTIFY rightVisibleMarginChanged FINAL)
+    Q_PROPERTY(
+        double rightVisibleMargin READ rightVisibleMargin WRITE setRightVisibleMargin NOTIFY rightVisibleMarginChanged FINAL)
     Q_PROPERTY(TrackItemTime time READ time WRITE setTime NOTIFY timeChanged FINAL)
     Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectedChanged FINAL)
-    Q_PROPERTY(bool intersectsSelection READ intersectsSelection WRITE setIntersectsSelection NOTIFY intersectsSelectionChanged FINAL)
+    Q_PROPERTY(
+        bool intersectsSelection READ intersectsSelection WRITE setIntersectsSelection NOTIFY intersectsSelectionChanged FINAL)
     Q_PROPERTY(bool focused READ focused WRITE setFocused NOTIFY focusedChanged FINAL)
 
 public:

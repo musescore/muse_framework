@@ -307,7 +307,8 @@ void AboutModel::copyRevisionToClipboard() const
     QApplication::clipboard()->setText(
         QString("OS: %1, Arch.: %2, Audacity version (%3-bit): %4-%5, revision: github-audacity-audacity-%6")
         .arg(QSysInfo::prettyProductName()
-             + ((QSysInfo::productType() == "windows" && (QSysInfo::productVersion() == "10" || QSysInfo::productVersion() == "11"))
+             + ((QSysInfo::productType() == "windows"
+                 && (QSysInfo::productVersion() == "10" || QSysInfo::productVersion() == "11"))
                 ? " or later" : ""))
         .arg(QSysInfo::currentCpuArchitecture())
         .arg(QSysInfo::WordSize)
@@ -340,7 +341,8 @@ QVariantList AboutModel::creditList() const
             creditList.append(makeSection("Translators", translationCredits));
         }
 
-        creditList.append(makeSection("Libraries", "Audacity includes code from the following projects:", buildCredits(sLibraries)));
+        creditList.append(makeSection("Libraries", "Audacity includes code from the following projects:", buildCredits(
+                                          sLibraries)));
         creditList.append(makeSection("Special Thanks", buildCredits(sThanks)));
         return creditList;
     }();

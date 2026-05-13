@@ -44,7 +44,8 @@ const char* OPEN_DEFAULT_ERROR_MESSAGE = "An error occurred while opening the cl
 
 const char* OPEN_CONFLICT_TITLE = "Project version conflict";
 const char* OPEN_CONFLICT_MESSAGE
-    = "There is a newer version of this project on audio.com. You can open your local version or discard it and download the latest.";
+    =
+        "There is a newer version of this project on audio.com. You can open your local version or discard it and download the latest.";
 const char* OPEN_CONFLICT_LOCAL_BTN = "Open local version";
 const char* OPEN_CONFLICT_REMOTE_BTN = "Discard and open latest";
 
@@ -309,7 +310,8 @@ RetVal<CloudAudioInfo> OpenSaveProjectScenario::askShareAudioLocation(IAudacityP
 }
 
 //! TODO AU4
-RetVal<CloudProjectInfo> OpenSaveProjectScenario::doAskCloudLocation(IAudacityProjectPtr project, SaveMode mode, bool isPublishShare) const
+RetVal<CloudProjectInfo> OpenSaveProjectScenario::doAskCloudLocation(IAudacityProjectPtr project, SaveMode mode,
+                                                                     bool isPublishShare) const
 {
     RetVal<Val> rv = interactive()->openSync(UriQuery("audacity://project/savetocloud"));
     if (!rv.ret) {
@@ -775,7 +777,8 @@ Ret OpenSaveProjectScenario::showCloudSaveError(const Ret& ret) const
             const IInteractive::ButtonData okBtn = interactive()->buttonData(IInteractive::Button::Ok);
             const auto result = interactive()->infoSync(DEFAULT_SYNC_ERROR_TITLE, DEFAULT_SYNC_ERROR_TEXT, { okBtn },
                                                         static_cast<int>(IInteractive::Button::Ok),
-                                                        IInteractive::Option::WithIcon | IInteractive::Option::WithDontShowAgainCheckBox);
+                                                        IInteractive::Option::WithIcon
+                                                        | IInteractive::Option::WithDontShowAgainCheckBox);
 
             if (!result.showAgain()) {
                 cloudConfiguration()->setWarnOnSyncError(false);

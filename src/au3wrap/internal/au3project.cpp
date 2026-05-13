@@ -125,7 +125,8 @@ Au3ProjectAccessor::Au3ProjectAccessor(const muse::modularity::ContextPtr& ctx)
 muse::Ret Au3ProjectAccessor::open()
 {
     auto& projectFileIO = ProjectFileIO::Get(m_data->projectRef());
-    return projectFileIO.OpenProject() ? muse::make_ok() : muse::make_ret(static_cast<muse::Ret::Code>(project::Err::DatabaseError));
+    return projectFileIO.OpenProject() ? muse::make_ok() : muse::make_ret(
+        static_cast<muse::Ret::Code>(project::Err::DatabaseError));
 }
 
 muse::Ret Au3ProjectAccessor::load(const muse::io::path_t& filePath, bool ignoreAutosave)
@@ -344,7 +345,8 @@ bool Au3ProjectAccessor::hasAutosaveData() const
 muse::Ret Au3ProjectAccessor::removeAutosaveData()
 {
     auto& projectFileIO = ProjectFileIO::Get(m_data->projectRef());
-    return projectFileIO.AutoSaveDelete() ? muse::make_ok() : muse::make_ret(static_cast<muse::Ret::Code>(project::Err::DatabaseError));
+    return projectFileIO.AutoSaveDelete() ? muse::make_ok() : muse::make_ret(static_cast<muse::Ret::Code>(project::Err::
+                                                                                                          DatabaseError));
 }
 
 muse::io::path_t Au3ProjectAccessor::getFileName() const

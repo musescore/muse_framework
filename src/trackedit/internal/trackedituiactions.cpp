@@ -513,7 +513,8 @@ UiActionList STATIC_ACTIONS = {
 };
 }
 
-TrackeditUiActions::TrackeditUiActions(const muse::modularity::ContextPtr& ctx, std::shared_ptr<TrackeditActionsController> controller)
+TrackeditUiActions::TrackeditUiActions(const muse::modularity::ContextPtr& ctx,
+                                       std::shared_ptr<TrackeditActionsController> controller)
     : muse::Contextable(ctx), m_actions(STATIC_ACTIONS), m_controller(controller)
 {
 }
@@ -523,8 +524,9 @@ void TrackeditUiActions::init()
     for (const auto& formatInfo : availableTrackFormats()) {
         UiAction formatAction;
         formatAction.code
-            = muse::actions::ActionQuery(muse::String(TRACK_FORMAT_CHANGE_ACTION).arg(muse::String::number(static_cast<int>(formatInfo.
-                                                                                                                            format))))
+            = muse::actions::ActionQuery(muse::String(TRACK_FORMAT_CHANGE_ACTION).arg(muse::String::number(static_cast<int>(
+                                                                                                               formatInfo.
+                                                                                                               format))))
               .toString();
         formatAction.uiCtx = context::UiCtxAny;
         formatAction.scCtx = context::CTX_DISABLED;
@@ -537,7 +539,8 @@ void TrackeditUiActions::init()
     for (const auto& sampleRate : audioDevicesProvider()->sampleRates()) {
         UiAction rateAction;
         rateAction.code
-            = muse::actions::ActionQuery(muse::String(TRACK_RATE_CHANGE_ACTION).arg(muse::String::number(static_cast<int>(sampleRate)))).
+            = muse::actions::ActionQuery(muse::String(TRACK_RATE_CHANGE_ACTION).arg(muse::String::number(static_cast<int>(
+                                                                                                             sampleRate)))).
               toString();
         rateAction.uiCtx = context::UiCtxAny;
         rateAction.scCtx = context::CTX_DISABLED;

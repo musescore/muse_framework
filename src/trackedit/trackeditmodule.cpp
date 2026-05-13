@@ -103,7 +103,8 @@ void TrackeditModule::resolveImports()
     if (ir) {
         ir->registerQmlUri(muse::Uri("audacity://trackedit/custom_rate"), "Audacity/TrackEdit/CustomRateDialog.qml");
         ir->registerQmlUri(muse::Uri("audacity://trackedit/custom_time"), "Audacity/TrackEdit/CustomTimeDialog.qml");
-        ir->registerQmlUri(muse::Uri("audacity://trackedit/delete_behavior"), "Audacity/TrackEdit/DeleteBehaviorOnboardingDialog.qml");
+        ir->registerQmlUri(muse::Uri(
+                               "audacity://trackedit/delete_behavior"), "Audacity/TrackEdit/DeleteBehaviorOnboardingDialog.qml");
         ir->registerQmlUri(muse::Uri(
                                "audacity://trackedit/delete_behavior_followup"),
                            "Audacity/TrackEdit/DeleteBehaviorOnboardingFollowupDialog.qml");
@@ -140,8 +141,10 @@ void TrackeditContext::registerExports()
     m_trackSpectrogramSettingsUpdater = std::make_shared<TrackSpectrogramSettingsUpdater>(iocContext());
 
     ioc()->registerExport<ITrackeditInteraction>(mname,
-                                                 new TrackeditInteraction(iocContext(), std::make_unique<TrackeditOperationController>(
-                                                                              iocContext(), std::make_unique<UndoManager>(iocContext()))));
+                                                 new TrackeditInteraction(iocContext(),
+                                                                          std::make_unique<TrackeditOperationController>(
+                                                                              iocContext(),
+                                                                              std::make_unique<UndoManager>(iocContext()))));
     ioc()->registerExport<ISelectionController>(mname, m_selectionController);
     ioc()->registerExport<IProjectHistory>(mname, new Au3ProjectHistory(iocContext()));
     ioc()->registerExport<ITrackeditClipboard>(mname, new Au3TrackeditClipboard(iocContext()));

@@ -27,7 +27,8 @@ public:
 
     double parameterValue(EffectInstanceId instanceId, const muse::String& parameterId) const override;
     bool setParameterValue(EffectInstanceId instanceId, const muse::String& parameterId, double value) override;
-    bool setParameterStringValue(EffectInstanceId instanceId, const muse::String& parameterId, const muse::String& stringValue) override;
+    bool setParameterStringValue(EffectInstanceId instanceId, const muse::String& parameterId,
+                                 const muse::String& stringValue) override;
 
     muse::String parameterValueString(EffectInstanceId instanceId, const muse::String& parameterId, double value) const override;
 

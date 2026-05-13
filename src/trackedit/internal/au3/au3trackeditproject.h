@@ -20,7 +20,8 @@ class Au3TrackeditProject : public ITrackeditProject, public muse::Contextable
     muse::ContextInject<trackedit::IProjectHistory> projectHistory { this };
 
 public:
-    explicit Au3TrackeditProject(const muse::modularity::ContextPtr& ctx, const std::shared_ptr<au::au3::IAu3Project>& au3project);
+    explicit Au3TrackeditProject(const muse::modularity::ContextPtr& ctx,
+                                 const std::shared_ptr<au::au3::IAu3Project>& au3project);
     ~Au3TrackeditProject() override;
 
     TrackIdList trackIdList() const override;

@@ -251,7 +251,8 @@ bool Au3ClipsInteraction::changeClipOptimizeForVoice(const ClipKey& clipKey, boo
     }
 
     clip->SetPitchAndSpeedPreset(optimize ? PitchAndSpeedPreset::OptimizeForVoice : PitchAndSpeedPreset::Default);
-    LOGD() << "changed optimize for voice of clip: " << clipKey.itemId << ", track: " << clipKey.trackId << ", optimize: " << optimize;
+    LOGD() << "changed optimize for voice of clip: " << clipKey.itemId << ", track: " << clipKey.trackId << ", optimize: " <<
+        optimize;
 
     trackedit::ITrackeditProjectPtr prj = globalContext()->currentTrackeditProject();
     prj->notifyAboutClipChanged(DomConverter::clip(waveTrack, clip.get()));
@@ -457,7 +458,8 @@ muse::RetVal<ClipKeyList> Au3ClipsInteraction::moveClips(const ClipKeyList& clip
     muse::RetVal<ClipKeyList> result;
     //! TODO AU4: later when having keyboard arrow shortcut for moving clips
     //! make use of UndoPush::CONSOLIDATE arg in UndoManager
-    result.ret = utils::withProgress(*interactive(), mixingDownToMonoLabel, [&](utils::ProgressCb progressCb, utils::CancelCb cancelCb)
+    result.ret
+        = utils::withProgress(*interactive(), mixingDownToMonoLabel, [&](utils::ProgressCb progressCb, utils::CancelCb cancelCb)
     {
         std::vector<std::pair<WaveTrack*, std::shared_ptr<WaveTrack> > > toReplace;
         for (const trackedit::TrackId track : selectionController()->selectedTracks()) {
@@ -611,7 +613,8 @@ bool Au3ClipsInteraction::duplicateClips(const ClipKeyList& clipKeyList)
         auto newTrack = track->EmptyCopy(pSampleBlockFactory);
 
         std::vector<ClipKey> clipsToDuplicate;
-        std::copy_if(clipKeyList.begin(), clipKeyList.end(), std::back_inserter(clipsToDuplicate), [track](const ClipKey& clipKey) {
+        std::copy_if(clipKeyList.begin(), clipKeyList.end(), std::back_inserter(
+                         clipsToDuplicate), [track](const ClipKey& clipKey) {
             return clipKey.trackId == track->GetId();
         });
 
@@ -1027,7 +1030,8 @@ std::optional<secs_t> Au3ClipsInteraction::shortestClipDuration(const ClipKeyLis
         IF_ASSERT_FAILED(clip) {
             continue;
         }
-        if (!shortestClipDuration.has_value() || !muse::RealIsEqualOrMore(clip->GetPlayDuration(), shortestClipDuration.value())) {
+        if (!shortestClipDuration.has_value()
+            || !muse::RealIsEqualOrMore(clip->GetPlayDuration(), shortestClipDuration.value())) {
             shortestClipDuration = clip->GetPlayDuration();
         }
     }

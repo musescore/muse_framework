@@ -29,7 +29,8 @@ void TimelineSourceModel::doInit()
     }
 
     m_initializeProcessingSettingsSubscription
-        = static_cast<InitializeProcessingSettingsPublisher&>(*instance).Subscribe([&](const std::optional<InitializeProcessingSettings>&
+        = static_cast<InitializeProcessingSettingsPublisher&>(*instance).Subscribe([&](const std::optional<InitializeProcessingSettings>
+                                                                                       &
                                                                                        evt) {
         if (evt) {
             initializeForPlayback(evt->sampleRate, evt->audioThreadBufferSize);

@@ -18,7 +18,8 @@ class PluginPreferencesModel : public QObject, public muse::async::Asyncable
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(effects::EffectMenuOrganization effectMenuOrganization READ effectMenuOrganization NOTIFY effectMenuOrganizationChanged)
+    Q_PROPERTY(
+        effects::EffectMenuOrganization effectMenuOrganization READ effectMenuOrganization NOTIFY effectMenuOrganizationChanged)
 
     muse::GlobalInject<effects::IEffectsConfiguration> effectsConfiguration;
 

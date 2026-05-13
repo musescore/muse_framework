@@ -17,7 +17,8 @@ class DeleteBehaviorPanelModel : public QObject, public muse::async::Asyncable
     Q_PROPERTY(int deleteBehavior READ deleteBehavior WRITE setDeleteBehavior NOTIFY deleteBehaviorChanged FINAL)
     Q_PROPERTY(int closeGapBehavior READ closeGapBehavior WRITE setCloseGapBehavior NOTIFY closeGapBehaviorChanged FINAL)
     Q_PROPERTY(bool addBorderToClipImageButtons READ addBorderToClipImageButtons NOTIFY uiThemeChanged FINAL)
-    Q_PROPERTY(bool userMustChooseCloseGapBehavior READ userMustChooseCloseGapBehavior NOTIFY userMustChooseCloseGapBehaviorChanged FINAL)
+    Q_PROPERTY(
+        bool userMustChooseCloseGapBehavior READ userMustChooseCloseGapBehavior NOTIFY userMustChooseCloseGapBehaviorChanged FINAL)
 
     Q_PROPERTY(QVariantList deleteBehaviors READ deleteBehaviors NOTIFY uiThemeChanged FINAL)
     Q_PROPERTY(QVariantList closeGapBehaviors READ closeGapBehaviors CONSTANT FINAL)

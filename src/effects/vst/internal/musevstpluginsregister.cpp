@@ -56,7 +56,8 @@ void MuseVstInstancesRegister::registerFxPlugin(const muse::audio::TrackId track
     m_instances.insert_or_assign({ Type::Effect, instance->resourceId(), trackId, chainOrder }, instance);
 }
 
-void MuseVstInstancesRegister::registerMasterFxPlugin(const muse::audio::AudioFxChainOrder chainOrder, IVstPluginInstancePtr instance)
+void MuseVstInstancesRegister::registerMasterFxPlugin(const muse::audio::AudioFxChainOrder chainOrder,
+                                                      IVstPluginInstancePtr instance)
 {
     registerFxPlugin(-1, chainOrder, instance);
 }
@@ -132,7 +133,8 @@ void MuseVstInstancesRegister::unregisterById(const VstPluginInstanceId id)
     });
 }
 
-void MuseVstInstancesRegister::unregisterInstrPlugin(const muse::audio::AudioResourceId& resourceId, const muse::audio::TrackId trackId)
+void MuseVstInstancesRegister::unregisterInstrPlugin(const muse::audio::AudioResourceId& resourceId,
+                                                     const muse::audio::TrackId trackId)
 {
     std::lock_guard lock(m_mutex);
 

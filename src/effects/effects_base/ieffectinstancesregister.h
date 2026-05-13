@@ -19,7 +19,8 @@ class IEffectInstancesRegister : MODULE_GLOBAL_EXPORT_INTERFACE
 public:
     virtual ~IEffectInstancesRegister() = default;
 
-    virtual EffectInstanceId regInstance(const EffectId& effectId, const std::shared_ptr<EffectInstance>& i, EffectSettingsAccessPtr s) = 0;
+    virtual EffectInstanceId regInstance(const EffectId& effectId, const std::shared_ptr<EffectInstance>& i,
+                                         EffectSettingsAccessPtr s) = 0;
     virtual void unregInstance(const std::shared_ptr<EffectInstance>& i) = 0;
     virtual void unregInstance(const EffectInstanceId& instanceId) = 0;
 

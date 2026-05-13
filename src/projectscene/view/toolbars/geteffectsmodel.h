@@ -19,7 +19,8 @@ class GetEffectsModel : public QObject, public muse::async::Asyncable, public mu
 
     Q_PROPERTY(QVariantList effectsGroups READ effectsGroups NOTIFY effectsGroupsChanged FINAL)
     Q_PROPERTY(QVariantList categories READ categories NOTIFY categoriesChanged FINAL)
-    Q_PROPERTY(int selectedCategoryIndex READ selectedCategoryIndex WRITE setSelectedCategoryIndex NOTIFY selectedCategoryIndexChanged FINAL)
+    Q_PROPERTY(
+        int selectedCategoryIndex READ selectedCategoryIndex WRITE setSelectedCategoryIndex NOTIFY selectedCategoryIndexChanged FINAL)
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged FINAL)
     Q_PROPERTY(bool hasError READ hasError NOTIFY hasErrorChanged FINAL)
 

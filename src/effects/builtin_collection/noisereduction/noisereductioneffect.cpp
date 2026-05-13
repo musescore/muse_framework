@@ -153,7 +153,8 @@ public:
     ~Worker();
 
     bool Process(
-        eWindowFunctions inWindowType, eWindowFunctions outWindowType, TrackList& tracks, double mT0, double mT1, std::string& error);
+        eWindowFunctions inWindowType, eWindowFunctions outWindowType, TrackList& tracks, double mT0, double mT1,
+        std::string& error);
 
     static bool Processor(SpectrumTransformer& transformer);
 
@@ -371,7 +372,8 @@ bool NoiseReductionEffect::Worker::Process(
                 error = XO("All noise profile data must have the same sample rate.").Translation().ToStdString();
             } else {
                 error
-                    = XO("The sample rate of the noise profile must match that of the sound to be processed.").Translation().ToStdString();
+                    = XO("The sample rate of the noise profile must match that of the sound to be processed.").Translation().
+                      ToStdString();
             }
             return false;
         }

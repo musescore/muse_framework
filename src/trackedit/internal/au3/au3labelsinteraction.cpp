@@ -336,7 +336,8 @@ muse::RetVal<LabelKeyList> Au3LabelsInteraction::moveLabels(const LabelKeyList& 
         size_t index = 0;
         for (const auto& track : tracks) {
             if (track->GetId() == currentTrackId) {
-                size_t newIndex = std::clamp(static_cast<int>(index) + trackPositionOffset, 0, static_cast<int>(tracks.Size()) - 1);
+                size_t newIndex
+                    = std::clamp(static_cast<int>(index) + trackPositionOffset, 0, static_cast<int>(tracks.Size()) - 1);
                 auto it = std::next(tracks.cbegin(), newIndex);
                 while (*it) {
                     if (dynamic_cast<const Au3LabelTrack*>(*it)) {

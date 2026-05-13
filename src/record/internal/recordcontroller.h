@@ -20,7 +20,8 @@
 #include "record/irecordcontroller.h"
 
 namespace au::record {
-class RecordController : public IRecordController, public muse::actions::Actionable, public muse::async::Asyncable, public muse::Contextable
+class RecordController : public IRecordController, public muse::actions::Actionable, public muse::async::Asyncable,
+    public muse::Contextable
 {
     muse::GlobalInject<record::IRecordConfiguration> configuration;
 

@@ -71,7 +71,8 @@ void ExporterModule::registerUiTypes()
     qmlRegisterUncreatableMetaObject(ChannelMappingTableViewCellType::staticMetaObject,
                                      "Audacity.Export", 1, 0, "ChannelMappingTableViewCellType", "");
 
-    qmlRegisterUncreatableType<importexport::ExportChannelsPref>("Audacity.Export", 1, 0, "ExportChannels", "Not creatable from QML");
+    qmlRegisterUncreatableType<importexport::ExportChannelsPref>("Audacity.Export", 1, 0, "ExportChannels",
+                                                                 "Not creatable from QML");
     qmlRegisterUncreatableType<ExportOptionType>("Audacity.Export", 1, 0, "ExportOptionType", "Not creatable from QML");
 }
 

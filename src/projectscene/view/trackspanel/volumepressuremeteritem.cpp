@@ -44,7 +44,8 @@ void buildRoundedRectPath(QPainterPath& path, qreal x, qreal y, qreal w, qreal h
     path.closeSubpath();
 }
 
-void fillRoundedRect(QPainter& p, const QBrush& brush, qreal x, qreal y, qreal w, qreal h, qreal radius, bool roundTop, bool roundBottom)
+void fillRoundedRect(QPainter& p, const QBrush& brush, qreal x, qreal y, qreal w, qreal h, qreal radius, bool roundTop,
+                     bool roundBottom)
 {
     QPainterPath path;
     buildRoundedRectPath(path, x, y, w, h, radius, roundTop, roundBottom);

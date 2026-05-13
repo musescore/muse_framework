@@ -23,8 +23,7 @@ public:
                                                        bool dismissible = true, const std::vector<ToastAction>& actions = {}) = 0;
     virtual muse::async::Promise<ToastActionCode> showWithTimeout(const std::string& title, const std::string& message,
                                                                   std::chrono::seconds timeout,
-                                                                  muse::ui::IconCode::Code iconCode = muse::ui::IconCode::Code::NONE,
-                                                                  bool dismissible = true,
+                                                                  muse::ui::IconCode::Code iconCode = muse::ui::IconCode::Code::NONE, bool dismissible = true,
                                                                   const std::vector<ToastAction>& actions = {}) = 0;
     virtual void showSuccess(const std::string& title, const std::string& message) = 0;
     virtual void showError(const std::string& title, const std::string& message) = 0;
@@ -32,8 +31,7 @@ public:
     virtual void showWarning(const std::string& title, const std::string& message) = 0;
     virtual muse::async::Promise<ToastActionCode> showWithProgress(const std::string& title, const std::string& message,
                                                                    std::shared_ptr<muse::Progress> progress,
-                                                                   muse::ui::IconCode::Code iconCode = muse::ui::IconCode::Code::NONE,
-                                                                   bool dismissible = false, const std::vector<ToastAction>& actions = {},
+                                                                   muse::ui::IconCode::Code iconCode = muse::ui::IconCode::Code::NONE, bool dismissible = false, const std::vector<ToastAction>& actions = {},
                                                                    bool showProgressInfo = false) = 0;
 };
 }

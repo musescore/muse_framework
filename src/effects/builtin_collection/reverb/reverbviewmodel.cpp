@@ -18,7 +18,8 @@ void ReverbViewModel::doReload()
     const ReverbSettings& rs = settings<ReverbSettings>();
 
     auto makeItem
-        = [this](const QString& key, const QString& title, const QString& unit, double value, double min, double max, const Setter& s) {
+        = [this](const QString& key, const QString& title, const QString& unit, double value, double min, double max,
+                 const Setter& s) {
         QVariantMap item;
         item["key"] = key;
         item["title"] = title;

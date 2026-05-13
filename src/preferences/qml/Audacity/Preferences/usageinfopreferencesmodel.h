@@ -17,7 +17,8 @@ class UsageInfoPreferencesModel : public QObject
 
     muse::GlobalInject<au::au3cloud::IUsageInfo> usageInfo;
 
-    Q_PROPERTY(bool sendAnonymousUsageInfo READ sendAnonymousUsageInfo WRITE setSendAnonymousUsageInfo NOTIFY sendAnonymousUsageInfoChanged)
+    Q_PROPERTY(
+        bool sendAnonymousUsageInfo READ sendAnonymousUsageInfo WRITE setSendAnonymousUsageInfo NOTIFY sendAnonymousUsageInfoChanged)
 
 public:
     explicit UsageInfoPreferencesModel(QObject* parent = nullptr);

@@ -206,7 +206,8 @@ void drawBackground(QPainter& painter, const au::projectscene::WaveMetrics& metr
     }
 }
 
-void drawCenterLine(QPainter& painter, const au::projectscene::WaveMetrics& metrics, const IWavePainter::Style& style, const int y)
+void drawCenterLine(QPainter& painter, const au::projectscene::WaveMetrics& metrics, const IWavePainter::Style& style,
+                    const int y)
 {
     painter.setPen(style.centerLine);
     painter.drawLine(metrics.left, y, metrics.left + metrics.width, y);
@@ -273,7 +274,8 @@ SampleData getSampleData(const au::au3::Au3WaveClip& clip, int channelIndex, con
         }
 
         ypos[s] = std::max(-1, std::min(static_cast<int>(metrics.height),
-                                        samplespainterutils::getWaveYPos(tt, zoomMin, zoomMax, metrics.height, dB, true, dBRange, false)));
+                                        samplespainterutils::getWaveYPos(tt, zoomMin, zoomMax, metrics.height, dB, true, dBRange,
+                                                                         false)));
     }
 
     return SampleData(ypos, xpos, clippedX);
@@ -308,7 +310,8 @@ std::optional<int> hitChannelIndex(std::shared_ptr<project::IAudacityProject> pr
     return std::nullopt;
 }
 
-std::optional<int> hitNearestSampleChannelIndex(std::shared_ptr<au::project::IAudacityProject> project, const trackedit::ClipKey& clipKey,
+std::optional<int> hitNearestSampleChannelIndex(std::shared_ptr<au::project::IAudacityProject> project,
+                                                const trackedit::ClipKey& clipKey,
                                                 const QPoint& position, const IWavePainter::Params& params)
 {
     au::au3::Au3Project* au3Project = reinterpret_cast<au::au3::Au3Project*>(project->au3ProjectPtr());
@@ -354,7 +357,8 @@ std::optional<int> hitNearestSampleChannelIndex(std::shared_ptr<au::project::IAu
 
         const auto adjustedYPos = position.y() - top;
 
-        const auto baselineYPos = getWaveYPos(0.0, params.displayBounds.first, params.displayBounds.second, waveMetrics.height, dB, true,
+        const auto baselineYPos = getWaveYPos(0.0, params.displayBounds.first, params.displayBounds.second, waveMetrics.height,
+                                              dB, true,
                                               dBRange, false);
         if (std::abs(adjustedYPos - baselineYPos) <= BASELINE_HIT_AREA_SIZE) {
             return i;
@@ -366,7 +370,8 @@ std::optional<int> hitNearestSampleChannelIndex(std::shared_ptr<au::project::IAu
             continue;
         }
 
-        const auto ypos = getWaveYPos(tt, params.displayBounds.first, params.displayBounds.second, waveMetrics.height, dB, true, dBRange,
+        const auto ypos = getWaveYPos(tt, params.displayBounds.first, params.displayBounds.second, waveMetrics.height, dB, true,
+                                      dBRange,
                                       false);
 
         if (position.y() < top || position.y() > top + waveMetrics.height) {
@@ -462,7 +467,8 @@ void setIsolatedPoint(const unsigned int currentChannel, const trackedit::ClipKe
     // Ensure value stays within valid audio range
     newValue = std::clamp(newValue, -1.0f, 1.0f);
 
-    WaveChannelUtilities::SetFloatAtTime(*waveChannel, isolatedPointTime + clip->GetPlayStartTime(), newValue, narrowestSampleFormat);
+    WaveChannelUtilities::SetFloatAtTime(*waveChannel,
+                                         isolatedPointTime + clip->GetPlayStartTime(), newValue, narrowestSampleFormat);
 }
 
 void setLastClickPos(const unsigned int currentChannel, std::shared_ptr<au::project::IAudacityProject> project,

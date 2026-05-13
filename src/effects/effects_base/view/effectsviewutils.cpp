@@ -4,7 +4,8 @@
 #include "effectsviewutils.h"
 
 namespace au::effects {
-muse::uicomponents::MenuItemList utils::toMenuItemList(const std::vector<DropdownOption>& options, int selectedIndex, QObject* parent)
+muse::uicomponents::MenuItemList utils::toMenuItemList(const std::vector<DropdownOption>& options, int selectedIndex,
+                                                       QObject* parent)
 {
     muse::uicomponents::MenuItemList result;
     for (auto i = 0; i < static_cast<int>(options.size()); ++i) {

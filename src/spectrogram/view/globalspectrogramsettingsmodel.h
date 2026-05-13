@@ -12,7 +12,8 @@
 #include <QQmlParserStatus>
 
 namespace au::spectrogram {
-class GlobalSpectrogramSettingsModel : public AbstractSpectrogramSettingsModel, public muse::async::Asyncable, public QQmlParserStatus
+class GlobalSpectrogramSettingsModel : public AbstractSpectrogramSettingsModel, public muse::async::Asyncable,
+    public QQmlParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)

@@ -56,14 +56,16 @@ public:
     //! @param parameterId The parameter identifier
     //! @param stringValue The new string value to set (e.g., file path)
     //! @return true if successful
-    virtual bool setParameterStringValue(EffectInstanceId instanceId, const muse::String& parameterId, const muse::String& stringValue) = 0;
+    virtual bool setParameterStringValue(EffectInstanceId instanceId, const muse::String& parameterId,
+                                         const muse::String& stringValue) = 0;
 
     //! Get formatted string representation of a parameter value
     //! @param instanceId The effect instance ID
     //! @param parameterId The parameter identifier
     //! @param value The value to format
     //! @return Formatted string (e.g., "3.5 dB", "440 Hz")
-    virtual muse::String parameterValueString(EffectInstanceId instanceId, const muse::String& parameterId, double value) const = 0;
+    virtual muse::String parameterValueString(EffectInstanceId instanceId, const muse::String& parameterId,
+                                              double value) const = 0;
 
     //! Check if an effect supports parameter extraction
     //! @param effectId The effect ID

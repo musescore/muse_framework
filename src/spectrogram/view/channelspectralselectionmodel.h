@@ -18,7 +18,8 @@
 #include <utility>
 
 namespace au::spectrogram {
-class ChannelSpectralSelectionModel : public QObject, public QQmlParserStatus, public muse::Contextable, public muse::async::Asyncable
+class ChannelSpectralSelectionModel : public QObject, public QQmlParserStatus, public muse::Contextable,
+    public muse::async::Asyncable
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
@@ -34,7 +35,8 @@ class ChannelSpectralSelectionModel : public QObject, public QQmlParserStatus, p
     Q_PROPERTY(double startTime READ startTime WRITE setStartTime NOTIFY startTimeChanged FINAL)
     Q_PROPERTY(double endTime READ endTime WRITE setEndTime NOTIFY endTimeChanged FINAL)
 
-    Q_PROPERTY(double rulerGuideFrequency READ rulerGuideFrequency WRITE setRulerGuideFrequency NOTIFY rulerGuideFrequencyChanged FINAL)
+    Q_PROPERTY(
+        double rulerGuideFrequency READ rulerGuideFrequency WRITE setRulerGuideFrequency NOTIFY rulerGuideFrequencyChanged FINAL)
 
     // Output
     Q_PROPERTY(double selectionY READ selectionY NOTIFY selectionRangeChanged FINAL)

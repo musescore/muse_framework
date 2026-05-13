@@ -28,7 +28,8 @@
 using namespace au::playback;
 using namespace au::audio;
 
-PlaybackToolBarLevelItem::PlaybackToolBarLevelItem(const muse::ui::UiAction& action, muse::uicomponents::ToolBarItemType::Type type,
+PlaybackToolBarLevelItem::PlaybackToolBarLevelItem(const muse::ui::UiAction& action,
+                                                   muse::uicomponents::ToolBarItemType::Type type,
                                                    QObject* parent)
     : muse::uicomponents::ToolBarItem(action, type, parent)
 {
@@ -38,7 +39,8 @@ PlaybackToolBarLevelItem::PlaybackToolBarLevelItem(const muse::ui::UiAction& act
     });
 
     playback()->audioOutput()->playbackSignalChanges().onReceive(this,
-                                                                 [this](const audioch_t audioChNum, const audio::MeterSignal& meterSignal) {
+                                                                 [this](const audioch_t audioChNum,
+                                                                        const audio::MeterSignal& meterSignal) {
         setAudioChannelVolumePressure(audioChNum,
                                       meterSignal.peak.pressure);
         setAudioChannelRMS(audioChNum, meterSignal.rms.pressure);

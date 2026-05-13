@@ -42,8 +42,8 @@ public:
     bool changeTrackTitle(const trackedit::TrackId trackId, const muse::String& title) override;
     bool changeTracksColor(const TrackIdList& tracksIds, ClipColorIndex colorIndex) override;
 
-    muse::Ret paste(const std::vector<ITrackDataPtr>& data, secs_t begin, bool moveClips, bool moveAllTracks, bool isMultiSelectionCopy,
-                    bool& projectWasModified) override;
+    muse::Ret paste(const std::vector<ITrackDataPtr>& data, secs_t begin, bool moveClips, bool moveAllTracks,
+                    bool isMultiSelectionCopy, bool& projectWasModified) override;
 
     ITrackDataPtr cutTrackData(const TrackId trackId, secs_t begin, secs_t end, bool moveClips) override;
     ITrackDataPtr copyNonContinuousTrackData(const TrackId trackId, const TrackItemKeyList& itemKeys, secs_t offset) override;
@@ -90,7 +90,8 @@ private:
 
     au3::Au3Project& projectRef() const;
     TrackIdList pasteIntoNewTracks(const std::vector<Au3TrackDataPtr>& tracksData);
-    std::shared_ptr<au3::Au3Track> createNewTrackAndPaste(std::shared_ptr<au3::Au3Track> data, au3::Au3TrackList& list, secs_t begin);
+    std::shared_ptr<au3::Au3Track> createNewTrackAndPaste(std::shared_ptr<au3::Au3Track> data, au3::Au3TrackList& list,
+                                                          secs_t begin);
     TrackIdList determineDestinationTracksIds(const std::vector<Track>& tracks, const TrackIdList& destinationTrackIds,
                                               const std::vector<Au3TrackDataPtr>& clipboardData, bool forLabels = false) const;
 
@@ -98,13 +99,13 @@ private:
     bool canMergeMonoTracksToStereo(const TrackId left, const TrackId right);
     muse::Ret canPasteTrackData(const TrackIdList& tracksIds, const std::vector<Au3TrackDataPtr>& clipsToPaste) const;
 
-    muse::Ret makeRoomForDataOnTracks(const std::vector<TrackId>& tracksIds, const std::vector<Au3TrackDataPtr>& trackData, secs_t begin,
-                                      bool pasteIntoExistingClip);
+    muse::Ret makeRoomForDataOnTracks(const std::vector<TrackId>& tracksIds, const std::vector<Au3TrackDataPtr>& trackData,
+                                      secs_t begin, bool pasteIntoExistingClip);
 
-    muse::Ret pasteClips(const std::vector<Au3TrackDataPtr>& copiedData, const TrackIdList& dstTracksIds, secs_t begin, bool moveClips,
-                         bool isMultiSelectionCopy, bool pasteIntoExistingClip, bool& projectWasModified);
-    muse::Ret pasteLabels(const std::vector<Au3TrackDataPtr>& copiedData, const TrackIdList& dstTracksIds, secs_t begin, bool moveClips,
-                          bool& projectWasModified);
+    muse::Ret pasteClips(const std::vector<Au3TrackDataPtr>& copiedData, const TrackIdList& dstTracksIds, secs_t begin,
+                         bool moveClips, bool isMultiSelectionCopy, bool pasteIntoExistingClip, bool& projectWasModified);
+    muse::Ret pasteLabels(const std::vector<Au3TrackDataPtr>& copiedData, const TrackIdList& dstTracksIds, secs_t begin,
+                          bool moveClips, bool& projectWasModified);
 
     bool mergeSelectedOnTrack(const TrackId trackId, secs_t begin, secs_t end);
     bool duplicateSelectedOnTrack(const TrackId trackId, secs_t begin, secs_t end);

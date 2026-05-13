@@ -15,16 +15,21 @@ TimecodeModel::TimecodeModel(QObject* parent)
 {
     // translate all
     m_availableViewFormats = {
-        { static_cast<NumericViewFormatType>(TimecodeFormatType::Seconds), muse::qtrc("uicomponents", "seconds"), "01000,01000s" },
-        { static_cast<NumericViewFormatType>(TimecodeFormatType::SecondsMilliseconds), muse::qtrc("uicomponents", "seconds + milliseconds"),
+        { static_cast<NumericViewFormatType>(TimecodeFormatType::Seconds), muse::qtrc("uicomponents", "seconds"),
+          "01000,01000s" },
+        { static_cast<NumericViewFormatType>(TimecodeFormatType::SecondsMilliseconds), muse::qtrc("uicomponents",
+                                                                                                  "seconds + milliseconds"),
           "01000,01000>01000 s" },
-        { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSS), muse::qtrc("uicomponents", "hh:mm:ss"), "0100 h 060 m 060 s" },
+        { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSS), muse::qtrc("uicomponents", "hh:mm:ss"),
+          "0100 h 060 m 060 s" },
         { static_cast<NumericViewFormatType>(TimecodeFormatType::DDHHMMSS), muse::qtrc("uicomponents", "dd:hh:mm:ss"),
           "0100 d 024 h 060 m 060 s" },
 
-        { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSSHundredths), muse::qtrc("uicomponents", "hh:mm:ss + hundredths"),
+        { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSSHundredths), muse::qtrc("uicomponents",
+                                                                                               "hh:mm:ss + hundredths"),
           "0100 h 060 m 060>0100 s" },
-        { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSSMilliseconds), muse::qtrc("uicomponents", "hh:mm:ss + milliseconds"),
+        { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSSMilliseconds), muse::qtrc("uicomponents",
+                                                                                                 "hh:mm:ss + milliseconds"),
           "0100 h 060 m 060>01000 s" },
 
         { static_cast<NumericViewFormatType>(TimecodeFormatType::HHMMSSSamples), muse::qtrc("uicomponents", "hh:mm:ss + samples"),

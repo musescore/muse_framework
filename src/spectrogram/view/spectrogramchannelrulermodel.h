@@ -15,7 +15,8 @@
 #include <QVariantList>
 
 namespace au::spectrogram {
-class SpectrogramChannelRulerModel : public QObject, public QQmlParserStatus, public muse::async::Asyncable, public muse::Contextable
+class SpectrogramChannelRulerModel : public QObject, public QQmlParserStatus, public muse::async::Asyncable,
+    public muse::Contextable
 {
     Q_OBJECT
 

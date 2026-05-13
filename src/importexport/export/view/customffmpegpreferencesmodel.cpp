@@ -252,7 +252,8 @@ void CustomFFmpegPreferencesModel::setFFmpegFormat(const QString& val)
     }
 
     //! NOTE: we want to filter codec list anyway
-    ffmpegOptionsAccessor()->fetchCompatibleCodecList(exportConfiguration()->ffmpegFormat(), exportConfiguration()->ffmpegCodec());
+    ffmpegOptionsAccessor()->fetchCompatibleCodecList(exportConfiguration()->ffmpegFormat(),
+                                                      exportConfiguration()->ffmpegCodec());
     emit ffmpegCodecListChanged();
     emit ffmpegCodecIndexChanged();
 }
@@ -311,7 +312,8 @@ void CustomFFmpegPreferencesModel::setFFmpegCodec(const QString& val)
     }
 
     //! NOTE: we want to filter format list anyway
-    ffmpegOptionsAccessor()->fetchCompatibleFormatList(exportConfiguration()->ffmpegFormat(), exportConfiguration()->ffmpegCodec());
+    ffmpegOptionsAccessor()->fetchCompatibleFormatList(exportConfiguration()->ffmpegFormat(),
+                                                       exportConfiguration()->ffmpegCodec());
     emit ffmpegFormatListChanged();
     emit ffmpegFormatIndexChanged();
 }

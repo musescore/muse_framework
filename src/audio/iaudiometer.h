@@ -53,7 +53,8 @@ public:
     /**
      * @param trackId nullopt means master track
      */
-    virtual void push(uint8_t channel, const InterleavedSampleData& sampleData, const std::optional<TrackId>& trackId = std::nullopt) = 0;
+    virtual void push(uint8_t channel, const InterleavedSampleData& sampleData,
+                      const std::optional<TrackId>& trackId = std::nullopt) = 0;
     virtual void start(double sampleRate) = 0;
     virtual void stop() = 0;
     virtual muse::async::Channel<audio::audioch_t,

@@ -123,8 +123,10 @@ protected:
                                    const std::vector<trackedit::TrackType>& trackTypesAllowedToMove, bool completed) const;
     trackedit::secs_t calculateTimePositionOffset(const ViewTrackItem* item) const;
 
-    int calculateTrackPositionOffset(const TrackItemKey& key, const std::vector<trackedit::TrackType>& trackTypesAllowedToMove) const;
-    bool isAllowedToMoveToTracks(const std::vector<trackedit::TrackType>& allowedTrackTypes, const trackedit::TrackId& movedTrackId) const;
+    int calculateTrackPositionOffset(const TrackItemKey& key,
+                                     const std::vector<trackedit::TrackType>& trackTypesAllowedToMove) const;
+    bool isAllowedToMoveToTracks(const std::vector<trackedit::TrackType>& allowedTrackTypes,
+                                 const trackedit::TrackId& movedTrackId) const;
 
     Qt::KeyboardModifiers keyboardModifiers() const;
 

@@ -180,7 +180,8 @@ void au::effects::AudioUnitViewModel::EventListener(const AudioUnitEvent* inEven
             m_parameterValues.insert(std::make_pair(inEvent->mArgument.mParameter.mParameterID, inParameterValue));
         } else if (std::abs(it->second - inParameterValue) > epsilon) {
             it->second = inParameterValue;
-            AudioUnitSetParameter(unit, inEvent->mArgument.mParameter.mParameterID, kAudioUnitScope_Global, 0, inParameterValue, 0);
+            AudioUnitSetParameter(unit, inEvent->mArgument.mParameter.mParameterID, kAudioUnitScope_Global, 0, inParameterValue,
+                                  0);
             projectHistory()->modifyState();
             projectHistory()->markUnsaved();
         }
@@ -203,7 +204,8 @@ au::effects::AudioUnitViewModel::EventListenerPtr au::effects::AudioUnitViewMode
 
     // Register a callback with the audio unit
     AUEventListenerRef eventListenerRef{};
-    if (AUEventListenerCreate(AudioUnitViewModel::EventListenerCallback, this, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode, 0.0, 0.0,
+    if (AUEventListenerCreate(AudioUnitViewModel::EventListenerCallback, this, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode, 0.0,
+                              0.0,
                               &eventListenerRef)) {
         return nullptr;
     }

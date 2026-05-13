@@ -94,7 +94,8 @@ void RealtimeEffectListModel::load()
     });
 
     realtimeEffectService()->realtimeEffectRemoved().onReceive(this, [this](effects::TrackId trackId, RealtimeEffectStatePtr state) {
-        if (belongsWithMe(trackId)) {
+        if (belongsWithMe(
+                trackId)) {
             onRemoved(trackId, state);
         }
     });
@@ -172,7 +173,8 @@ void RealtimeEffectListModel::onRemoved(effects::TrackId trackId, const Realtime
     endRemoveRows();
 }
 
-void RealtimeEffectListModel::onMoved(effects::TrackId trackId, effects::EffectChainLinkIndex from, effects::EffectChainLinkIndex to)
+void RealtimeEffectListModel::onMoved(effects::TrackId trackId, effects::EffectChainLinkIndex from,
+                                      effects::EffectChainLinkIndex to)
 {
     if (from == to) {
         return;

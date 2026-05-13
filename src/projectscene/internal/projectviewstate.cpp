@@ -122,7 +122,8 @@ std::pair<float, float> getVerticalDisplayBounds(const std::shared_ptr<au::proje
     return { min, max };
 }
 
-void setVerticalDisplayBounds(const std::shared_ptr<au::project::IAudacityProject>& project, const au::trackedit::TrackId& trackId,
+void setVerticalDisplayBounds(const std::shared_ptr<au::project::IAudacityProject>& project,
+                              const au::trackedit::TrackId& trackId,
                               const std::pair<float, float>& bounds)
 {
     au::au3::Au3Project* au3Project = reinterpret_cast<au::au3::Au3Project*>(project->au3ProjectPtr());
@@ -164,7 +165,8 @@ int getTrackRulerType(const std::shared_ptr<au::project::IAudacityProject>& proj
     return static_cast<int>(cache.GetRulerType());
 }
 
-void setTrackRulerType(const std::shared_ptr<au::project::IAudacityProject>& project, const au::trackedit::TrackId& trackId, int rulerType)
+void setTrackRulerType(const std::shared_ptr<au::project::IAudacityProject>& project, const au::trackedit::TrackId& trackId,
+                       int rulerType)
 {
     au::au3::Au3Project* au3Project = reinterpret_cast<au::au3::Au3Project*>(project->au3ProjectPtr());
 
@@ -671,7 +673,8 @@ float ProjectViewState::maxVerticalZoomLevel(const trackedit::TrackId& trackId) 
     const auto rulerType = static_cast<trackedit::TrackRulerType>(::getTrackRulerType(project, trackId));
 
     if (rulerType == trackedit::TrackRulerType::DbLog) {
-        const int dBRange = static_cast<int>(playback::PlaybackMeterDbRange::toDouble(playbackConfiguration()->playbackMeterDbRange()));
+        const int dBRange
+            = static_cast<int>(playback::PlaybackMeterDbRange::toDouble(playbackConfiguration()->playbackMeterDbRange()));
         const int steps = (-dBRange - MIN_DISTANCE_FROM_RANGE) / DB_PER_STEP;
         return std::max(MIN_VERTICAL_RANGE, 1.0f / (1 << steps));
     }
@@ -857,7 +860,8 @@ void ProjectViewState::toggleGlobalSpectrogramView()
     if (!m_globalSpectrogramToggleIsOn) {
         // Enable spectrogram view: convert ALL waveform and multi-view tracks to spectrogram
         for (auto& [trackId, trackData] : m_tracks) {
-            if (trackData.viewType.val == TrackViewType::Waveform || trackData.viewType.val == TrackViewType::WaveformAndSpectrogram) {
+            if (trackData.viewType.val == TrackViewType::Waveform
+                || trackData.viewType.val == TrackViewType::WaveformAndSpectrogram) {
                 changed = true;
                 doSetTrackViewType(trackId, TrackViewType::Spectrogram);
             }
@@ -865,7 +869,8 @@ void ProjectViewState::toggleGlobalSpectrogramView()
     } else {
         // Disable spectrogram view: convert ALL spectrogram and multi-view tracks back to waveform
         for (auto& [trackId, trackData] : m_tracks) {
-            if (trackData.viewType.val == TrackViewType::Spectrogram || trackData.viewType.val == TrackViewType::WaveformAndSpectrogram) {
+            if (trackData.viewType.val == TrackViewType::Spectrogram
+                || trackData.viewType.val == TrackViewType::WaveformAndSpectrogram) {
                 changed = true;
                 trackData.viewType.set(TrackViewType::Waveform);
                 doSetTrackViewType(trackId, TrackViewType::Waveform);
@@ -1123,7 +1128,8 @@ bool ProjectViewState::eventFilter(QObject* watched, QEvent* event)
             return QObject::eventFilter(watched, event);
         }
 
-        if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt || (static_cast<QKeyEvent*>(event)->modifiers() & Qt::AltModifier)) {
+        if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt
+            || (static_cast<QKeyEvent*>(event)->modifiers() & Qt::AltModifier)) {
             m_altPressed.set(false);
         }
 

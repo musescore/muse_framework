@@ -67,7 +67,8 @@ public:
     bool closeOpenedProject(bool quitApp = false) override;
     bool saveProject(const muse::io::path_t& path = muse::io::path_t()) override;
     bool saveProjectLocally(const muse::io::path_t& filePath = muse::io::path_t(), SaveMode saveMode = SaveMode::Save) override;
-    bool saveProjectToCloud(const CloudProjectInfo& cloudInfo, SaveMode saveMode = SaveMode::Save, bool forceOverwrite = false) override;
+    bool saveProjectToCloud(const CloudProjectInfo& cloudInfo, SaveMode saveMode = SaveMode::Save,
+                            bool forceOverwrite = false) override;
 
     const ProjectBeingDownloaded& projectBeingDownloaded() const override;
     muse::async::Notification projectBeingDownloadedChanged() const override;
@@ -88,7 +89,8 @@ private:
     muse::Ret processMediaFiles(const muse::io::paths_t& paths);
 
     muse::Ret openProject(const muse::io::path_t& path,
-                          const muse::String& displayNameOverride = muse::String(), const muse::String& projectId = muse::String());
+                          const muse::String& displayNameOverride = muse::String(),
+                          const muse::String& projectId = muse::String());
     muse::Ret loadWithFallback(const IAudacityProjectPtr& project, const muse::io::path_t& loadPath, const std::string& format);
     muse::Ret doOpenProject(const muse::io::path_t& filePath);
     IAudacityProjectPtr createProjectInCurrentWindow();

@@ -258,7 +258,8 @@ TrackItemsListModel::MoveOffset TrackItemsListModel::calculateMoveOffset(const V
     };
 
     secs_t positionOffsetX = moveOffset.timeOffset * m_context->zoom();
-    if (!vs->moveInitiated() && (muse::RealIsEqualOrMore(std::abs(positionOffsetX), MOVE_THRESHOLD) || moveOffset.trackOffset != 0)) {
+    if (!vs->moveInitiated()
+        && (muse::RealIsEqualOrMore(std::abs(positionOffsetX), MOVE_THRESHOLD) || moveOffset.trackOffset != 0)) {
         vs->setMoveInitiated(true);
     } else if (!vs->moveInitiated()) {
         moveOffset.timeOffset = 0.0;

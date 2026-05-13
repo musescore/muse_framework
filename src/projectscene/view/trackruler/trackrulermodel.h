@@ -33,7 +33,8 @@ class TrackRulerModel : public QObject, public muse::async::Asyncable, public mu
     Q_PROPERTY(bool isCollapsed READ isCollapsed WRITE setIsCollapsed NOTIFY isCollapsedChanged FINAL)
     Q_PROPERTY(int height READ height WRITE setHeight NOTIFY heightChanged FINAL)
 
-    Q_PROPERTY(double channelHeightRatio READ channelHeightRatio WRITE setChannelHeightRatio NOTIFY channelHeightRatioChanged FINAL)
+    Q_PROPERTY(
+        double channelHeightRatio READ channelHeightRatio WRITE setChannelHeightRatio NOTIFY channelHeightRatioChanged FINAL)
 
     Q_PROPERTY(QVariant availableRulerTypes READ availableRulerTypes CONSTANT FINAL)
     Q_PROPERTY(int rulerType READ rulerType WRITE setRulerType NOTIFY rulerTypeChanged FINAL)

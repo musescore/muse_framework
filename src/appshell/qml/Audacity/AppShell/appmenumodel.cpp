@@ -378,14 +378,18 @@ MenuItem* AppMenuModel::makeExtraMenu()
     MenuItemList extraItems {
         //! TODO AU4
         makeMenu(TranslatableString("appshell/menu/play", "Play"), makeVolumeAndCompressionItems(), "menu-play", false),
-        makeMenu(TranslatableString("appshell/menu/scrubbing", "Scrubbing"), makeVolumeAndCompressionItems(), "menu-scrubbing", false),
-        makeMenu(TranslatableString("appshell/menu/extratools", "Tools"), makeVolumeAndCompressionItems(), "menu-extra-tools", false),
+        makeMenu(TranslatableString("appshell/menu/scrubbing", "Scrubbing"),
+                 makeVolumeAndCompressionItems(), "menu-scrubbing", false),
+        makeMenu(TranslatableString("appshell/menu/extratools", "Tools"),
+                 makeVolumeAndCompressionItems(), "menu-extra-tools", false),
         makeMenu(TranslatableString("appshell/menu/mixer", "Mixer"), makeVolumeAndCompressionItems(), "menu-mixer", false),
-        makeMenu(TranslatableString("appshell/menu/extraedit", "Edit"), makeVolumeAndCompressionItems(), "menu-extra-edit", false),
+        makeMenu(TranslatableString("appshell/menu/extraedit", "Edit"), makeVolumeAndCompressionItems(), "menu-extra-edit",
+                 false),
         makeMenu(TranslatableString("appshell/menu/playatspeed", "Play at speed"),
                  makeVolumeAndCompressionItems(), "menu-play-at-speed", false),
         makeMenu(TranslatableString("appshell/menu/device", "Device"), makeVolumeAndCompressionItems(), "menu-device", false),
-        makeMenu(TranslatableString("appshell/menu/extraselect", "Select"), makeVolumeAndCompressionItems(), "menu-extraselect", false),
+        makeMenu(TranslatableString("appshell/menu/extraselect", "Select"),
+                 makeVolumeAndCompressionItems(), "menu-extraselect", false),
         makeSeparator(),
         makeMenuItem("prev-window"),
         makeMenuItem("next-window"),
@@ -399,7 +403,8 @@ MenuItem* AppMenuModel::makeExtraMenu()
         makeMenu(TranslatableString("appshell/menu/images", "Images"), makeVolumeAndCompressionItems(), "menu-images", false),
 
 #ifndef Q_OS_MAC
-        makeMenu(TranslatableString("appshell/menu/settings", "Settings"), makeVolumeAndCompressionItems(), "menu-settings", false),
+        makeMenu(TranslatableString("appshell/menu/settings", "Settings"), makeVolumeAndCompressionItems(), "menu-settings",
+                 false),
 #endif
         makeMenuItem("benchmark"),
         makeMenuItem("regular-interval-labels"),
@@ -414,7 +419,8 @@ MenuItem* AppMenuModel::makeHelpMenu()
         makeMenuItem("tutorials"),
         makeMenuItem("online-handbook"),
         makeSeparator(),
-        makeMenu(TranslatableString("appshell/menu/diagnostics", "Diagnostics"), makeDiagnosticsItems(), "menu-diagnostics", false),
+        makeMenu(TranslatableString("appshell/menu/diagnostics", "Diagnostics"), makeDiagnosticsItems(), "menu-diagnostics",
+                 false),
         makeSeparator(),
         makeMenuItem("link-account"),
         makeMenuItem("about-audacity"),
@@ -464,7 +470,8 @@ muse::uicomponents::MenuItem* AppMenuModel::makeDiagnosticMenu()
         };
 
         items << makeMenu(TranslatableString("appshell/menu/diagnostics", "A&ctions"), actionsItems, "menu-actions")
-              << makeMenu(TranslatableString("appshell/menu/diagnostics", "&Accessibility"), accessibilityItems, "menu-accessibility")
+              << makeMenu(TranslatableString("appshell/menu/diagnostics",
+                                       "&Accessibility"), accessibilityItems, "menu-accessibility")
               << makeMenu(TranslatableString("appshell/menu/diagnostics", "E&xtensions"), extensionsItems, "menu-extensions")
               << makeMenu(TranslatableString("appshell/menu/diagnostics", "Test&flow"), testflowItems, "menu-testflow");
         //! TODO AU4
@@ -701,7 +708,8 @@ MenuItemList AppMenuModel::makeDiagnosticsItems()
             makeMenuItem("diagnostic-show-accessible-tree"),
             makeMenuItem("diagnostic-accessible-tree-dump"),
         };
-        items << makeMenu(TranslatableString("appshell/menu/diagnostic", "&Accessibility"), accessibilityItems, "menu-accessibility");
+        items << makeMenu(TranslatableString("appshell/menu/diagnostic",
+                                             "&Accessibility"), accessibilityItems, "menu-accessibility");
 #endif
 
 #ifdef MUSE_MODULE_TESTFLOW
@@ -793,7 +801,8 @@ muse::uicomponents::MenuItem* AppMenuModel::makeMenuEffectItem(const effects::Ef
                                                   effectId));
 }
 
-muse::uicomponents::MenuItem* AppMenuModel::makeMenuEffect(const muse::String& title, const muse::uicomponents::MenuItemList& items)
+muse::uicomponents::MenuItem* AppMenuModel::makeMenuEffect(const muse::String& title,
+                                                           const muse::uicomponents::MenuItemList& items)
 {
     return makeMenu(TranslatableString::untranslatable(title), items);
 }

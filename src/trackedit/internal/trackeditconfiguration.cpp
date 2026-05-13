@@ -8,7 +8,8 @@
 namespace au::trackedit {
 static const std::string moduleName("trackedit");
 
-static const muse::Settings::Key ASK_BEFORE_CONVERTING_TO_MONO_OR_STEREO(moduleName, "trackedit/askBeforeConvertingToMonoOrStereo");
+static const muse::Settings::Key ASK_BEFORE_CONVERTING_TO_MONO_OR_STEREO(moduleName,
+                                                                         "trackedit/askBeforeConvertingToMonoOrStereo");
 static const muse::Settings::Key PASTE_AS_NEW_CLIP(moduleName, "trackedit/pasteAsNewClip");
 static const muse::Settings::Key DELETE_BEHAVIOR(moduleName, "trackedit/deleteBehavior");
 static const muse::Settings::Key CLOSE_GAP_BEHAVIOR(moduleName, "trackedit/closeGapBehavior");

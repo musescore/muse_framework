@@ -114,7 +114,8 @@ au::au3::Au3WaveTrack* au::trackedit::utils::toggleStereo(au3::Au3TrackList& tra
         return &track;
     }
 
-    const auto replacement = std::static_pointer_cast<au3::Au3WaveTrack>(track.Duplicate(au3::Au3Track::DuplicateOptions {}.Backup()));
+    const auto replacement
+        = std::static_pointer_cast<au3::Au3WaveTrack>(track.Duplicate(au3::Au3Track::DuplicateOptions {}.Backup()));
     const auto wasStereo = track.NChannels() == 2;
     if (wasStereo) {
         replacement->MakeMono();
@@ -283,8 +284,9 @@ bool au::trackedit::utils::clipIdSetsAreEqual(const au3::Au3WaveTrack& track1, c
 using ProgressCb = std::function<void (double)>;
 using CancelCb = std::function<bool ()>;
 
-muse::Ret au::trackedit::utils::withProgress(muse::IInteractive& interactive, const std::string& title, const std::function<bool(ProgressCb,
-                                                                                                                                 CancelCb)>& action)
+muse::Ret au::trackedit::utils::withProgress(muse::IInteractive& interactive, const std::string& title,
+                                             const std::function<bool(ProgressCb,
+                                                                      CancelCb)>& action)
 {
     muse::Progress progress;
     progress.setMaxNumIncrements(200);

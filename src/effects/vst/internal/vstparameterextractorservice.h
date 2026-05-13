@@ -19,7 +19,8 @@ class VstParameterExtractorService : public IParameterExtractorService
 public:
     EffectFamily family() const override { return EffectFamily::VST3; }
 
-    ParameterInfoList extractParameters(EffectInstance* instance, EffectSettingsAccessPtr settingsAccess = nullptr) const override;
+    ParameterInfoList extractParameters(EffectInstance* instance,
+                                        EffectSettingsAccessPtr settingsAccess = nullptr) const override;
 
     ParameterInfo getParameter(EffectInstance* instance, const muse::String& parameterId) const override;
 
@@ -30,7 +31,8 @@ public:
 
     muse::String getParameterValueString(EffectInstance* instance, const muse::String& parameterId, double value) const override;
 
-    void beginParameterGesture(EffectInstance* instance, const muse::String& parameterId, EffectSettingsAccessPtr settingsAccess) override;
+    void beginParameterGesture(EffectInstance* instance, const muse::String& parameterId,
+                               EffectSettingsAccessPtr settingsAccess) override;
 
     void endParameterGesture(EffectInstance* instance, const muse::String& parameterId) override;
 

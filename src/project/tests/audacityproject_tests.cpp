@@ -142,7 +142,8 @@ TEST_F(Project_Audacity4ProjectTests, Load_FileDoesNotExist_ReturnsProjectFileNo
 TEST_F(Project_Audacity4ProjectTests, Load_FileCannotBeOpened_ReturnsCantOpen)
 {
     const std::string srcPath = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/empty.aup3").toStdString();
-    const std::string dstPath = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/empty_read_protected.aup3").toStdString();
+    const std::string dstPath
+        = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/empty_read_protected.aup3").toStdString();
 
     const ScopedTestFile tempFile{ srcPath, dstPath, AccessMode::ReadProtected };
 
@@ -157,7 +158,8 @@ TEST_F(Project_Audacity4ProjectTests, Load_FileCannotBeOpened_ReturnsCantOpen)
 TEST_F(Project_Audacity4ProjectTests, Load_EmptyFileIsWriteProtected_ReturnsSuccess)
 {
     const std::string srcPath = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/empty.aup3").toStdString();
-    const std::string dstPath = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/empty_write_protected.aup3").toStdString();
+    const std::string dstPath
+        = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/empty_write_protected.aup3").toStdString();
 
     const ScopedTestFile tempFile{ srcPath, dstPath, AccessMode::WriteProtected };
 
@@ -171,7 +173,8 @@ TEST_F(Project_Audacity4ProjectTests, Load_EmptyFileIsWriteProtected_ReturnsSucc
 TEST_F(Project_Audacity4ProjectTests, Load_NonEmptyFileIsWriteProtected_ReturnsReadOnly)
 {
     const std::string srcPath = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/test.aup3").toStdString();
-    const std::string dstPath = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/test_write_protected.aup3").toStdString();
+    const std::string dstPath
+        = (muse::String::fromUtf8(au_project_tests_DATA_ROOT) + "/data/test_write_protected.aup3").toStdString();
 
     const ScopedTestFile tempFile{ srcPath, dstPath, AccessMode::WriteProtected };
 

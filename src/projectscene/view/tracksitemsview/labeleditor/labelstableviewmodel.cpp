@@ -74,7 +74,8 @@ QVector<TableViewHeader*> LabelsTableViewModel::makeHorizontalHeaders()
     MenuItemList startTimeFormats = startTimeModelStub.availableFormats();
 
     TableViewHeader* startTimeHeader = makeHorizontalHeader(qtrc("projectscene", "Start time"),
-                                                            static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type::Timecode),
+                                                            static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type::
+                                                                                                 Timecode),
                                                             TableViewCellEditMode::Mode::StartInEdit);
     startTimeHeader->setAvailableFormats(startTimeFormats);
 
@@ -86,7 +87,8 @@ QVector<TableViewHeader*> LabelsTableViewModel::makeHorizontalHeaders()
     MenuItemList endTimeFormats = endTimeModelStub.availableFormats();
 
     TableViewHeader* endTimeHeader = makeHorizontalHeader(qtrc("projectscene", "End time"),
-                                                          static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type::Timecode),
+                                                          static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type::
+                                                                                               Timecode),
                                                           TableViewCellEditMode::Mode::StartInEdit);
     endTimeHeader->setAvailableFormats(endTimeFormats);
     endTimeHeader->setCurrentFormatId(labelEditorColumnFormat(END_TIME_COLUMN_NAME, endTimeModelStub.currentFormat()));
@@ -98,10 +100,12 @@ QVector<TableViewHeader*> LabelsTableViewModel::makeHorizontalHeaders()
 
     TableViewHeader* lowFrequencyHeader = makeHorizontalHeader(qtrc("projectscene",
                                                                     "Low frequency"),
-                                                               static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type::Frequency),
+                                                               static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type
+                                                                                                    ::Frequency),
                                                                TableViewCellEditMode::Mode::StartInEdit);
     lowFrequencyHeader->setAvailableFormats(lowFrequencyFormats);
-    lowFrequencyHeader->setCurrentFormatId(labelEditorColumnFormat(LOW_FREQUENCY_COLUMN_NAME, lowFrequencyModelStub.currentFormat()));
+    lowFrequencyHeader->setCurrentFormatId(labelEditorColumnFormat(LOW_FREQUENCY_COLUMN_NAME,
+                                                                   lowFrequencyModelStub.currentFormat()));
     connectToColumnFormatChange(lowFrequencyHeader, LOW_FREQUENCY_COLUMN_NAME);
     hHeaders << lowFrequencyHeader;
 
@@ -109,11 +113,13 @@ QVector<TableViewHeader*> LabelsTableViewModel::makeHorizontalHeaders()
     MenuItemList highFrequencyFormats = highFrequencyModelStub.availableFormats();
 
     TableViewHeader* highFrequencyHeader = makeHorizontalHeader(qtrc("projectscene", "High frequency"),
-                                                                static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type::
+                                                                static_cast<TableViewCellType::Type>(LabelsTableViewCellType::Type
+                                                                                                     ::
                                                                                                      Frequency),
                                                                 TableViewCellEditMode::Mode::StartInEdit);
     highFrequencyHeader->setAvailableFormats(highFrequencyFormats);
-    highFrequencyHeader->setCurrentFormatId(labelEditorColumnFormat(HIGH_FREQUENCY_COLUMN_NAME, highFrequencyModelStub.currentFormat()));
+    highFrequencyHeader->setCurrentFormatId(labelEditorColumnFormat(HIGH_FREQUENCY_COLUMN_NAME,
+                                                                    highFrequencyModelStub.currentFormat()));
     connectToColumnFormatChange(highFrequencyHeader, HIGH_FREQUENCY_COLUMN_NAME);
     hHeaders << highFrequencyHeader;
 
@@ -175,7 +181,8 @@ QString LabelsTableViewModel::labelEditorColumnFormat(const std::string& columnN
     return QString::number(result == -1 ? defaultValue : result);
 }
 
-void LabelsTableViewModel::connectToColumnFormatChange(muse::uicomponents::TableViewHeader* columnHeader, const std::string& columnName)
+void LabelsTableViewModel::connectToColumnFormatChange(muse::uicomponents::TableViewHeader* columnHeader,
+                                                       const std::string& columnName)
 {
     connect(columnHeader, &TableViewHeader::currentFormatIdChanged, [=](){
         configuration()->setLabelEditorColumnFormat(columnName, columnHeader->currentFormatId().toInt());

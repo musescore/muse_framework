@@ -37,8 +37,8 @@ au3::Au3WaveTrack* toggleStereo(au3::Au3TrackList& tracks, size_t trackIndex);
 /*!
  * @pre (trackFactory != nullptr && projectRate > 0) || tracks.GetOwner() != nullptr
  */
-au3::Au3WaveTrack* appendWaveTrack(au3::Au3TrackList& tracks, size_t nChannels, const au3::Au3WaveTrackFactory* trackFactory = nullptr,
-                                   double projectRate = 0.);
+au3::Au3WaveTrack* appendWaveTrack(au3::Au3TrackList& tracks, size_t nChannels,
+                                   const au3::Au3WaveTrackFactory* trackFactory = nullptr, double projectRate = 0.);
 
 /*!
  * @pre `offset > 0` or track indices of selected clips are not 0 (i.e. can't drag clips up past the topmost track)
@@ -50,5 +50,6 @@ au::trackedit::TrackListInfo getTrackListInfo(const au3::Au3TrackList& tracks);
 
 bool clipIdSetsAreEqual(const au3::Au3WaveTrack& track1, const au3::Au3WaveTrack& track2);
 
-muse::Ret withProgress(muse::IInteractive& interactive, const std::string& title, const std::function<bool(ProgressCb, CancelCb)>& action);
+muse::Ret withProgress(muse::IInteractive& interactive, const std::string& title, const std::function<bool(ProgressCb,
+                                                                                                           CancelCb)>& action);
 }

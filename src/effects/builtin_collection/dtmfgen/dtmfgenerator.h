@@ -106,7 +106,8 @@ public:
 private:
     // DtmfGenerator implementation
 
-    static bool MakeDtmfTone(float* buffer, size_t len, float fs, char tone, sampleCount last, sampleCount total, float amplitude);
+    static bool MakeDtmfTone(float* buffer, size_t len, float fs, char tone, sampleCount last, sampleCount total,
+                             float amplitude);
 
 protected:
     const EffectParameterMethods& Parameters() const override;

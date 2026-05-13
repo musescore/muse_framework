@@ -22,7 +22,8 @@ class MusicPreferencesModel : public QObject, public muse::async::Asyncable, pub
 
     muse::ContextInject<muse::workspace::IWorkspaceManager> workspacesManager { this };
 
-    Q_PROPERTY(importexport::TempoDetectionPref::TempoDetection tempoDetectionPref READ tempoDetectionPref NOTIFY tempoDetectionPrefChanged)
+    Q_PROPERTY(
+        importexport::TempoDetectionPref::TempoDetection tempoDetectionPref READ tempoDetectionPref NOTIFY tempoDetectionPrefChanged)
     Q_PROPERTY(QVariantList tempoDetectionWorkspaces READ tempoDetectionWorkspaces NOTIFY tempoDetectionWorkspacesChanged)
     Q_PROPERTY(
         bool askBeforeSubsequentImport READ askBeforeSubsequentImport WRITE setAskBeforeSubsequentImport NOTIFY askBeforeSubsequentImportChanged)

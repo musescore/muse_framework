@@ -47,7 +47,8 @@ void ToastService::showWarning(const std::string& title, const std::string& mess
 muse::async::Promise<ToastActionCode> ToastService::showWithProgress(const std::string& title, const std::string& message,
                                                                      std::shared_ptr<muse::Progress> progress,
                                                                      muse::ui::IconCode::Code iconCode, bool dismissible,
-                                                                     const std::vector<ToastAction>& actions, bool showProgressInfo)
+                                                                     const std::vector<ToastAction>& actions,
+                                                                     bool showProgressInfo)
 {
     return toastProvider()->show(ToastItem(title, message, iconCode, dismissible, actions, progress, showProgressInfo));
 }

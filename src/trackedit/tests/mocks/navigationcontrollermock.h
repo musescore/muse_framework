@@ -26,7 +26,8 @@ public:
     MOCK_METHOD((const std::set<INavigationSection*>&), sections, (), (const, override));
     MOCK_METHOD(const INavigationSection*, findSection, (const std::string&), (const, override));
     MOCK_METHOD(const INavigationPanel*, findPanel, (const std::string&, const std::string&), (const, override));
-    MOCK_METHOD(const INavigationControl*, findControl, (const std::string&, const std::string&, const std::string&), (const, override));
+    MOCK_METHOD(const INavigationControl*, findControl, (const std::string&, const std::string&, const std::string&),
+                (const, override));
 
     MOCK_METHOD(void, setDefaultNavigationControl, (INavigationControl*), (override));
 

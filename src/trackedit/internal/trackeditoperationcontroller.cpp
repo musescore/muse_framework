@@ -26,7 +26,8 @@ bool TrackeditOperationController::changeClipStartTime(const ClipKey& clipKey, s
     return clipsInteraction()->changeClipStartTime(clipKey, newStartTime, completed);
 }
 
-muse::async::Channel<ClipKey, secs_t /*newStartTime*/, bool /*completed*/> TrackeditOperationController::clipStartTimeChanged() const
+muse::async::Channel<ClipKey, secs_t /*newStartTime*/,
+                     bool /*completed*/> TrackeditOperationController::clipStartTimeChanged() const
 {
     return clipsInteraction()->clipStartTimeChanged();
 }
@@ -187,7 +188,8 @@ bool TrackeditOperationController::cutClipIntoClipboard(const ClipKey& clipKey)
     return true;
 }
 
-bool TrackeditOperationController::cutItemDataIntoClipboard(const TrackIdList& tracksIds, secs_t begin, secs_t end, bool moveClips)
+bool TrackeditOperationController::cutItemDataIntoClipboard(const TrackIdList& tracksIds, secs_t begin, secs_t end,
+                                                            bool moveClips)
 {
     clipboard()->clearSystemClipboard();
     std::vector<ITrackDataPtr> tracksData;
@@ -216,7 +218,8 @@ bool TrackeditOperationController::copyClipIntoClipboard(const ClipKey& clipKey)
     return true;
 }
 
-bool TrackeditOperationController::copyNonContinuousTrackDataIntoClipboard(const TrackId trackId, const TrackItemKeyList& itemKeys,
+bool TrackeditOperationController::copyNonContinuousTrackDataIntoClipboard(const TrackId trackId,
+                                                                           const TrackItemKeyList& itemKeys,
                                                                            secs_t offset)
 {
     clipboard()->clearSystemClipboard();
@@ -304,7 +307,8 @@ muse::RetVal<ClipKeyList> TrackeditOperationController::moveClips(const ClipKeyL
         timePositionOffset = clampedOffset;
     }
 
-    muse::RetVal<ClipKeyList> result = clipsInteraction()->moveClips(clipKeyList, timePositionOffset, trackPositionOffset, completed,
+    muse::RetVal<ClipKeyList> result = clipsInteraction()->moveClips(clipKeyList, timePositionOffset, trackPositionOffset,
+                                                                     completed,
                                                                      clipsMovedToOtherTrack);
 
     if (!result.ret) {
@@ -502,7 +506,8 @@ bool TrackeditOperationController::splitDeleteSelectedOnTracks(const TrackIdList
     return false;
 }
 
-bool TrackeditOperationController::trimClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed,
+bool TrackeditOperationController::trimClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration,
+                                                 bool completed,
                                                  UndoPushType type)
 {
     const auto labelKeys = selectedLabels();
@@ -525,7 +530,8 @@ bool TrackeditOperationController::trimClipsLeft(const ClipKeyList& clipKeyList,
     return success;
 }
 
-bool TrackeditOperationController::trimClipsRight(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed,
+bool TrackeditOperationController::trimClipsRight(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration,
+                                                  bool completed,
                                                   UndoPushType type)
 {
     const auto labelKeys = selectedLabels();
@@ -547,7 +553,8 @@ bool TrackeditOperationController::trimClipsRight(const ClipKeyList& clipKeyList
     return success;
 }
 
-bool TrackeditOperationController::stretchClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration, bool completed,
+bool TrackeditOperationController::stretchClipsLeft(const ClipKeyList& clipKeyList, secs_t deltaSec, secs_t minClipDuration,
+                                                    bool completed,
                                                     UndoPushType type)
 {
     const auto labelKeys = selectedLabels();
@@ -959,7 +966,8 @@ muse::RetVal<LabelKeyList> TrackeditOperationController::moveLabels(const LabelK
     bool clipsSelected = isClipsSelected();
     if (isClipsSelected()) {
         bool clipsMovedToOtherTracks = false;
-        clipsInteraction()->moveClips(selectedClips(), timePositionOffset, trackPositionOffset, completed, clipsMovedToOtherTracks);
+        clipsInteraction()->moveClips(selectedClips(), timePositionOffset, trackPositionOffset, completed,
+                                      clipsMovedToOtherTracks);
     }
 
     if (completed) {
@@ -970,7 +978,8 @@ muse::RetVal<LabelKeyList> TrackeditOperationController::moveLabels(const LabelK
     return retVal;
 }
 
-muse::RetVal<LabelKeyList> TrackeditOperationController::moveLabelsToTrack(const LabelKeyList& labelKeys, const TrackId& toTrackId,
+muse::RetVal<LabelKeyList> TrackeditOperationController::moveLabelsToTrack(const LabelKeyList& labelKeys,
+                                                                           const TrackId& toTrackId,
                                                                            bool completed)
 {
     muse::RetVal<LabelKeyList> retVal = labelsInteraction()->moveLabelsToTrack(labelKeys, toTrackId);

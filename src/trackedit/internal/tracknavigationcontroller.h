@@ -22,8 +22,8 @@ enum class SelectionDirection {
     Down
 };
 
-class TrackNavigationController : public ITrackNavigationController, public muse::actions::Actionable, public muse::async::Asyncable,
-    public muse::Contextable
+class TrackNavigationController : public ITrackNavigationController, public muse::actions::Actionable,
+    public muse::async::Asyncable, public muse::Contextable
 {
     muse::ContextInject<muse::actions::IActionsDispatcher> dispatcher{ this };
     muse::ContextInject<muse::ui::INavigationController> navigationController{ this };

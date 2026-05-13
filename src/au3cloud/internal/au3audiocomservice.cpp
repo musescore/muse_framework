@@ -221,7 +221,8 @@ muse::async::Promise<AudioList> Au3AudioComService::downloadAudioList(size_t aud
         }
     }
 
-    return muse::async::Promise<AudioList>([weak = weak_from_this(), audiosPerBatch, batchNumber](const auto& resolve, const auto& reject) {
+    return muse::async::Promise<AudioList>([weak = weak_from_this(), audiosPerBatch, batchNumber](const auto& resolve,
+                                                                                                  const auto& reject) {
         std::thread([weak, audiosPerBatch, batchNumber, resolve, reject]() {
             auto self = weak.lock();
             if (!self) {
@@ -236,14 +237,16 @@ muse::async::Promise<AudioList> Au3AudioComService::downloadAudioList(size_t aud
 
             const auto* paginatedResponse = std::get_if<sync::PaginatedAudioResponse>(&result);
             if (paginatedResponse) {
-                const auto audioList = convertFromAu3CloudAudio(*paginatedResponse, self->projectConfiguration()->cloudProjectsPath());
+                const auto audioList
+                    = convertFromAu3CloudAudio(*paginatedResponse, self->projectConfiguration()->cloudProjectsPath());
                 {
                     std::lock_guard guard(self->m_cacheMutex);
                     self->m_audioListCache[batchNumber] = CachedAudioItem { audioList, std::chrono::system_clock::now() };
                 }
 
                 self->m_downloadManager->scheduleDownloads(convertToDownloadRequests(*paginatedResponse,
-                                                                                     self->projectConfiguration()->cloudProjectsPath()));
+                                                                                     self->projectConfiguration()->
+                                                                                     cloudProjectsPath()));
 
                 (void)resolve(audioList);
             } else {
@@ -262,7 +265,8 @@ void Au3AudioComService::clearAudioListCache()
     m_audiosPerBatch = 0;
 }
 
-muse::RetVal<muse::ProgressPtr> Au3AudioComService::uploadProject(au::project::IAudacityProjectPtr project, const std::string& name,
+muse::RetVal<muse::ProgressPtr> Au3AudioComService::uploadProject(au::project::IAudacityProjectPtr project,
+                                                                  const std::string& name,
                                                                   std::function<bool()> projectSaveCallback, bool forceOverwrite)
 {
     if (!project) {
@@ -375,7 +379,8 @@ muse::RetVal<muse::ProgressPtr> Au3AudioComService::uploadProject(au::project::I
             auto& projectCloudExtension = audacity::cloud::audiocom::sync::ProjectCloudExtension::Get(*au3Project);
             projectCloudExtension.OnSyncCompleted(nullptr,
                                                   audacity::cloud::audiocom::sync::CloudSyncError {
-                audacity::cloud::audiocom::sync::CloudSyncError::Aborted, muse::trc("project", "Could not save project locally") },
+                audacity::cloud::audiocom::sync::CloudSyncError::Aborted,
+                muse::trc("project", "Could not save project locally") },
                                                   AudiocomTrace::SaveProjectSaveToCloudMenu);
         }
     }).detach();
@@ -496,7 +501,8 @@ muse::RetVal<muse::ProgressPtr> Au3AudioComService::downloadAudioFile(const std:
     return muse::RetVal<muse::ProgressPtr>::make_ok(progress);
 }
 
-muse::RetVal<muse::ProgressPtr> Au3AudioComService::openCloudProject(const muse::io::path_t& localPath, const std::string& projectId,
+muse::RetVal<muse::ProgressPtr> Au3AudioComService::openCloudProject(const muse::io::path_t& localPath,
+                                                                     const std::string& projectId,
                                                                      bool forceOverwrite)
 {
     const auto dbProjectData = getProjectDataFromDatabase(localPath);
@@ -649,7 +655,8 @@ muse::RetVal<muse::ProgressPtr> Au3AudioComService::shareAudio(const std::string
             tempPath.toStdString(),
             title,
             isPublic,
-            [op, progress, tempPath, filesystem = self->filesystem()](const audacity::cloud::audiocom::UploadOperationCompleted& result) {
+            [op, progress, tempPath,
+             filesystem = self->filesystem()](const audacity::cloud::audiocom::UploadOperationCompleted& result) {
             filesystem->remove(tempPath);
 
             if (result.result == audacity::cloud::audiocom::UploadOperationCompleted::Result::Success) {

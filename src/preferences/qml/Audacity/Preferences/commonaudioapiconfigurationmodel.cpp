@@ -69,7 +69,9 @@ void CommonAudioApiConfigurationModel::load()
     audioDevicesProvider()->inputDeviceChanged().onNotify(this, [this]() { emit currentInputDeviceIdChanged(); });
     audioDevicesProvider()->inputChannelsAvailableChanged().onNotify(this, [this](){ emit inputChannelsListChanged(); });
     audioDevicesProvider()->inputChannelsChanged().onNotify(this, [this](){ emit currentInputChannelsSelectedChanged(); });
-    audioDevicesProvider()->automaticCompensationEnabledChanged().onNotify(this, [this](){ emit automaticCompensationEnabledChanged(); });
+    audioDevicesProvider()->automaticCompensationEnabledChanged().onNotify(this, [this](){
+        emit automaticCompensationEnabledChanged();
+    });
     audioDevicesProvider()->bufferLengthChanged().onNotify(this, [this](){ emit bufferLengthChanged(); });
     audioDevicesProvider()->latencyCompensationChanged().onNotify(this, [this](){ emit latencyCompensationChanged(); });
     audioDevicesProvider()->defaultSampleRateChanged().onNotify(this, [this](){

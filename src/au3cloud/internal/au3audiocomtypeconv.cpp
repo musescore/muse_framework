@@ -55,8 +55,9 @@ AudioList convertFromAu3CloudAudio(const audacity::cloud::audiocom::sync::Pagina
         item.created = audioInfo.Created;
         item.fileSize = audioInfo.FileSize;
         item.duration = audioInfo.Duration;
-        item.waveformPath = audioInfo.Id.empty() ? muse::io::path_t() : thumbnailCacheDir.appendingComponent(audioInfo.Id).appendingSuffix(
-            "json");
+        item.waveformPath
+            = audioInfo.Id.empty() ? muse::io::path_t() : thumbnailCacheDir.appendingComponent(audioInfo.Id).appendingSuffix(
+                  "json");
 
         audioList.items.push_back(std::move(item));
     }
@@ -167,8 +168,9 @@ Err syncResultCodeToErr(audacity::cloud::audiocom::SyncResultCode code)
     return Err::UnknownError;
 }
 
-std::vector<DownloadRequest> convertToDownloadRequests(const audacity::cloud::audiocom::sync::PaginatedAudioResponse& paginatedResponse,
-                                                       const muse::io::path_t& thumbnailCacheDir)
+std::vector<DownloadRequest> convertToDownloadRequests(
+    const audacity::cloud::audiocom::sync::PaginatedAudioResponse& paginatedResponse,
+    const muse::io::path_t& thumbnailCacheDir)
 {
     std::vector<DownloadRequest> requests;
 

@@ -23,7 +23,8 @@ class EffectPresetsBarModel : public QObject, public muse::Contextable, public m
 {
     Q_OBJECT
     Q_PROPERTY(int instanceId READ instanceId_prop WRITE setInstanceId_prop NOTIFY instanceIdChanged FINAL)
-    Q_PROPERTY(QString realtimeEffectState READ realtimeEffectState WRITE setRealtimeEffectState NOTIFY realtimeEffectStateChanged FINAL)
+    Q_PROPERTY(
+        QString realtimeEffectState READ realtimeEffectState WRITE setRealtimeEffectState NOTIFY realtimeEffectStateChanged FINAL)
     Q_PROPERTY(QVariantList presets READ presets NOTIFY presetsChanged FINAL)
     Q_PROPERTY(QString preset READ preset WRITE setPreset NOTIFY presetChanged FINAL)
     Q_PROPERTY(bool presetsDropdownEnabled READ presetsDropdownEnabled NOTIFY presetsChanged FINAL)

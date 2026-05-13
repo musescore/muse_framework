@@ -24,7 +24,8 @@ void SpectrogramColors::PreComputeGradient()
     // colorScheme 0: Color (New)
     std::copy_n(&roseusColormap[0][0], gradientSteps * 3, &gradient_pre[ColorGradientUnselected][0][0][0]);
     std::copy_n(&roseusSelectedColormap[0][0], gradientSteps * 3, &gradient_pre[ColorGradientTimeSelected][0][0][0]);
-    std::copy_n(&roseusFrequencySelectedColormap[0][0], gradientSteps * 3, &gradient_pre[ColorGradientTimeAndFrequencySelected][0][0][0]);
+    std::copy_n(&roseusFrequencySelectedColormap[0][0], gradientSteps * 3,
+                &gradient_pre[ColorGradientTimeAndFrequencySelected][0][0][0]);
     std::fill_n(&gradient_pre[ColorGradientEdge][0][0][0], gradientSteps * 3, 0);
 
     for (int selected = 0; selected < ColorGradientTotal; selected++) {

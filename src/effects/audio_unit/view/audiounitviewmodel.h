@@ -54,8 +54,8 @@ private:
     void doStopPreview() override;
 
     using EventListenerPtr = AudioUnitCleanup<AUEventListenerRef, AUListenerDispose>;
-    static void EventListenerCallback(void* inCallbackRefCon, void* inObject, const AudioUnitEvent* inEvent, UInt64 inEventHostTime,
-                                      AudioUnitParameterValue inParameterValue);
+    static void EventListenerCallback(void* inCallbackRefCon, void* inObject, const AudioUnitEvent* inEvent,
+                                      UInt64 inEventHostTime, AudioUnitParameterValue inParameterValue);
     void EventListener(const AudioUnitEvent* inEvent, AudioUnitParameterValue inParameterValue);
     EventListenerPtr MakeListener();
 

@@ -61,7 +61,8 @@ protected:
     bool isPreviewAllowed() const;
 
 private:
-    static QString computeEffectName(EffectInstanceId instanceId, IEffectsProvider* provider, IEffectInstancesRegister* instancesRegister);
+    static QString computeEffectName(EffectInstanceId instanceId, IEffectsProvider* provider,
+                                     IEffectInstancesRegister* instancesRegister);
     static QString computeTitle(const QString& effectName);
 
     IParameterExtractorService* getParameterExtractor() const;

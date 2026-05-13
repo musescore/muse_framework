@@ -28,7 +28,8 @@ QVariantList NoiseViewModel::types() const
         });
         items.append(QVariantMap {
             { "text",
-              muse::qtrc("effects/noise", "Pink", "not a color, but 'pink noise' having a spectrum with more power in low frequencies") },
+              muse::qtrc("effects/noise", "Pink",
+                         "not a color, but 'pink noise' having a spectrum with more power in low frequencies") },
             { "value", (int)NoiseSettings::Type::Pink }
         });
         items.append(QVariantMap {

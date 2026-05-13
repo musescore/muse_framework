@@ -12,11 +12,13 @@
 #include <map>
 
 namespace au::projectscene {
-class RealtimeEffectSectionModel : public QObject, public muse::actions::Actionable, public muse::async::Asyncable, public muse::Contextable
+class RealtimeEffectSectionModel : public QObject, public muse::actions::Actionable, public muse::async::Asyncable,
+    public muse::Contextable
 {
     Q_OBJECT
 
-    Q_PROPERTY(bool showEffectsSection READ prop_showEffectsSection WRITE prop_setShowEffectsSection NOTIFY showEffectsSectionChanged)
+    Q_PROPERTY(
+        bool showEffectsSection READ prop_showEffectsSection WRITE prop_setShowEffectsSection NOTIFY showEffectsSectionChanged)
 
     muse::GlobalInject<IProjectSceneConfiguration> configuration;
 

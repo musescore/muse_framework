@@ -111,7 +111,8 @@ bool EffectParametersProvider::setParameterValue(EffectInstanceId instanceId, co
     return success;
 }
 
-bool EffectParametersProvider::setParameterStringValue(EffectInstanceId instanceId, const String& parameterId, const String& stringValue)
+bool EffectParametersProvider::setParameterStringValue(EffectInstanceId instanceId, const String& parameterId,
+                                                       const String& stringValue)
 {
     EffectInstance* instance = instancesRegister()->instanceById(instanceId).get();
     if (!instance) {

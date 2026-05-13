@@ -23,7 +23,8 @@ class TrackClipsListModel : public TrackItemsListModel
     Q_PROPERTY(ClipStyles::Style clipStyle READ clipStyle NOTIFY clipStyleChanged FINAL)
     Q_PROPERTY(
         bool asymmetricStereoHeightsPossible READ asymmetricStereoHeightsPossible NOTIFY asymmetricStereoHeightsPossibleChanged)
-    Q_PROPERTY(bool isContrastFocusBorderEnabled READ isContrastFocusBorderEnabled NOTIFY isContrastFocusBorderEnabledChanged FINAL)
+    Q_PROPERTY(
+        bool isContrastFocusBorderEnabled READ isContrastFocusBorderEnabled NOTIFY isContrastFocusBorderEnabledChanged FINAL)
 
     muse::GlobalInject<projectscene::IProjectSceneConfiguration> projectSceneConfiguration;
     muse::GlobalInject<muse::ui::IUiConfiguration> uiConfiguration;
@@ -40,9 +41,12 @@ public:
 
     Q_INVOKABLE bool moveSelectedClips(const ClipKey& key, bool completed);
     Q_INVOKABLE bool trimLeftClip(const ClipKey& key, bool completed, ClipBoundary::Action action = ClipBoundary::Action::Shrink);
-    Q_INVOKABLE bool trimRightClip(const ClipKey& key, bool completed, ClipBoundary::Action action = ClipBoundary::Action::Shrink);
-    Q_INVOKABLE bool stretchLeftClip(const ClipKey& key, bool completed, ClipBoundary::Action action = ClipBoundary::Action::Shrink);
-    Q_INVOKABLE bool stretchRightClip(const ClipKey& key, bool completed, ClipBoundary::Action action = ClipBoundary::Action::Shrink);
+    Q_INVOKABLE bool trimRightClip(const ClipKey& key, bool completed,
+                                   ClipBoundary::Action action = ClipBoundary::Action::Shrink);
+    Q_INVOKABLE bool stretchLeftClip(const ClipKey& key, bool completed,
+                                     ClipBoundary::Action action = ClipBoundary::Action::Shrink);
+    Q_INVOKABLE bool stretchRightClip(const ClipKey& key, bool completed,
+                                      ClipBoundary::Action action = ClipBoundary::Action::Shrink);
 
     Q_INVOKABLE void selectClip(const ClipKey& key);
     Q_INVOKABLE void resetSelectedClips();

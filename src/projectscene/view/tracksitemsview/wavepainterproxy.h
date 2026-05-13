@@ -20,6 +20,7 @@ class WavePainterProxy : public IWavePainter, public muse::Contextable
 public:
     WavePainterProxy(const muse::modularity::ContextPtr& ctx)
         : muse::Contextable(ctx) {}
-    void paint(QPainter& painter, const trackedit::ClipKey& clipKey, const Params& params, std::optional<PlotType> plotType) override;
+    void paint(QPainter& painter, const trackedit::ClipKey& clipKey, const Params& params,
+               std::optional<PlotType> plotType) override;
 };
 }

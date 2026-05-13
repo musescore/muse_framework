@@ -406,7 +406,8 @@ MenuItemList thirdPartyGroup(const EffectMetaList& effects, IEffectMenuItemFacto
     std::map<CiString /*family*/, std::map<CiString /*publisher*/, std::map<CiString /*title*/, EffectMetaSet> > > families;
 
     for (const EffectMeta& meta : effects) {
-        families[CiString{ utils::effectFamilyToString(meta.family) }][CiString{ meta.vendor }][CiString{ meta.title }].insert(&meta);
+        families[CiString{ utils::effectFamilyToString(meta.family) }][CiString{ meta.vendor }][CiString{ meta.title }].insert(
+            &meta);
     }
 
     MenuItemList items;
@@ -433,7 +434,8 @@ MenuItemList thirdPartyGroup(const EffectMetaList& effects, IEffectMenuItemFacto
                 }
             }
 
-            publisherMenus << effectMenu.makeMenuEffect(publisher, makeItemsOrDisambiguationSubmenus(publisherEffects, effectMenu));
+            publisherMenus <<
+                effectMenu.makeMenuEffect(publisher, makeItemsOrDisambiguationSubmenus(publisherEffects, effectMenu));
         }
 
         items << effectMenu.makeMenuEffect(family, publisherMenus);

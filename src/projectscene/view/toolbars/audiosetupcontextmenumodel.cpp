@@ -97,7 +97,8 @@ MenuItemList AudioSetupContextMenuModel::makePlaybackDevicesItems()
     const auto& outputDevicesList = audioDevicesProvider()->outputDevices();
     for (size_t i = 0; i < outputDevicesList.size(); ++i) {
         MenuItem* item = makeMenuItem(makeChangePlaybackDeviceAction(i).toString(),
-                                      muse::TranslatableString::untranslatable(muse::String::fromStdString(outputDevicesList.at(i))));
+                                      muse::TranslatableString::untranslatable(muse::String::fromStdString(outputDevicesList.at(
+                                                                                                               i))));
         item->setId(QString::fromStdString(item->query().toString()));
         if (currentOutputDevice == outputDevicesList.at(i)) {
             item->setChecked(true);
@@ -122,7 +123,8 @@ MenuItemList AudioSetupContextMenuModel::makeRecordingDevicesItems()
     const auto& inputDevicesList = audioDevicesProvider()->inputDevices();
     for (size_t i = 0; i < inputDevicesList.size(); ++i) {
         MenuItem* item = makeMenuItem(makeChangeRecordingDeviceAction(i).toString(),
-                                      muse::TranslatableString::untranslatable(muse::String::fromStdString(inputDevicesList.at(i))));
+                                      muse::TranslatableString::untranslatable(muse::String::fromStdString(inputDevicesList.at(
+                                                                                                               i))));
         item->setId(QString::fromStdString(item->query().toString()));
         if (currentInputDevice == inputDevicesList.at(i)) {
             item->setChecked(true);

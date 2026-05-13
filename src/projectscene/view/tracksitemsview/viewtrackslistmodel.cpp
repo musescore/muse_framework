@@ -286,7 +286,8 @@ QVariant ViewTracksListModel::data(const QModelIndex& index, int role) const
         return static_cast<int>(track.rate);
     }
     case IsDataSelectedRole: {
-        return muse::contains(selectionController()->selectedTracks(), track.id) && !selectionController()->timeSelectionIsEmpty();
+        return muse::contains(selectionController()->selectedTracks(),
+                              track.id) && !selectionController()->timeSelectionIsEmpty();
     }
     case IsTrackSelectedRole: {
         return muse::contains(selectionController()->selectedTracks(), track.id);
@@ -344,7 +345,8 @@ QVariant ViewTracksListModel::data(const QModelIndex& index, int role) const
         const spectrogram::FrequencySelection selection = frequencySelectionController()->frequencySelection();
         const auto startFrequency = selection.trackId
                                     == track.id ? selection.startFrequency() : spectrogram::SelectionInfo::UndefinedFrequency;
-        const auto endFrequency = selection.trackId == track.id ? selection.endFrequency() : spectrogram::SelectionInfo::UndefinedFrequency;
+        const auto endFrequency = selection.trackId
+                                  == track.id ? selection.endFrequency() : spectrogram::SelectionInfo::UndefinedFrequency;
         const QVariantMap frequencySelectionMap {
             { "startFrequency", startFrequency },
             { "endFrequency", endFrequency }

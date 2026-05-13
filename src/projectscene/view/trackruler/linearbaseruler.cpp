@@ -12,7 +12,8 @@
 using namespace au::projectscene;
 
 namespace {
-constexpr std::array<std::pair<double, double>, 4> STEP_INCREMENT = { { { 0.1, 0.05 }, { 0.5, 0.1 }, { 0.5, 0.25 }, { 1.0, 0.5 } } };
+constexpr std::array<std::pair<double, double>,
+                     4> STEP_INCREMENT = { { { 0.1, 0.05 }, { 0.5, 0.1 }, { 0.5, 0.25 }, { 1.0, 0.5 } } };
 constexpr std::pair<double, double> DEFAULT_INCREMENT = { 1.0, 0.5 };
 constexpr int MIN_ADJACENT_FULL_STEPS_HEIGHT = 20;
 constexpr int MIN_ADJACENT_SMALL_STEPS_HEIGHT = 10;
@@ -61,7 +62,8 @@ std::string LinearBaseRuler::sampleToText(double sample) const
 
 bool LinearBaseRuler::isBold(double value) const
 {
-    return muse::RealIsEqual(value, m_maxDisplayValue) || muse::RealIsEqual(value, m_minDisplayValue) || muse::RealIsEqual(value, 0.0);
+    return muse::RealIsEqual(value, m_maxDisplayValue) || muse::RealIsEqual(value, m_minDisplayValue) || muse::RealIsEqual(value,
+                                                                                                                           0.0);
 }
 
 int LinearBaseRuler::getAlignment(double value) const

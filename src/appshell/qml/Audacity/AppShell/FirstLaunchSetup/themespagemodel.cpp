@@ -207,7 +207,8 @@ QString ThemesPageModel::enableHighContrastText()
 QString ThemesPageModel::enableHighContrastDescription() const
 {
     //: here %1 represent the written text for the high contrast preferences hint "Further options for high contrast mode can be found in Preferences"
-    return muse::qtrc("appshell/gettingstarted", "Enable high contrast mode for better visibility. %1").arg(highContrastPreferencesHint());
+    return muse::qtrc("appshell/gettingstarted", "Enable high contrast mode for better visibility. %1").arg(
+        highContrastPreferencesHint());
 }
 
 QString ThemesPageModel::accentColorText()

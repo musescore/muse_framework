@@ -31,7 +31,8 @@ public:
     void registerFxPlugin(const muse::audio::TrackId trackId, const muse::audio::AudioFxChainOrder chainOrder,
                           muse::vst::IVstPluginInstancePtr instance) override;
 
-    void registerMasterFxPlugin(const muse::audio::AudioFxChainOrder chainOrder, muse::vst::IVstPluginInstancePtr instance) override;
+    void registerMasterFxPlugin(const muse::audio::AudioFxChainOrder chainOrder,
+                                muse::vst::IVstPluginInstancePtr instance) override;
 
     // get
     muse::vst::IVstPluginInstancePtr instanceById(const muse::vst::VstPluginInstanceId id) const override;
@@ -47,7 +48,8 @@ public:
     void unregisterInstrPlugin(const muse::audio::AudioResourceId& resourceId, const muse::audio::TrackId trackId) override;
     void unregisterFxPlugin(const muse::audio::AudioResourceId& resourceId, const muse::audio::TrackId trackId,
                             const muse::audio::AudioFxChainOrder chainOrder) override;
-    void unregisterMasterFxPlugin(const muse::audio::AudioResourceId& resourceId, const muse::audio::AudioFxChainOrder chainOrder) override;
+    void unregisterMasterFxPlugin(const muse::audio::AudioResourceId& resourceId,
+                                  const muse::audio::AudioFxChainOrder chainOrder) override;
 
     void unregisterAllInstrPlugin() override;
     void unregisterAllFx() override;

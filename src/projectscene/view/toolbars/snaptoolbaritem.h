@@ -23,7 +23,8 @@ class SnapToolBarItem : public muse::uicomponents::ToolBarItem
     muse::ContextInject<muse::ui::IUiActionsRegister> uiActionsRegister{ this };
 
 public:
-    explicit SnapToolBarItem(const muse::ui::UiAction& action, muse::uicomponents::ToolBarItemType::Type type, QObject* parent = nullptr);
+    explicit SnapToolBarItem(const muse::ui::UiAction& action, muse::uicomponents::ToolBarItemType::Type type,
+                             QObject* parent = nullptr);
 
     Q_INVOKABLE void handleMenuItem(const QString& itemId);
 

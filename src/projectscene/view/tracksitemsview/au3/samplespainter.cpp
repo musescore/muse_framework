@@ -26,7 +26,8 @@ void drawSampleHead(const au::projectscene::SampleData& samples, const au::proje
 
     const auto selectedStartPosition
         = std::max(-10000, std::min(10000, static_cast<int>(zoomInfo.TimeToPosition(metrics.selectionStartTime))));
-    const auto selectedEndPosition = std::max(-10000, std::min(10000, static_cast<int>(zoomInfo.TimeToPosition(metrics.selectionEndTime))));
+    const auto selectedEndPosition
+        = std::max(-10000, std::min(10000, static_cast<int>(zoomInfo.TimeToPosition(metrics.selectionEndTime))));
 
     std::set<double> clippedXSet;
     if (showClipping && !samples.clippedX.empty()) {
@@ -129,10 +130,12 @@ void SamplesPainter::paint(QPainter& painter, const trackedit::ClipKey& clipKey,
         auto paddedMetrics = waveMetrics;
         paddedMetrics.top += SAMPLE_HEAD_PADDING;
         paddedMetrics.height -= 2 * SAMPLE_HEAD_PADDING;
-        int yZero = samplespainterutils::getWaveYPos(0.0, params.displayBounds.first, params.displayBounds.second, paddedMetrics.height, dB,
+        int yZero = samplespainterutils::getWaveYPos(0.0, params.displayBounds.first, params.displayBounds.second,
+                                                     paddedMetrics.height, dB,
                                                      true, dBRange, false);
         yZero = paddedMetrics.top + std::max(-1, std::min(static_cast<int>(paddedMetrics.height + paddedMetrics.top), yZero));
-        const auto samples = samplespainterutils::getSampleData(*waveClip, index, paddedMetrics, dB, dBRange, params.displayBounds.second,
+        const auto samples = samplespainterutils::getSampleData(*waveClip, index, paddedMetrics, dB, dBRange,
+                                                                params.displayBounds.second,
                                                                 params.displayBounds.first);
         if (samples.size() == 0) {
             samplespainterutils::drawCenterLine(painter, waveMetrics, params.style, yZero);

@@ -245,7 +245,8 @@ void TrackeditActionsController::init()
     dispatcher()->reg(this, TRACK_SPLIT_AT, this, &TrackeditActionsController::tracksSplitAt);
     dispatcher()->reg(this, SPLIT_RANGE_SELECTION_AT_SILENCES, this, &TrackeditActionsController::splitRangeSelectionAtSilences);
     dispatcher()->reg(this, SPLIT_CLIPS_AT_SILENCES, this, &TrackeditActionsController::splitClipsAtSilences);
-    dispatcher()->reg(this, SPLIT_RANGE_SELECTION_INTO_NEW_TRACKS, this, &TrackeditActionsController::splitRangeSelectionIntoNewTracks);
+    dispatcher()->reg(this, SPLIT_RANGE_SELECTION_INTO_NEW_TRACKS, this,
+                      &TrackeditActionsController::splitRangeSelectionIntoNewTracks);
     dispatcher()->reg(this, SPLIT_CLIPS_INTO_NEW_TRACKS, this, &TrackeditActionsController::splitClipsIntoNewTracks);
     dispatcher()->reg(this, MERGE_SELECTED_ON_TRACK, this, &TrackeditActionsController::mergeSelectedOnTrack);
     dispatcher()->reg(this, DUPLICATE_RANGE_SELECTION_CODE, this, &TrackeditActionsController::duplicateSelected);
@@ -474,7 +475,8 @@ void TrackeditActionsController::doGlobalCut()
         secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
 
         dispatcher()->dispatch(RANGE_SELECTION_SPLIT_CUT,
-                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                                  selectedEndTime));
 
         frequencySelectionController()->resetFrequencySelection();
         return;
@@ -499,7 +501,8 @@ void TrackeditActionsController::doGlobalCutLeaveGap()
         secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
 
         dispatcher()->dispatch(RANGE_SELECTION_SPLIT_CUT,
-                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                                  selectedEndTime));
 
         frequencySelectionController()->resetFrequencySelection();
         return;
@@ -629,7 +632,8 @@ void TrackeditActionsController::doGlobalDelete()
     const auto frequencySelection = frequencySelectionController()->frequencySelection();
     if (frequencySelectionController()->showsSpectrogram(frequencySelection.trackId) && frequencySelection.isValid()) {
         using namespace spectrogram;
-        if (const std::optional<SpectralEffect> effect = spectralEffectsRegister()->spectralEffect(SpectralEffectId::DeleteSelection)) {
+        if (const std::optional<SpectralEffect> effect
+                = spectralEffectsRegister()->spectralEffect(SpectralEffectId::DeleteSelection)) {
             dispatcher()->dispatch(effect->action);
             return;
         }
@@ -641,7 +645,8 @@ void TrackeditActionsController::doGlobalDelete()
         secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
 
         dispatcher()->dispatch(RANGE_SELECTION_SPLIT_DELETE,
-                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                                  selectedEndTime));
 
         frequencySelectionController()->resetFrequencySelection();
         return;
@@ -681,7 +686,8 @@ void TrackeditActionsController::doGlobalDeleteLeaveGap()
         secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
 
         dispatcher()->dispatch(RANGE_SELECTION_SPLIT_DELETE,
-                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                                  selectedEndTime));
 
         frequencySelectionController()->resetFrequencySelection();
         return;
@@ -804,7 +810,8 @@ void TrackeditActionsController::doGlobalSplitIntoNewTrack()
         secs_t selectedStartTime = selectionController()->dataSelectedStartTime();
         secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
         dispatcher()->dispatch(SPLIT_RANGE_SELECTION_INTO_NEW_TRACKS,
-                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                                  selectedEndTime));
         return;
     }
 
@@ -823,7 +830,8 @@ void TrackeditActionsController::doGlobalJoin()
     secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
 
     dispatcher()->dispatch(MERGE_SELECTED_ON_TRACK,
-                           ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                           ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                              selectedEndTime));
 }
 
 void TrackeditActionsController::doGlobalDisjoin()
@@ -834,7 +842,8 @@ void TrackeditActionsController::doGlobalDisjoin()
         secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
 
         dispatcher()->dispatch(SPLIT_RANGE_SELECTION_AT_SILENCES,
-                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+                               ActionData::make_arg3<TrackIdList, secs_t, secs_t>(selectedTracks, selectedStartTime,
+                                                                                  selectedEndTime));
         return;
     }
 
@@ -1969,7 +1978,8 @@ void TrackeditActionsController::makeStereoTrack(const muse::actions::ActionData
         return;
     }
 
-    const std::optional<Track> selectedTrack = project->trackeditProject()->track(selectionController()->selectedTracks().front());
+    const std::optional<Track> selectedTrack
+        = project->trackeditProject()->track(selectionController()->selectedTracks().front());
     if (!selectedTrack || selectedTrack->type != TrackType::Mono) {
         return;
     }
@@ -2164,7 +2174,8 @@ void TrackeditActionsController::extendFocusedItemBoundaryLeft()
         trackeditInteraction()->stretchLabelsLeft(labelsForInteraction(), -stepSize, completed);
     } else {
         double minClipDuration = MIN_CLIP_WIDTH / zoomLevel();
-        trackeditInteraction()->trimClipsLeft(clipsForInteraction(), -stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
+        trackeditInteraction()->trimClipsLeft(
+            clipsForInteraction(), -stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
     }
 }
 
@@ -2187,7 +2198,8 @@ void TrackeditActionsController::extendFocusedItemBoundaryRight()
         trackeditInteraction()->stretchLabelsRight(labelsForInteraction(), stepSize, completed);
     } else {
         double minClipDuration = MIN_CLIP_WIDTH / zoomLevel();
-        trackeditInteraction()->trimClipsRight(clipsForInteraction(), -stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
+        trackeditInteraction()->trimClipsRight(
+            clipsForInteraction(), -stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
     }
 }
 
@@ -2210,7 +2222,8 @@ void TrackeditActionsController::reduceFocusedItemBoundaryLeft()
         trackeditInteraction()->stretchLabelsRight(labelsForInteraction(), -stepSize, completed);
     } else {
         double minClipDuration = MIN_CLIP_WIDTH / zoomLevel();
-        trackeditInteraction()->trimClipsRight(clipsForInteraction(), stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
+        trackeditInteraction()->trimClipsRight(
+            clipsForInteraction(), stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
     }
 }
 
@@ -2233,7 +2246,8 @@ void TrackeditActionsController::reduceFocusedItemBoundaryRight()
         trackeditInteraction()->stretchLabelsLeft(labelsForInteraction(), stepSize, completed);
     } else {
         double minClipDuration = MIN_CLIP_WIDTH / zoomLevel();
-        trackeditInteraction()->trimClipsLeft(clipsForInteraction(), stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
+        trackeditInteraction()->trimClipsLeft(
+            clipsForInteraction(), stepSize, minClipDuration, completed, UndoPushType::CONSOLIDATE);
     }
 }
 

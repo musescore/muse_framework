@@ -16,7 +16,8 @@ class NormalizeViewModel : public BuiltinEffectModel
         bool normalizePeakAmplitude READ normalizePeakAmplitude WRITE setNormalizePeakAmplitude NOTIFY normalizePeakAmplitudeChanged FINAL)
     Q_PROPERTY(
         bool normalizeStereoChannelsIndependently READ normalizeStereoChannelsIndependently WRITE setNormalizeStereoChannelsIndependently NOTIFY normalizeStereoChannelsIndependentlyChanged FINAL)
-    Q_PROPERTY(double peakAmplitudeTarget READ peakAmplitudeTarget WRITE setPeakAmplitudeTarget NOTIFY peakAmplitudeTargetChanged FINAL)
+    Q_PROPERTY(
+        double peakAmplitudeTarget READ peakAmplitudeTarget WRITE setPeakAmplitudeTarget NOTIFY peakAmplitudeTargetChanged FINAL)
 
 public:
     NormalizeViewModel(QObject* parent, int instanceId);

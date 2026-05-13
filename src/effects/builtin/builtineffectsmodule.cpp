@@ -28,7 +28,8 @@ std::string BuiltinEffectsModule::moduleName() const
 }
 
 BuiltinEffectsModule::BuiltinEffectsModule()
-    : m_effectLoader(std::make_shared<BuiltinEffectsLoader>()), m_pluginsScanner(std::make_shared<BuiltinEffectsScanner>()), m_metaReader(
+    : m_effectLoader(std::make_shared<BuiltinEffectsLoader>()), m_pluginsScanner(std::make_shared<BuiltinEffectsScanner>()),
+    m_metaReader(
         std::make_shared<BuiltinEffectsMetaReader>())
 {
 }
@@ -63,7 +64,8 @@ void BuiltinEffectsModule::registerResources()
 
 void BuiltinEffectsModule::registerUiTypes()
 {
-    qmlRegisterUncreatableType<BuiltinEffectModel>("Audacity.BuiltinEffects", 1, 0, "BuiltinEffectModel", "Not creatable abstract type");
+    qmlRegisterUncreatableType<BuiltinEffectModel>("Audacity.BuiltinEffects", 1, 0, "BuiltinEffectModel",
+                                                   "Not creatable abstract type");
     qmlRegisterType<BuiltinEffectViewLoader>("Audacity.BuiltinEffects", 1, 0, "BuiltinEffectViewLoader");
 }
 

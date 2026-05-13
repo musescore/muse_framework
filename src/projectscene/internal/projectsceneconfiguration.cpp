@@ -27,12 +27,14 @@ static const muse::Settings::Key EFFECTS_PANEL_VISIBILITY(moduleName, "projectsc
 static const muse::Settings::Key MOUSE_ZOOM_PRECISION(moduleName, "projectscene/zoomPrecisionMouse");
 static const muse::Settings::Key CLIP_STYLE(moduleName, "projectscene/clipStyle");
 static const muse::Settings::Key STEREO_HEIGHTS_PREF(moduleName, "projectscene/asymmetricStereoHeights");
-static const muse::Settings::Key ASYMMETRIC_STEREO_HEIGHTS_WORKSPACES(moduleName, "projectscene/asymmetricStereoHeightsWorkspaces");
+static const muse::Settings::Key ASYMMETRIC_STEREO_HEIGHTS_WORKSPACES(moduleName,
+                                                                      "projectscene/asymmetricStereoHeightsWorkspaces");
 static const muse::Settings::Key SELECTION_TIMECODE_FORMAT(moduleName, "projectscene/selectionTimecodeFormat");
 static const muse::Settings::Key DURATION_TIMECODE_FORMAT(moduleName, "projectscene/durationTimecodeFormat");
 static const muse::Settings::Key PLAYBACK_ON_RULER_CLICK_ENABLED(moduleName, "projectscene/playbackOnRulerClickEnabled");
 static const muse::Settings::Key LABEL_EDITOR_COLUMN_FORMAT(moduleName, "projectscene/labelEditorColumnFormat");
-static const muse::Settings::Key UPDATE_DISPLAY_WHILE_PLAYING_ENABLED(moduleName, "projectscene/updateDisplayWhilePlayingEnabled");
+static const muse::Settings::Key UPDATE_DISPLAY_WHILE_PLAYING_ENABLED(moduleName,
+                                                                      "projectscene/updateDisplayWhilePlayingEnabled");
 static const muse::Settings::Key PINNED_PLAY_HEAD_ENABLED(moduleName, "projectscene/pinnedPlayHeadEnabled");
 static const muse::Settings::Key ZOOM_PRESET_1(moduleName, "projectscene/zoomPreset1");
 static const muse::Settings::Key ZOOM_PRESET_2(moduleName, "projectscene/zoomPreset2");
@@ -91,13 +93,15 @@ void ProjectSceneConfiguration::init()
         m_asymmetricStereoHeightsWorkspacesChanged.notify();
     });
 
-    muse::settings()->setDefaultValue(SELECTION_TIMECODE_FORMAT, muse::Val(au::uicomponents::TimecodeFormatType::HHMMSSHundredths));
+    muse::settings()->setDefaultValue(SELECTION_TIMECODE_FORMAT,
+                                      muse::Val(au::uicomponents::TimecodeFormatType::HHMMSSHundredths));
     muse::settings()->valueChanged(SELECTION_TIMECODE_FORMAT).onReceive(nullptr, [this](const muse::Val& val) {
         UNUSED(val);
         m_selectionTimecodeFormatChanged.notify();
     });
 
-    muse::settings()->setDefaultValue(DURATION_TIMECODE_FORMAT, muse::Val(au::uicomponents::TimecodeFormatType::HHMMSSHundredths));
+    muse::settings()->setDefaultValue(DURATION_TIMECODE_FORMAT,
+                                      muse::Val(au::uicomponents::TimecodeFormatType::HHMMSSHundredths));
     muse::settings()->valueChanged(DURATION_TIMECODE_FORMAT).onReceive(nullptr, [this](const muse::Val& val) {
         UNUSED(val);
         m_durationTimecodeFormatChanged.notify();
@@ -108,7 +112,8 @@ void ProjectSceneConfiguration::init()
         m_playbackOnRulerClickEnabledChanged.notify();
     });
 
-    muse::settings()->setDefaultValue(UPDATE_DISPLAY_WHILE_PLAYING_ENABLED, muse::Val(DEFAULT_UPDATE_DISPLAY_WHILE_PLAYING_ENABLED));
+    muse::settings()->setDefaultValue(UPDATE_DISPLAY_WHILE_PLAYING_ENABLED, muse::Val(
+                                          DEFAULT_UPDATE_DISPLAY_WHILE_PLAYING_ENABLED));
     muse::settings()->valueChanged(UPDATE_DISPLAY_WHILE_PLAYING_ENABLED).onReceive(nullptr, [this](const muse::Val&) {
         m_updateDisplayWhilePlayingEnabledChanged.notify();
     });

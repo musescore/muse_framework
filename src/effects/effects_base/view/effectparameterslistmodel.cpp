@@ -226,7 +226,8 @@ void EffectParametersListModel::setParameterValue(const QString& parameterId, do
 void EffectParametersListModel::setParameterStringValue(const QString& parameterId, const QString& stringValue)
 {
     // Update the parameter string value through the provider
-    parametersProvider()->setParameterStringValue(m_instanceId, String::fromQString(parameterId), String::fromQString(stringValue));
+    parametersProvider()->setParameterStringValue(m_instanceId, String::fromQString(parameterId),
+                                                  String::fromQString(stringValue));
 
     // The actual model update will happen via the parameterChanged signal
 }

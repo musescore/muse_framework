@@ -29,7 +29,8 @@ class SelectionViewController : public QObject, public muse::async::Asyncable, p
 
     Q_PROPERTY(bool selectionActive READ selectionActive NOTIFY selectionActiveChanged FINAL)
     Q_PROPERTY(bool selectionEditInProgress READ selectionEditInProgress NOTIFY selectionEditInProgressChanged FINAL)
-    Q_PROPERTY(bool verticalSelectionEditInProgress READ verticalSelectionEditInProgress NOTIFY verticalSelectionEditInProgressChanged FINAL)
+    Q_PROPERTY(
+        bool verticalSelectionEditInProgress READ verticalSelectionEditInProgress NOTIFY verticalSelectionEditInProgressChanged FINAL)
     Q_PROPERTY(bool selectionInProgress READ selectionInProgress NOTIFY selectionInProgressChanged FINAL)
     Q_PROPERTY(bool spectralSelectionEnabled READ spectralSelectionEnabled NOTIFY spectralSelectionEnabledChanged FINAL)
     Q_PROPERTY(QVariantMap pressedSpectrogram READ pressedSpectrogram NOTIFY pressedSpectrogramChanged FINAL)

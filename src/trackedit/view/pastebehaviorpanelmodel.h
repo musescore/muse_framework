@@ -15,7 +15,8 @@ class PasteBehaviorPanelModel : public QObject, public muse::async::Asyncable
     Q_OBJECT
 
     Q_PROPERTY(int pasteBehavior READ pasteBehavior WRITE setPasteBehavior NOTIFY pasteBehaviorChanged FINAL)
-    Q_PROPERTY(int pasteInsertBehavior READ pasteInsertBehavior WRITE setPasteInsertBehavior NOTIFY pasteInsertBehaviorChanged FINAL)
+    Q_PROPERTY(
+        int pasteInsertBehavior READ pasteInsertBehavior WRITE setPasteInsertBehavior NOTIFY pasteInsertBehaviorChanged FINAL)
     Q_PROPERTY(bool addBorderToClipImageButtons READ addBorderToClipImageButtons NOTIFY uiThemeChanged FINAL)
     Q_PROPERTY(
         bool userMustChoosePasteInsertBehavior READ userMustChoosePasteInsertBehavior NOTIFY userMustChoosePasteInsertBehaviorChanged FINAL)

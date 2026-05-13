@@ -16,7 +16,8 @@ void EffectsMenuProvider::init()
     effectsProvider()->effectMetaListChanged().onNotify(this, [this] { m_effectMenusChanged.notify(); });
 }
 
-muse::uicomponents::MenuItemList EffectsMenuProvider::destructiveEffectMenu(IEffectMenuItemFactory& effectMenu, EffectFilter filterType)
+muse::uicomponents::MenuItemList EffectsMenuProvider::destructiveEffectMenu(IEffectMenuItemFactory& effectMenu,
+                                                                            EffectFilter filterType)
 {
     std::function<bool(const EffectMeta&)> filter;
     switch (filterType) {

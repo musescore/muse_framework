@@ -164,7 +164,8 @@ TEST_F(Au3TrackEditClipboardTests, groupedTrackDataCopy)
     for (; tracksBeforeIter != trackDataBefore.end() && tracksAfterIter != trackDataAfter.end();
          ++tracksBeforeIter, ++tracksAfterIter) {
         auto waveTrackBefore = dynamic_cast<au3::Au3WaveTrack*>((*tracksBeforeIter)->track().get());
-        auto waveTrackAfter = dynamic_cast<au3::Au3WaveTrack*>(std::static_pointer_cast<Au3TrackData>(*tracksAfterIter)->track().get());
+        auto waveTrackAfter
+            = dynamic_cast<au3::Au3WaveTrack*>(std::static_pointer_cast<Au3TrackData>(*tracksAfterIter)->track().get());
         auto clipsBefore = waveTrackBefore->Intervals();
         auto clipsAfter = waveTrackAfter->Intervals();
 

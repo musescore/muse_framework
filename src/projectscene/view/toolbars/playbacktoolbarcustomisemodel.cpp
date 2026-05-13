@@ -227,7 +227,8 @@ PlaybackToolBarCustomiseItem* PlaybackToolBarCustomiseModel::makeItem(const UiAc
 
 PlaybackToolBarCustomiseItem* PlaybackToolBarCustomiseModel::makeSeparatorItem()
 {
-    PlaybackToolBarCustomiseItem* item = new PlaybackToolBarCustomiseItem(PlaybackToolBarCustomiseItem::ItemType::SEPARATOR, this);
+    PlaybackToolBarCustomiseItem* item
+        = new PlaybackToolBarCustomiseItem(PlaybackToolBarCustomiseItem::ItemType::SEPARATOR, this);
     item->setTitle(QString("-------  %1  -------").arg(muse::qtrc("projectscene", "Separator line")));
     item->setChecked(true); //! NOTE Can't be unchecked
     return item;

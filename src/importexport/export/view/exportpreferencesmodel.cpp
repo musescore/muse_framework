@@ -522,7 +522,8 @@ void ExportPreferencesModel::exportData()
         const auto btnText = muse::trc("export", "Overwrite");
         muse::IInteractive::Result result = interactive()->questionSync("", question,
                                                                         { muse::IInteractive::ButtonData(overwriteBtn, btnText),
-                                                                          interactive()->buttonData(muse::IInteractive::Button::Cancel)
+                                                                          interactive()->buttonData(muse::IInteractive::Button::
+                                                                                                    Cancel)
                                                                         });
         if (result.button() != overwriteBtn) {
             return;

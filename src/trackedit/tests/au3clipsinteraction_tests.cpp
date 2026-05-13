@@ -208,7 +208,8 @@ TEST_F(Au3ClipsInteractionTests, SplitClipsAtSilenceWhenSilenceAtEnd)
     ASSERT_EQ(track->NIntervals(), 1) << "The number of intervals after the split range operation is not 1";
 
     const WaveTrack::IntervalConstHolder firstClip = track->GetSortedClipByIndex(0);
-    ValidateClipProperties(firstClip, TRACK_SILENCE_AT_START_CLIP_START, TRACK_SILENCE_AT_START_CLIP_END, TRACK_SILENCE_AT_START_CLIP_START,
+    ValidateClipProperties(firstClip, TRACK_SILENCE_AT_START_CLIP_START, TRACK_SILENCE_AT_START_CLIP_END,
+                           TRACK_SILENCE_AT_START_CLIP_START,
                            TRACK_SILENCE_AT_START_CLIP_START + TRACK_SILENCE_AT_START_FIRST_SEGMENT_DURATION);
 
     // Cleanup
@@ -328,7 +329,8 @@ TEST_F(Au3ClipsInteractionTests, RemoveClipsMovingRemaining)
 
     //! [THEN] The third clip is moved forward
     const WaveTrack::IntervalConstHolder thirdClip = track->GetSortedClipByIndex(1);
-    ValidateClipProperties(thirdClip, TRACK_THREE_CLIPS_CLIP2_START, TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP3_DURATION,
+    ValidateClipProperties(thirdClip, TRACK_THREE_CLIPS_CLIP2_START,
+                           TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP3_DURATION,
                            TRACK_THREE_CLIPS_CLIP2_START,
                            TRACK_THREE_CLIPS_CLIP2_START + TRACK_THREE_CLIPS_CLIP3_DURATION);
 
@@ -608,7 +610,8 @@ TEST_F(Au3ClipsInteractionTests, TrimSingleClipRight)
 
     //! [THEN] The clip is trimmed
     const WaveTrack::IntervalConstHolder trimmedClip = track->GetSortedClipByIndex(0);
-    ValidateClipProperties(trimmedClip, TRACK_SILENCE_AT_END_CLIP_START, TRACK_SILENCE_AT_END_CLIP_END, TRACK_SILENCE_AT_END_CLIP_START,
+    ValidateClipProperties(trimmedClip, TRACK_SILENCE_AT_END_CLIP_START, TRACK_SILENCE_AT_END_CLIP_END,
+                           TRACK_SILENCE_AT_END_CLIP_START,
                            TRACK_SILENCE_AT_END_CLIP_END - deltaSec);
 
     // Cleanup

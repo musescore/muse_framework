@@ -23,7 +23,9 @@ constexpr auto pathColumnWidth = 296;
 constexpr auto typeColumnWidth = 152;
 }
 
-const PluginManagerTableViewModel::EffectFilter PluginManagerTableViewModel::allPassFilter = [](const EffectMeta&) { return true; };
+const PluginManagerTableViewModel::EffectFilter PluginManagerTableViewModel::allPassFilter = [](const EffectMeta&) {
+    return true;
+};
 
 PluginManagerTableViewModel::PluginManagerTableViewModel(QObject* parent)
     : AbstractTableViewModel(parent), Contextable(muse::iocCtxForQmlObject(this)),
@@ -215,7 +217,8 @@ QVector<muse::uicomponents::TableViewHeader*> PluginManagerTableViewModel::makeH
     hHeaders << makeHorizontalHeader(muse::qtrc("effects", "Name"),
                                      TableViewCellType::Type::String, TableViewCellEditMode::Mode::DoubleClick, nameColumnWidth);
     hHeaders << makeHorizontalHeader(muse::qtrc("effects", "Vendor"),
-                                     TableViewCellType::Type::String, TableViewCellEditMode::Mode::DoubleClick, vendorColumnWidth);
+                                     TableViewCellType::Type::String, TableViewCellEditMode::Mode::DoubleClick,
+                                     vendorColumnWidth);
     hHeaders << makeHorizontalHeader(muse::qtrc("effects", "Path"),
                                      TableViewCellType::Type::String, TableViewCellEditMode::Mode::DoubleClick, pathColumnWidth);
     hHeaders << makeHorizontalHeader(muse::qtrc("effects", "Type"),

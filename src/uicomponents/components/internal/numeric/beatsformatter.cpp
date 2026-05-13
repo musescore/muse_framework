@@ -221,7 +221,8 @@ void BeatsFormatter::updateFields(size_t barsDigits)
     barsField.label = " " + barString() + " ";
 
     int offset = timecodeModeToOffset(m_mode);
-    auto& beatsField = m_fields.emplace_back(NumericField::range(std::max<size_t>(UPPER_BOUNDS[1], m_upperTimeSignature + offset)));
+    auto& beatsField
+        = m_fields.emplace_back(NumericField::range(std::max<size_t>(UPPER_BOUNDS[1], m_upperTimeSignature + offset)));
 
     beatsField.label = " " + beatString();
 

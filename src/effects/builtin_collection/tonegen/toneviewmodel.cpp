@@ -32,7 +32,8 @@ bool ToneViewModel::isApplyAllowed() const
 QList<QString> ToneViewModel::waveforms() const
 {
     return {
-        muse::qtrc("effects/tone", "Sine"), muse::qtrc("effects/tone", "Square"), muse::qtrc("effects/tone", "Sawtooth"), muse::qtrc(
+        muse::qtrc("effects/tone", "Sine"), muse::qtrc("effects/tone", "Square"), muse::qtrc("effects/tone", "Sawtooth"),
+        muse::qtrc(
             "effects/tone", "Square, no alias"), muse::qtrc("effects/tone", "Triangle")
     };
 }

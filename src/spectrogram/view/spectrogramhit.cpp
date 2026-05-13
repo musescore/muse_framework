@@ -4,7 +4,8 @@
 #include "spectrogramhit.h"
 
 namespace au::spectrogram {
-SpectrogramHit SpectrogramHitFactory::createSpectrogramHit(int trackId, int channel, double spectrogramY, double spectrogramHeight)
+SpectrogramHit SpectrogramHitFactory::createSpectrogramHit(int trackId, int channel, double spectrogramY,
+                                                           double spectrogramHeight)
 {
     return SpectrogramHit{ trackId, channel, spectrogramY, spectrogramHeight };
 }

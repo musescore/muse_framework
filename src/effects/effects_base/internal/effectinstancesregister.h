@@ -18,7 +18,8 @@ class EffectInstancesRegister : public IEffectInstancesRegister
     muse::GlobalInject<IEffectsProvider> effectsProvider;
 
 public:
-    EffectInstanceId regInstance(const EffectId& effectId, const std::shared_ptr<EffectInstance>& i, EffectSettingsAccessPtr) override;
+    EffectInstanceId regInstance(const EffectId& effectId, const std::shared_ptr<EffectInstance>& i,
+                                 EffectSettingsAccessPtr) override;
     void unregInstance(const std::shared_ptr<EffectInstance>& i) override;
     void unregInstance(const EffectInstanceId& instanceId) override;
 

@@ -226,9 +226,11 @@ muse::Ret Au3TracksInteraction::paste(const std::vector<ITrackDataPtr>& data, se
     // Paste clips if any
     if (!clipData.empty()) {
         // Use original selected tracks to determine destination for clips
-        TrackIdList dstTracksIds = determineDestinationTracksIds(tracks, originalSelectedTracks, copiedData, false /*for labels*/);
+        TrackIdList dstTracksIds
+            = determineDestinationTracksIds(tracks, originalSelectedTracks, copiedData, false /*for labels*/);
         const bool pasteIntoExistingClip = !configuration()->pasteAsNewClip() && !moveAllTracks;
-        result = pasteClips(clipData, dstTracksIds, begin, moveClips, isMultiSelectionCopy, pasteIntoExistingClip, projectWasModified);
+        result = pasteClips(clipData, dstTracksIds, begin, moveClips, isMultiSelectionCopy, pasteIntoExistingClip,
+                            projectWasModified);
         if (!result) {
             return result;
         }
@@ -312,7 +314,9 @@ muse::Ret Au3TracksInteraction::pasteClips(const std::vector<Au3TrackDataPtr>& c
         } else if (trackToPaste->NChannels() == 1 && dstWaveTrack->NChannels() == 2) {
             trackToPaste->MonoToStereo();
         } else if (trackToPaste->NChannels() == 2 && dstWaveTrack->NChannels() == 1) {
-            ok = utils::withProgress(*interactive(), mixingDownToMonoLabel, [&](utils::ProgressCb progressCb, utils::CancelCb cancelCb)
+            ok
+                = utils::withProgress(
+                      *interactive(), mixingDownToMonoLabel, [&](utils::ProgressCb progressCb, utils::CancelCb cancelCb)
             {
                 return trackToPaste->MixDownToMono(progressCb, cancelCb);
             });
@@ -449,7 +453,8 @@ ITrackDataPtr Au3TracksInteraction::cutTrackData(const TrackId trackId, secs_t b
     return data;
 }
 
-ITrackDataPtr Au3TracksInteraction::copyNonContinuousTrackData(const TrackId trackId, const TrackItemKeyList& itemKeys, secs_t offset)
+ITrackDataPtr Au3TracksInteraction::copyNonContinuousTrackData(const TrackId trackId, const TrackItemKeyList& itemKeys,
+                                                               secs_t offset)
 {
     // Try to find wave track first
     if (Au3WaveTrack* waveTrack = DomAccessor::findWaveTrack(projectRef(), Au3TrackId(trackId))) {
@@ -865,7 +870,8 @@ bool Au3TracksInteraction::insertSilence(const TrackIdList& trackIds, secs_t beg
 
 bool Au3TracksInteraction::changeTracksFormat(const TrackIdList& tracksIds, trackedit::TrackFormat format)
 {
-    const size_t totalSamples = std::accumulate(tracksIds.begin(), tracksIds.end(), 0u, [this](size_t sum, const TrackId& trackId) {
+    const size_t totalSamples = std::accumulate(tracksIds.begin(),
+                                                tracksIds.end(), 0u, [this](size_t sum, const TrackId& trackId) {
         Au3WaveTrack* waveTrack = DomAccessor::findWaveTrack(projectRef(), ::TrackId(trackId));
         IF_ASSERT_FAILED(waveTrack) {
             return sum;
@@ -1164,7 +1170,8 @@ bool Au3TracksInteraction::makeStereoTrack(const TrackId left, const TrackId rig
 bool Au3TracksInteraction::resampleTracks(const TrackIdList& tracksIds, int rate)
 {
     size_t convertedSamples = 0;
-    const size_t totalSamples = std::accumulate(tracksIds.begin(), tracksIds.end(), 0u, [this](size_t sum, const TrackId& trackId) {
+    const size_t totalSamples = std::accumulate(tracksIds.begin(),
+                                                tracksIds.end(), 0u, [this](size_t sum, const TrackId& trackId) {
         Au3WaveTrack* waveTrack = DomAccessor::findWaveTrack(projectRef(), ::TrackId(trackId));
         IF_ASSERT_FAILED(waveTrack) {
             return sum;
@@ -1370,7 +1377,8 @@ TrackIdList Au3TracksInteraction::pasteIntoNewTracks(const std::vector<Au3TrackD
     return tracksIdsPastedInto;
 }
 
-std::shared_ptr<au::au3::Au3Track> Au3TracksInteraction::createNewTrackAndPaste(std::shared_ptr<Au3Track> track, Au3TrackList& list,
+std::shared_ptr<au::au3::Au3Track> Au3TracksInteraction::createNewTrackAndPaste(std::shared_ptr<Au3Track> track,
+                                                                                Au3TrackList& list,
                                                                                 secs_t begin)
 {
     // Handle wave track clips
@@ -1393,7 +1401,8 @@ std::shared_ptr<au::au3::Au3Track> Au3TracksInteraction::createNewTrackAndPaste(
     return nullptr;
 }
 
-TrackIdList Au3TracksInteraction::determineDestinationTracksIds(const std::vector<Track>& tracks, const TrackIdList& destinationTrackIds,
+TrackIdList Au3TracksInteraction::determineDestinationTracksIds(const std::vector<Track>& tracks,
+                                                                const TrackIdList& destinationTrackIds,
                                                                 const std::vector<Au3TrackDataPtr>& clipboardData,
                                                                 bool forLabels) const
 {
@@ -1538,7 +1547,8 @@ bool Au3TracksInteraction::canMergeMonoTracksToStereo(const TrackId left, const 
            && checkAligned(*au3LeftTrack, *au3RightTrack);
 }
 
-muse::Ret Au3TracksInteraction::canPasteTrackData(const TrackIdList& dstTracksIds, const std::vector<Au3TrackDataPtr>& clipsToPaste) const
+muse::Ret Au3TracksInteraction::canPasteTrackData(const TrackIdList& dstTracksIds,
+                                                  const std::vector<Au3TrackDataPtr>& clipsToPaste) const
 {
     IF_ASSERT_FAILED(dstTracksIds.size() <= clipsToPaste.size()) {
         return make_ret(trackedit::Err::NotEnoughDataInClipboard);

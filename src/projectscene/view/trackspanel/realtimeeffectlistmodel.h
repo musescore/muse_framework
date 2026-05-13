@@ -20,7 +20,8 @@ class RealtimeEffectListModel : public QAbstractListModel, public muse::async::A
 
     Q_PROPERTY(QString trackName READ prop_trackName NOTIFY trackNameChanged)
     Q_PROPERTY(bool isMasterTrack READ prop_isMasterTrack WRITE prop_setIsMasterTrack NOTIFY isMasterTrackChanged)
-    Q_PROPERTY(bool trackEffectsActive READ prop_trackEffectsActive WRITE prop_setTrackEffectsActive NOTIFY trackEffectsActiveChanged)
+    Q_PROPERTY(
+        bool trackEffectsActive READ prop_trackEffectsActive WRITE prop_setTrackEffectsActive NOTIFY trackEffectsActiveChanged)
 
     muse::ContextInject<effects::IRealtimeEffectService> realtimeEffectService{ this };
     muse::ContextInject<context::IGlobalContext> globalContext{ this };
@@ -63,7 +64,8 @@ private:
 
     bool belongsWithMe(effects::TrackId trackId) const;
     void onAdded(effects::TrackId trackId, const effects::RealtimeEffectStatePtr& newState);
-    void onReplaced(effects::TrackId trackId, effects::EffectChainLinkIndex index, const effects::RealtimeEffectStatePtr& newState);
+    void onReplaced(effects::TrackId trackId, effects::EffectChainLinkIndex index,
+                    const effects::RealtimeEffectStatePtr& newState);
     void onRemoved(effects::TrackId trackId, const effects::RealtimeEffectStatePtr& state);
     void onMoved(effects::TrackId trackId, effects::EffectChainLinkIndex from, effects::EffectChainLinkIndex to);
     void onChanged(effects::TrackId trackId);

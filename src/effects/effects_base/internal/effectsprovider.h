@@ -51,7 +51,8 @@ public:
 
     bool paramsAreInputAgnostic(const EffectId& effectId) const override;
 
-    void rescanPlugins(muse::IInteractive& interactive, muse::audioplugins::IRegisterAudioPluginsScenario& registerAudioPluginsScenario,
+    void rescanPlugins(muse::IInteractive& interactive,
+                       muse::audioplugins::IRegisterAudioPluginsScenario& registerAudioPluginsScenario,
                        const EffectFilter& exclude = nullptr) override;
     void forgetPlugins(const EffectFilter& forget = nullptr) override;
     void save() override;

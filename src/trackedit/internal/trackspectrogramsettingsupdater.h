@@ -26,7 +26,8 @@ public:
         : muse::Contextable(ctx) {}
 
     void init();
-    void forEachTrack(std::function<void(ITrackeditProject&, const trackedit::Track&, spectrogram::ITrackSpectrogramConfiguration&)>) const;
+    void forEachTrack(std::function<void(ITrackeditProject&, const trackedit::Track&,
+                                         spectrogram::ITrackSpectrogramConfiguration&)>) const;
     void maybeApplyGlobalSettingsToTrack();
 };
 }

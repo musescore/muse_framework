@@ -525,7 +525,8 @@ bool ProjectActionsController::saveProjectToCloud(const CloudProjectInfo& cloudI
         return false;
     }
 
-    auto [uploadRet, progress] = audioComService()->uploadProject(project, cloudInfo.name.toStdString(), [this, projectFilePath]() {
+    auto [uploadRet, progress] = audioComService()->uploadProject(project,
+                                                                  cloudInfo.name.toStdString(), [this, projectFilePath]() {
         return saveProjectLocally(projectFilePath, SaveMode::Save);
     }, forceOverwrite);
 
@@ -656,7 +657,8 @@ muse::io::paths_t ProjectActionsController::selectOpeningFiles()
 muse::io::paths_t ProjectActionsController::selectImportFiles()
 {
     std::string audioFileExt
-        = "*.aac *.ac3 *.mp2 *.mp3 *.wma *.wav *.flac *.ogg *.opus *.aif *.aiff *.amr *.ape *.au *.dts *.mpc *.tta *.wv *.shn *.voc *.mmf";
+        =
+            "*.aac *.ac3 *.mp2 *.mp3 *.wma *.wav *.flac *.ogg *.opus *.aif *.aiff *.amr *.ape *.au *.dts *.mpc *.tta *.wv *.shn *.voc *.mmf";
     std::string videoFileExt
         = "*.avi *.mp4 *.mkv *.mov *.flv *.wmv *.asf *.webm *.mpg *.mpeg *.m4v *.ts *.gxf *.mxf *.nut *.dv *.3gp *.3g2 *.mj2";
     std::string gameMediaFileExt

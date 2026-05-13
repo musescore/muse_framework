@@ -22,7 +22,8 @@ void TrackSpectrogramSettingsUpdater::init()
 
 void TrackSpectrogramSettingsUpdater::maybeApplyGlobalSettingsToTrack()
 {
-    forEachTrack([this](ITrackeditProject& trackeditProject, const Track& track, spectrogram::ITrackSpectrogramConfiguration& config){
+    forEachTrack([this](ITrackeditProject& trackeditProject, const Track& track,
+                        spectrogram::ITrackSpectrogramConfiguration& config){
         if (config.useGlobalSettings()) {
             spectrogramService()->copyConfiguration(*globalSpectrogramConfiguration(), config);
             trackeditProject.notifyAboutTrackChanged(track);

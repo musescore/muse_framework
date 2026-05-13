@@ -188,7 +188,8 @@ const UiActionList ApplicationUiActions::m_actions = {
              ),
 };
 
-ApplicationUiActions::ApplicationUiActions(const muse::modularity::ContextPtr& ctx, std::shared_ptr<ApplicationActionController> controller)
+ApplicationUiActions::ApplicationUiActions(const muse::modularity::ContextPtr& ctx,
+                                           std::shared_ptr<ApplicationActionController> controller)
     : muse::Contextable(ctx), m_controller(controller)
 {
 }

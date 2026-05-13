@@ -317,7 +317,8 @@ muse::Ret EffectExecutionScenario::doPerformEffect(au3::Au3Project& project, con
         pInstanceEx = std::dynamic_pointer_cast<EffectInstanceEx>(effect->MakeInstance());
         if (!pInstanceEx || !pInstanceEx->Init()) {
             return pInstanceEx
-                   && !pInstanceEx->GetLastError().empty() ? make_ret(Err::EffectProcessFailed, pInstanceEx->GetLastError()) : make_ret(
+                   && !pInstanceEx->GetLastError().empty() ? make_ret(Err::EffectProcessFailed,
+                                                                      pInstanceEx->GetLastError()) : make_ret(
                 Err::UnknownError);
         }
     }
@@ -382,7 +383,8 @@ muse::Ret EffectExecutionScenario::doPerformEffect(au3::Au3Project& project, con
 
         if (!(flags & EffectManager::kSkipState)) {
             const auto shortDesc = effectsProvider()->effectName(effectId.toStdString());
-            const auto longDesc = muse::mtrc("effects", "Applied effect: %1").arg(muse::String { shortDesc.c_str() }).toStdString();
+            const auto longDesc
+                = muse::mtrc("effects", "Applied effect: %1").arg(muse::String { shortDesc.c_str() }).toStdString();
             projectHistory()->pushHistoryState(longDesc, shortDesc);
         }
 
@@ -547,7 +549,8 @@ std::vector<au::trackedit::Track> trackListDifference(const std::vector<au::trac
 {
     std::vector<au::trackedit::Track> result;
     for (const au::trackedit::Track& item : a) {
-        if (std::find_if(b.begin(), b.end(), [&item](const au::trackedit::Track& other) { return item.id == other.id; }) == b.end()) {
+        if (std::find_if(b.begin(), b.end(),
+                         [&item](const au::trackedit::Track& other) { return item.id == other.id; }) == b.end()) {
             result.push_back(item);
         }
     }

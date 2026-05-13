@@ -90,10 +90,12 @@ private:
     // effects::IEffectMenuItemFactory
     muse::uicomponents::MenuItem* makeMenuSeparator() override { return makeSeparator(); }
     muse::uicomponents::MenuItem* makeMenuEffectItem(const effects::EffectId& effectId) override;
-    muse::uicomponents::MenuItem* makeMenuEffect(const muse::String& title, const muse::uicomponents::MenuItemList& items) override;
+    muse::uicomponents::MenuItem* makeMenuEffect(const muse::String& title,
+                                                 const muse::uicomponents::MenuItemList& items) override;
 
     using muse::uicomponents::AbstractMenuModel::makeMenuItem;
-    muse::uicomponents::MenuItem* makeMenuItem(const muse::actions::ActionCode& actionCode, muse::uicomponents::MenuItemRole role);
+    muse::uicomponents::MenuItem* makeMenuItem(const muse::actions::ActionCode& actionCode,
+                                               muse::uicomponents::MenuItemRole role);
 
     muse::uicomponents::MenuItem* makeFileMenu();
     muse::uicomponents::MenuItem* makeEditMenu();

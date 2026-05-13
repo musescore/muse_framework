@@ -744,7 +744,8 @@ void TrackNavigationController::updateTrackSelection(TrackIdList& selectedTracks
     if (std::abs(startDistance) < std::abs(endDistance)) {
         selectedTracks.push_back(newFocusedTrack);
     } else {
-        selectedTracks.erase(std::remove(selectedTracks.begin(), selectedTracks.end(), previousFocusedTrack), selectedTracks.end());
+        selectedTracks.erase(std::remove(selectedTracks.begin(), selectedTracks.end(), previousFocusedTrack),
+                             selectedTracks.end());
     }
 
     selectionController()->setSelectedTracks(selectedTracks);

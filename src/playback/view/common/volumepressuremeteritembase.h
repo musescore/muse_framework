@@ -18,7 +18,8 @@ class VolumePressureMeterItemBase : public QQuickPaintedItem
 
     Q_PROPERTY(au::playback::MeterModel * meterModel READ meterModel WRITE setMeterModel NOTIFY meterModelChanged)
 
-    Q_PROPERTY(qreal currentVolumePressure READ currentVolumePressure WRITE setCurrentVolumePressure NOTIFY currentVolumePressureChanged)
+    Q_PROPERTY(
+        qreal currentVolumePressure READ currentVolumePressure WRITE setCurrentVolumePressure NOTIFY currentVolumePressureChanged)
     Q_PROPERTY(qreal currentRMS READ currentRMS WRITE setCurrentRMS NOTIFY currentRMSChanged)
     Q_PROPERTY(qreal minDisplayedVolumePressure READ minDisplayedVolumePressure WRITE setMinDisplayedVolumePressure NOTIFY
                minDisplayedVolumePressureChanged)
@@ -36,7 +37,8 @@ class VolumePressureMeterItemBase : public QQuickPaintedItem
     Q_PROPERTY(QColor gradientColorGreen READ gradientColorGreen WRITE setGradientColorGreen NOTIFY gradientColorGreenChanged)
     Q_PROPERTY(QColor gradientColorYellow READ gradientColorYellow WRITE setGradientColorYellow NOTIFY gradientColorYellowChanged)
     Q_PROPERTY(QColor gradientColorRed READ gradientColorRed WRITE setGradientColorRed NOTIFY gradientColorRedChanged)
-    Q_PROPERTY(QColor meterBackgroundColor READ meterBackgroundColor WRITE setMeterBackgroundColor NOTIFY meterBackgroundColorChanged)
+    Q_PROPERTY(
+        QColor meterBackgroundColor READ meterBackgroundColor WRITE setMeterBackgroundColor NOTIFY meterBackgroundColorChanged)
     Q_PROPERTY(QColor maxPeakMarkerColor READ maxPeakMarkerColor WRITE setMaxPeakMarkerColor NOTIFY maxPeakMarkerColorChanged)
 
 public:

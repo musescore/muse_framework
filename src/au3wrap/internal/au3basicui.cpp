@@ -150,8 +150,10 @@ BasicUI::MessageBoxResult Au3BasicUI::DoMessageBox(const TranslatableString& mes
     return ret;
 }
 
-std::unique_ptr<BasicUI::ProgressDialog> Au3BasicUI::DoMakeProgress(const TranslatableString& title, const TranslatableString& message,
-                                                                    unsigned int flags, const TranslatableString& remainingLabelText)
+std::unique_ptr<BasicUI::ProgressDialog> Au3BasicUI::DoMakeProgress(const TranslatableString& title,
+                                                                    const TranslatableString& message,
+                                                                    unsigned int flags,
+                                                                    const TranslatableString& remainingLabelText)
 {
     Q_UNUSED(flags);
     Q_UNUSED(remainingLabelText);
@@ -185,7 +187,8 @@ std::unique_ptr<BasicUI::GenericProgressDialog> Au3BasicUI::DoMakeGenericProgres
     return std::make_unique<MyGenericProgress>();
 }
 
-int Au3BasicUI::DoMultiDialog(const TranslatableString& message, const TranslatableString& title, const TranslatableStrings& buttons,
+int Au3BasicUI::DoMultiDialog(const TranslatableString& message, const TranslatableString& title,
+                              const TranslatableStrings& buttons,
                               const ManualPageID& helpPage, const TranslatableString& boxMsg, bool log)
 {
     Q_UNUSED(message);

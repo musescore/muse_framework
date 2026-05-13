@@ -62,7 +62,8 @@ void EffectsProvider::rescanPlugins(muse::IInteractive& interactive,
                                     const EffectFilter& exclude)
 {
     if (doScanPlugins(registerAudioPluginsScenario, {}, exclude) == NewPluginsRegistered::No) {
-        interactive.infoSync(muse::trc("audio", "Audio plugins scan completed"), muse::trc("audio", "All audio plugins are up to date."));
+        interactive.infoSync(muse::trc("audio", "Audio plugins scan completed"),
+                             muse::trc("audio", "All audio plugins are up to date."));
     }
 }
 

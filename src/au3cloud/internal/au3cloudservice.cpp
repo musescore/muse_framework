@@ -140,7 +140,8 @@ void Au3CloudService::signInWithPassword(const std::string& email, const std::st
     },
                            [this](auto, auto)
     {
-        const auto INCORRECT_EMAIL_OR_PASSWORD = muse::qtrc("appshell/gettingstarted", "Authentication failed. Please try again.");
+        const auto INCORRECT_EMAIL_OR_PASSWORD = muse::qtrc("appshell/gettingstarted",
+                                                            "Authentication failed. Please try again.");
         m_authState.set(AuthState(NotAuthorized(INCORRECT_EMAIL_OR_PASSWORD.toStdString())));
     }, AudiocomTrace::ignore);
 }

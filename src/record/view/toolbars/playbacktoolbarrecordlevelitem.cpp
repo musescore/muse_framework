@@ -12,7 +12,8 @@ using namespace au::audio;
 using namespace au::playback;
 
 PlaybackToolBarRecordLevelItem::PlaybackToolBarRecordLevelItem(const muse::ui::UiAction& action,
-                                                               const muse::uicomponents::ToolBarItemType::Type type, QObject* parent)
+                                                               const muse::uicomponents::ToolBarItemType::Type type,
+                                                               QObject* parent)
     : muse::uicomponents::ToolBarItem(action, type, parent)
 {
     record()->audioInput()->recordVolumeChanged().onReceive(this, [this](const audio::volume_dbfs_t volume){
@@ -193,7 +194,8 @@ void PlaybackToolBarRecordLevelItem::listenMainAudioInput(const bool listen)
     recordMeterController()->setRecordMeterVisible(listen);
     if (listen) {
         record()->audioInput()->recordSignalChanges().onReceive(this,
-                                                                [this](const audioch_t audioChNum, const audio::MeterSignal& meterSignal) {
+                                                                [this](const audioch_t audioChNum,
+                                                                       const audio::MeterSignal& meterSignal) {
             if (meterSignal.peak.pressure < MIN_DISPLAYED_DBFS) {
                 setAudioChannelVolumePressure(audioChNum,
                                               MIN_DISPLAYED_DBFS);

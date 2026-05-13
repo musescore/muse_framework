@@ -44,7 +44,8 @@ class PluginManagerTableViewModel : public muse::uicomponents::AbstractTableView
     Q_PROPERTY(
         int enabledDisabledSelectedIndex READ enabledDisabledSelectedIndex WRITE setEnabledDisabledSelectedIndex NOTIFY enabledDisabledSelectedIndexChanged)
 
-    Q_PROPERTY(muse::uicomponents::MenuItemList effectFamilyOptions READ effectFamilyOptions NOTIFY effectFamilySelectedIndexChanged)
+    Q_PROPERTY(
+        muse::uicomponents::MenuItemList effectFamilyOptions READ effectFamilyOptions NOTIFY effectFamilySelectedIndexChanged)
     Q_PROPERTY(
         int effectFamilySelectedIndex READ effectFamilySelectedIndex WRITE setEffectFamilySelectedIndex NOTIFY effectFamilySelectedIndexChanged)
 

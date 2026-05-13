@@ -284,7 +284,8 @@ void WaveTrackItem::checkMainAudioInput()
 {
     if (isFocused() && m_recordStreamChannelsMatch) {
         record()->audioInput()->recordSignalChanges().onReceive(this,
-                                                                [this](const audioch_t audioChNum, const audio::MeterSignal& meterSignal) {
+                                                                [this](const audioch_t audioChNum,
+                                                                       const audio::MeterSignal& meterSignal) {
             setAudioChannelVolumePressure(audioChNum,
                                           meterSignal.peak.pressure);
             setAudioChannelRMS(audioChNum, meterSignal.rms.pressure);

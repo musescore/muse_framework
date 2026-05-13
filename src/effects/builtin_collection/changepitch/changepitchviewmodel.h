@@ -16,11 +16,14 @@ class ChangePitchViewModel : public BuiltinEffectModel
     Q_PROPERTY(int toPitchValue READ toPitchValue WRITE setToPitchValue NOTIFY toPitchValueChanged FINAL)
     Q_PROPERTY(int toOctaveValue READ toOctaveValue WRITE setToOctaveValue NOTIFY toOctaveValueChanged FINAL)
     Q_PROPERTY(double semitonesValue READ semitonesValue WRITE setSemitonesValue NOTIFY semitonesValueChanged FINAL)
-    Q_PROPERTY(int semitonesIntegerValue READ semitonesIntegerValue WRITE setSemitonesIntegerValue NOTIFY semitonesIntegerValueChanged FINAL)
+    Q_PROPERTY(
+        int semitonesIntegerValue READ semitonesIntegerValue WRITE setSemitonesIntegerValue NOTIFY semitonesIntegerValueChanged FINAL)
     Q_PROPERTY(int centsValue READ centsValue WRITE setCentsValue NOTIFY centsValueChanged FINAL)
-    Q_PROPERTY(double fromFrequencyValue READ fromFrequencyValue WRITE setFromFrequencyValue NOTIFY fromFrequencyValueChanged FINAL)
+    Q_PROPERTY(
+        double fromFrequencyValue READ fromFrequencyValue WRITE setFromFrequencyValue NOTIFY fromFrequencyValueChanged FINAL)
     Q_PROPERTY(double toFrequencyValue READ toFrequencyValue WRITE setToFrequencyValue NOTIFY toFrequencyValueChanged FINAL)
-    Q_PROPERTY(double percentChangeValue READ percentChangeValue WRITE setPercentChangeValue NOTIFY percentChangeValueChanged FINAL)
+    Q_PROPERTY(
+        double percentChangeValue READ percentChangeValue WRITE setPercentChangeValue NOTIFY percentChangeValueChanged FINAL)
     Q_PROPERTY(bool useSBSMSValue READ useSBSMSValue WRITE setUseSBSMSValue NOTIFY useSBSMSValueChanged FINAL)
     Q_PROPERTY(QString estimatedStartPitch READ estimatedStartPitch NOTIFY estimatedStartPitchChanged FINAL)
 

@@ -49,7 +49,8 @@ void RealtimeEffectListItemMenuModel::handleMenuItem(const QString& itemId)
         realtimeEffectService()->removeRealtimeEffect(*tId, m_effectState);
     } else {
         const auto effectId = effects::effectIdFromAction(menuItem.id());
-        if (const RealtimeEffectStatePtr newState = realtimeEffectService()->replaceRealtimeEffect(*tId, m_effectState, effectId)) {
+        if (const RealtimeEffectStatePtr newState
+                = realtimeEffectService()->replaceRealtimeEffect(*tId, m_effectState, effectId)) {
             effectViewController()->showEffect(newState);
         }
     }

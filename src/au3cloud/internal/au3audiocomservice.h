@@ -56,7 +56,8 @@ public:
                                                           const FetchOptions& options) override;
     void clearProjectListCache() override;
 
-    muse::async::Promise<AudioList> downloadAudioList(size_t audiosPerBatch, size_t batchNumber, const FetchOptions& options) override;
+    muse::async::Promise<AudioList> downloadAudioList(size_t audiosPerBatch, size_t batchNumber,
+                                                      const FetchOptions& options) override;
     void clearAudioListCache() override;
     muse::async::Channel<std::string, muse::io::path_t> audioThumbnailFileUpdated() const override;
 
@@ -82,7 +83,8 @@ private:
     static void removeProjectFromDatabase(const muse::io::path_t& localPath);
     bool isSnapshotUpToDate(
         const std::optional<audacity::cloud::audiocom::sync::DBProjectData>& dbProjectData,
-        audacity::cloud::audiocom::sync::ProgressCallback progressCallback, audacity::concurrency::CancellationContextPtr context);
+        audacity::cloud::audiocom::sync::ProgressCallback progressCallback,
+        audacity::concurrency::CancellationContextPtr context);
     std::optional<std::string> getHeadSnapshotID(
         const std::string& projectId, audacity::cloud::audiocom::sync::ProgressCallback progressCallback,
         audacity::concurrency::CancellationContextPtr context);

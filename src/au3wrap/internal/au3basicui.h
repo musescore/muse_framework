@@ -39,8 +39,8 @@ protected:
     DoMakeProgress(const TranslatableString& title, const TranslatableString& message, unsigned flags,
                    const TranslatableString& remainingLabelText) override;
     std::unique_ptr<BasicUI::GenericProgressDialog>
-    DoMakeGenericProgress(const BasicUI::WindowPlacement& placement, const TranslatableString& title, const TranslatableString& message,
-                          int style) override;
+    DoMakeGenericProgress(const BasicUI::WindowPlacement& placement, const TranslatableString& title,
+                          const TranslatableString& message, int style) override;
     int DoMultiDialog(const TranslatableString& message, const TranslatableString& title, const TranslatableStrings& buttons,
                       const ManualPageID& helpPage, const TranslatableString& boxMsg, bool log) override;
 

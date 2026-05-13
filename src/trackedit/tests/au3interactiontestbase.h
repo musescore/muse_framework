@@ -122,7 +122,8 @@ constexpr static double TRACK_SILENCE_AT_START_SILENCE_DURATION = 450 * SAMPLE_I
 constexpr static double TRACK_SILENCE_AT_START_FIRST_SEGMENT_DURATION = 10 * SAMPLE_INTERVAL;
 constexpr static double TRACK_SILENCE_AT_START_CLIP_DURATION = TRACK_SILENCE_AT_START_SILENCE_DURATION
                                                                + TRACK_SILENCE_AT_START_FIRST_SEGMENT_DURATION;
-constexpr static double TRACK_SILENCE_AT_START_CLIP_END = TRACK_SILENCE_AT_START_CLIP_START + TRACK_SILENCE_AT_START_CLIP_DURATION;
+constexpr static double TRACK_SILENCE_AT_START_CLIP_END = TRACK_SILENCE_AT_START_CLIP_START
+                                                          + TRACK_SILENCE_AT_START_CLIP_DURATION;
 
 constexpr static double TRACK_SILENCE_AT_END_CLIP_START = 0.0;
 constexpr static double TRACK_SILENCE_AT_END_FIRST_SEGMENT_DURATION = 10 * SAMPLE_INTERVAL;
@@ -290,7 +291,8 @@ public:
         ASSERT_DOUBLE_EQ(clip->GetPlayEndTime(), playEnd) << "Clip play end time is not as expected";
     }
 
-    void ValidateClipProperties(const WaveTrack::IntervalConstHolder& clip, double sequenceStart, double sequenceEnd, double playStart,
+    void ValidateClipProperties(const WaveTrack::IntervalConstHolder& clip, double sequenceStart, double sequenceEnd,
+                                double playStart,
                                 double playEnd)
     {
         ASSERT_DOUBLE_EQ(clip->GetSequenceStartTime(), sequenceStart) << "Clip sequence start time is not as expected";

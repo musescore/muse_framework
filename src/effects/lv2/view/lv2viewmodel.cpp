@@ -60,7 +60,8 @@ static LV2EffectsModule::Factory::SubstituteInUnique<LV2Effect> scope;
 
 Lv2ViewModel::Lv2ViewModel(QObject* parent, int instanceId, const QString& effectState)
     : AbstractEffectViewModel(parent, instanceId), m_handler(*this),
-    m_effectState(!effectState.isEmpty() ? reinterpret_cast<RealtimeEffectState*>(effectState.toULongLong())->shared_from_this() : nullptr),
+    m_effectState(
+        !effectState.isEmpty() ? reinterpret_cast<RealtimeEffectState*>(effectState.toULongLong())->shared_from_this() : nullptr),
     m_realtimeOutputs(dynamic_cast<const LV2EffectOutputs*>(m_effectState ? m_effectState->GetOutputs() : nullptr))
 {}
 
@@ -254,7 +255,8 @@ bool Lv2ViewModel::buildFancy()
     const char* const uiTypeUri = lilv_node_as_uri(uiType);
     const auto isExternalUi = strcmp(uiTypeUri, lilv_node_as_string(node_ExternalUI)) == 0;
     const bool isGtkUI
-        = strcmp(uiTypeUri, LV2_UI__GtkUI) == 0 || strcmp(uiTypeUri, LV2_UI__Gtk3UI) == 0 || strcmp(uiTypeUri, LV2_UI__Gtk4UI) == 0;
+        = strcmp(uiTypeUri,
+                 LV2_UI__GtkUI) == 0 || strcmp(uiTypeUri, LV2_UI__Gtk3UI) == 0 || strcmp(uiTypeUri, LV2_UI__Gtk4UI) == 0;
     m_isX11Window = strcmp(uiTypeUri, LV2_UI__X11UI) == 0;
 
     if (isGtkUI) {
@@ -282,7 +284,8 @@ bool Lv2ViewModel::buildFancy()
     }
 
     const std::vector<const LV2_Feature*> featurePointers = features.GetFeaturePointers();
-    m_suilInstance.reset(suil_instance_new(mSuilHost.get(), &m_handler, containerTypeUri, pluginUri, uiUri, uiTypeUri, uiBundlePath.get(),
+    m_suilInstance.reset(suil_instance_new(mSuilHost.get(), &m_handler, containerTypeUri, pluginUri, uiUri, uiTypeUri,
+                                           uiBundlePath.get(),
                                            uiBinaryPath.get(), featurePointers.data()));
 
     if (!m_suilInstance || suil_instance_get_widget(m_suilInstance.get()) == nullptr) {

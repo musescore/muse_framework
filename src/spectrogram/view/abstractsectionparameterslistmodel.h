@@ -12,7 +12,9 @@ class AbstractSectionParametersListModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(AbstractSpectrogramSettingsModel * settingsModel READ settingsModel WRITE setSettingsModel NOTIFY settingsModelChanged)
+    Q_PROPERTY(
+        AbstractSpectrogramSettingsModel
+        * settingsModel READ settingsModel WRITE setSettingsModel NOTIFY settingsModelChanged)
     Q_PROPERTY(int columnWidth READ columnWidth WRITE setColumnWidth NOTIFY columnWidthChanged)
 
 public:

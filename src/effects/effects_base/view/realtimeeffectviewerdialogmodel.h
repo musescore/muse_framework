@@ -28,7 +28,8 @@ class RealtimeEffectViewerDialogModel : public QObject, public muse::Contextable
     Q_PROPERTY(QString trackName READ prop_trackName NOTIFY trackNameChanged);
     Q_PROPERTY(bool isActive READ prop_isActive WRITE prop_setIsActive NOTIFY isActiveChanged);
     Q_PROPERTY(bool isMasterEffect READ prop_isMasterEffect NOTIFY isMasterEffectChanged);
-    Q_PROPERTY(muse::uicomponents::DialogView * dialogView READ prop_dialogView WRITE prop_setDialogView NOTIFY dialogViewChanged);
+    Q_PROPERTY(muse::uicomponents::DialogView
+               * dialogView READ prop_dialogView WRITE prop_setDialogView NOTIFY dialogViewChanged);
     Q_PROPERTY(
         muse::ui::NavigationPanel
         * navigationPanel READ prop_navigationPanel WRITE prop_setNavigationPanel NOTIFY navigationPanelChanged);

@@ -79,7 +79,8 @@ void RealtimeEffectService::onProjectChanged(const au::project::IAudacityProject
 
 void RealtimeEffectService::registerRealtimeEffectList(TrackId trackId, RealtimeEffectList& list)
 {
-    m_rtEffectSubscriptions[trackId] = list.Subscribe([this, trackId, weakThis = weak_from_this()](const RealtimeEffectListMessage& msg)
+    m_rtEffectSubscriptions[trackId]
+        = list.Subscribe([this, trackId, weakThis = weak_from_this()](const RealtimeEffectListMessage& msg)
     {
         const auto lifeguard = weakThis.lock();
         if (!lifeguard) {
@@ -301,7 +302,8 @@ void RealtimeEffectService::removeRealtimeEffect(TrackId trackId, const Realtime
     projectHistory()->pushHistoryState("Removed " + effectName + " from " + trackName.value_or(""), "Remove " + effectName);
 }
 
-RealtimeEffectStatePtr RealtimeEffectService::replaceRealtimeEffect(TrackId trackId, int effectListIndex, const muse::String& newEffectId)
+RealtimeEffectStatePtr RealtimeEffectService::replaceRealtimeEffect(TrackId trackId, int effectListIndex,
+                                                                    const muse::String& newEffectId)
 {
     const auto data = utils::utilData(globalContext()->currentProject(), trackId);
     IF_ASSERT_FAILED(data) {
@@ -310,7 +312,8 @@ RealtimeEffectStatePtr RealtimeEffectService::replaceRealtimeEffect(TrackId trac
 
     effectsProvider()->loadEffect(newEffectId);
     const auto oldState = data->effectList->GetStateAt(effectListIndex);
-    if (const auto newState = AudioIO::Get()->ReplaceState(*data->au3Project, data->au3Track, effectListIndex, newEffectId.toStdString())) {
+    if (const auto newState
+            = AudioIO::Get()->ReplaceState(*data->au3Project, data->au3Track, effectListIndex, newEffectId.toStdString())) {
         const auto oldEffectName = getEffectName(*oldState);
         const auto newEffectName = getEffectName(*newState);
         projectHistory()->pushHistoryState("Replaced " + oldEffectName + " with " + newEffectName, "Replace " + oldEffectName);

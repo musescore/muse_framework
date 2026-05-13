@@ -1,7 +1,8 @@
 #include "trackeditinteraction.h"
 
 namespace au::trackedit {
-TrackeditInteraction::TrackeditInteraction(const muse::modularity::ContextPtr& ctx, std::unique_ptr<ITrackeditInteraction> interaction)
+TrackeditInteraction::TrackeditInteraction(const muse::modularity::ContextPtr& ctx,
+                                           std::unique_ptr<ITrackeditInteraction> interaction)
     : muse::Contextable(ctx), m_interaction(std::move(interaction))
 {
 }
@@ -21,7 +22,8 @@ bool TrackeditInteraction::changeClipStartTime(const trackedit::ClipKey& clipKey
     return withPlaybackStop(&ITrackeditInteraction::changeClipStartTime, clipKey, newStartTime, completed);
 }
 
-muse::async::Channel<trackedit::ClipKey, secs_t /*newStartTime*/, bool /*completed*/> TrackeditInteraction::clipStartTimeChanged() const
+muse::async::Channel<trackedit::ClipKey, secs_t /*newStartTime*/,
+                     bool /*completed*/> TrackeditInteraction::clipStartTimeChanged() const
 {
     return m_interaction->clipStartTimeChanged();
 }
@@ -116,7 +118,8 @@ bool TrackeditInteraction::copyClipIntoClipboard(const trackedit::ClipKey& clipK
     return m_interaction->copyClipIntoClipboard(clipKey);
 }
 
-bool TrackeditInteraction::copyNonContinuousTrackDataIntoClipboard(const TrackId trackId, const ClipKeyList& clipKeys, secs_t offset)
+bool TrackeditInteraction::copyNonContinuousTrackDataIntoClipboard(const TrackId trackId, const ClipKeyList& clipKeys,
+                                                                   secs_t offset)
 {
     return m_interaction->copyNonContinuousTrackDataIntoClipboard(trackId, clipKeys, offset);
 }
@@ -483,7 +486,8 @@ muse::RetVal<LabelKeyList> TrackeditInteraction::moveLabels(const LabelKeyList& 
     return m_interaction->moveLabels(labelKeys, timePositionOffset, trackPositionOffset, completed);
 }
 
-muse::RetVal<LabelKeyList> TrackeditInteraction::moveLabelsToTrack(const LabelKeyList& labelKeys, const TrackId& toTrackId, bool completed)
+muse::RetVal<LabelKeyList> TrackeditInteraction::moveLabelsToTrack(const LabelKeyList& labelKeys, const TrackId& toTrackId,
+                                                                   bool completed)
 {
     return m_interaction->moveLabelsToTrack(labelKeys, toTrackId, completed);
 }

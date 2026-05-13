@@ -38,7 +38,8 @@ public:
     virtual ~IExporter() = default;
 
     virtual void init() = 0;
-    virtual muse::Ret exportData(const muse::io::path_t& path, const Options& options = {}, muse::ProgressPtr progress = nullptr) = 0;
+    virtual muse::Ret exportData(const muse::io::path_t& path, const Options& options = {},
+                                 muse::ProgressPtr progress = nullptr) = 0;
 
     virtual std::vector<std::string> formatsList() const = 0;
     virtual int formatIndex(const std::string& format) const = 0;

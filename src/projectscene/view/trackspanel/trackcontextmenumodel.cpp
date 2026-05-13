@@ -61,7 +61,8 @@ MenuItemList TrackContextMenuModel::makeStereoTrackItems()
         makeSeparator(),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Move track"), makeTrackMoveItems()),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track view"), makeTrackViewItems()),
-        makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track color"), makeTrackColorItems(), TRACK_COLOR_MENU_ID),
+        makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track color"), makeTrackColorItems(),
+                 TRACK_COLOR_MENU_ID),
         makeItemWithArg("toggle-vertical-rulers"),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Meters && monitoring"), makeMeterMonitoringItems()),
         makeSeparator(),
@@ -86,7 +87,8 @@ MenuItemList TrackContextMenuModel::makeMonoTrackItems()
         makeSeparator(),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Move track"), makeTrackMoveItems()),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track view"), makeTrackViewItems()),
-        makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track color"), makeTrackColorItems(), TRACK_COLOR_MENU_ID),
+        makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track color"), makeTrackColorItems(),
+                 TRACK_COLOR_MENU_ID),
         makeItemWithArg("toggle-vertical-rulers"),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Meters && monitoring"), makeMeterMonitoringItems()),
         makeSeparator(),
@@ -108,7 +110,8 @@ MenuItemList TrackContextMenuModel::makeLabelTrackItems()
         makeItemWithArg("track-delete"),
         makeSeparator(),
         makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Move track"), makeTrackMoveItems()),
-        makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track color"), makeTrackColorItems(), TRACK_COLOR_MENU_ID),
+        makeMenu(muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, "Track color"), makeTrackColorItems(),
+                 TRACK_COLOR_MENU_ID),
         makeSeparator(),
         makeItemWithArg("export-labels")
     };
@@ -467,7 +470,8 @@ muse::uicomponents::MenuItemList TrackContextMenuModel::makeTrackRateItems()
     muse::uicomponents::MenuItemList items;
     for (const auto& rate : audioDevicesProvider()->sampleRates()) {
         items << makeMenuItem(makeTrackRateChangeAction(rate).toString(),
-                              muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT, muse::String::number(static_cast<int>(rate)) + " Hz"));
+                              muse::TranslatableString(TRANSLATABLE_STRING_CONTEXT,
+                                                       muse::String::number(static_cast<int>(rate)) + " Hz"));
     }
     items << makeSeparator();
     items << makeItemWithArg("track-change-rate-custom");

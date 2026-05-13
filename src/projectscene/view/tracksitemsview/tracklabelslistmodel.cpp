@@ -334,7 +334,9 @@ bool TrackLabelsListModel::moveSelectedLabels(const LabelKey& key, bool complete
     if ((completed && m_autoScrollConnection)) {
         disconnectAutoScroll();
     } else if (!m_autoScrollConnection && !completed) {
-        m_autoScrollConnection = connect(m_context, &TimelineContext::frameTimeChanged, [this, key](){ moveSelectedLabels(key, false); });
+        m_autoScrollConnection = connect(m_context, &TimelineContext::frameTimeChanged, [this, key](){
+            moveSelectedLabels(key, false);
+        });
     }
 
     return ok;
