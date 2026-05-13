@@ -11,6 +11,6 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v6
 
-      - name: Test coding style
+      - name: Test MF coding style
         run: |
           cmake -P ./buildscripts/ci/checkcodestyle/checkcodestyle.cmake ./framework/

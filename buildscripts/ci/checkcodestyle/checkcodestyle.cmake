@@ -1,22 +1,20 @@
-
 if(NOT DEFINED CMAKE_SCRIPT_MODE_FILE)
     message(FATAL_ERROR "This file is a script")
 endif()
 
+
 set(SCAN_DIR ${CMAKE_ARGV3})
 
-set(UNCRUSTIFY_BIN ${CMAKE_CURRENT_LIST_DIR}/tools/linux/uncrustify_074)
-set(SCAN_BIN ${CMAKE_CURRENT_LIST_DIR}/tools/linux/scan_files)
-set(CONFIG ${CMAKE_CURRENT_LIST_DIR}/uncrustify_muse.cfg)
-set(UNTIDY_FILE ".untidy")
+set(MF_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR}/../../..)
+set(DIR_FORMAT ${MF_ROOT_PATH}/tools/codestyle/format_dir.cmake)
 
 execute_process(
-    COMMAND bash ${CMAKE_CURRENT_LIST_DIR}/run_scan.sh ${SCAN_BIN} ${UNCRUSTIFY_BIN} ${CONFIG} ${UNTIDY_FILE} ${SCAN_DIR}
-    RESULT_VARIABLE SCAN_RESULT
+    COMMAND cmake -P ${DIR_FORMAT} ${SCAN_DIR}
+    RESULT_VARIABLE DIR_FORMAT_RESULT
 )
 
-if (NOT SCAN_RESULT EQUAL 0)
-    message(FATAL_ERROR "Scan failed, please check log for details")
+if (NOT DIR_FORMAT_RESULT EQUAL 0)
+    message(FATAL_ERROR "Format directory failed, please check log for details")
 endif()
 
 execute_process(
