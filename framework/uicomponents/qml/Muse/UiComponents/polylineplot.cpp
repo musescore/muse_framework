@@ -150,6 +150,10 @@ void PolylinePlot::init()
     dispatcher()->reg(this, "action://cancel", [this](){
         // emit signal and let decide model what to do
         emit dragCancelled();
+        // Qt suppresses hover events while a mouse button is held, so the
+        // ghost-point preview would otherwise stay painted at the press
+        // position until the user releases and moves the mouse.
+        m_hoveredOnLine = false;
         resetGestureState();
     });
 }
@@ -1074,6 +1078,7 @@ void PolylinePlot::resetGestureState()
     m_pressedOnPoint = false;
     m_pressedPointIndex = INVALID_POINT_IDX;
     m_hasDraggedPointDomain = false;
+    m_hoveredOnLine = false;
     m_draggedPointDomain = {};
     m_movedSincePress = false;
     m_pressPx = QPointF(0.0, 0.0);
