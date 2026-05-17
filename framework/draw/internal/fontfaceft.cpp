@@ -266,7 +266,7 @@ FBBox FontFaceFT::glyphBbox(glyph_idx_t idx) const
         IF_ASSERT_FAILED(sm) {
             return FBBox();
         }
-        //! NOTE Moved form MUE FontEngineFT::bbox
+        //! NOTE Moved form MSS FontEngineFT::bbox
         //! double m = 640.0 / dpi_f;
         //! -> to FBBox (f26dot6_t) double m = (640.0 / dpi_f) * (1 / 64);
         //! -> double m = 10.0 / dpi_f;
@@ -444,7 +444,7 @@ SymbolMetrics* FontFaceFT::symbolMetrics(glyph_idx_t idx) const
         return nullptr;
     }
 
-    //! NOTE Moved form MUE FontEngineFT::advance
+    //! NOTE Moved form MSS FontEngineFT::advance
     //! double advance = linearHoriAdvance * dpi_f / 655360.0;
     //! -> f26dot6_t advance = linearHoriAdvance * dpi_f * 64.0 / 655360.0;
     //! -> dpi_f = 5.0 constant

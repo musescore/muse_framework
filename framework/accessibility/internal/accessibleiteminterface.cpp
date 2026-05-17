@@ -29,10 +29,10 @@
 
 #include "log.h"
 
-//#define MUE_ENABLE_ACCESSIBILITY_TRACE
+//#define MUSE_ACCESSIBILITY_TRACE
 
 #undef MYLOG
-#ifdef MUE_ENABLE_ACCESSIBILITY_TRACE
+#ifdef MUSE_ACCESSIBILITY_TRACE
 #define MYLOG() LOGI()
 #else
 #define MYLOG() LOGN()
