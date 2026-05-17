@@ -283,7 +283,7 @@ async::Promise<TrackId, TrackParams> Playback::addTrack(const TrackName& trackNa
                                                         io::IODevice* playbackData,
                                                         const TrackParams& params)
 {
-#ifdef MUE_CONFIGURATION_IS_APPWEB
+#ifdef MUSE_CONFIGURATION_IS_WEB
     NOT_SUPPORTED;
     return async::make_promise<TrackId, TrackParams>([](auto /*resolve*/, auto reject) {
         doReject(MsgCode::AddTrackWithIODevice, reject, muse::make_ret(Ret::Code::NotSupported));
@@ -313,7 +313,7 @@ async::Promise<TrackId, TrackParams> Playback::addTrack(const TrackName& trackNa
         return Promise<TrackId, TrackParams>::dummy_result();
     }, PromiseType::AsyncByBody);
 
-#endif // MUE_CONFIGURATION_IS_APPWEB
+#endif // MUSE_CONFIGURATION_IS_WEB
 }
 
 async::Promise<TrackId, TrackParams> Playback::addTrack(const TrackName& trackName,
