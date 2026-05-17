@@ -153,7 +153,7 @@ target_sources(muse_global PRIVATE
     serialization/xmldom.cpp
     serialization/xmldom.h
 )
-if (MUE_COMPILE_USE_SYSTEM_PUGIXML)
+if (MUSE_USE_SYSTEM_PUGIXML)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(pugixml REQUIRED IMPORTED_TARGET pugixml)
     target_link_libraries(muse_global PRIVATE PkgConfig::pugixml)
@@ -166,7 +166,7 @@ else()
     target_include_directories(muse_global PRIVATE thirdparty/pugixml)
 endif()
 
-if (MUE_COMPILE_USE_SYSTEM_UTF8CPP)
+if (MUSE_USE_SYSTEM_UTF8CPP)
     find_package(utf8cpp REQUIRED CONFIG)
     get_target_property(UTFCPP_INC utf8::cpp INTERFACE_INCLUDE_DIRECTORIES)
     # UTFCPP_INC is .../include/utf8cpp, and we want .../include so that

@@ -206,24 +206,24 @@ if (MUSE_MODULE_AUDIO_EXPORT)
         internal/export/aacencoder.cpp
         internal/export/aacencoder.h
     )
-    if(MUE_COMPILE_USE_SYSTEM_LAME)
-        set(MUE_LAME_INCLUDE_DIR "" CACHE PATH "Path to directory containing lame/lame.h (optional)")
-        set(MUE_LAME_LIB_DIR     "" CACHE PATH "Path to directory containing libmp3lame (optional)")
+    if(MUSE_USE_SYSTEM_LAME)
+        set(MUSE_LAME_INCLUDE_DIR "" CACHE PATH "Path to directory containing lame/lame.h (optional)")
+        set(MUSE_LAME_LIB_DIR     "" CACHE PATH "Path to directory containing libmp3lame (optional)")
         find_path(LAME_INCLUDE_DIR
             NAMES lame/lame.h
-            HINTS "${MUE_LAME_INCLUDE_DIR}"
+            HINTS "${MUSE_LAME_INCLUDE_DIR}"
         )
         find_library(LAME_LIBRARY
             NAMES mp3lame
-            HINTS "${MUE_LAME_LIB_DIR}"
+            HINTS "${MUSE_LAME_LIB_DIR}"
         )
         if(NOT LAME_INCLUDE_DIR)
             message(FATAL_ERROR "System lame: could not find lame/lame.h. "
-                "Set MUE_LAME_INCLUDE_DIR to the directory that contains lame/lame.h.")
+                "Set MUSE_LAME_INCLUDE_DIR to the directory that contains lame/lame.h.")
         endif()
         if(NOT LAME_LIBRARY)
             message(FATAL_ERROR "System lame: could not find libmp3lame. "
-                "Set MUE_LAME_LIB_DIR to the directory that contains libmp3lame.")
+                "Set MUSE_LAME_LIB_DIR to the directory that contains libmp3lame.")
         endif()
         message(STATUS "Using system lame: ${LAME_LIBRARY} (headers: ${LAME_INCLUDE_DIR})")
         target_include_directories(muse_audio_engine PRIVATE "${LAME_INCLUDE_DIR}")

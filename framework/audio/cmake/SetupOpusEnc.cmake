@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-if (MUE_COMPILE_USE_SYSTEM_OPUSENC)
+if (MUSE_USE_SYSTEM_OPUSENC)
     find_package(PkgConfig REQUIRED)
 
     pkg_check_modules(libopusenc REQUIRED IMPORTED_TARGET libopusenc)

@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-if (MUE_COMPILE_USE_SYSTEM_HARFBUZZ)
+if (MUSE_USE_SYSTEM_HARFBUZZ)
     find_package(HarfBuzz)
 
     if (HarfBuzz_FOUND)
@@ -30,11 +30,11 @@ if (MUE_COMPILE_USE_SYSTEM_HARFBUZZ)
 
         return()
     else()
-        message(WARNING "Set MUE_COMPILE_USE_SYSTEM_HARFBUZZ=ON, but system harfbuzz not found, built-in will be used")
+        message(WARNING "Set MUSE_USE_SYSTEM_HARFBUZZ=ON, but system harfbuzz not found, built-in will be used")
     endif()
 endif()
 
-# If not MUE_COMPILE_USE_SYSTEM_HARFBUZZ, or if it was not found,
+# If not MUSE_USE_SYSTEM_HARFBUZZ, or if it was not found,
 # download and build harfbuzz
 
 set(REMOTE_ROOT_URL https://raw.githubusercontent.com/musescore/muse_deps/main)

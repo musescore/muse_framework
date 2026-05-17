@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-if (MUE_COMPILE_USE_SYSTEM_FLAC)
+if (MUSE_USE_SYSTEM_FLAC)
     find_package(FLAC)
 
     if (FLAC_FOUND)
@@ -37,7 +37,7 @@ if (MUE_COMPILE_USE_SYSTEM_FLAC)
         set(FLAC_TARGETS PkgConfig::flac PkgConfig::flacpp)
         return()
     else()
-        message(WARNING "Set MUE_COMPILE_USE_SYSTEM_FLAC=ON, but system flac not found, built-in will be used")
+        message(WARNING "Set MUSE_USE_SYSTEM_FLAC=ON, but system flac not found, built-in will be used")
     endif()
 endif()
 

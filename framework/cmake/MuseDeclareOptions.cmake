@@ -105,6 +105,17 @@ option(MUSE_COMPILE_ASAN "Enable Address Sanitizer" OFF)
 option(MUSE_COMPILE_USE_PCH "Use precompiled headers." ON)
 option(MUSE_COMPILE_STRING_DEBUG_HACK "Enable string debug hack (only clang)" ON)
 
+# === System libraries ===
+# Important for the maintainers of Linux distributions
+option(MUSE_USE_SYSTEM_FLAC "Try use system flac" OFF)
+option(MUSE_USE_SYSTEM_FREETYPE "Try use system freetype" OFF)
+option(MUSE_USE_SYSTEM_HARFBUZZ "Try use system harfbuzz" OFF)
+option(MUSE_USE_SYSTEM_OPUS "Try use system opus" OFF)
+option(MUSE_USE_SYSTEM_OPUSENC "Try use system libopusenc" OFF)
+option(MUSE_USE_SYSTEM_PUGIXML "Try use system pugixml" OFF)
+option(MUSE_USE_SYSTEM_LAME "Try use system lame" OFF)
+option(MUSE_USE_SYSTEM_UTF8CPP "Try use system utf8cpp" OFF)
+
 # === Tests ===
 option(MUSE_ENABLE_UNIT_TESTS "Build framework unit tests" ON)
 option(MUSE_ENABLE_UNIT_TESTS_CODE_COVERAGE "Enable code coverage for unit tests" OFF)
