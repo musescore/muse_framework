@@ -100,10 +100,15 @@ declare_muse_module_opt(WORKSPACE ON)
 option(MUSE_QT_SUPPORT "Build with Qt support" ON)
 option(MUSE_THREADS_SUPPORT "Build with threads support" ON)
 option(MUSE_CONFIGURATION_IS_WEB "Configuration is web" OFF)
+
+# === Build options ===
 option(MUSE_COMPILE_BUILD_64 "Build 64 bit version" ON)
 option(MUSE_COMPILE_ASAN "Enable Address Sanitizer" OFF)
 option(MUSE_COMPILE_USE_PCH "Use precompiled headers." ON)
+
+# === Debug options ===
 option(MUSE_COMPILE_STRING_DEBUG_HACK "Enable string debug hack (only clang)" ON)
+option(MUSE_LOAD_QML_FROM_SOURCE "Load QML from source files instead of compiled resources (for development and debugging)" OFF)
 
 # === System libraries ===
 # Important for the maintainers of Linux distributions
