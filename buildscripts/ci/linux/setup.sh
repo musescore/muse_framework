@@ -105,23 +105,36 @@ $SUDO apt-get install -y --no-install-recommends \
 # COMPILER
 if [ "$COMPILER" == "gcc" ]; then
 
-  gcc_version="10"
-  $SUDO apt-get install -y --no-install-recommends "g++-${gcc_version}"
-  $SUDO update-alternatives \
-    --install /usr/bin/gcc gcc "/usr/bin/gcc-${gcc_version}" 40 \
-    --slave /usr/bin/g++ g++ "/usr/bin/g++-${gcc_version}"
+  gcc_version="14"
+  $SUDO apt install -y --no-install-recommends "g++-${gcc_version}"
 
-  echo export CC="/usr/bin/gcc-${gcc_version}" >> ${ENV_FILE}
-  echo export CXX="/usr/bin/g++-${gcc_version}" >> ${ENV_FILE}
+  for alt in gcc g++; do
+    if update-alternatives --query "$alt" >/dev/null 2>&1; then
+      $SUDO update-alternatives --remove-all "$alt"
+    fi
+    $SUDO update-alternatives --install "/usr/bin/$alt" "$alt" "/usr/bin/${alt}-${gcc_version}" 100
+  done
+  echo export CC="/usr/bin/gcc" >> "${ENV_FILE}"
+  echo export CXX="/usr/bin/g++" >> "${ENV_FILE}"
 
-  gcc-${gcc_version} --version
-  g++-${gcc_version} --version
+  gcc --version
+  g++ --version
 
 elif [ "$COMPILER" == "clang" ]; then
 
-  $SUDO apt-get install clang
-  echo export CC="/usr/bin/clang" >> ${ENV_FILE}
-  echo export CXX="/usr/bin/clang++" >> ${ENV_FILE}
+  clang_version="20"
+  $SUDO apt install -y --no-install-recommends "clang-${clang_version}"
+  $SUDO apt install -y --no-install-recommends "clang-tools-${clang_version}"
+
+  for alt in clang clang++ clang-scan-deps; do
+    if update-alternatives --query "$alt" >/dev/null 2>&1; then
+      $SUDO update-alternatives --remove-all "$alt"
+    fi
+    $SUDO update-alternatives --install "/usr/bin/$alt" "$alt" "/usr/bin/${alt}-${clang_version}" 100
+  done
+
+  echo export CC="/usr/bin/clang" >> "${ENV_FILE}"
+  echo export CXX="/usr/bin/clang++" >> "${ENV_FILE}"
 
   clang --version
   clang++ --version

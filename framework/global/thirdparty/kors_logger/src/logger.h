@@ -29,6 +29,7 @@ SOFTWARE.
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <memory>
 
 #include "logstream.h"
 
