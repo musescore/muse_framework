@@ -46,7 +46,7 @@ mkdir -p $BUILD_TOOLS
 # Let's remove the file with environment variables to recreate it
 rm -f $ENV_FILE
 
-echo "echo 'Setup MuseScore build environment'" >> $ENV_FILE
+echo "echo 'Setup build environment'" >> $ENV_FILE
 
 if [[ "$PACKARCH" == "armv7l" ]]; then
   SUDO=""
@@ -91,7 +91,7 @@ if $BUILD_PIPEWIRE ; then
     libdbus-1-dev
     libudev-dev
     )
-fi
+fi  
 
 $SUDO apt-get install -y --no-install-recommends \
   "${apt_packages_tools[@]}" \
@@ -145,6 +145,8 @@ echo "ninja version"
 ninja --version
 
 # Qt 
+# QT_ROOT_DIR - set by the Qt installation action (jurplel/install-qt-action@v4)
+# QT_DIR - used by the build environment
 echo export QT_DIR="${QT_ROOT_DIR}" >> ${ENV_FILE}
 
 # Emscripten
@@ -167,7 +169,6 @@ fi
 ##########################################################################
 # BUILD PIPWIRE
 ##########################################################################
-
 if $BUILD_PIPEWIRE ; then
   # MESON
   # Get recent version of Meson (to build pipewire)
@@ -250,6 +251,18 @@ if $BUILD_PIPEWIRE ; then
   echo export PKG_CONFIG_PATH="${pw_dist_dir}/lib/pkgconfig:\${PKG_CONFIG_PATH}" >> ${ENV_FILE}
   echo export LIBRARY_PATH="${pw_dist_dir}/lib:\${LIBRARY_PATH}" >> ${ENV_FILE}
   echo export LD_LIBRARY_PATH="${pw_dist_dir}/lib:\${LD_LIBRARY_PATH}" >> ${ENV_FILE}
+ fi 
+
+##########################################################################
+# Old ssl for crashpad
+##########################################################################
+if [[ "$PACKARCH" == "x86_64" ]]; then
+  origin_dir=$(pwd)
+  mkdir -p $BUILD_TOOLS/ssl1
+  cd $BUILD_TOOLS/ssl1
+  wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
+  sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
+  cd $origin_dir
 fi
 
 ##########################################################################
