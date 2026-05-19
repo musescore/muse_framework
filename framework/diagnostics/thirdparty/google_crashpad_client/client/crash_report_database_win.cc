@@ -537,7 +537,7 @@ void Metadata::Write() {
   for (const auto& report : reports_) {
     const base::FilePath& path = report.file_path;
     if (path.DirName() != report_dir_) {
-      LOG(ERROR) << path.value().c_str() << " expected to start with "
+      LOG(ERROR) << base::WideToUTF8(path.value()) << " expected to start with "
                  << base::WideToUTF8(report_dir_.value());
       return;
     }
@@ -693,7 +693,7 @@ FileWriter* CrashReportDatabase::NewReport::AddAttachment(
   auto writer = std::make_unique<FileWriter>();
   if (!writer->Open(
           path, FileWriteMode::kCreateOrFail, FilePermissions::kOwnerOnly)) {
-    LOG(ERROR) << "could not open " << path.value().c_str();
+    LOG(ERROR) << "could not open " << base::WideToUTF8(path.value());
     return nullptr;
   }
   attachment_writers_.emplace_back(std::move(writer));
@@ -719,7 +719,7 @@ void CrashReportDatabase::UploadReport::InitializeAttachments() {
     const base::FilePath filepath(attachments_dir.Append(filename));
     std::unique_ptr<FileReader> file_reader(std::make_unique<FileReader>());
     if (!file_reader->Open(filepath)) {
-      LOG(ERROR) << "attachment " << filepath.value().c_str()
+      LOG(ERROR) << "attachment " << base::WideToUTF8(filepath.value())
                  << " couldn't be opened, skipping";
       continue;
     }
@@ -1086,7 +1086,7 @@ void CrashReportDatabaseWin::CleanOrphanedAttachments() {
       UUID uuid;
       if (!uuid.InitializeFromString(filename.value())) {
         LOG(ERROR) << "unexpected attachment dir name "
-                   << filename.value().c_str();
+                   << base::WideToUTF8(filename.value());
         continue;
       }
 

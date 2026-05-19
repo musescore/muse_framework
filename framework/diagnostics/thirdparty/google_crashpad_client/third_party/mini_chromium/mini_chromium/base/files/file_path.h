@@ -227,7 +227,7 @@ class FilePath {
 }  // namespace base
 
 // This is required by googletest to print a readable output on test failures.
-extern void PrintTo(const base::FilePath& path, std::ostream* out);
+// extern void PrintTo(const base::FilePath& path, std::ostream* out);
 
 // Macros for string literal initialization of FilePath::CharType[], and for
 // using a FilePath::CharType[] in a printf-style format string.

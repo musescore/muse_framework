@@ -287,6 +287,6 @@ void FilePath::StripTrailingSeparatorsInternal() {
 
 }  // namespace base
 
-void PrintTo(const base::FilePath& path, std::ostream* out) {
-  *out << path.value().c_str();
-}
+// void PrintTo(const base::FilePath& path, std::ostream* out) {
+//   *out << path.value().c_str();
+// }
