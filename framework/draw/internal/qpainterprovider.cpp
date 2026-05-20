@@ -242,9 +242,10 @@ void QPainterProvider::drawText(const PointF& point, const String& text)
     m_painter->drawText(p, t);
 }
 
-void QPainterProvider::drawText(const RectF& rect, int flags, const String& text)
+void QPainterProvider::drawText(const RectF& rect, Alignment alignment, TextFlags textFlags, const String& text)
 {
-    m_painter->drawText(rect.toQRectF(), flags, text);
+    int flags = static_cast<int>(alignment) | static_cast<int>(textFlags);
+    m_painter->drawText(rect.toQRectF(), flags, text.toQString());
 }
 
 void QPainterProvider::drawSymbol(const PointF& point, char32_t ucs4Code)

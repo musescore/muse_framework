@@ -27,8 +27,6 @@
 static const QColor REMOVED_COLOR("#cc0000");
 static const QColor ADDED_COLOR("#009900");
 
-static const std::string NOTATION_DEFAULT_OBJ("notationview_default");
-
 using namespace muse::testflow;
 
 const std::shared_ptr<AbPaintProvider>& AbPaintProvider::instance()
@@ -99,7 +97,7 @@ void AbPaintProvider::paintData(muse::draw::IPaintProviderPtr provider, const mu
             if (t.mode == DrawText::Point) {
                 provider->drawText(t.rect.topLeft(), t.text);
             } else {
-                provider->drawText(t.rect, t.flags, t.text);
+                provider->drawText(t.rect, t.alignment, t.textFlags, t.text);
             }
         }
 

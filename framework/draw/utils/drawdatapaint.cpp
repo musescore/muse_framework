@@ -61,7 +61,7 @@ static void drawItem(IPaintProviderPtr& provider, const DrawData::Item& item, co
             if (t.mode == DrawText::Point) {
                 provider->drawText(t.rect.topLeft(), t.text);
             } else {
-                provider->drawText(t.rect, t.flags, t.text);
+                provider->drawText(t.rect, t.alignment, t.textFlags, t.text);
             }
         }
 

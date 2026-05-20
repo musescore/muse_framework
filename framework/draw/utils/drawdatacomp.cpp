@@ -339,7 +339,11 @@ static bool isEqual(const DrawText& v1, const DrawText& v2, DrawDataComp::Tolera
         return false;
     }
 
-    if (v1.flags != v2.flags) {
+    if (v1.alignment != v2.alignment) {
+        return false;
+    }
+
+    if (v1.textFlags != v2.textFlags) {
         return false;
     }
 

@@ -297,12 +297,12 @@ void BufferedPaintProvider::drawPolygon(const PointF* points, size_t pointCount,
 
 void BufferedPaintProvider::drawText(const PointF& point, const String& text)
 {
-    editableData().texts.push_back(DrawText { DrawText::Point, RectF(point, SizeF()), 0, text });
+    editableData().texts.push_back(DrawText { DrawText::Point, RectF(point, SizeF()), {}, {}, text });
 }
 
-void BufferedPaintProvider::drawText(const RectF& rect, int flags, const String& text)
+void BufferedPaintProvider::drawText(const RectF& rect, Alignment alignment, TextFlags textFlags, const String& text)
 {
-    editableData().texts.push_back(DrawText { DrawText::Rect, rect, flags, text });
+    editableData().texts.push_back(DrawText { DrawText::Rect, rect, alignment, textFlags, text });
 }
 
 void BufferedPaintProvider::drawSymbol(const PointF& point, char32_t ucs4Code)
