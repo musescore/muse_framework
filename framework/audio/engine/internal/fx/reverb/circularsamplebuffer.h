@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MUSE_AUDIO_CIRCULARSAMPLEBUFFER_H
-#define MUSE_AUDIO_CIRCULARSAMPLEBUFFER_H
+#pragma once
 
 #include <cstring>
 #include <algorithm>
@@ -127,21 +126,21 @@ private:
 public:
     void writeBlock(int startOffset, int n, const SampleT* sourceBlock)
     {
-        splitBlockOffsetFunction(startOffset, n, [=](int bufferOff, int sampleOff, int n) {
+        splitBlockOffsetFunction(startOffset, n, [this, sourceBlock](int bufferOff, int sampleOff, int n) {
             vo::copy(&sourceBlock[sampleOff], &m_buffer[bufferOff], n);
         });
     }
 
     void readBlockWithGain(int startOffset, int n, SampleT* targetBlock, float gainFactor) const
     {
-        splitBlockOffsetFunction(startOffset, n, [=](int bufferOff, int sampleOff, int n) {
+        splitBlockOffsetFunction(startOffset, n, [this, targetBlock, gainFactor](int bufferOff, int sampleOff, int n) {
             vo::constantMultiply(&m_buffer[bufferOff], gainFactor, &targetBlock[sampleOff], n);
         });
     }
 
     void readAddBlockWithGain(int startOffset, int n, SampleT* targetBlock, float gainFactor) const
     {
-        splitBlockOffsetFunction(startOffset, n, [=](int bufferOff, int sampleOff, int n) {
+        splitBlockOffsetFunction(startOffset, n, [this, targetBlock, gainFactor](int bufferOff, int sampleOff, int n) {
             vo::constantMultiplyAndAdd(&m_buffer[bufferOff], gainFactor, &targetBlock[sampleOff], n);
         });
     }
@@ -154,5 +153,3 @@ private:
     int m_bufferSizeMask = 0; // 2^n-1 buffer mask
 };
 } // namespace muse::audio::fx
-
-#endif // MUSE_AUDIO_CIRCULARSAMPLEBUFFER_H
