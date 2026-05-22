@@ -31,8 +31,8 @@
 #ifdef INFO
 #undef INFO
 #endif
-#ifdef ERROR
-#undef ERROR
+#ifdef ERROR_ICON
+#undef ERROR_ICON
 #endif
 #ifdef QUESTION
 #undef QUESTION
@@ -340,7 +340,7 @@ enum class Code : char16_t {
 
     WARNING = 0xF3CE,
     INFO = 0xF3CF,
-    ERROR = 0xF3D0,
+    ERROR_ICON = 0xF3D0,
     QUESTION = 0xF3D1,
 
     MUTE = 0xF3D5,
