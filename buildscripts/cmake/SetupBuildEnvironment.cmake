@@ -86,11 +86,6 @@ endif()
 if(CC_IS_MINGW)
     # https://musescore.org/node/22048
     add_compile_options(-mno-ms-bitfields)
-
-    if(NOT MUSE_COMPILE_BUILD_64)
-        add_link_options("-Wl,--large-address-aware")
-    endif()
-
     add_compile_definitions(_UNICODE UNICODE)
 endif()
 
