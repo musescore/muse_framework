@@ -73,7 +73,7 @@ jobs:
           mu_combo=$(extract "musescore")
           mu_platforms=$(extract "musescore platforms")
           [ -z "$mu_platforms" ] && mu_platforms="linux_x64 macos windows_x64"
-          read -r mu_owner mu_repo mu_branch < <(parse_combo "musescore" "$mu_combo" "musescore/MuseScore/master")
+          read -r mu_owner mu_repo mu_branch < <(parse_combo "musescore" "$mu_combo" "musescore/MuseScore/main")
           {
             echo "au_owner=$au_owner"
             echo "au_repo=$au_repo"
@@ -138,7 +138,7 @@ jobs:
   build_mu_linux:
     needs: parse
     if: contains(needs.parse.outputs.mu_platforms, 'linux_x64') || contains(needs.parse.outputs.mu_platforms, 'linux_arm64')
-    uses: musescore/MuseScore/.github/workflows/build_linux.yml@master
+    uses: musescore/MuseScore/.github/workflows/build_linux.yml@main
     with:
       app_repo: ${{ needs.parse.outputs.mu_owner }}/${{ needs.parse.outputs.mu_repo }}
       app_ref: ${{ needs.parse.outputs.mu_branch }}
@@ -150,7 +150,7 @@ jobs:
   build_mu_macos:
     needs: parse
     if: contains(needs.parse.outputs.mu_platforms, 'macos')
-    uses: musescore/MuseScore/.github/workflows/build_macos.yml@master
+    uses: musescore/MuseScore/.github/workflows/build_macos.yml@main
     with:
       app_repo: ${{ needs.parse.outputs.mu_owner }}/${{ needs.parse.outputs.mu_repo }}
       app_ref: ${{ needs.parse.outputs.mu_branch }}
@@ -161,7 +161,7 @@ jobs:
   build_mu_windows:
     needs: parse
     if: contains(needs.parse.outputs.mu_platforms, 'windows_x64') || contains(needs.parse.outputs.mu_platforms, 'windows_portable')
-    uses: musescore/MuseScore/.github/workflows/build_windows.yml@master
+    uses: musescore/MuseScore/.github/workflows/build_windows.yml@main
     with:
       app_repo: ${{ needs.parse.outputs.mu_owner }}/${{ needs.parse.outputs.mu_repo }}
       app_ref: ${{ needs.parse.outputs.mu_branch }}
