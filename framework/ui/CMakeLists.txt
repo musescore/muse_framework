@@ -125,8 +125,10 @@ elseif(OS_IS_WIN)
     )
 
     # Exclude from Unity Build to avoid Error C2872: 'Uri': ambiguous symbol
+    # and avoid error with IconCode::ERROR 
     set_source_files_properties(
         ${CMAKE_CURRENT_LIST_DIR}/internal/platform/windows/windowsplatformtheme.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/internal/platform/windows/winwindowscontroller.cpp
         PROPERTIES
             SKIP_UNITY_BUILD_INCLUSION ON
     )
