@@ -101,6 +101,10 @@ if (MUSE_MODULE_NETWORK)
     add_subdirectory(network)
 endif()
 
+if (MUSE_MODULE_RCOMMAND)
+    add_subdirectory(rcommand)
+endif()
+
 if (MUSE_MODULE_SHORTCUTS)
     add_subdirectory(shortcuts)
 endif()

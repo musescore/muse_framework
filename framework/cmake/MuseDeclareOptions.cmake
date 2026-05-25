@@ -79,6 +79,8 @@ option(MUSE_MODULE_MUSESAMPLER_LOAD_IN_DEBUG "Load MuseSampler module in debug b
 declare_muse_module_opt(NETWORK ON)
 option(MUSE_MODULE_NETWORK_WEBSOCKET "Enable websocket support" OFF)
 
+declare_muse_module_opt(RCOMMAND ON)
+
 declare_muse_module_opt(SHORTCUTS ON)
 declare_muse_module_opt(TESTFLOW ON)
 declare_muse_module_opt(TOURS ON)
