@@ -23,7 +23,6 @@ muse_create_module(muse_global ALIAS muse::global)
 include(thirdparty/kors_logger/logger.cmake)
 include(thirdparty/kors_profiler/profiler/profiler.cmake)
 include(thirdparty/kors_modularity/modularity/modularity.cmake)
-include(thirdparty/utfcpp/utfcpp.cmake)
 
 add_subdirectory(async)
 
@@ -169,14 +168,12 @@ endif()
 if (MUSE_USE_SYSTEM_UTF8CPP)
     find_package(utf8cpp REQUIRED CONFIG)
     get_target_property(UTFCPP_INC utf8::cpp INTERFACE_INCLUDE_DIRECTORIES)
-    # UTFCPP_INC is .../include/utf8cpp, and we want .../include so that
-    # #include <utfcpp/utf8.h> resolves correctly
-    get_filename_component(UTFCPP_INC_PARENT "${UTFCPP_INC}" DIRECTORY)
-    message(STATUS "Using system utf8cpp from ${UTFCPP_INC_PARENT} (${UTFCPP_INC})")
-    target_include_directories(muse_global PRIVATE ${UTFCPP_INC_PARENT})
-    target_compile_definitions(muse_global PRIVATE SYSTEM_UTFCPP)
+    message(STATUS "Using system utf8cpp from ${UTFCPP_INC}")
+    target_link_libraries(muse_global PRIVATE utf8::cpp)
 else()
+    include(thirdparty/utfcpp/utfcpp.cmake)
     target_sources(muse_global PRIVATE ${UTFCPP_SRC})
+    target_include_directories(muse_global PRIVATE "thirdparty/utfcpp")
 endif()
 
 if (MUSE_THREADS_SUPPORT)
