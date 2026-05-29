@@ -26,6 +26,16 @@ target_sources(muse_rcontrol PRIVATE
     rcontrolmodule.h
 )
 
+add_executable(musescore-mcpbridge
+    mcpbridge/main.cpp
+)
+
+set_target_properties(musescore-mcpbridge PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
 #if (MUSE_MODULE_RCONTROL_TESTS)
 #    add_subdirectory(tests)
 #endif()
