@@ -19,33 +19,22 @@
 
 #pragma once
 
-#include "modularity/imodulesetup.h"
-#include <memory>
+#include <functional>
+
+#include "global/types/bytearray.h"
 
 namespace muse::rcontrol::mcp {
-class McpController;
-}
-
-namespace muse::rcontrol {
-class RControlModule : public modularity::IModuleSetup
+class ITransport
 {
 public:
-    std::string moduleName() const override;
+    virtual ~ITransport() = default;
 
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
-};
+    using ResponseHandler = std::function<void (const ByteArray&)>;
+    using RequestHandler = std::function<void (const ByteArray& request, const ResponseHandler& onResponse)>;
 
-class RControlContext : public modularity::IContextSetup
-{
-public:
-    RControlContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
+    virtual bool start() = 0;
+    virtual void stop() = 0;
 
-    void registerExports() override;
-    void onInit(const IApplication::RunMode& mode) override;
-    void onDeinit() override;
-
-private:
-    std::shared_ptr<mcp::McpController> m_mcpController;
+    virtual void onRequest(const RequestHandler& onRequest) = 0;
 };
 }

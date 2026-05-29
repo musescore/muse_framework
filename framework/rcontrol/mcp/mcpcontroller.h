@@ -19,33 +19,32 @@
 
 #pragma once
 
-#include "modularity/imodulesetup.h"
 #include <memory>
 
+#include "modularity/ioc.h"
+#include "global/iapplication.h"
+#include "actions/iactionsdispatcher.h"
+
+#include "mcptypes.h"
+
 namespace muse::rcontrol::mcp {
-class McpController;
-}
-
-namespace muse::rcontrol {
-class RControlModule : public modularity::IModuleSetup
+class McpServer;
+class McpController : public Contextable
 {
+    GlobalInject<IApplication> application;
+    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+
 public:
-    std::string moduleName() const override;
+    McpController(const modularity::ContextPtr& iocCtx);
+    ~McpController();
 
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
-};
-
-class RControlContext : public modularity::IContextSetup
-{
-public:
-    RControlContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
-
-    void registerExports() override;
-    void onInit(const IApplication::RunMode& mode) override;
-    void onDeinit() override;
+    void init();
+    void deinit();
 
 private:
-    std::shared_ptr<mcp::McpController> m_mcpController;
+
+    std::vector<Tool> makeToolsList() const;
+
+    std::unique_ptr<McpServer> m_mcpServer;
 };
 }

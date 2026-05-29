@@ -1,10 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
-# MuseScore-Studio-CLA-applies
+# MuseScore/Audacity CLA applies
 #
-# MuseScore Studio
-# Music Composition & Notation
-#
-# Copyright (C) 2026 MuseScore Limited and others
+# Copyright (C) 2026 MuseScore/Audacity and others
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -24,10 +21,18 @@ muse_create_module(muse_rcontrol ALIAS muse::rcontrol)
 target_sources(muse_rcontrol PRIVATE
     rcontrolmodule.cpp
     rcontrolmodule.h
+
+    mcp/mcpcontroller.cpp
+    mcp/mcpcontroller.h
+    mcp/mcpserver.cpp
+    mcp/mcpserver.h
+    mcp/itransport.h
+    mcp/transport/tcptransport.cpp
+    mcp/transport/tcptransport.h
 )
 
 add_executable(musescore-mcpbridge
-    mcpbridge/main.cpp
+    mcp/bridge/main.cpp
 )
 
 set_target_properties(musescore-mcpbridge PROPERTIES

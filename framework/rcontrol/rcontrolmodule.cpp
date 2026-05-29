@@ -19,6 +19,8 @@
 
 #include "rcontrolmodule.h"
 
+#include "mcp/mcpcontroller.h"
+
 using namespace muse;
 using namespace muse::rcontrol;
 
@@ -36,4 +38,19 @@ modularity::IContextSetup* RControlModule::newContext(const muse::modularity::Co
 
 void RControlContext::registerExports()
 {
+    m_mcpController = std::make_shared<mcp::McpController>(iocContext());
+}
+
+void RControlContext::onInit(const IApplication::RunMode& mode)
+{
+    if (mode != IApplication::RunMode::GuiApp) {
+        return;
+    }
+
+    m_mcpController->init();
+}
+
+void RControlContext::onDeinit()
+{
+    m_mcpController->deinit();
 }

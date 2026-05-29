@@ -19,33 +19,46 @@
 
 #pragma once
 
-#include "modularity/imodulesetup.h"
-#include <memory>
+#include <QObject>
+#include <QByteArray>
+
+#include "../itransport.h"
+
+class QTcpServer;
+class QTcpSocket;
 
 namespace muse::rcontrol::mcp {
-class McpController;
-}
-
-namespace muse::rcontrol {
-class RControlModule : public modularity::IModuleSetup
+class TcpConnection : public QObject
 {
+    Q_OBJECT
 public:
-    std::string moduleName() const override;
+    explicit TcpConnection(QTcpSocket* socket, const ITransport::RequestHandler& onRequest, QObject* parent = nullptr);
 
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
-};
-
-class RControlContext : public modularity::IContextSetup
-{
-public:
-    RControlContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
-
-    void registerExports() override;
-    void onInit(const IApplication::RunMode& mode) override;
-    void onDeinit() override;
+private slots:
+    void onReadyRead();
 
 private:
-    std::shared_ptr<mcp::McpController> m_mcpController;
+    void processMessage(const QByteArray& message);
+
+    QTcpSocket* m_socket = nullptr;
+    QByteArray m_buffer;
+    ITransport::RequestHandler m_onRequest = nullptr;
+};
+
+class TcpTransport : public ITransport
+{
+public:
+
+    ~TcpTransport();
+
+    bool start() override;
+    void stop() override;
+
+    void onRequest(const RequestHandler& onRequest) override;
+
+private:
+    QTcpServer* m_server = nullptr;
+    TcpConnection* m_connection = nullptr;
+    RequestHandler m_onRequest = nullptr;
 };
 }
