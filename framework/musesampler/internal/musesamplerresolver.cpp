@@ -78,6 +78,11 @@ InstrumentInfo findInstrument(MuseSamplerLibHandlerPtr libHandler, const AudioRe
     return InstrumentInfo();
 }
 
+static String safeStringFromUtf8(const char* value)
+{
+    return value ? String::fromUtf8(value) : String();
+}
+
 void MuseSamplerResolver::init()
 {
     TRACEFUNC;
@@ -188,13 +193,14 @@ AudioResourceMetaList MuseSamplerResolver::resolveResources() const
     auto instrumentList = m_libHandler->getInstrumentList();
     while (auto instrument = m_libHandler->getNextInstrument(instrumentList)) {
         const int instrumentId = m_libHandler->getInstrumentId(instrument);
-        const String internalName = String::fromUtf8(m_libHandler->getInstrumentName(instrument));
-        const String internalCategory = String::fromUtf8(m_libHandler->getInstrumentCategory(instrument));
-        const String instrumentSoundId = String::fromUtf8(m_libHandler->getMpeSoundId(instrument));
-        const String vendorName = String::fromUtf8(m_libHandler->getInstrumentVendorName(instrument));
+        const String internalName = safeStringFromUtf8(m_libHandler->getInstrumentName(instrument));
+        const String internalCategory = safeStringFromUtf8(m_libHandler->getInstrumentCategory(instrument));
+        const String instrumentSoundId = safeStringFromUtf8(m_libHandler->getMpeSoundId(instrument));
+        const String musicXmlSoundId = safeStringFromUtf8(m_libHandler->getMusicXmlSoundId(instrument));
+        const String vendorName = safeStringFromUtf8(m_libHandler->getInstrumentVendorName(instrument));
         const bool isOnline = m_libHandler->isOnlineInstrument(instrument);
 
-        String instrumentPackName = String::fromUtf8(m_libHandler->getInstrumentPackName(instrument));
+        String instrumentPackName = safeStringFromUtf8(m_libHandler->getInstrumentPackName(instrument));
         if (instrumentPackName.empty()) {
             instrumentPackName = internalCategory;
         }
@@ -205,6 +211,7 @@ AudioResourceMetaList MuseSamplerResolver::resolveResources() const
         meta.vendor = "MuseSounds";
         meta.attributes = {
             { u"playbackSetupData", instrumentSoundId },
+            { u"musicXmlSound", musicXmlSoundId },
             { u"museCategory", internalCategory },
             { u"musePack", instrumentPackName },
             { u"museVendorName", vendorName },
