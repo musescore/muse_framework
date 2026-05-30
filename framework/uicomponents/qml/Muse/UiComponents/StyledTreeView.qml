@@ -39,8 +39,8 @@ TreeView {
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
-    ScrollBar.vertical: root.arrowControlsAvailable ? null : scrollBarComp.createObject(root)
-    ScrollBar.horizontal: root.arrowControlsAvailable ? null : scrollBarComp.createObject(root)
+    ScrollBar.vertical: null
+    ScrollBar.horizontal: null
 
     Component {
         id: scrollBarComp

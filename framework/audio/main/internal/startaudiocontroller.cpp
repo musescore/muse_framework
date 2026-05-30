@@ -21,6 +21,8 @@
  */
 #include "startaudiocontroller.h"
 
+#include <system_error>
+
 #include "global/realfn.h"
 #include "global/runtime.h"
 #include "global/async/processevents.h"
@@ -92,17 +94,22 @@ void StartAudioController::init()
 #ifndef Q_OS_WASM
     if (workmode::mode() == workmode::HybridMode) {
         m_worker = std::make_shared<engine::GeneralAudioWorker>();
-        m_worker->run([this]() {
-            static bool once = false;
-            if (!once) {
+        m_worker->run([this, isEngineSetup = false, isAsyncPumpAvailable = true]() mutable {
+            if (!isEngineSetup) {
                 th_setupEngine();
                 m_worker->setInterval(16 /*msec*/);
-                once = true;
+                isEngineSetup = true;
             }
 
-            static const std::thread::id thisThId = std::this_thread::get_id();
+            if (isAsyncPumpAvailable) {
+                try {
+                    async::processMessages();
+                } catch (const std::system_error& e) {
+                    LOGE() << "Audio async message pump failed, disabling it for this session: " << e.what();
+                    isAsyncPumpAvailable = false;
+                }
+            }
 
-            async::processMessages(thisThId);
             m_rpcChannel->process();
         });
     }
@@ -184,6 +191,10 @@ void StartAudioController::startAudioProcessing(const IApplication::RunMode& mod
 
         // process
         if (workmode::mode() == workmode::HybridMode) {
+            if (!m_engineController) {
+                return;
+            }
+
             m_engineController->process(procDest, (unsigned)procSamplesPerChannel);
         } else if (workmode::mode() == workmode::DriverMode) {
             static bool once = false;
@@ -193,6 +204,10 @@ void StartAudioController::startAudioProcessing(const IApplication::RunMode& mod
             }
 
             m_rpcChannel->process();
+            if (!m_engineController) {
+                return;
+            }
+
             m_engineController->process(procDest, (unsigned)procSamplesPerChannel);
         } else {
             UNREACHABLE;

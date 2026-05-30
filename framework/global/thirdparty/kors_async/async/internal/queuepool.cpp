@@ -56,10 +56,13 @@ QueuePool::ThreadData* QueuePool::threadData(const std::thread::id& threadId, bo
     // so we find data for a given thread,
     // but we can work with it concurrently from different threads!!
 
-    size_t count = m_count.load();
-    assert(count <= m_threads.size());
+    size_t count = std::min(m_count.load(), m_threads.size());
     for (size_t i = 0; i < count; ++i) {
         ThreadData* thdata = m_threads.at(i);
+        if (!thdata) {
+            continue;
+        }
+
         // found a slot for the given thread
         if (thdata->threadId == threadId) {
             return thdata;
@@ -74,7 +77,14 @@ QueuePool::ThreadData* QueuePool::threadData(const std::thread::id& threadId, bo
         // in other threads without a lock.
         // `m_count` limits the number of iterations (only filled slots).
         std::scoped_lock lock(m_mutex);
-        count = m_count.load();
+        count = std::min(m_count.load(), m_threads.size());
+        for (size_t i = 0; i < count; ++i) {
+            ThreadData* thdata = m_threads.at(i);
+            if (thdata && thdata->threadId == threadId) {
+                return thdata;
+            }
+        }
+
         if (count < m_threads.size()) {
             ThreadData* thdata = new ThreadData();
             thdata->threadId = threadId;
@@ -102,7 +112,7 @@ QueuePool::ThreadData* QueuePool::threadData(const std::thread::id& threadId, bo
         }
 
         // No free slots found, the thread pool is exhausted
-        assert(false && "thread pool exhausted");
+        return nullptr;
     }
 
     return nullptr;
@@ -169,7 +179,7 @@ void QueuePool::processMessages(const std::thread::id& th)
 {
     assert(!conf::terminated);
 
-    ThreadData* thdata = threadData(th, false);
+    ThreadData* thdata = threadData(th, true);
     if (!thdata) {
         return;
     }

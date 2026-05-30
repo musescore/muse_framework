@@ -27,6 +27,6 @@ GridView {
     boundsBehavior: Flickable.StopAtBounds
     maximumFlickVelocity: ui.theme.flickableMaxVelocity
 
-    ScrollBar.vertical: StyledScrollBar {}
-    ScrollBar.horizontal: StyledScrollBar {}
+    ScrollBar.vertical: null
+    ScrollBar.horizontal: null
 }

@@ -40,8 +40,8 @@ ListView {
     boundsBehavior: Flickable.StopAtBounds
     maximumFlickVelocity: ui.theme.flickableMaxVelocity
 
-    ScrollBar.vertical: root.arrowControlsAvailable ? null : scrollBarComp.createObject(root)
-    ScrollBar.horizontal: root.arrowControlsAvailable ? null : scrollBarComp.createObject(root)
+    ScrollBar.vertical: null
+    ScrollBar.horizontal: null
 
     property alias navigation: navPanel
     property alias accessible: navPanel.accessible
