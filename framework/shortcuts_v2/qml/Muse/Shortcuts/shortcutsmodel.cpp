@@ -22,6 +22,8 @@
 
 #include "shortcutsmodel.h"
 
+#include <QStringList>
+
 #include "containers.h"
 #include "translation.h"
 #include "types/mnemonicstring.h"
@@ -57,7 +59,12 @@ QVariant ShortcutsModel::data(const QModelIndex& index, int role) const
     case RoleIcon: return item.icon;
     case RoleIconColor: return item.iconColor;
     case RoleSequence: return item.sequence;
-    case RoleSearchKey: return item.searchKey + item.sequence;
+    case RoleSearchKey: {
+        QStringList searchKeyItems;
+        searchKeyItems << item.searchKey
+                       << item.sequence;
+        return searchKeyItems.join(u' ');
+    }
     }
 
     return QVariant();
@@ -130,9 +137,12 @@ void ShortcutsModel::load()
 
             item.icon = static_cast<int>(info.decoration.iconCode);
             item.sequence = sequencesToNativeText(shortcut.sequences);
-            item.searchKey = QString::fromStdString(info.command.toString())
-                             + info.title.qTranslatedWithoutMnemonic()
-                             + info.description.qTranslated();
+
+            QStringList searchKeyItems;
+            searchKeyItems << QString::fromStdString(info.command.toString())
+                           << info.title.qTranslatedWithoutMnemonic()
+                           << info.description.qTranslated();
+            item.searchKey = searchKeyItems.join(u' ');
 
             m_items.append(item);
         }
@@ -161,9 +171,12 @@ void ShortcutsModel::load()
             item.icon = static_cast<int>(action.iconCode);
             item.iconColor = action.iconColor;
             item.sequence = sequencesToNativeText(shortcut.sequences);
-            item.searchKey = QString::fromStdString(action.code)
-                             + action.title.qTranslatedWithoutMnemonic()
-                             + action.description.qTranslated();
+
+            QStringList searchKeyItems;
+            searchKeyItems << QString::fromStdString(action.code)
+                           << action.title.qTranslatedWithoutMnemonic()
+                           << action.description.qTranslated();
+            item.searchKey = searchKeyItems.join(u' ');
 
             m_items.append(item);
         }
