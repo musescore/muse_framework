@@ -163,11 +163,19 @@ QHash<int, QByteArray> SortFilterProxyModel::roleNames() const
 
 void SortFilterProxyModel::setSourceModel(QAbstractItemModel* sourceModel)
 {
-    if (m_subSourceModelConnection) {
-        disconnect(m_subSourceModelConnection);
-    }
+    disconnect(m_subSourceModelConnection);
+    disconnect(m_sourceModelAboutToBeResetConnection);
+    disconnect(m_sourceDataChangedConnection);
+    invalidateFilters();
 
     QSortFilterProxyModel::setSourceModel(sourceModel);
+
+    if (sourceModel) {
+        m_sourceDataChangedConnection = connect(sourceModel, &QAbstractItemModel::dataChanged,
+                                                this, &SortFilterProxyModel::invalidateFilters);
+        m_sourceModelAboutToBeResetConnection = connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset,
+                                                        this, &SortFilterProxyModel::invalidateFilters);
+    }
 
     emit sourceModelRoleNamesChanged();
 
@@ -223,5 +231,13 @@ void SortFilterProxyModel::updateRoleIds()
     for (const auto& [roleId, roleName] : roleNames.asKeyValueRange()) {
         const auto [it, didInsert] = m_roleIds.try_emplace(roleName, roleId);
         DO_ASSERT_X(didInsert, "duplicate role name");
+    }
+}
+
+void SortFilterProxyModel::invalidateFilters()
+{
+    const QList<Filter*> filters = m_filters.list();
+    for (auto* filter : filters) {
+        filter->invalidate();
     }
 }

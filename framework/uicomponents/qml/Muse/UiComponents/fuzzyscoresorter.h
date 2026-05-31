@@ -20,45 +20,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "filter.h"
+#pragma once
+
+#include <QtQmlIntegration/qqmlintegration.h>
+#include <QMetaObject>
+#include <QObject>
+#include <QPointer>
+
+#include "fuzzyfilter.h"
+#include "sorter.h"
 
 namespace muse::uicomponents {
-Filter::Filter(QObject* parent)
-    : QObject(parent)
+class FuzzyScoreSorter : public Sorter
 {
-}
+    Q_OBJECT
+    QML_ELEMENT
 
-void Filter::invalidate()
-{
-}
+    Q_PROPERTY(muse::uicomponents::FuzzyFilter* fuzzyFilter READ fuzzyFilter WRITE setFuzzyFilter NOTIFY dataChanged REQUIRED)
 
-bool Filter::enabled() const
-{
-    return m_enabled;
-}
+public:
+    explicit FuzzyScoreSorter(QObject* parent = nullptr);
 
-void Filter::setEnabled(const bool enabled)
-{
-    if (m_enabled == enabled) {
-        return;
-    }
+    bool lessThan(const QModelIndex& sourceLeft, const QModelIndex& sourceRight, const SortFilterProxyModel&) override;
 
-    m_enabled = enabled;
-    emit dataChanged();
-}
+    FuzzyFilter* fuzzyFilter() const;
+    void setFuzzyFilter(FuzzyFilter*);
 
-bool Filter::async() const
-{
-    return m_async;
-}
-
-void Filter::setAsync(const bool async)
-{
-    if (m_async == async) {
-        return;
-    }
-
-    m_async = async;
-    emit dataChanged();
-}
+private:
+    QPointer<FuzzyFilter> m_fuzzyFilter;
+    QMetaObject::Connection m_filterChangedConnection;
+};
 }

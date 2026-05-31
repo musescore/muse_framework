@@ -45,6 +45,7 @@ public:
     explicit Filter(QObject* parent = nullptr);
 
     virtual bool acceptsRow(int sourceRow, const QModelIndex& sourceParent, const SortFilterProxyModel&) = 0;
+    virtual void invalidate();
 
     bool enabled() const;
     void setEnabled(bool enabled);
