@@ -19,25 +19,31 @@
 
 #pragma once
 
-#include "modularity/imodulesetup.h"
+#include "icommanddispatcher.h"
 
 namespace muse::rcommand {
-class RCommandModule : public modularity::IModuleSetup
+class Commandable
 {
 public:
-    std::string moduleName() const override;
+    virtual ~Commandable()
+    {
+        if (m_dispatcher) {
+            m_dispatcher->unreg(this);
+        }
+    }
 
-    void registerExports() override;
+    inline void setDispatcher(ICommandDispatcher* dispatcher)
+    {
+        m_dispatcher = dispatcher;
+    }
 
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
-};
+    inline bool isDispatcher(const ICommandDispatcher* dispatcher) const
+    {
+        return m_dispatcher == dispatcher;
+    }
 
-class RCommandContext : public modularity::IContextSetup
-{
-public:
-    RCommandContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
+private:
 
-    void registerExports() override;
+    ICommandDispatcher* m_dispatcher = nullptr;
 };
 }

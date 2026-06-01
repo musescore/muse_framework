@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore/Audacity CLA applies
  *
- * Copyright (C) 2026 MuseScore/Audacity and others
+ * Copyright (C) MuseScore/Audacity and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,31 +19,19 @@
 
 #pragma once
 
-#include "ircommanddispatcher.h"
+#include "modularity/imoduleinterface.h"
+#include "imodulecommands.h"
 
 namespace muse::rcommand {
-class RCommandable
+class ICommandsRegister : MODULE_GLOBAL_INTERFACE
 {
+    INTERFACE_ID(ICommandsRegister)
 public:
-    virtual ~RCommandable()
-    {
-        if (m_dispatcher) {
-            m_dispatcher->unreg(this);
-        }
-    }
+    virtual ~ICommandsRegister() = default;
 
-    inline void setDispatcher(IRCommandDispatcher* dispatcher)
-    {
-        m_dispatcher = dispatcher;
-    }
+    virtual void reg(const IModuleCommandsPtr& module) = 0;
+    virtual void unreg(const IModuleCommandsPtr& module) = 0;
 
-    inline bool isDispatcher(const IRCommandDispatcher* dispatcher) const
-    {
-        return m_dispatcher == dispatcher;
-    }
-
-private:
-
-    IRCommandDispatcher* m_dispatcher = nullptr;
+    virtual std::vector<CommandInfo> commandList() const = 0;
 };
 }

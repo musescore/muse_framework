@@ -23,7 +23,8 @@
 
 #include "modularity/ioc.h"
 #include "global/iapplication.h"
-#include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
+#include "rcommand/icommandsregister.h"
 
 #include "mcptypes.h"
 
@@ -32,7 +33,8 @@ class McpServer;
 class McpController : public Contextable
 {
     GlobalInject<IApplication> application;
-    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    GlobalInject<rcommand::ICommandsRegister> commandsRegister;
+    ContextInject<rcommand::ICommandDispatcher> commandsDispatcher = { this };
 
 public:
     McpController(const modularity::ContextPtr& iocCtx);

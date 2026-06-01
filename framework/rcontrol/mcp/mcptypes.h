@@ -21,7 +21,6 @@
 
 #include <string>
 
-#include "global/types/string.h"
 #include "global/serialization/json.h"
 
 namespace muse::rcontrol::mcp {
@@ -53,7 +52,7 @@ inline std::string to_string(DataType type)
 
 struct Property {
     DataType type;
-    String description;
+    std::string description;
     JsonValue minimum;
     JsonValue maximum;
 };
@@ -64,9 +63,9 @@ struct InputSchema {
 };
 
 struct Tool {
-    String name;
-    String title;
-    String description;
+    std::string name;
+    std::string title;
+    std::string description;
     InputSchema inputSchema;
 };
 

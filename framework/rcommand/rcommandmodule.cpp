@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore/Audacity CLA applies
  *
- * Copyright (C) 2026 MuseScore/Audacity and others
+ * Copyright (C) MuseScore/Audacity and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,7 +19,8 @@
 
 #include "rcommandmodule.h"
 
-#include "internal/rcommanddispatcher.h"
+#include "internal/commandsregister.h"
+#include "internal/commanddispatcher.h"
 
 using namespace muse;
 using namespace muse::rcommand;
@@ -31,6 +32,11 @@ std::string RCommandModule::moduleName() const
     return mname;
 }
 
+void RCommandModule::registerExports()
+{
+    globalIoc()->registerExport<ICommandsRegister>(mname, new CommandsRegister());
+}
+
 modularity::IContextSetup* RCommandModule::newContext(const muse::modularity::ContextPtr& ctx) const
 {
     return new RCommandContext(ctx);
@@ -38,5 +44,5 @@ modularity::IContextSetup* RCommandModule::newContext(const muse::modularity::Co
 
 void RCommandContext::registerExports()
 {
-    ioc()->registerExport<IRCommandDispatcher>(mname, new RCommandDispatcher());
+    ioc()->registerExport<ICommandDispatcher>(mname, new CommandDispatcher());
 }

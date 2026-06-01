@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore/Audacity CLA applies
  *
- * Copyright (C) 2026 MuseScore/Audacity and others
+ * Copyright (C) MuseScore/Audacity and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -20,13 +20,77 @@
 #pragma once
 
 #include <any>
+#include <map>
+#include <string>
 
 #include "global/types/uri.h"
 #include "global/types/ret.h"
+#include "global/types/string.h"
+#include "global/types/val.h"
+#include "global/types/mnemonicstring.h"
+#include "global/types/translatablestring.h"
+#include "global/types/color.h"
+#include "ui/uitypes.h"
 
 namespace muse::rcommand {
+constexpr std::string_view COMMAND_SCHEME = "command://";
 using Command = Uri;
 using CommandQuery = UriQuery;
+
+// Info
+
+enum class DataType {
+    Undefined = 0,
+    String,
+    Integer,
+    Float,
+    Boolean,
+    Object,
+    Array,
+    Null
+};
+
+struct Arg {
+    DataType type = DataType::Undefined;
+    String description;
+    Val min;
+    Val max;
+};
+
+struct InputSchema {
+    std::map<std::string, Arg> args;
+};
+
+enum class Checkable {
+    No = 0,
+    Yes
+};
+
+struct Decoration {
+    ui::IconCode::Code iconCode = ui::IconCode::Code::NONE;
+    Color iconColor;
+    Checkable checkable = Checkable::No;
+
+    Decoration() = default;
+    Decoration(ui::IconCode::Code iconCode)
+        : iconCode(iconCode) {}
+    Decoration(ui::IconCode::Code iconCode, Color iconColor)
+        : iconCode(iconCode), iconColor(iconColor) {}
+    Decoration(ui::IconCode::Code iconCode, Color iconColor, Checkable checkable)
+        : iconCode(iconCode), iconColor(iconColor), checkable(checkable) {}
+};
+
+struct CommandInfo
+{
+    Command command;
+    MnemonicString title;
+    TranslatableString description;
+    InputSchema inputSchema;
+    Decoration decoration;
+};
+
+// Call
+
 using CallId = uint64_t;
 
 struct Request

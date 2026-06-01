@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore/Audacity CLA applies
  *
- * Copyright (C) MuseScore/Audacity and others
+ * Copyright (C) 2026 MuseScore/Audacity and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,28 +16,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-#include "modularity/imodulesetup.h"
+#include "../icommanddispatcher.h"
 
 namespace muse::rcommand {
-class RCommandModule : public modularity::IModuleSetup
+class CommandDispatcher : public ICommandDispatcher
 {
 public:
-    std::string moduleName() const override;
+    CommandDispatcher() = default;
+    ~CommandDispatcher() override;
 
-    void registerExports() override;
+    async::Promise<Response> dispatch(const Request& request) override;
+    void onRequest(Commandable* client, const Command& command, const CallBack& callback) override;
+    void unreg(Commandable* client) override;
 
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
-};
+private:
 
-class RCommandContext : public modularity::IContextSetup
-{
-public:
-    RCommandContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
+    struct Client
+    {
+        Commandable* client = nullptr;
+        CallBack callback = nullptr;
+    };
 
-    void registerExports() override;
+    std::map<Command, Client> m_clients;
 };
 }

@@ -21,9 +21,13 @@
 
 #include "mcpserver.h"
 
+#include "global/stringutils.h"
+
 #include "log.h"
+#include "thirdparty/kors_logger/src/log_base.h"
 
 using namespace muse::rcontrol::mcp;
+using namespace muse::rcommand;
 
 McpController::McpController(const modularity::ContextPtr& iocCtx)
     : Contextable(iocCtx)
@@ -33,6 +37,27 @@ McpController::McpController(const modularity::ContextPtr& iocCtx)
 McpController::~McpController()
 {
     deinit();
+}
+
+//! NOTE The tool name must be in the format: group_name
+static std::string commandToToolName(const Command& command)
+{
+    std::string path = command.path();
+    muse::strings::replace(path, "/", "_");
+    return path;
+}
+
+static CommandQuery commandQuery(const std::string& name, const JsonObject& args)
+{
+    UNUSED(args); // TODO: implement
+    std::string path = name;
+    muse::strings::replace(path, "_", "/");
+    Command cmd(std::string(COMMAND_SCHEME), path);
+    CommandQuery q(cmd);
+    // for (const auto& arg : args) {
+    //     q.set(arg.first, arg.second.toString());
+    // }
+    return q;
 }
 
 void McpController::init()
@@ -50,7 +75,7 @@ void McpController::init()
     {
         LOGDA() << "Tools call: " << name;
 
-        dispatcher()->dispatch(name);
+        commandsDispatcher()->dispatch(commandQuery(name, args));
 
         onResult(ToolResult());
     });
@@ -68,9 +93,24 @@ void McpController::deinit()
 
 std::vector<Tool> McpController::makeToolsList() const
 {
-    //! NOTE There will be an adapter to the RCommand infrastructure.
     std::vector<Tool> tools;
-    tools.push_back({ String(u"play"), String(u"Play"), String(u"Start playback of the current score"), InputSchema() });
-    tools.push_back({ String(u"stop"), String(u"Stop"), String(u"Stop playback of the current score"), InputSchema() });
+    auto commandList = commandsRegister()->commandList();
+    tools.reserve(commandList.size());
+    for (const auto& info : commandList) {
+        Tool tool;
+        tool.name = commandToToolName(info.command);
+        tool.title = info.title.raw().translated().toStdString();
+        tool.description = info.description.translated().toStdString();
+        tool.inputSchema = InputSchema();
+        // for (const auto& arg : info.inputSchema.args) {
+        //     Property property;
+        //     property.name = String::fromStdString(arg.first);
+        //     property.type = String::fromStdString(arg.second.type);
+        //     property.description = String::fromStdString(arg.second.description);
+        //     property.minimum = String::fromStdString(arg.second.minimum);
+        //     property.maximum = String::fromStdString(arg.second.maximum);
+        // }
+        tools.push_back(std::move(tool));
+    }
     return tools;
 }

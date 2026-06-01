@@ -16,28 +16,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+ #pragma once
 
-#include "../ircommanddispatcher.h"
+ #include <map>
+ #include <string>
+
+ #include "../icommandsregister.h"
 
 namespace muse::rcommand {
-class RCommandDispatcher : public IRCommandDispatcher
+class CommandsRegister : public ICommandsRegister
 {
 public:
-    RCommandDispatcher() = default;
+    CommandsRegister() = default;
 
-    async::Promise<Response> dispatch(const Request& request) override;
-    void onRequest(RCommandable* client, const Command& command, const CallBack& callback) override;
-    void unreg(RCommandable* client) override;
+    void reg(const IModuleCommandsPtr& module) override;
+    void unreg(const IModuleCommandsPtr& module) override;
+    std::vector<CommandInfo> commandList() const override;
 
 private:
-
-    struct Client
-    {
-        RCommandable* client = nullptr;
-        CallBack callback = nullptr;
-    };
-
-    std::map<Command, Client> m_clients;
+    std::map<std::string, IModuleCommandsPtr> m_modules;
 };
 }

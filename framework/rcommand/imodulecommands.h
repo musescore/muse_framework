@@ -19,25 +19,22 @@
 
 #pragma once
 
-#include "modularity/imodulesetup.h"
+#include <string>
+#include <vector>
+#include <memory>
+
+#include "commandtypes.h"
 
 namespace muse::rcommand {
-class RCommandModule : public modularity::IModuleSetup
+class IModuleCommands
 {
 public:
-    std::string moduleName() const override;
 
-    void registerExports() override;
+    virtual ~IModuleCommands() = default;
 
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
+    virtual std::string moduleName() const = 0;
+    virtual const std::vector<CommandInfo>& commandInfos() const = 0;
 };
 
-class RCommandContext : public modularity::IContextSetup
-{
-public:
-    RCommandContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
-
-    void registerExports() override;
-};
+using IModuleCommandsPtr = std::shared_ptr<IModuleCommands>;
 }

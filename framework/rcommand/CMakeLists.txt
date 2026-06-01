@@ -23,12 +23,15 @@ muse_create_module(muse_rcommand ALIAS muse::rcommand)
 target_sources(muse_rcommand PRIVATE
     rcommandmodule.cpp
     rcommandmodule.h
-    ircommanddispatcher.h
-    rcommandable.h
-    rcommandtypes.h
+    icommanddispatcher.h
+    imodulecommands.h
+    commandable.h
+    commandtypes.h
 
-    internal/rcommanddispatcher.cpp
-    internal/rcommanddispatcher.h
+    internal/commanddispatcher.cpp
+    internal/commanddispatcher.h
+    internal/commandsregister.cpp
+    internal/commandsregister.h
 )
 
 #if (MUSE_MODULE_RCOMMAND_TESTS)
