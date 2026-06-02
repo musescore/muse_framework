@@ -24,6 +24,7 @@
 #include "modularity/imoduleinterface.h"
 
 #include "global/io/path.h"
+#include "global/async/channel.h"
 
 namespace muse::audioplugins {
 class IAudioPluginsConfiguration : MODULE_GLOBAL_INTERFACE
@@ -34,5 +35,9 @@ public:
     virtual ~IAudioPluginsConfiguration() = default;
 
     virtual io::path_t knownAudioPluginsFilePath() const = 0;
+
+    virtual bool needScanForPluginsOnStart() const = 0;
+    virtual void setNeedScanForPluginsOnStart(bool need) = 0;
+    virtual async::Channel<bool> needScanForPluginsOnStartChanged() const = 0;
 };
 }

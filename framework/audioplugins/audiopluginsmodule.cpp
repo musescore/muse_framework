@@ -48,6 +48,8 @@ void AudioPluginsModule::registerExports()
     globalIoc()->registerExport<IKnownAudioPluginsRegister>(moduleName(), std::make_shared<KnownAudioPluginsRegister>());
     globalIoc()->registerExport<IAudioPluginsScannerRegister>(moduleName(), std::make_shared<AudioPluginsScannerRegister>());
     globalIoc()->registerExport<IAudioPluginMetaReaderRegister>(moduleName(), std::make_shared<AudioPluginMetaReaderRegister>());
+
+    m_configuration->init();
 }
 
 void AudioPluginsModule::resolveImports()

@@ -29,6 +29,7 @@
 #include "global/async/asyncable.h"
 
 #include "../iregisteraudiopluginsscenario.h"
+#include "../iaudiopluginsconfiguration.h"
 #include "../iknownaudiopluginsregister.h"
 #include "../iaudiopluginsscannerregister.h"
 #include "../iaudiopluginmetareaderregister.h"
@@ -38,6 +39,7 @@ class RegisterAudioPluginsScenario : public IRegisterAudioPluginsScenario, publi
 {
 public:
     GlobalInject<IGlobalConfiguration> globalConfiguration;
+    GlobalInject<IAudioPluginsConfiguration> configuration;
     GlobalInject<IProcess> process;
     GlobalInject<IKnownAudioPluginsRegister> knownPluginsRegister;
     GlobalInject<IAudioPluginsScannerRegister> scannerRegister;

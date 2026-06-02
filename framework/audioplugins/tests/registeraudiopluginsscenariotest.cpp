@@ -27,6 +27,7 @@
 #include "global/tests/mocks/processmock.h"
 #include "interactive/tests/mocks/interactivemock.h"
 
+#include "mocks/audiopluginsconfigurationmock.h"
 #include "mocks/knownaudiopluginsregistermock.h"
 #include "mocks/audiopluginsscannerregistermock.h"
 #include "mocks/audiopluginsscannermock.h"
@@ -53,6 +54,7 @@ protected:
     {
         m_scenario = std::make_shared<RegisterAudioPluginsScenario>(modularity::globalCtx());
         m_globalConfiguration = std::make_shared<NiceMock<GlobalConfigurationMock> >();
+        m_configuration = std::make_shared<NiceMock<AudioPluginsConfigurationMock> >();
         m_interactive = std::make_shared<InteractiveMock>();
         m_process = std::make_shared<ProcessMock>();
         m_scannerRegister = std::make_shared<NiceMock<AudioPluginsScannerRegisterMock> >();
@@ -64,6 +66,7 @@ protected:
         m_metaReaders = { metaReaderMock };
 
         m_scenario->globalConfiguration.set(m_globalConfiguration);
+        m_scenario->configuration.set(m_configuration);
         m_scenario->interactive.set(m_interactive);
         m_scenario->process.set(m_process);
         m_scenario->knownPluginsRegister.set(m_knownPlugins);
@@ -84,10 +87,15 @@ protected:
 
         ON_CALL(*metaReaderMock, canReadMeta(_))
         .WillByDefault(Return(true));
+
+        // By default, scanning on start is enabled, so the existing tests behave as before
+        ON_CALL(*m_configuration, needScanForPluginsOnStart())
+        .WillByDefault(Return(true));
     }
 
     std::shared_ptr<RegisterAudioPluginsScenario> m_scenario;
     std::shared_ptr<GlobalConfigurationMock> m_globalConfiguration;
+    std::shared_ptr<AudioPluginsConfigurationMock> m_configuration;
     std::shared_ptr<InteractiveMock> m_interactive;
     std::shared_ptr<ProcessMock> m_process;
     std::shared_ptr<KnownAudioPluginsRegisterMock> m_knownPlugins;
@@ -190,6 +198,39 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, UpdatePluginsRegistry)
     .WillOnce(Return(muse::make_ok()));
 
     // [WHEN] Register new plugins
+    m_scenario->updatePluginsRegistry();
+}
+
+//! When scanning on start is disabled in preferences, updatePluginsRegistry() is a no-op:
+//! nothing is scanned, (un)registered, reloaded, or shown to the user.
+TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, UpdatePluginsRegistry_ScanningDisabled)
+{
+    // [GIVEN] Scanning for plugins on start is disabled
+    ON_CALL(*m_configuration, needScanForPluginsOnStart())
+    .WillByDefault(Return(false));
+
+    // [THEN] No scan is performed
+    EXPECT_CALL(*m_scannerRegister, scanners())
+    .Times(0);
+
+    EXPECT_CALL(*m_knownPlugins, pluginInfoList(_))
+    .Times(0);
+
+    // [THEN] Nothing is registered or unregistered, and the register is not reloaded
+    EXPECT_CALL(*m_process, execute(_, _))
+    .Times(0);
+
+    EXPECT_CALL(*m_knownPlugins, unregisterPlugins(_))
+    .Times(0);
+
+    EXPECT_CALL(*m_knownPlugins, load())
+    .Times(0);
+
+    // [THEN] No progress dialog is shown
+    EXPECT_CALL(*m_interactive, showProgress(_, _))
+    .Times(0);
+
+    // [WHEN] Update the registry
     m_scenario->updatePluginsRegistry();
 }
 

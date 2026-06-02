@@ -80,6 +80,11 @@ void RegisterAudioPluginsScenario::updatePluginsRegistry()
 {
     TRACEFUNC;
 
+    if (!configuration()->needScanForPluginsOnStart()) {
+        LOGI() << "Skipping audio plugins scan on start (disabled in preferences)";
+        return;
+    }
+
     const PluginScanResult result = scanPlugins();
 
     Ret ret = unregisterRemovedPlugins(result.missingPluginIds);

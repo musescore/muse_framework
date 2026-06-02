@@ -36,6 +36,15 @@ public:
     AudioPluginsConfiguration(const muse::modularity::ContextPtr& iocCtx)
         : Contextable(iocCtx) {}
 
+    void init();
+
     io::path_t knownAudioPluginsFilePath() const override;
+
+    bool needScanForPluginsOnStart() const override;
+    void setNeedScanForPluginsOnStart(bool need) override;
+    async::Channel<bool> needScanForPluginsOnStartChanged() const override;
+
+private:
+    async::Channel<bool> m_needScanForPluginsOnStartChanged;
 };
 }
