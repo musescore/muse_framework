@@ -34,8 +34,14 @@ bool muse::strings::replace(std::string& str, const std::string& from, const std
     return true;
 }
 
-void muse::strings::split(const std::string& str, std::vector<std::string>& out, const std::string& delim)
+namespace {
+void split_simple(const std::string& str, std::vector<std::string>& out, const std::string& delim)
 {
+    if (delim.empty()) {
+        out.push_back(str);
+        return;
+    }
+
     std::size_t current, previous = 0;
     current = str.find(delim);
     std::size_t delimLen = delim.length();
@@ -48,7 +54,54 @@ void muse::strings::split(const std::string& str, std::vector<std::string>& out,
     out.push_back(str.substr(previous, current - previous));
 }
 
-std::string muse::strings::join(const std::vector<std::string>& strs, const std::string& sep)
+//! Split that handles an escape character, which causes the following escape or separator to be emitted verbatim.
+void split_handle_escape(const std::string& str, std::vector<std::string>& out, const std::string& delim, const std::string& esc)
+{
+    const size_t delimLen = delim.size();
+    const size_t escLen = esc.size();
+    std::string current;
+
+    for (size_t i = 0; i < str.size();) {
+        if (escLen > 0 && str.compare(i, escLen, esc) == 0) {
+            // Escaped sequence: drop the escape, then emit the following escape
+            // or separator token literally (mirrors what join() produced). Any
+            // other (or dangling) escape consumes a single following character.
+            i += escLen;
+            if (str.compare(i, escLen, esc) == 0) {
+                current += esc;
+                i += escLen;
+            } else if (str.compare(i, delimLen, delim) == 0) {
+                current += delim;
+                i += delimLen;
+            } else if (i < str.size()) {
+                current += str[i];
+                ++i;
+            }
+        } else if (delimLen > 0 && str.compare(i, delimLen, delim) == 0) {
+            out.push_back(current);
+            current.clear();
+            i += delimLen;
+        } else {
+            current += str[i];
+            ++i;
+        }
+    }
+    out.push_back(current);
+}
+}
+
+void muse::strings::split(const std::string& str, std::vector<std::string>& out, const std::string& delim,
+                          const std::string& esc)
+{
+    if (esc.empty()) {
+        split_simple(str, out, delim);
+    } else {
+        split_handle_escape(str, out, delim, esc);
+    }
+}
+
+namespace {
+std::string join_simple(const std::vector<std::string>& strs, const std::string& sep)
 {
     std::string str;
     bool first = true;
@@ -60,6 +113,43 @@ std::string muse::strings::join(const std::vector<std::string>& strs, const std:
         str += s;
     }
     return str;
+}
+
+//! Join that prefixes any separator or escape characters in the input with the escape string.
+std::string join_handle_escape(const std::vector<std::string>& strs, const std::string& sep, const std::string& esc)
+{
+    std::string str;
+    bool first = true;
+    for (const std::string& s : strs) {
+        if (!first) {
+            str += sep;
+        }
+        first = false;
+        for (size_t i = 0; i < s.size(); ++i) {
+            if (esc.size() > 0 && s.compare(i, esc.size(), esc) == 0) {
+                str += esc;
+                str += esc;
+                i += esc.size() - 1;
+            } else if (!sep.empty() && s.compare(i, sep.size(), sep) == 0) {
+                str += esc;
+                str += sep;
+                i += sep.size() - 1;
+            } else {
+                str += s[i];
+            }
+        }
+    }
+    return str;
+}
+}
+
+std::string muse::strings::join(const std::vector<std::string>& strs, const std::string& sep, const std::string& esc)
+{
+    if (esc.empty()) {
+        return join_simple(strs, sep);
+    } else {
+        return join_handle_escape(strs, sep, esc);
+    }
 }
 
 void muse::strings::ltrim(std::string& s)
