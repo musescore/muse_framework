@@ -26,9 +26,10 @@
 
 #include "modularity/ioc.h"
 #include "global/iglobalconfiguration.h"
+#include "global/async/asyncable.h"
 
 namespace muse::audioplugins {
-class AudioPluginsConfiguration : public IAudioPluginsConfiguration, public muse::Contextable
+class AudioPluginsConfiguration : public IAudioPluginsConfiguration, public muse::Contextable, public async::Asyncable
 {
     muse::GlobalInject<IGlobalConfiguration> globalConfiguration;
 

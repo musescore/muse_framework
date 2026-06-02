@@ -32,7 +32,7 @@ static const Settings::Key NEED_SCAN_FOR_PLUGINS_ON_START(module_name, "applicat
 void AudioPluginsConfiguration::init()
 {
     settings()->setDefaultValue(NEED_SCAN_FOR_PLUGINS_ON_START, Val(true));
-    settings()->valueChanged(NEED_SCAN_FOR_PLUGINS_ON_START).onReceive(nullptr, [this](const Val& val) {
+    settings()->valueChanged(NEED_SCAN_FOR_PLUGINS_ON_START).onReceive(this, [this](const Val& val) {
         m_needScanForPluginsOnStartChanged.send(val.toBool());
     });
 }
