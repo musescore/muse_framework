@@ -30,7 +30,7 @@ using namespace muse::update;
 AppUpdateModel::AppUpdateModel(QObject* parent)
     : QObject(parent), Contextable(muse::iocCtxForQmlObject(this))
 {
-    setProgressTitle(muse::qtrc("update", "Updating MuseScore Studio"));
+    setProgressTitle(muse::qtrc("update", "Updating %1").arg(application()->title().toQString()));
 }
 
 AppUpdateModel::~AppUpdateModel()
@@ -59,9 +59,9 @@ void AppUpdateModel::load(const QString& mode)
     const RetVal<ReleaseInfo>& info = service()->lastCheckResult();
 
     //: Means that the download is currently in progress.
-    //: %1 will be replaced by the version number of the version that is being downloaded.
-    setProgressTitle(muse::qtrc("update", "Downloading MuseScore Studio %1")
-                     .arg(QString::fromStdString(info.val.version)));
+    //: %1 will be replaced by the app name, %2 by the version number of the version that is being downloaded.
+    setProgressTitle(muse::qtrc("update", "Downloading %1 %2")
+                     .arg(application()->title().toQString(), QString::fromStdString(info.val.version)));
 
     m_progress.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string&) {
         setCurrentProgress(current);

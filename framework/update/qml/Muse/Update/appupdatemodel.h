@@ -27,6 +27,7 @@
 
 #include "modularity/ioc.h"
 #include "async/asyncable.h"
+#include "global/iapplication.h"
 
 #include "iappupdateservice.h"
 
@@ -41,6 +42,7 @@ class AppUpdateModel : public QObject, public Contextable, public async::Asyncab
 
     QML_ELEMENT
 
+    GlobalInject<IApplication> application;
     ContextInject<IAppUpdateService> service = { this };
 
 public:
