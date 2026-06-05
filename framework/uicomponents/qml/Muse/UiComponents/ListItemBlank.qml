@@ -38,6 +38,11 @@ FocusableControl {
     property color hoverHitColor: ui.theme.buttonColor
     property color selectedColor: ui.theme.accentColor
 
+    //! NOTE A focused item receives a Qt ShortcutOverride event for the Delete/Backspace
+    //! keys before they are dispatched as global shortcuts. Accepting that event swallows
+    //! the keys so the global Delete shortcut never fires.
+    property bool keyboardRemovable: false
+
     signal clicked(var mouse)
     signal doubleClicked(var mouse)
     signal hovered(var isHovered, real mouseX, real mouseY)
@@ -97,6 +102,10 @@ FocusableControl {
     onNavigationTriggered: root.clicked(null)
 
     Keys.onShortcutOverride: function(event) {
+        if (!root.keyboardRemovable) {
+            return
+        }
+
         switch (event.key) {
         case Qt.Key_Backspace:
         case Qt.Key_Delete:
