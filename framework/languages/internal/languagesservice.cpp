@@ -30,6 +30,7 @@
 #include <QJsonParseError>
 #include <QQmlEngine>
 #include <QTranslator>
+#include <clocale>
 
 #include "languageserrors.h"
 
@@ -211,6 +212,9 @@ void LanguagesService::setCurrentLanguage(const QString& languageCode)
     QLocale locale(lang.code);
     QLocale::setDefault(locale);
     qGuiApp->setLayoutDirection(locale.textDirection());
+    if (!std::setlocale(LC_TIME, locale.name().toStdString().c_str())) {
+        LOGW() << "Failed to set LC_TIME locale for language code:" << locale.name();
+    }
 
     lang.direction = locale.textDirection();
 
