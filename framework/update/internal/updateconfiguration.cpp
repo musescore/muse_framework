@@ -34,6 +34,7 @@ static const Settings::Key CHECK_FOR_UPDATE_KEY(module_name, "application/checkF
 static const Settings::Key CHECK_FOR_UPDATE_TEST_MODE_KEY(module_name, "application/checkForUpdateTestMode");
 static const Settings::Key ALLOW_UPDATE_ON_PRERELEASE(module_name, "application/allowUpdateOnPreRelease");
 static const Settings::Key SKIPPED_VERSION_KEY(module_name, "application/skippedVersion");
+static const Settings::Key AUTO_INSTALL_KEY(module_name, "application/autoInstall");
 
 void UpdateConfiguration::init()
 {
@@ -53,6 +54,8 @@ void UpdateConfiguration::init()
     allowUpdateOnPreRelease = false;
 #endif
     settings()->setDefaultValue(ALLOW_UPDATE_ON_PRERELEASE, Val(allowUpdateOnPreRelease));
+
+    settings()->setDefaultValue(AUTO_INSTALL_KEY, Val(true));
 }
 
 bool UpdateConfiguration::isAppUpdatable() const
@@ -83,6 +86,16 @@ void UpdateConfiguration::setNeedCheckForUpdate(bool needCheck)
 async::Notification UpdateConfiguration::needCheckForUpdateChanged() const
 {
     return m_needCheckForUpdateChanged;
+}
+
+bool UpdateConfiguration::autoInstallEnabled() const
+{
+    return settings()->value(AUTO_INSTALL_KEY).toBool();
+}
+
+void UpdateConfiguration::setAutoInstallEnabled(bool enabled)
+{
+    settings()->setSharedValue(AUTO_INSTALL_KEY, Val(enabled));
 }
 
 std::string UpdateConfiguration::skippedReleaseVersion() const

@@ -45,6 +45,11 @@ public:
     virtual void setNeedCheckForUpdate(bool needCheck) = 0;
     virtual muse::async::Notification needCheckForUpdateChanged() const = 0;
 
+    //! User preference: apply updates in-place and restart automatically (when
+    //! the platform supports it) instead of opening the downloaded installer.
+    virtual bool autoInstallEnabled() const = 0;
+    virtual void setAutoInstallEnabled(bool enabled) = 0;
+
     virtual std::string skippedReleaseVersion() const = 0;
     virtual void setSkippedReleaseVersion(const std::string& version) = 0;
 

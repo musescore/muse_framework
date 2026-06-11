@@ -41,5 +41,14 @@ public:
     virtual async::Promise<muse::RetVal<ReleaseInfo> > checkForUpdate() = 0;
     virtual const RetVal<ReleaseInfo>& lastCheckResult() const = 0;
     virtual RetVal<Progress> downloadRelease() = 0;
+
+    //! Whether the downloaded release can be installed in-place automatically
+    //! (replace the install location and restart) instead of handing the
+    //! installer to the user.
+    virtual bool canAutoInstall() const = 0;
+
+    //! Apply a previously downloaded release in-place. Returns OK if the update
+    //! was successfully staged; the caller must then quit the application.
+    virtual Ret applyUpdate(const muse::io::path_t& packagePath) = 0;
 };
 }

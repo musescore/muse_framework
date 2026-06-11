@@ -33,6 +33,7 @@
 #include "network/inetworkmanagercreator.h"
 #include "update/iupdateconfiguration.h"
 #include "update/iupdaterequestparamsprovider.h"
+#include "update/iupdateinstaller.h"
 
 namespace muse::update {
 class AppUpdateService : public IAppUpdateService, public Contextable, public async::Asyncable
@@ -43,6 +44,7 @@ class AppUpdateService : public IAppUpdateService, public Contextable, public as
     GlobalInject<IUpdateRequestParamsProvider> requestParamsProvider;
     GlobalInject<network::INetworkManagerCreator> networkManagerCreator;
     GlobalInject<IApplication> application;
+    GlobalInject<IUpdateInstaller> updateInstaller;
 
 public:
     AppUpdateService(const modularity::ContextPtr& iocCtx)
@@ -53,6 +55,9 @@ public:
     async::Promise<RetVal<ReleaseInfo> > checkForUpdate() override;
     const RetVal<ReleaseInfo>& lastCheckResult() const override;
     RetVal<Progress> downloadRelease() override;
+
+    bool canAutoInstall() const override;
+    Ret applyUpdate(const muse::io::path_t& packagePath) override;
 
 private:
     friend class AppUpdateServiceTests;
@@ -69,7 +74,10 @@ private:
 
     RetVal<ReleaseInfo> parseRelease(const QByteArray& json) const;
 
-    std::string platformFileSuffix() const;
+    //! Ordered list of acceptable asset suffixes for this platform, most
+    //! preferred first (e.g. "zip" before "dmg" on macOS when auto-install is
+    //! available).
+    std::vector<std::string> platformFileSuffixes() const;
     QJsonObject resolveReleaseAsset(const QJsonObject& release) const;
 
     using PrevReleaseNotesCallback = std::function<void (const PrevReleasesNotesList&)>;

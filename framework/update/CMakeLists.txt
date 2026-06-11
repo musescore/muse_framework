@@ -29,6 +29,7 @@ target_sources(muse_update PRIVATE
     iupdaterequestparamsprovider.h
     iappupdatescenario.h
     iappupdateservice.h
+    iupdateinstaller.h
     updatecommands.h
 
     internal/updateconfiguration.cpp
@@ -47,8 +48,24 @@ target_sources(muse_update PRIVATE
     internal/appupdateservice.h
 )
 
+if (OS_IS_MAC)
+    target_sources(muse_update PRIVATE
+        internal/platform/mac/macupdateinstaller.cpp
+        internal/platform/mac/macupdateinstaller.h
+    )
+else()
+    target_sources(muse_update PRIVATE
+        internal/platform/stub/updateinstallerstub.cpp
+        internal/platform/stub/updateinstallerstub.h
+    )
+endif()
+
 if (MUSE_QT_SUPPORT)
     target_link_libraries(muse_update PRIVATE Qt::Concurrent)
+endif()
+
+if (NOT CC_IS_EMCC)
+    add_subdirectory(helper)
 endif()
 
 if (MUSE_MODULE_UPDATE_TESTS)

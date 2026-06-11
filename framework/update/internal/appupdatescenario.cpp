@@ -190,7 +190,51 @@ Promise<Ret> AppUpdateScenario::downloadRelease()
     if (!rv.ret) {
         return processUpdateError(rv.ret.code());
     }
-    return askToCloseAppAndCompleteInstall(rv.val.toString());
+
+    const io::path_t packagePath = rv.val.toString();
+
+    //! NOTE: In-place auto-install currently supports a single window only;
+    //! otherwise fall back to handing the installer to the user.
+    if (service()->canAutoInstall() && multiwindowsProvider()->windowCount() == 1) {
+        return askToRestartAndInstall(packagePath);
+    }
+
+    return askToCloseAppAndCompleteInstall(packagePath);
+}
+
+Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& packagePath)
+{
+    const std::string info = muse::qtrc("update", "%1 has downloaded an update and is ready to install it. "
+                                                  "%1 will restart to complete the installation. "
+                                                  "If you have any unsaved changes, you will be prompted to save them first.")
+                             .arg(application()->title().toQString()).toStdString();
+    const int restartBtn = int(IInteractive::Button::CustomButton) + 1;
+    const IInteractive::ButtonDatas buttons = {
+        interactive()->buttonData(IInteractive::Button::Cancel),
+        IInteractive::ButtonData(restartBtn, muse::trc("update", "Restart"), true)
+    };
+
+    return interactive()->info("", info, buttons, restartBtn)
+           .then<Ret>(this, [this, packagePath](const IInteractive::Result& res, auto resolve) {
+        if (res.isButton(IInteractive::Button::Cancel)) {
+            return resolve(muse::make_ret(Ret::Code::Cancel));
+        }
+
+        const Ret ret = service()->applyUpdate(packagePath);
+        if (!ret) {
+            LOGE() << "failed to apply update in-place, falling back to manual install: " << ret.toString();
+            askToCloseAppAndCompleteInstall(packagePath).onResolve(this, [resolve](const Ret& r) {
+                (void)resolve(r);
+            });
+            return Promise<Ret>::dummy_result();
+        }
+
+        //! NOTE: The helper has been spawned and will replace the app and
+        //! relaunch once we quit. Quit without an installer path so the legacy
+        //! "open installer" path is not taken.
+        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
+        return resolve(muse::make_ok());
+    });
 }
 
 Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall(const io::path_t& installerPath)

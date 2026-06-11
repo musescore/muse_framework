@@ -349,21 +349,27 @@ RetVal<ReleaseInfo> AppUpdateService::parseRelease(const QByteArray& json) const
     return result;
 }
 
-std::string AppUpdateService::platformFileSuffix() const
+std::vector<std::string> AppUpdateService::platformFileSuffixes() const
 {
     switch (systemInfo()->productType()) {
-    case ISystemInfo::ProductType::Windows: return "msi";
-    case ISystemInfo::ProductType::MacOS: return "dmg";
-    case ISystemInfo::ProductType::Linux: return "appimage";
+    case ISystemInfo::ProductType::Windows: return { "msi" };
+    case ISystemInfo::ProductType::MacOS:
+        // Prefer the zip bundle for in-place auto-install, falling back to the
+        // dmg for the manual flow (and for releases that ship only a dmg).
+        if (canAutoInstall()) {
+            return { "zip", "dmg" };
+        }
+        return { "dmg" };
+    case ISystemInfo::ProductType::Linux: return { "appimage" };
     case ISystemInfo::ProductType::Unknown: break;
     }
 
-    return "";
+    return {};
 }
 
 QJsonObject AppUpdateService::resolveReleaseAsset(const QJsonObject& release) const
 {
-    std::string fileSuffix = platformFileSuffix();
+    const std::vector<std::string> fileSuffixes = platformFileSuffixes();
     ISystemInfo::ProductType productType = systemInfo()->productType();
     ISystemInfo::CpuArchitecture arch = systemInfo()->cpuArchitecture();
 
@@ -372,24 +378,42 @@ QJsonObject AppUpdateService::resolveReleaseAsset(const QJsonObject& release) co
         assets.push_back(asset);
     }
 
-    for (const QJsonValue asset : assets) {
-        QJsonObject assetObj = asset.toObject();
+    // Honour suffix priority: scan all assets for the most preferred suffix
+    // before considering the next one.
+    for (const std::string& fileSuffix : fileSuffixes) {
+        for (const QJsonValue asset : assets) {
+            QJsonObject assetObj = asset.toObject();
 
-        QString name = assetObj.value("name").toString();
-        if (io::suffix(name) != fileSuffix) {
-            continue;
-        }
-
-        if (productType == ISystemInfo::ProductType::Linux) {
-            if (arch != ISystemInfo::CpuArchitecture::Unknown && arch != assetArch(name)) {
+            QString name = assetObj.value("name").toString();
+            if (io::suffix(name) != fileSuffix) {
                 continue;
             }
-        }
 
-        return assetObj;
+            if (productType == ISystemInfo::ProductType::Linux) {
+                if (arch != ISystemInfo::CpuArchitecture::Unknown && arch != assetArch(name)) {
+                    continue;
+                }
+            }
+
+            return assetObj;
+        }
     }
 
     return QJsonObject();
+}
+
+bool AppUpdateService::canAutoInstall() const
+{
+    if (!configuration()->autoInstallEnabled()) {
+        return false;
+    }
+
+    return updateInstaller()->isInPlaceUpdateSupported();
+}
+
+Ret AppUpdateService::applyUpdate(const muse::io::path_t& packagePath)
+{
+    return updateInstaller()->applyUpdate(packagePath);
 }
 
 void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished)
