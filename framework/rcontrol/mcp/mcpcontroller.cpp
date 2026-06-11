@@ -45,7 +45,7 @@ void McpController::init()
     });
 
     m_mcpServer->onToolsCallRequest([this](const std::string& name,
-                                           const JsonObject& args,
+                                           const JsonObject& /*args*/,
                                            const McpServer::ToolsCallResultHandler& onResult)
     {
         LOGDA() << "Tools call: " << name;
