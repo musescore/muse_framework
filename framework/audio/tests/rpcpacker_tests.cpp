@@ -21,6 +21,16 @@
  */
 #include <gtest/gtest.h>
 
+// audiotypes.h is included inside a `#pragma pack(push, 1)` region below so that
+// the KNOWN_FIELDS() size checks (which assert sizeof(T) equals the sum of its
+// field sizes) are not thrown off by alignment padding. Packing must NOT reach
+// the async infrastructure though: async::Channel ultimately stores a std::mutex
+// (and atomics) by value, and packing those to alignment 1 makes the atomic
+// operations in their destructors crash with SIGBUS on architectures that
+// require aligned atomics (e.g. arm64). Pre-include it here, unpacked, so the
+// pack region only affects the plain data structs declared in audiotypes.h.
+#include "global/async/channel.h"
+
 #pragma pack(push, 1)
 #include "audio/common/audiotypes.h"
 #pragma pack(pop)
