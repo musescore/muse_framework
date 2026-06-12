@@ -33,6 +33,7 @@ using ::testing::Return;
 #include "network/tests/mocks/networkmanagercreatormock.h"
 #include "network/tests/mocks/networkmanagermock.h"
 #include "global/tests/mocks/systeminfomock.h"
+#include "global/tests/mocks/filesystemmock.h"
 
 #include "update/internal/appupdateservice.h"
 
@@ -72,6 +73,9 @@ public:
 
         ON_CALL(*m_systemInfoMock, productType())
         .WillByDefault(Return(ISystemInfo::ProductType::Linux));
+
+        m_fileSystem = std::make_shared<NiceMock<io::FileSystemMock> >();
+        m_service->fileSystem.set(m_fileSystem);
     }
 
     void TearDown() override
@@ -136,13 +140,32 @@ public:
         }));
     }
 
+    //! [GIVEN] An available release is ready to be downloaded.
+    void givenAvailableRelease(const std::string& fileName = "MuseScore.dmg",
+                               const std::string& dataPath = "/tmp/upd")
+    {
+        ReleaseInfo info;
+        info.version = "1000.0";
+        info.fileName = fileName;
+        info.fileUrl = "http://test/" + fileName;
+        m_service->m_lastCheckResult = RetVal<ReleaseInfo>::make_ok(info);
+
+        ON_CALL(*m_configuration, updateDataPath())
+        .WillByDefault(Return(io::path_t(dataPath)));
+
+        ON_CALL(*m_fileSystem, makePath(_))
+        .WillByDefault(Return(muse::make_ok()));
+    }
+
     AppUpdateService* m_service = nullptr;
     std::shared_ptr<UpdateConfigurationMock> m_configuration;
     std::shared_ptr<muse::network::NetworkManagerCreatorMock> m_networkManagerCreator;
     std::shared_ptr<muse::network::NetworkManagerMock> m_networkManager;
     std::shared_ptr<SystemInfoMock> m_systemInfoMock;
+    std::shared_ptr<io::FileSystemMock> m_fileSystem;
     Progress m_getReleaseInfoProgress;
     Progress m_getPrevReleasesInfoProgress;
+    Progress m_downloadProgress;
 };
 }
 
@@ -374,4 +397,97 @@ TEST_F(AppUpdateServiceTests, CheckForUpdate_ReleasesNotes)
     //! [THEN] Should return correct release file
     EXPECT_TRUE(retVal.ret);
     EXPECT_EQ(retVal.val.previousReleasesNotes, expectedReleasesNotes);
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_FreshDownload_NoRangeHeader)
+{
+    //! [GIVEN] An available release and no partial download on disk
+    givenAvailableRelease();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(false)));
+
+    //! [WHEN] Download the release
+    RequestHeaders capturedHeaders;
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .WillOnce(testing::Invoke([this, &capturedHeaders](const QUrl&, IncomingDevicePtr, const RequestHeaders& headers) {
+        capturedHeaders = headers;
+        return RetVal<Progress>::make_ok(m_downloadProgress);
+    }));
+
+    m_service->downloadRelease();
+
+    //! [THEN] No Range header is sent (download starts from scratch)
+    EXPECT_FALSE(capturedHeaders.rawHeaders.contains("Range"));
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_ResumesFromPartial_SendsRangeHeader)
+{
+    //! [GIVEN] An available release with a 1000-byte partial download on disk
+    givenAvailableRelease();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, fileSize(_))
+    .WillByDefault(Return(RetVal<uint64_t>::make_ok(static_cast<uint64_t>(1000))));
+
+    //! [WHEN] Download the release
+    RequestHeaders capturedHeaders;
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .WillOnce(testing::Invoke([this, &capturedHeaders](const QUrl&, IncomingDevicePtr, const RequestHeaders& headers) {
+        capturedHeaders = headers;
+        return RetVal<Progress>::make_ok(m_downloadProgress);
+    }));
+
+    m_service->downloadRelease();
+
+    //! [THEN] A Range header requests the remaining bytes
+    EXPECT_EQ(capturedHeaders.rawHeaders.value("Range"), QByteArray("bytes=1000-"));
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_Success_PromotesPartialToFinal)
+{
+    //! [GIVEN] A fresh download of an available release
+    givenAvailableRelease();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(false)));
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .WillOnce(testing::Invoke([this](const QUrl&, IncomingDevicePtr, const RequestHeaders&) {
+        return RetVal<Progress>::make_ok(m_downloadProgress);
+    }));
+
+    //! [THEN] On success the partial file is promoted to the final package name
+    EXPECT_CALL(*m_fileSystem, move(io::path_t("/tmp/upd/MuseScore.dmg.part"),
+                                    io::path_t("/tmp/upd/MuseScore.dmg"), true))
+    .WillOnce(Return(muse::make_ok()));
+
+    m_service->downloadRelease();
+
+    //! [WHEN] The download finishes with HTTP 200 (full content received)
+    ProgressResult res = ProgressResult::make_ok(Val());
+    res.ret.setData("status", 200);
+    m_downloadProgress.finish(res);
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_RangeNotHonoured_DiscardsPartial)
+{
+    //! [GIVEN] A resume attempt (partial on disk -> Range requested)
+    givenAvailableRelease();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, fileSize(_))
+    .WillByDefault(Return(RetVal<uint64_t>::make_ok(static_cast<uint64_t>(1000))));
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .WillOnce(testing::Invoke([this](const QUrl&, IncomingDevicePtr, const RequestHeaders&) {
+        return RetVal<Progress>::make_ok(m_downloadProgress);
+    }));
+
+    //! [THEN] The now-stale partial file is removed so the next attempt starts clean
+    EXPECT_CALL(*m_fileSystem, remove(io::path_t("/tmp/upd/MuseScore.dmg.part"), false))
+    .WillOnce(Return(muse::make_ok()));
+
+    m_service->downloadRelease();
+
+    //! [WHEN] The server ignored the Range request and replied with HTTP 200
+    ProgressResult res = ProgressResult::make_ok(Val());
+    res.ret.setData("status", 200);
+    m_downloadProgress.finish(res);
 }

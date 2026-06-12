@@ -36,5 +36,14 @@ public:
 
     bool hasUpdate() const override;
     muse::async::Promise<Ret> showUpdate() override;
+
+    bool canAutoInstall() const override;
+    void downloadUpdateInBackground() override;
+
+    bool hasReadyUpdate() const override;
+    async::Notification hasReadyUpdateChanged() const override;
+    std::string readyUpdateVersion() const override;
+
+    void installReadyUpdate() override;
 };
 }

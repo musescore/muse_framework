@@ -59,6 +59,9 @@ public:
     bool canAutoInstall() const override;
     Ret applyUpdate(const muse::io::path_t& packagePath) override;
 
+    bool isReleaseDownloaded() const override;
+    muse::io::path_t downloadedReleasePath() const override;
+
 private:
     friend class AppUpdateServiceTests;
 
@@ -79,6 +82,8 @@ private:
     //! available).
     std::vector<std::string> platformFileSuffixes() const;
     QJsonObject resolveReleaseAsset(const QJsonObject& release) const;
+
+    void cleanupStalePackages(const std::string& keepFileName);
 
     using PrevReleaseNotesCallback = std::function<void (const PrevReleasesNotesList&)>;
     void downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished);

@@ -26,9 +26,12 @@ qt_add_qml_module(muse_update_qml
     SOURCES
         appupdatemodel.cpp
         appupdatemodel.h
+        updatebannermodel.cpp
+        updatebannermodel.h
     QML_FILES
         AppReleaseInfoDialog.qml
         AppUpdateProgressDialog.qml
+        UpdateBanner.qml
         internal/AppReleaseInfoBottomPanel.qml
         internal/ReleaseNotesView.qml
     IMPORTS

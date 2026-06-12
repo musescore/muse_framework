@@ -53,3 +53,31 @@ muse::async::Promise<muse::Ret> AppUpdateScenarioStub::showUpdate()
         return reject(int(muse::Ret::Code::UnknownError), "stub");
     });
 }
+
+bool AppUpdateScenarioStub::canAutoInstall() const
+{
+    return false;
+}
+
+void AppUpdateScenarioStub::downloadUpdateInBackground()
+{
+}
+
+bool AppUpdateScenarioStub::hasReadyUpdate() const
+{
+    return false;
+}
+
+muse::async::Notification AppUpdateScenarioStub::hasReadyUpdateChanged() const
+{
+    return {};
+}
+
+std::string AppUpdateScenarioStub::readyUpdateVersion() const
+{
+    return {};
+}
+
+void AppUpdateScenarioStub::installReadyUpdate()
+{
+}

@@ -46,6 +46,8 @@ target_sources(muse_update PRIVATE
     internal/appupdatescenario.h
     internal/appupdateservice.cpp
     internal/appupdateservice.h
+    internal/downloadfiledevice.cpp
+    internal/downloadfiledevice.h
 )
 
 if (OS_IS_MAC)

@@ -42,3 +42,23 @@ RetVal<Progress> AppUpdateServiceStub::downloadRelease()
 {
     return RetVal<Progress>::make_ret(Ret::Code::NotSupported);
 }
+
+bool AppUpdateServiceStub::canAutoInstall() const
+{
+    return false;
+}
+
+Ret AppUpdateServiceStub::applyUpdate(const muse::io::path_t&)
+{
+    return make_ret(Ret::Code::NotSupported);
+}
+
+bool AppUpdateServiceStub::isReleaseDownloaded() const
+{
+    return false;
+}
+
+muse::io::path_t AppUpdateServiceStub::downloadedReleasePath() const
+{
+    return {};
+}

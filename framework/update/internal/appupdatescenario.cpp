@@ -267,3 +267,77 @@ bool AppUpdateScenario::shouldIgnoreUpdate(const ReleaseInfo& info) const
 {
     return info.version == configuration()->skippedReleaseVersion() && !configuration()->checkForUpdateTestMode();
 }
+
+bool AppUpdateScenario::canAutoInstall() const
+{
+    return service()->canAutoInstall();
+}
+
+void AppUpdateScenario::downloadUpdateInBackground()
+{
+    if (m_bgDownloadInProgress || hasReadyUpdate()) {
+        return;
+    }
+
+    if (!hasUpdate() || !service()->canAutoInstall()) {
+        return;
+    }
+
+    //! NOTE: This release was already downloaded in a previous session and is
+    //! waiting to be installed - surface it without downloading again.
+    if (service()->isReleaseDownloaded()) {
+        m_readyPackagePath = service()->downloadedReleasePath();
+        m_readyUpdateVersion = service()->lastCheckResult().val.version;
+        m_hasReadyUpdateChanged.notify();
+        return;
+    }
+
+    RetVal<Progress> progress = service()->downloadRelease();
+    if (!progress.ret) {
+        LOGE() << progress.ret.toString();
+        return;
+    }
+
+    m_bgDownloadInProgress = true;
+
+    progress.val.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string& msg) {
+        LOGE() << "progress: " << current << " / " << total << " " << msg;
+    });
+
+    progress.val.finished().onReceive(this, [this](const ProgressResult& res) {
+        m_bgDownloadInProgress = false;
+
+        if (!res.ret) {
+            LOGE() << res.ret.toString();
+            return;
+        }
+
+        m_readyPackagePath = res.val.toString();
+        m_readyUpdateVersion = service()->lastCheckResult().val.version;
+        m_hasReadyUpdateChanged.notify();
+    });
+}
+
+bool AppUpdateScenario::hasReadyUpdate() const
+{
+    return !m_readyPackagePath.empty();
+}
+
+async::Notification AppUpdateScenario::hasReadyUpdateChanged() const
+{
+    return m_hasReadyUpdateChanged;
+}
+
+std::string AppUpdateScenario::readyUpdateVersion() const
+{
+    return m_readyUpdateVersion;
+}
+
+void AppUpdateScenario::installReadyUpdate()
+{
+    if (m_readyPackagePath.empty()) {
+        return;
+    }
+
+    askToRestartAndInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
+}

@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2025 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,23 +19,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include "updatebannermodel.h"
 
-#pragma once
+using namespace muse::update;
 
-#include "update/iappupdateservice.h"
-
-namespace muse::update {
-class AppUpdateServiceStub : public IAppUpdateService
+UpdateBannerModel::UpdateBannerModel(QObject* parent)
+    : QObject(parent), Contextable(muse::iocCtxForQmlObject(this))
 {
-public:
-    async::Promise<muse::RetVal<ReleaseInfo> > checkForUpdate() override;
-    const RetVal<ReleaseInfo>& lastCheckResult() const override;
-    RetVal<Progress> downloadRelease() override;
+}
 
-    bool canAutoInstall() const override;
-    Ret applyUpdate(const muse::io::path_t& packagePath) override;
+void UpdateBannerModel::load()
+{
+    scenario()->hasReadyUpdateChanged().onNotify(this, [this]() {
+        emit updateReadyChanged();
+    });
+}
 
-    bool isReleaseDownloaded() const override;
-    muse::io::path_t downloadedReleasePath() const override;
-};
+bool UpdateBannerModel::updateReady() const
+{
+    return scenario()->hasReadyUpdate();
+}
+
+QString UpdateBannerModel::updateVersion() const
+{
+    return QString::fromStdString(scenario()->readyUpdateVersion());
+}
+
+void UpdateBannerModel::install()
+{
+    scenario()->installReadyUpdate();
 }

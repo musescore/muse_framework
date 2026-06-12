@@ -32,6 +32,8 @@
 
 #include "update/updateerrors.h"
 
+#include "downloadfiledevice.h"
+
 #include "defer.h"
 #include "translation.h"
 #include "log.h"
@@ -44,6 +46,8 @@ using namespace muse::io;
 
 const QString INSTALLED_WEEK_BEGINNING_KEY("Installed-Week-Beginning");
 const QString PREVIOUS_REQUEST_DAY_KEY("Previous-Request-Day");
+
+static const std::string PARTIAL_SUFFIX(".part");
 
 static QDate calculateWeekBeginForDate(const QDate& date)
 {
@@ -186,18 +190,23 @@ Promise<RetVal<ReleaseInfo> > AppUpdateService::checkForUpdate()
             bool isPreRelease = update.preRelease();
 
             if (!allowUpdateOnPreRelease && isPreRelease) {
+                cleanupStalePackages(/*keepFileName*/ std::string());
                 m_lastCheckResult.ret = make_ret(Err::NoUpdate);
                 (void)resolve(m_lastCheckResult);
                 return;
             }
 
             if (update <= current) {
+                cleanupStalePackages(/*keepFileName*/ std::string());
                 m_lastCheckResult.ret = make_ret(Err::NoUpdate);
                 (void)resolve(m_lastCheckResult);
                 return;
             }
 
             m_lastCheckResult = releaseInfo;
+
+            //! NOTE: Keep an already-downloaded package for this release; drop stale ones.
+            cleanupStalePackages(releaseInfo.val.fileName);
 
             downloadPreviousReleasesNotes(update, [this, resolve](const PrevReleasesNotesList& notes) {
                 m_lastCheckResult.val.previousReleasesNotes = notes;
@@ -222,9 +231,29 @@ RetVal<Progress> AppUpdateService::downloadRelease()
 
     const ReleaseInfo info = m_lastCheckResult.val;
     const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
-    auto buff = std::make_shared<QBuffer>();
 
-    RetVal<Progress> downloadProgress = m_networkManager->get(fileUrl, buff);
+    const path_t finalPath = configuration()->updateDataPath() + "/" + info.fileName;
+    const path_t partialPath = finalPath + PARTIAL_SUFFIX;
+    fileSystem()->makePath(muse::io::absoluteDirpath(partialPath));
+
+    //! NOTE: Resume an interrupted download by appending to the partial file and
+    //! requesting the remaining bytes via a Range header.
+    uint64_t offset = 0;
+    if (fileSystem()->exists(partialPath)) {
+        RetVal<uint64_t> sz = fileSystem()->fileSize(partialPath);
+        offset = sz.ret ? sz.val : 0;
+    }
+
+    RequestHeaders headers;
+    io::IODevice::OpenMode mode = io::IODevice::WriteOnly;
+    if (offset > 0) {
+        headers.rawHeaders["Range"] = QByteArray("bytes=") + QByteArray::number(static_cast<qulonglong>(offset)) + "-";
+        mode = io::IODevice::Append;
+    }
+
+    auto device = std::make_shared<DownloadFileDevice>(partialPath, mode);
+
+    RetVal<Progress> downloadProgress = m_networkManager->get(fileUrl, device, headers);
     if (!downloadProgress.ret) {
         return RetVal<Progress>::make_ret(downloadProgress.ret);
     }
@@ -237,26 +266,37 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         m_updateProgress.canceled().disconnect(this);
     });
 
-    downloadProgress.val.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string& msg) {
-        m_updateProgress.progress(current, total, msg);
+    downloadProgress.val.progressChanged().onReceive(this, [this, offset](int64_t current, int64_t total, const std::string& msg) {
+        m_updateProgress.progress(static_cast<int64_t>(offset) + current, static_cast<int64_t>(offset) + total, msg);
     });
 
-    downloadProgress.val.finished().onReceive(this, [this, info, buff](const ProgressResult& res) {
+    downloadProgress.val.finished().onReceive(this, [this, finalPath, partialPath, offset](const ProgressResult& res) {
         if (!res.ret) {
+            //! NOTE: Keep the partial file so the next attempt can resume from it.
             m_updateProgress.finish(ProgressResult::make_ret(res.ret));
             return;
         }
 
-        const path_t installerPath = configuration()->updateDataPath() + "/" + info.fileName;
-        fileSystem()->makePath(muse::io::absoluteDirpath(installerPath));
+        const int status = res.ret.data<int>("status", 0);
 
-        const Ret ret = fileSystem()->writeFile(installerPath, ByteArray::fromQByteArrayNoCopy(buff->data()));
+        //! NOTE: We requested a range but the server sent the full file (200) or
+        //! rejected the range (416); the partial file is now stale/corrupt - drop
+        //! it so the next attempt starts clean.
+        if (offset > 0 && (status == 200 || status == 416)) {
+            fileSystem()->remove(partialPath);
+            m_updateProgress.finish(ProgressResult::make_ret(make_ret(Err::NetworkError, "range request not honoured")));
+            return;
+        }
+
+        //! Success (200 fresh download or 206 resumed): promote the partial file
+        //! to the final package name.
+        const Ret ret = fileSystem()->move(partialPath, finalPath, /*replace*/ true);
         if (!ret) {
             m_updateProgress.finish(ProgressResult::make_ret(ret));
             return;
         }
 
-        m_updateProgress.finish(ProgressResult::make_ok(Val(installerPath)));
+        m_updateProgress.finish(ProgressResult::make_ok(Val(finalPath)));
     });
 
     return RetVal<Progress>::make_ok(m_updateProgress);
@@ -479,8 +519,62 @@ void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersio
 void AppUpdateService::clear()
 {
     m_lastCheckResult = RetVal<ReleaseInfo>::make_ok(ReleaseInfo());
+}
 
+void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
+{
 #if !defined(Q_OS_LINUX)
-    fileSystem()->remove(configuration()->updateDataPath());
+    const io::path_t dir = configuration()->updateDataPath();
+    if (!fileSystem()->exists(dir)) {
+        return;
+    }
+
+    //! NOTE: No relevant package to keep -> drop everything.
+    if (keepFileName.empty()) {
+        fileSystem()->remove(dir);
+        return;
+    }
+
+    RetVal<io::paths_t> entries = fileSystem()->scanFiles(dir, {}, io::ScanMode::FilesAndFoldersInCurrentDir);
+    if (!entries.ret) {
+        return;
+    }
+
+    //! NOTE: Keep both the finished package and its in-progress ".part" file so an
+    //! interrupted download of the current release can still be resumed.
+    const std::string keepPartial = keepFileName + PARTIAL_SUFFIX;
+
+    for (const io::path_t& entry : entries.val) {
+        const std::string name = io::filename(entry).toStdString();
+        if (name != keepFileName && name != keepPartial) {
+            fileSystem()->remove(entry);
+        }
+    }
+#else
+    UNUSED(keepFileName);
 #endif
+}
+
+bool AppUpdateService::isReleaseDownloaded() const
+{
+    return !downloadedReleasePath().empty();
+}
+
+io::path_t AppUpdateService::downloadedReleasePath() const
+{
+    if (!m_lastCheckResult.ret) {
+        return {};
+    }
+
+    const std::string& fileName = m_lastCheckResult.val.fileName;
+    if (fileName.empty()) {
+        return {};
+    }
+
+    const io::path_t path = configuration()->updateDataPath() + "/" + fileName;
+    if (!fileSystem()->exists(path)) {
+        return {};
+    }
+
+    return path;
 }

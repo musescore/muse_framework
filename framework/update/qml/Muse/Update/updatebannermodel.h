@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2025 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,34 +19,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-#include "types/retval.h"
-#include "async/promise.h"
-#include "progress.h"
+#include <QObject>
+#include <qqmlintegration.h>
 
-#include "updatetypes.h"
+#include "async/asyncable.h"
 
-#include "modularity/imoduleinterface.h"
+#include "modularity/ioc.h"
+
+#include "iappupdatescenario.h"
 
 namespace muse::update {
-class IAppUpdateService : MODULE_CONTEXT_INTERFACE
+class UpdateBannerModel : public QObject, public Contextable, public async::Asyncable
 {
-    INTERFACE_ID(IAppUpdateService)
+    Q_OBJECT
+
+    Q_PROPERTY(bool updateReady READ updateReady NOTIFY updateReadyChanged)
+    Q_PROPERTY(QString updateVersion READ updateVersion NOTIFY updateReadyChanged)
+
+    QML_ELEMENT
+
+    ContextInject<IAppUpdateScenario> scenario = { this };
 
 public:
-    virtual ~IAppUpdateService() = default;
+    explicit UpdateBannerModel(QObject* parent = nullptr);
 
-    virtual async::Promise<muse::RetVal<ReleaseInfo> > checkForUpdate() = 0;
-    virtual const RetVal<ReleaseInfo>& lastCheckResult() const = 0;
-    virtual RetVal<Progress> downloadRelease() = 0;
+    Q_INVOKABLE void load();
+    Q_INVOKABLE void install();
 
-    virtual bool isReleaseDownloaded() const = 0;
-    virtual muse::io::path_t downloadedReleasePath() const = 0;
+    bool updateReady() const;
+    QString updateVersion() const;
 
-    virtual bool canAutoInstall() const = 0;
-
-    virtual Ret applyUpdate(const muse::io::path_t& packagePath) = 0;
+signals:
+    void updateReadyChanged();
 };
 }
