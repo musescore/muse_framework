@@ -20,21 +20,26 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <memory>
+
+#include "global/async/channel.h"
 
 #include "commandtypes.h"
 
 namespace muse::rcommand {
-class IModuleCommands
+class IModuleCommandsState
 {
 public:
-
-    virtual ~IModuleCommands() = default;
+    virtual ~IModuleCommandsState() = default;
 
     virtual std::string moduleName() const = 0;
-    virtual const std::vector<CommandInfo>& commandInfos() const = 0;
+
+    virtual void init() = 0;
+    virtual void deinit() = 0;
+
+    virtual CommandState commandState(const Command& command) const = 0;
+    virtual async::Channel<Command, CommandState> commandStateChanged() const = 0;
 };
 
-using IModuleCommandsPtr = std::shared_ptr<IModuleCommands>;
+using IModuleCommandsStatePtr = std::shared_ptr<IModuleCommandsState>;
 }

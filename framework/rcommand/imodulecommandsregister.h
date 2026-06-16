@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore/Audacity CLA applies
  *
- * Copyright (C) 2026 MuseScore/Audacity and others
+ * Copyright (C) MuseScore/Audacity and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,30 +16,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
  #pragma once
 
- #include <map>
- #include <string>
+#include <string>
+#include <vector>
+#include <memory>
 
- #include "../icommandsregister.h"
+#include "commandtypes.h"
 
 namespace muse::rcommand {
-class CommandsRegister : public ICommandsRegister
+class IModuleCommandsRegister
 {
 public:
-    CommandsRegister() = default;
 
-    void reg(const IModuleCommandsRegisterPtr& module) override;
-    void unreg(const IModuleCommandsRegisterPtr& module) override;
-    IModuleCommandsRegisterPtr moduleRegister(const std::string& moduleName) const override;
+    virtual ~IModuleCommandsRegister() = default;
 
-    std::vector<CommandInfo> commandList() const override;
+    virtual std::string moduleName() const = 0;
 
-    const std::string& commandModuleName(const Command& command) const override;
-
-private:
-    std::map<std::string, IModuleCommandsRegisterPtr> m_modules;
-
-    std::map<Command, std::string> m_commandModuleNames;
+    virtual const std::vector<Command>& commandList() const = 0;
+    virtual const std::vector<CommandInfo>& commandInfoList() const = 0;
 };
+
+using IModuleCommandsRegisterPtr = std::shared_ptr<IModuleCommandsRegister>;
 }

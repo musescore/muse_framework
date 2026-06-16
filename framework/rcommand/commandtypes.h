@@ -89,6 +89,27 @@ struct CommandInfo
     Decoration decoration;
 };
 
+struct CommandState {
+    bool enabled = false;
+    bool checked = false;
+
+    CommandState() = default;
+    CommandState(bool enabled, bool checked)
+        : enabled(enabled), checked(checked) {}
+    CommandState(bool enabled)
+        : enabled(enabled), checked(false) {}
+
+    bool operator==(const CommandState& other) const
+    {
+        return enabled == other.enabled && checked == other.checked;
+    }
+
+    bool operator!=(const CommandState& other) const
+    {
+        return !this->operator==(other);
+    }
+};
+
 // Call
 
 using CallId = uint64_t;

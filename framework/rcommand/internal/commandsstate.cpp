@@ -17,14 +17,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "commandsregister.h"
-
-#include "log.h"
+#include "commandsstate.h"
 
 using namespace muse;
 using namespace muse::rcommand;
 
-void CommandsRegister::reg(const IModuleCommandsRegisterPtr& module)
+void CommandsState::reg(const IModuleCommandsStatePtr& module)
 {
     IF_ASSERT_FAILED(module) {
         return;
@@ -42,12 +40,15 @@ void CommandsRegister::reg(const IModuleCommandsRegisterPtr& module)
 
     m_modules[moduleName] = module;
 
-    for (const auto& info : module->commandInfoList()) {
-        m_commandModuleNames[info.command] = moduleName;
-    }
+    module->commandStateChanged().onReceive(this, [this](const Command& command, const CommandState& state) {
+        m_cache[command] = state;
+        m_commandStateChanged.send(command, state);
+    });
+
+    module->init();
 }
 
-void CommandsRegister::unreg(const IModuleCommandsRegisterPtr& module)
+void CommandsState::unreg(const IModuleCommandsStatePtr& module)
 {
     IF_ASSERT_FAILED(module) {
         return;
@@ -58,40 +59,44 @@ void CommandsRegister::unreg(const IModuleCommandsRegisterPtr& module)
         return;
     }
 
+    module->commandStateChanged().disconnect(this);
+    module->deinit();
+
     m_modules.erase(moduleName);
-
-    for (const auto& info : module->commandInfoList()) {
-        m_commandModuleNames.erase(info.command);
-    }
 }
 
-IModuleCommandsRegisterPtr CommandsRegister::moduleRegister(const std::string& moduleName) const
+async::Channel<Command, CommandState> CommandsState::commandStateChanged() const
 {
-    auto it = m_modules.find(moduleName);
-    if (it != m_modules.end()) {
-        return it->second;
-    }
-
-    return nullptr;
+    return m_commandStateChanged;
 }
 
-std::vector<CommandInfo> CommandsRegister::commandList() const
+CommandState CommandsState::commandState(const Command& command) const
 {
-    std::vector<CommandInfo> commands;
-    for (const auto& module : m_modules) {
-        const auto& infos = module.second->commandInfoList();
-        commands.insert(commands.end(), infos.begin(), infos.end());
-    }
-    return commands;
-}
-
-const std::string& CommandsRegister::commandModuleName(const Command& command) const
-{
-    auto it = m_commandModuleNames.find(command);
-    if (it != m_commandModuleNames.end()) {
-        return it->second;
+    {
+        auto it = m_cache.find(command);
+        if (it != m_cache.end()) {
+            return it->second;
+        }
     }
 
-    static const std::string empty;
-    return empty;
+    const std::string& moduleName = commandsRegister()->commandModuleName(command);
+    IF_ASSERT_FAILED(!moduleName.empty()) {
+        return CommandState();
+    }
+
+    auto mit = m_modules.find(moduleName);
+    IF_ASSERT_FAILED(mit != m_modules.end()) {
+        return CommandState();
+    }
+
+    const IModuleCommandsStatePtr& module = mit->second;
+    IF_ASSERT_FAILED(module) {
+        return CommandState();
+    }
+
+    CommandState state = module->commandState(command);
+
+    m_cache[command] = state;
+
+    return state;
 }

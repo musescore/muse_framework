@@ -24,7 +24,10 @@ target_sources(muse_rcommand PRIVATE
     rcommandmodule.cpp
     rcommandmodule.h
     icommanddispatcher.h
-    imodulecommands.h
+    icommandsregister.h
+    imodulecommandsregister.h
+    icommandsstate.h
+    imodulecommandsstate.h
     commandable.h
     commandtypes.h
 
@@ -32,6 +35,8 @@ target_sources(muse_rcommand PRIVATE
     internal/commanddispatcher.h
     internal/commandsregister.cpp
     internal/commandsregister.h
+    internal/commandsstate.cpp
+    internal/commandsstate.h
 )
 
 #if (MUSE_MODULE_RCOMMAND_TESTS)
