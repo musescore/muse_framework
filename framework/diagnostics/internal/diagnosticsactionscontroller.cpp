@@ -41,6 +41,7 @@ static const muse::UriQuery ENGRAVING_ELEMENTS_URI("musescore://diagnostics/engr
 static const muse::UriQuery ENGRAVING_UNDOSTACK_URI("musescore://diagnostics/engraving/undostack?modal=false&floating=true");
 static const muse::UriQuery ENGRAVING_STYLE_URI("musescore://diagnostics/engraving/style?modal=false&floating=true");
 static const muse::UriQuery ACTIONS_LIST_URI("muse://diagnostics/actions/list?modal=false&floating=true");
+static const muse::UriQuery RCOMMAND_LIST_URI("muse://diagnostics/rcommand/list?modal=false&floating=true");
 
 void DiagnosticsActionsController::init()
 {
@@ -55,6 +56,7 @@ void DiagnosticsActionsController::init()
     dispatcher()->reg(this, "diagnostic-show-engraving-style", [this]() { openUri(ENGRAVING_STYLE_URI, false); });
     dispatcher()->reg(this, "diagnostic-save-diagnostic-files", this, &DiagnosticsActionsController::saveDiagnosticFiles);
     dispatcher()->reg(this, "diagnostic-show-actions", [this]() { openUri(ACTIONS_LIST_URI); });
+    dispatcher()->reg(this, "diagnostic-show-rcommands", [this]() { openUri(RCOMMAND_LIST_URI); });
 
     dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query"), this, &DiagnosticsActionsController::onActionQuery);
     dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query_params1"), this, &DiagnosticsActionsController::onActionQuery);

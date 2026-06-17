@@ -16,29 +16,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+import QtQuick
+import Muse.Ui
+import Muse.UiComponents
 
-#pragma once
+StyledDialogView {
+    id: root
 
-#include "modularity/imodulesetup.h"
+    title: "Diagnostic: RCommands"
 
-namespace muse::rcommand {
-class RCommandModule : public modularity::IModuleSetup
-{
-public:
-    std::string moduleName() const override;
+    contentHeight: 800
+    contentWidth: 600
+    resizable: true
 
-    void registerExports() override;
-    void resolveImports() override;
-
-    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
-};
-
-class RCommandContext : public modularity::IContextSetup
-{
-public:
-    RCommandContext(const muse::modularity::ContextPtr& ctx)
-        : modularity::IContextSetup(ctx) {}
-
-    void registerExports() override;
-};
+    CommandListPanel {
+        anchors.fill: parent
+    }
 }

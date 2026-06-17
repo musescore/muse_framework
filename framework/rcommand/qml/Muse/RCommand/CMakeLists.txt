@@ -15,31 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-muse_create_module(muse_rcommand ALIAS muse::rcommand)
+muse_create_qml_module(muse_rcommand_qml ALIAS muse::rcommand_qml FOR muse_rcommand)
 
-target_sources(muse_rcommand PRIVATE
-    rcommandmodule.cpp
-    rcommandmodule.h
-    icommanddispatcher.h
-    icommandsregister.h
-    imodulecommandsregister.h
-    icommandsstate.h
-    imodulecommandsstate.h
-    commandable.h
-    commandtypes.h
-
-    internal/commanddispatcher.cpp
-    internal/commanddispatcher.h
-    internal/commandsregister.cpp
-    internal/commandsregister.h
-    internal/commandsstate.cpp
-    internal/commandsstate.h
+qt_add_qml_module(muse_rcommand_qml
+    URI Muse.RCommand
+    VERSION 1.0
+    SOURCES
+        commandlistmodel.cpp
+        commandlistmodel.h
+    QML_FILES
+        CommandListDialog.qml
+        CommandListPanel.qml
+    IMPORTS
+        TARGET muse_ui_qml
+        TARGET muse_uicomponents_qml
 )
 
-if (MUSE_MODULE_RCOMMAND_QML)
-    add_subdirectory(qml/Muse/RCommand)
-endif()
-
-#if (MUSE_MODULE_RCOMMAND_TESTS)
-#    add_subdirectory(tests)
-#endif()
+fixup_qml_module_dependencies(muse_rcommand_qml)

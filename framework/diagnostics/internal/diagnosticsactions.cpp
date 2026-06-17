@@ -96,6 +96,12 @@ const UiActionList DiagnosticsActions::m_actions = {
              TranslatableString("action", "Show &actions list"),
              TranslatableString("action", "Show actions list")
              ),
+    UiAction("diagnostic-show-rcommands",
+             muse::ui::UiCtxAny,
+             muse::shortcuts::CTX_DISABLED,
+             TranslatableString("action", "Show &rcommands list"),
+             TranslatableString("action", "Show rcommands list")
+             ),
     UiAction("action://diagnostic/actions/query",
              muse::ui::UiCtxAny,
              muse::shortcuts::CTX_DISABLED,

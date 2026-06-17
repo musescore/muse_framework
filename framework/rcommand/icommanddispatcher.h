@@ -43,5 +43,10 @@ public:
     {
         return dispatch(make_request(query));
     }
+
+    async::Promise<Response> dispatch(const Command& query)
+    {
+        return dispatch(CommandQuery(query));
+    }
 };
 }

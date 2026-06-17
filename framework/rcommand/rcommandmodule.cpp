@@ -19,7 +19,10 @@
 
 #include "rcommandmodule.h"
 
+#include "interactive/iinteractiveuriregister.h"
+
 #include "internal/commandsregister.h"
+#include "internal/commandsstate.h"
 #include "internal/commanddispatcher.h"
 
 using namespace muse;
@@ -37,6 +40,14 @@ void RCommandModule::registerExports()
     globalIoc()->registerExport<ICommandsRegister>(mname, new CommandsRegister());
 }
 
+void RCommandModule::resolveImports()
+{
+    auto ir = globalIoc()->resolve<muse::interactive::IInteractiveUriRegister>(mname);
+    if (ir) {
+        ir->registerQmlUri(Uri("muse://diagnostics/rcommand/list"), "Muse.RCommand", "CommandListDialog");
+    }
+}
+
 modularity::IContextSetup* RCommandModule::newContext(const muse::modularity::ContextPtr& ctx) const
 {
     return new RCommandContext(ctx);
@@ -44,5 +55,6 @@ modularity::IContextSetup* RCommandModule::newContext(const muse::modularity::Co
 
 void RCommandContext::registerExports()
 {
+    ioc()->registerExport<ICommandsState>(mname, new CommandsState());
     ioc()->registerExport<ICommandDispatcher>(mname, new CommandDispatcher());
 }
