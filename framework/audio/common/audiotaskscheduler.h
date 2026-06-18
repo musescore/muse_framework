@@ -34,7 +34,7 @@
 namespace muse::audio {
 class AudioTaskScheduler : public IAudioTaskScheduler, public muse::async::Asyncable
 {
-    constexpr static const char* threadpoolName = "audio_realtime_thread";
+    constexpr static const char* threadpoolName = "audio_rt"; // The name must be no more than 12 characters.
 public:
     void submitRealtimeTasksAndWait(const std::vector<Task>& tasks) override
     {
