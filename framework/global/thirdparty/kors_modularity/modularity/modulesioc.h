@@ -147,11 +147,8 @@ public:
         }
 
         for (auto& s : copy) {
-            Service& inj = s.second;
-            inj.p = nullptr;
-
-            for (const auto& c : inj.onChanges) {
-                c.second(inj.p);
+            for (const auto& c : s.second.onChanges) {
+                c.second(nullptr);
             }
         }
     }
