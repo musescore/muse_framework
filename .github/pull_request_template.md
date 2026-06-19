@@ -16,15 +16,14 @@ Resolves: #NNNNN <!-- Replace `NNNNN` with a GitHub issue number, or a direct li
 
 ## Build configuration
 <!--
-Comment `/build` on this PR to dispatch consumer-app builds against this
-framework PR. Edit the lines below to override defaults; remove the
-section entirely to use defaults.
+Consumer-app builds run automatically for every PR. Edit the lines below to
+override defaults; remove the section entirely to use defaults.
 
 Format: {owner}/{repo}/{branch} (any public fork works).
 
 Available platforms (space-separated):
   audacity:  linux_x64 macos windows_x64
-  musescore: linux_x64 linux_arm64 macos windows_x64 windows_portable
+  musescore: linux_x64 macos windows_x64
 -->
 audacity: audacity/audacity/master
 audacity platforms: linux_x64
