@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <vector>
@@ -37,6 +38,17 @@ namespace io {
 class IODevice;
 }
 
+template<typename T>
+concept NonCharInteger
+    =std::integral<T>
+      && !std::same_as<std::remove_cv_t<T>, char>
+      && !std::same_as<std::remove_cv_t<T>, signed char>
+      && !std::same_as<std::remove_cv_t<T>, unsigned char>
+      && !std::same_as<std::remove_cv_t<T>, wchar_t>
+      && !std::same_as<std::remove_cv_t<T>, char8_t>
+      && !std::same_as<std::remove_cv_t<T>, char16_t>
+      && !std::same_as<std::remove_cv_t<T>, char32_t>;
+
 class TextStream
 {
 public:
@@ -49,11 +61,28 @@ public:
     void flush();
 
     TextStream& operator<<(char ch);
-    TextStream& operator<<(int32_t);
-    TextStream& operator<<(uint32_t);
+    TextStream& operator<<(signed char ch) { return *this << static_cast<char>(ch); }
+    TextStream& operator<<(unsigned char ch) { return *this << static_cast<char>(ch); }
+
+    TextStream& operator<<(NonCharInteger auto val)
+    {
+        if constexpr (sizeof(val) <= 4) {
+            if constexpr (std::is_signed_v<decltype(val)>) {
+                return write_int32_t(static_cast<int32_t>(val));
+            } else {
+                return write_uint32_t(static_cast<uint32_t>(val));
+            }
+        } else {
+            if constexpr (std::is_signed_v<decltype(val)>) {
+                return write_int64_t(static_cast<int64_t>(val));
+            } else {
+                return write_uint64_t(static_cast<uint64_t>(val));
+            }
+        }
+    }
+
     TextStream& operator<<(double);
-    TextStream& operator<<(int64_t);
-    TextStream& operator<<(uint64_t);
+
     TextStream& operator<<(const char* s);
     TextStream& operator<<(std::string_view);
     TextStream& operator<<(const ByteArray& b);
@@ -65,6 +94,15 @@ public:
 
 private:
     void write(const char* ch, size_t len);
+
+    TextStream& write_int32_t(int32_t val);
+    TextStream& write_uint32_t(uint32_t val);
+    TextStream& write_int64_t(int64_t val);
+    TextStream& write_uint64_t(uint64_t val);
+
+    template<size_t MaxDigits>
+    TextStream& writeInt(NonCharInteger auto val);
+
     io::IODevice* m_device = nullptr;
     std::vector<uint8_t> m_buf;
 };

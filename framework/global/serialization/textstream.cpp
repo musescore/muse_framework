@@ -64,30 +64,41 @@ TextStream& TextStream::operator<<(char ch)
     return *this;
 }
 
-TextStream& TextStream::operator<<(const int32_t val)
+TextStream& TextStream::write_int32_t(int32_t val)
 {
     // ceil(log_10(2^31)) = 10 (+ sign)
-    std::array<char, 11> buf{};
-    const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
-
-    write(buf.data(), static_cast<size_t>(last - buf.data()));
-
-    return *this;
+    return writeInt<11>(val);
 }
 
-TextStream& TextStream::operator<<(const uint32_t val)
+TextStream& TextStream::write_uint32_t(uint32_t val)
 {
     // ceil(log_10(2^32)) = 10
-    std::array<char, 10> buf{};
+    return writeInt<10>(val);
+}
+
+TextStream& TextStream::write_int64_t(int64_t val)
+{
+    // ceil(log_10(2^63)) = 20 (+ sign)
+    return writeInt<21>(val);
+}
+
+TextStream& TextStream::write_uint64_t(uint64_t val)
+{
+    // ceil(log_10(2^64)) = 20
+    return writeInt<20>(val);
+}
+
+template<size_t MaxDigits>
+TextStream& TextStream::writeInt(NonCharInteger auto val)
+{
+    std::array<char, MaxDigits> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
     IF_ASSERT_FAILED(ec == std::errc {}) {
         return *this;
     }
 
     write(buf.data(), static_cast<size_t>(last - buf.data()));
+
     return *this;
 }
 
@@ -116,34 +127,6 @@ TextStream& TextStream::operator<<(double val)
     std::string buf = ss.str();
     write(buf.data(), buf.size());
 #endif
-
-    return *this;
-}
-
-TextStream& TextStream::operator<<(const int64_t val)
-{
-    // ceil(log_10(2^63)) = 20 (+ sign)
-    std::array<char, 21> buf{};
-    const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
-
-    write(buf.data(), static_cast<size_t>(last - buf.data()));
-
-    return *this;
-}
-
-TextStream& TextStream::operator<<(const uint64_t val)
-{
-    // ceil(log_10(2^64)) = 20
-    std::array<char, 20> buf{};
-    const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
-
-    write(buf.data(), static_cast<size_t>(last - buf.data()));
 
     return *this;
 }
