@@ -88,8 +88,8 @@ TextStream& TextStream::write_uint64_t(uint64_t val)
     return writeInt<20>(val);
 }
 
-template<size_t MaxDigits>
-TextStream& TextStream::writeInt(NonCharInteger auto val)
+template<size_t MaxDigits, typename T>
+TextStream& TextStream::writeInt(T val)
 {
     std::array<char, MaxDigits> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
