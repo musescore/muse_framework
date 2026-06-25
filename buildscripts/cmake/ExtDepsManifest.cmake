@@ -9,10 +9,6 @@ if (MUSE_MODULE_DRAW)
     require_dep(harfbuzz)
 endif()
 
-if (MUSE_MODULE_DOCKWINDOW AND MUSE_MODULE_DOCKWINDOW_KDDOCKWIDGETS_V2)
-    require_source_dep(kddockwidgets)
-endif()
-
 if (OS_IS_WIN AND MUSE_MODULE_AUDIO)
     require_source_dep(asiosdk)
 endif()

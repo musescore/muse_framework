@@ -47,11 +47,28 @@ target_sources(muse_dockwindow PRIVATE
 # Setup the KDDockWidgets lib
 ###########################################
 
-kddockwidgets_add_to_build()
+# TODO: use muse_deps
+include(FetchContent)
+
+set(kddockwidgets_src_dir ${FETCHCONTENT_BASE_DIR}/kddockwidgets)
+FetchContent_Declare(kddockwidgets
+    GIT_REPOSITORY https://github.com/musescore/KDDockWidgets.git
+    GIT_TAG main
+    SOURCE_DIR ${kddockwidgets_src_dir}/kddockwidgets
+)
+
+if (NOT BUILD_SHARED_LIBS)
+    set(KDDockWidgets_STATIC ON CACHE BOOL "Build static versions of the libraries" FORCE)
+endif()
+set(KDDockWidgets_QT6 ON CACHE BOOL "Build against Qt 6" FORCE)
+set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "Frontends to build" FORCE)
+set(KDDockWidgets_EXAMPLES OFF CACHE BOOL "Build the examples" FORCE)
+set(KDDockWidgets_TESTS OFF CACHE BOOL "Build the tests" FORCE)
+
+FetchContent_MakeAvailable(kddockwidgets)
 
 target_link_libraries(muse_dockwindow PRIVATE kddockwidgets)
 
-get_property(kddockwidgets_src_dir GLOBAL PROPERTY kddockwidgets_SOURCE_DIR)
 target_include_directories(muse_dockwindow SYSTEM PRIVATE
     ${kddockwidgets_src_dir}
     ${kddockwidgets_src_dir}/kddockwidgets/src
