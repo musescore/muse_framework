@@ -64,30 +64,6 @@ TextStream& TextStream::operator<<(char ch)
     return *this;
 }
 
-TextStream& TextStream::write_int32_t(int32_t val)
-{
-    // ceil(log_10(2^31)) = 10 (+ sign)
-    return writeInt<11>(val);
-}
-
-TextStream& TextStream::write_uint32_t(uint32_t val)
-{
-    // ceil(log_10(2^32)) = 10
-    return writeInt<10>(val);
-}
-
-TextStream& TextStream::write_int64_t(int64_t val)
-{
-    // ceil(log_10(2^63)) = 20 (+ sign)
-    return writeInt<21>(val);
-}
-
-TextStream& TextStream::write_uint64_t(uint64_t val)
-{
-    // ceil(log_10(2^64)) = 20
-    return writeInt<20>(val);
-}
-
 template<size_t MaxDigits, typename T>
 TextStream& TextStream::writeInt(T val)
 {
@@ -101,6 +77,11 @@ TextStream& TextStream::writeInt(T val)
 
     return *this;
 }
+
+template TextStream& TextStream::writeInt<11, int32_t>(int32_t val);
+template TextStream& TextStream::writeInt<10, uint32_t>(uint32_t val);
+template TextStream& TextStream::writeInt<21, int64_t>(int64_t val);
+template TextStream& TextStream::writeInt<20, uint64_t>(uint64_t val);
 
 TextStream& TextStream::operator<<(double val)
 {

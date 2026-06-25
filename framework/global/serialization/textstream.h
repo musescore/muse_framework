@@ -71,15 +71,15 @@ public:
     {
         if constexpr (sizeof(T) <= 4) {
             if constexpr (std::is_signed_v<T>) {
-                return write_int32_t(static_cast<int32_t>(val));
+                return writeInt<11>(static_cast<int32_t>(val)); // ceil(log_10(2^31)) = 10 (+ sign)
             } else {
-                return write_uint32_t(static_cast<uint32_t>(val));
+                return writeInt<10>(static_cast<uint32_t>(val)); // ceil(log_10(2^32)) = 10
             }
         } else {
             if constexpr (std::is_signed_v<T>) {
-                return write_int64_t(static_cast<int64_t>(val));
+                return writeInt<21>(static_cast<int64_t>(val)); // ceil(log_10(2^63)) = 20 (+ sign)
             } else {
-                return write_uint64_t(static_cast<uint64_t>(val));
+                return writeInt<20>(static_cast<uint64_t>(val)); // ceil(log_10(2^64)) = 20
             }
         }
     }
@@ -97,11 +97,6 @@ public:
 
 private:
     void write(const char* ch, size_t len);
-
-    TextStream& write_int32_t(int32_t val);
-    TextStream& write_uint32_t(uint32_t val);
-    TextStream& write_int64_t(int64_t val);
-    TextStream& write_uint64_t(uint64_t val);
 
     template<size_t MaxDigits, typename T>
     TextStream& writeInt(T val);
