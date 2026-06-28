@@ -25,6 +25,7 @@
 #include <sstream>
 
 #include "pugixml.hpp"
+#include "translation.h"
 
 #include "log.h"
 
@@ -82,7 +83,7 @@ void XmlStreamReader::setData(const ByteArray& data_)
     if (data_.size() < 4) {
         m_xml->result = pugi::xml_parse_result{}; // zero it
         m_xml->result.status = pugi::status_no_document_element;
-        m_xml->customErr = String(u"empty document");
+        m_xml->customErr = mtrc("global/serialization", "Empty document");
         LOGE() << m_xml->customErr;
         return;
     }
@@ -91,7 +92,7 @@ void XmlStreamReader::setData(const ByteArray& data_)
     if (enc == UtfCodec::Encoding::Unknown) {
         m_xml->result = pugi::xml_parse_result{};
         m_xml->result.status = pugi::status_internal_error;
-        m_xml->customErr = String(u"unknown encoding");
+        m_xml->customErr = mtrc("global/serialization", "Unknown encoding");
         LOGE() << m_xml->customErr;
         return;
     }
