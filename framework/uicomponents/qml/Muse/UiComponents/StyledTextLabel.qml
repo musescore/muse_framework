@@ -42,6 +42,8 @@ Text {
         pixelSize: ui.theme.bodyFont.pixelSize
     }
 
+    renderType: Text.NativeRendering
+
     Loader {
         id: mouseAreaLoader
         anchors.fill: parent
