@@ -24,6 +24,7 @@
 #include "modularity/ioc.h"
 
 #include "internal/shortcutsregister.h"
+#include "internal/commandshortcutsregister.h"
 #include "internal/shortcutscontroller.h"
 #include "internal/shortcutsconfiguration.h"
 
@@ -50,8 +51,10 @@ std::string ShortcutsModule::moduleName() const
 void ShortcutsModule::registerExports()
 {
     m_configuration = std::make_shared<ShortcutsConfiguration>(globalCtx());
+    m_commandShortcutsRegister = std::make_shared<CommandShortcutsRegister>();
 
     globalIoc()->registerExport<IShortcutsConfiguration>(mname, m_configuration);
+    globalIoc()->registerExport<ICommandShortcutsRegister>(mname, m_commandShortcutsRegister);
 }
 
 void ShortcutsModule::registerApi()
@@ -67,6 +70,7 @@ void ShortcutsModule::registerApi()
 void ShortcutsModule::onInit(const IApplication::RunMode&)
 {
     m_configuration->init();
+    m_commandShortcutsRegister->init();
 
 #ifdef MUSE_MODULE_DIAGNOSTICS
     auto pr = globalIoc()->resolve<muse::diagnostics::IDiagnosticsPathsRegister>(mname);

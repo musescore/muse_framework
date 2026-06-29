@@ -25,6 +25,7 @@
 
 using namespace muse::shortcuts;
 using namespace muse::actions;
+using namespace muse::rcommand;
 
 void ShortcutsController::init()
 {
@@ -38,10 +39,29 @@ void ShortcutsController::activate(const std::string& sequence)
 {
     LOGD() << sequence;
 
-    ActionCode actionCode = resolveAction(sequence);
+    //! NOTE: command shortcuts first
+    bool commandShortcutsProcessed = false;
+    {
+        const ShortcutList& commandShortcuts = commandShortcutsRegister()->shortcutsForSequence(sequence);
+        if (!commandShortcuts.empty()) {
+            for (const Shortcut& sc : commandShortcuts) {
+                const Command& command = Command(sc.command);
+                if (commandsState()->commandState(command).enabled) {
+                    //! TODO Add a check to the active panel
+                    commandDispatcher()->dispatch(command);
+                    commandShortcutsProcessed = true;
+                    break;
+                }
+            }
+        }
+    }
 
-    if (!actionCode.empty()) {
-        dispatcher()->dispatch(actionCode);
+    if (!commandShortcutsProcessed) {
+        ActionCode actionCode = resolveAction(sequence);
+
+        if (!actionCode.empty()) {
+            dispatcher()->dispatch(actionCode);
+        }
     }
 }
 

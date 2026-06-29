@@ -47,6 +47,9 @@ public:
     io::path_t shortcutsUserAppDataPath() const override;
     io::path_t shortcutsAppDataPath() const override;
 
+    io::path_t commandShortcutsUserAppDataPath() const override;
+    io::path_t commandShortcutsAppDataPath() const override;
+
 private:
     Config m_config;
 };

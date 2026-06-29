@@ -27,18 +27,24 @@
 #include "async/asyncable.h"
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
+#include "rcommand/icommandsstate.h"
 #include "interactive/iinteractive.h"
 #include "ui/iuiactionsregister.h"
 #include "ui/iuicontextresolver.h"
 #include "ishortcutsregister.h"
+#include "icommandshortcutsregister.h"
 #include "shortcutcontext.h"
 
 namespace muse::shortcuts {
 class ShortcutsController : public IShortcutsController, public Contextable, public async::Asyncable
 {
+    GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
     ContextInject<muse::ui::IUiActionsRegister> aregister = { this };
     ContextInject<IShortcutsRegister> shortcutsRegister = { this };
     ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<muse::rcommand::ICommandsState> commandsState = { this };
+    ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<muse::IInteractive> interactive = { this };
     ContextInject<muse::ui::IUiContextResolver> uiContextResolver = { this };
 

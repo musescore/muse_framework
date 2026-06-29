@@ -30,6 +30,7 @@
 namespace muse::shortcuts {
 class ShortcutsController;
 class ShortcutsRegister;
+class CommandShortcutsRegister;
 class ShortcutsConfiguration;
 class ShortcutsModule : public modularity::IModuleSetup
 {
@@ -43,6 +44,7 @@ public:
 
 private:
     std::shared_ptr<ShortcutsConfiguration> m_configuration;
+    std::shared_ptr<CommandShortcutsRegister> m_commandShortcutsRegister;
 };
 
 class ShortcutsContext : public modularity::IContextSetup

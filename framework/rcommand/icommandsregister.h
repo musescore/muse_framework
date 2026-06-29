@@ -35,7 +35,7 @@ public:
     virtual void unreg(const IModuleCommandsRegisterPtr& module) = 0;
     virtual IModuleCommandsRegisterPtr moduleRegister(const std::string& moduleName) const = 0;
 
-    virtual std::vector<CommandInfo> commandList() const = 0;
+    virtual std::vector<CommandInfo> commandInfoList() const = 0;
 
     virtual const std::string& commandModuleName(const Command& command) const = 0;
 };

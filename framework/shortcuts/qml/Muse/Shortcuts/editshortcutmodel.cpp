@@ -83,8 +83,6 @@ void EditShortcutModel::clearNewSequence()
 
 void EditShortcutModel::inputKey(Qt::Key key, Qt::KeyboardModifiers modifiers)
 {
-    std::tie(key, modifiers) = correctKeyInput(key, modifiers);
-
     if (needIgnoreKey(key)) {
         return;
     }

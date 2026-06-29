@@ -95,7 +95,7 @@ void McpController::deinit()
 std::vector<Tool> McpController::makeToolsList() const
 {
     std::vector<Tool> tools;
-    auto commandList = commandsRegister()->commandList();
+    auto commandList = commandsRegister()->commandInfoList();
     tools.reserve(commandList.size());
     for (const auto& info : commandList) {
         Tool tool;

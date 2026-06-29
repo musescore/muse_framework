@@ -58,7 +58,21 @@ io::path_t ShortcutsConfiguration::shortcutsAppDataPath() const
 {
 #if defined(Q_OS_MACOS)
     return m_config.value("shortcuts_mac").toPath();
-#endif
-
+#else
     return m_config.value("shortcuts").toPath();
+#endif
+}
+
+io::path_t ShortcutsConfiguration::commandShortcutsUserAppDataPath() const
+{
+    return globalConfiguration()->userAppDataPath() + "/shortcuts.json";
+}
+
+io::path_t ShortcutsConfiguration::commandShortcutsAppDataPath() const
+{
+#if defined(Q_OS_MACOS)
+    return m_config.value("command_shortcuts_mac").toPath();
+#else
+    return m_config.value("command_shortcuts").toPath();
+#endif
 }

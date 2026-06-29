@@ -75,7 +75,7 @@ IModuleCommandsRegisterPtr CommandsRegister::moduleRegister(const std::string& m
     return nullptr;
 }
 
-std::vector<CommandInfo> CommandsRegister::commandList() const
+std::vector<CommandInfo> CommandsRegister::commandInfoList() const
 {
     std::vector<CommandInfo> commands;
     for (const auto& module : m_modules) {

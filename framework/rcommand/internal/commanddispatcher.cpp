@@ -45,6 +45,7 @@ async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
     return async::make_promise<Response>([this, request](auto resolve) {
         auto it = m_clients.find(Command(request.query.uri()));
         if (it != m_clients.end()) {
+            LOGI() << "try call command query: " << request.query.toString();
             Response response = it->second.callback(request);
             return resolve(response);
         } else {

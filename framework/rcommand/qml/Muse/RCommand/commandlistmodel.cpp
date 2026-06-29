@@ -30,7 +30,7 @@ CommandListModel::CommandListModel(QObject* parent)
 
 void CommandListModel::classBegin()
 {
-    const std::vector<CommandInfo>& infos = commandsRegister()->commandList();
+    const std::vector<CommandInfo>& infos = commandsRegister()->commandInfoList();
 
     beginResetModel();
 
