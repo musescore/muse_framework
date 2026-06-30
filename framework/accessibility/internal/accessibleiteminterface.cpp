@@ -74,28 +74,48 @@ QRect AccessibleItemInterface::rect() const
 
 QAccessibleInterface* AccessibleItemInterface::parent() const
 {
-    QAccessibleInterface* iface = m_object->controller().lock()->parentIface(m_object->item());
+    auto controller = m_object->controller().lock();
+    if (!controller) {
+        return nullptr;
+    }
+
+    QAccessibleInterface* iface = controller->parentIface(m_object->item());
     MYLOG() << "item: " << m_object->item()->accessibleName() << ", parent: " << (iface ? iface->text(QAccessible::Name) : "null");
     return iface;
 }
 
 int AccessibleItemInterface::childCount() const
 {
-    int count = m_object->controller().lock()->childCount(m_object->item());
+    auto controller = m_object->controller().lock();
+    if (!controller) {
+        return 0;
+    }
+
+    int count = controller->childCount(m_object->item());
     MYLOG() << "item: " << m_object->item()->accessibleName() << ", childCount: " << count;
     return count;
 }
 
 QAccessibleInterface* AccessibleItemInterface::child(int index) const
 {
-    QAccessibleInterface* iface = m_object->controller().lock()->child(m_object->item(), index);
+    auto controller = m_object->controller().lock();
+    if (!controller) {
+        return nullptr;
+    }
+
+    QAccessibleInterface* iface = controller->child(m_object->item(), index);
     MYLOG() << "item: " << m_object->item()->accessibleName() << ", child: " << index << " " << iface->text(QAccessible::Name);
     return iface;
 }
 
 int AccessibleItemInterface::indexOfChild(const QAccessibleInterface* iface) const
 {
-    int idx = m_object->controller().lock()->indexOfChild(m_object->item(), iface);
+    auto controller = m_object->controller().lock();
+    if (!controller) {
+        return -1;
+    }
+
+    int idx = controller->indexOfChild(m_object->item(), iface);
     MYLOG() << "item: " << m_object->item()->accessibleName() << ", indexOfChild: " << iface->text(QAccessible::Name) << " = " << idx;
     return idx;
 }
@@ -108,7 +128,12 @@ QAccessibleInterface* AccessibleItemInterface::childAt(int, int) const
 
 QAccessibleInterface* AccessibleItemInterface::focusChild() const
 {
-    QAccessibleInterface* child = m_object->controller().lock()->focusedChild(m_object->item());
+    auto controller = m_object->controller().lock();
+    if (!controller) {
+        return nullptr;
+    }
+
+    QAccessibleInterface* child = controller->focusedChild(m_object->item());
     MYLOG() << "item: " << m_object->item()->accessibleName() << ", focused child: " << (child ? child->text(QAccessible::Name) : "null");
     return child;
 }
@@ -237,7 +262,8 @@ QAccessible::State AccessibleItemInterface::state() const
     } break;
     }
 
-    if (IAccessible* pretendFocus = m_object->controller().lock()->pretendFocus()) {
+    auto controller = m_object->controller().lock();
+    if (IAccessible* pretendFocus = controller ? controller->pretendFocus() : nullptr) {
         if (item == pretendFocus) {
             // Pretend to have focus.
             state.focusable = true;
