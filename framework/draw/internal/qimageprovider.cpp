@@ -1,5 +1,6 @@
 #include "qimageprovider.h"
 
+#include <algorithm>
 #include <QBuffer>
 
 #include "qimagepainterprovider.h"
@@ -31,10 +32,28 @@ std::shared_ptr<Pixmap> QImageProvider::createPixmap(int w, int h, int dpm, cons
 
 Pixmap QImageProvider::scaled(const Pixmap& origin, const Size& s) const
 {
-    QPixmap qtPixmap = Pixmap::toQPixmap(origin);
-    qtPixmap = qtPixmap.scaled(s.width(), s.height());
+    int w = s.width();
+    int h = s.height();
 
-    return Pixmap::fromQPixmap(qtPixmap);
+    if (m_maxScaledDim > 0) {
+        int maxSide = std::max(w, h);
+        if (maxSide > m_maxScaledDim) {
+            double ratio = static_cast<double>(m_maxScaledDim) / maxSide;
+            w = std::max(1, static_cast<int>(w * ratio));
+            h = std::max(1, static_cast<int>(h * ratio));
+        }
+    }
+
+    QPixmap qtPixmap = Pixmap::toQPixmap(origin);
+    qtPixmap = qtPixmap.scaled(w, h);
+
+    Pixmap result = Pixmap::fromQPixmap(qtPixmap);
+    if (result.size() != s) {
+        result.setPixelSize(result.size());
+        result.setSize(s);
+    }
+
+    return result;
 }
 
 std::shared_ptr<IPaintProvider> QImageProvider::painterForImage(std::shared_ptr<Pixmap> pixmap)

@@ -267,7 +267,15 @@ void QPainterProvider::drawPixmap(const PointF& point, const Pixmap& pm)
         QPixmapCache::insert(key, pixmap);
     }
 
-    m_painter->drawPixmap(QPointF(point.x(), point.y()), pixmap);
+    if (pm.pixelSize() != pm.size()) {
+        m_painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        QRectF target(point.x(), point.y(), pm.width(), pm.height());
+        QRectF source(0, 0, pm.pixelSize().width(), pm.pixelSize().height());
+        m_painter->drawPixmap(target, pixmap, source);
+        m_painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+    } else {
+        m_painter->drawPixmap(QPointF(point.x(), point.y()), pixmap);
+    }
 }
 
 void QPainterProvider::drawTiledPixmap(const RectF& rect, const Pixmap& pm, const PointF& offset)

@@ -48,6 +48,11 @@ public:
     int width() const { return m_size.width(); }
     int height() const { return m_size.height(); }
     Size size() const { return m_size; }
+    void setSize(const Size& s) { m_size = s; }
+
+    Size pixelSize() const { return m_pixelSize.isNull() ? m_size : m_pixelSize; }
+    void setPixelSize(const Size& s) { m_pixelSize = s; }
+
     ByteArray data() const { return m_data; }
 
     bool isNull() const { return m_data.empty(); }
@@ -124,7 +129,8 @@ private:
     }
 
     Size m_size;
-    ByteArray m_data; //! usually png
+    Size m_pixelSize;   //! actual pixel dimensions (may differ from m_size after clamped scaling)
+    ByteArray m_data;   //! usually png
     unsigned int m_key = 0;
 };
 }

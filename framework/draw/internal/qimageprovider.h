@@ -34,5 +34,8 @@ public:
 
     IPaintProviderPtr painterForImage(std::shared_ptr<Pixmap> pixmap) override;
     void saveAsPng(std::shared_ptr<Pixmap> px, io::IODevice* device) override;
+
+private:
+    int m_maxScaledDim = 4096;
 };
 }
