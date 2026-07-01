@@ -24,6 +24,8 @@
 #include "global/io/file.h"
 #include "global/serialization/json.h"
 
+#include "multiwindows/resourcelockguard.h"
+
 using namespace muse;
 using namespace muse::shortcuts;
 using namespace muse::async;
