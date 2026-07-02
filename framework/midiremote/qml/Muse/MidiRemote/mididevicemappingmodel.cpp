@@ -22,11 +22,9 @@
 
 #include "mididevicemappingmodel.h"
 
-#include "ui/view/iconcodes.h"
-#include "shortcuts/shortcutstypes.h"
+#include "translation.h"
 
 #include "log.h"
-#include "translation.h"
 
 using namespace muse::midi;
 using namespace muse::midiremote;
@@ -40,13 +38,13 @@ static const QString ENABLED_KEY("enabled");
 static const QString MAPPED_TYPE_KEY("mappedType");
 static const QString MAPPED_VALUE_KEY("mappedValue");
 
-inline ActionCodeList allMidiActions()
+inline static ActionCodeList allMidiActions()
 {
     return {
-        "rewind",
-        "loop",
-        "play",
-        "stop",
+        "command://playback/rewind",
+        "command://playback/loop",
+        "command://playback/play",
+        "command://playback/stop",
         "note-input",
         "pad-note-1",
         "pad-note-2",

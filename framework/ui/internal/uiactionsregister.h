@@ -30,9 +30,14 @@
 #include "iuicontextresolver.h"
 #include "async/asyncable.h"
 
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
+
 namespace muse::ui {
 class UiActionsRegister : public IUiActionsRegister, public Contextable, public async::Asyncable
 {
+    GlobalInject<rcommand::ICommandsRegister> commandsRegister;
+    ContextInject<rcommand::ICommandsState> commandsState = { this };
     ContextInject<IUiContextResolver> uicontextResolver = { this };
 
 public:
@@ -83,6 +88,7 @@ private:
     void updateChecked(const actions::ActionCodeList& codes);
 
     std::unordered_map<actions::ActionCode, Info> m_actions;
+    mutable std::unordered_map<actions::ActionCode, UiAction> m_commandActions;
     async::Channel<UiActionList> m_actionsChanged;
     async::Channel<actions::ActionCodeList> m_actionStateChanged;
 

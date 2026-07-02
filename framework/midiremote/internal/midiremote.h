@@ -30,6 +30,7 @@
 #include "io/ifilesystem.h"
 #include "actions/iactionsdispatcher.h"
 #include "multiwindows/imultiwindowsprovider.h"
+#include "rcommand/icommanddispatcher.h"
 
 #include "midiremote/immcdecoderfactory.h"
 
@@ -46,7 +47,7 @@ class MidiRemote : public IMidiRemote, public Contextable, public async::Asyncab
     GlobalInject<mi::IMultiWindowsProvider> multiwindowsProvider;
     GlobalInject<IMMCDecoderFactory> mmcDecoderFactory;
     ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
-
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
 public:
     MidiRemote(const modularity::ContextPtr& iocCtx)
         : Contextable(iocCtx) {}

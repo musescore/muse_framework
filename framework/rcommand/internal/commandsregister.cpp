@@ -85,6 +85,21 @@ std::vector<CommandInfo> CommandsRegister::commandInfoList() const
     return commands;
 }
 
+const CommandInfo& CommandsRegister::commandInfo(const Command& command) const
+{
+    for (const auto& module : m_modules) {
+        const auto& infos = module.second->commandInfoList();
+        for (const auto& info : infos) {
+            if (info.command == command) {
+                return info;
+            }
+        }
+    }
+
+    static CommandInfo null;
+    return null;
+}
+
 const std::string& CommandsRegister::commandModuleName(const Command& command) const
 {
     auto it = m_commandModuleNames.find(command);

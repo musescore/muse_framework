@@ -23,6 +23,7 @@
 #include "transporteventscontroller.h"
 
 #include "audio/common/audiosanitizer.h"
+#include "rcommand/commandtypes.h"
 
 using namespace muse::audio;
 using namespace muse::audio::rpc;
@@ -58,18 +59,18 @@ void TransportEventsController::onEventReceived(const TransportEvent& event)
 
     switch (event.type) {
     case TransportEvent::Type::Play:
-        dispatcher()->dispatch("play");
+        commandDispatcher()->dispatch(rcommand::Command("command://playback/play"));
         break;
     case TransportEvent::Type::Pause:
-        dispatcher()->dispatch("pause");
+        commandDispatcher()->dispatch(rcommand::Command("command://playback/pause"));
         break;
     case TransportEvent::Type::Stop:
-        dispatcher()->dispatch("stop");
+        commandDispatcher()->dispatch(rcommand::Command("command://playback/stop"));
         break;
     case TransportEvent::Type::Seek:
         if (std::holds_alternative<TransportEvent::SeekData>(event.data)) {
             const secs_t pos = std::get<TransportEvent::SeekData>(event.data).position;
-            dispatcher()->dispatch("rewind", ActionData::make_arg1<secs_t>(pos));
+            commandDispatcher()->dispatch(rcommand::make_query("command://playback/rewind", { { "position", Val(pos) } }));
         }
         break;
     case TransportEvent::Type::Unknown:

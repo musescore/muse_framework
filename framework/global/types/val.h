@@ -28,6 +28,7 @@
 #include <vector>
 #include <map>
 
+#include "number.h"
 #include "io/path.h"
 
 #ifndef NO_QT_SUPPORT
@@ -62,6 +63,9 @@ public:
     explicit Val(int val);
     explicit Val(int64_t val);
     explicit Val(double val);
+    template<typename T>
+    explicit Val(number_t<T> val)
+        : Val{val.raw()} {}
     explicit Val(const std::string& str);
     explicit Val(const char* str);
     explicit Val(const io::path_t& path);

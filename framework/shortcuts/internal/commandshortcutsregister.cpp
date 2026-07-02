@@ -30,28 +30,6 @@ using namespace muse::async;
 
 static const std::string COMMAND_SHORTCUTS_TAG("CommandShortcuts");
 
-static const std::map<QKeySequence::StandardKey, QKeyCombination> COMMAND_SHORTCUTS_EXPAND_IGNORE_MAP = {
-    { QKeySequence::StandardKey::HelpContents, Qt::Key_Help },
-    { QKeySequence::StandardKey::Open, Qt::Key_Open },
-    { QKeySequence::StandardKey::Close, Qt::Key_Close },
-    { QKeySequence::StandardKey::Save, Qt::Key_Save },
-    { QKeySequence::StandardKey::New, Qt::Key_New },
-    { QKeySequence::StandardKey::Cut, Qt::Key_Cut },
-    { QKeySequence::StandardKey::Copy, Qt::Key_Copy },
-    { QKeySequence::StandardKey::Paste, Qt::Key_Paste },
-    { QKeySequence::StandardKey::Undo, Qt::Key_Undo },
-    { QKeySequence::StandardKey::Redo, Qt::Key_Redo },
-    { QKeySequence::StandardKey::Forward, Qt::Key_Forward },
-    { QKeySequence::StandardKey::Refresh, Qt::Key_Refresh },
-    { QKeySequence::StandardKey::ZoomIn, Qt::Key_ZoomIn },
-    { QKeySequence::StandardKey::ZoomOut, Qt::Key_ZoomOut },
-    { QKeySequence::StandardKey::Find, Qt::Key_Find },
-    { QKeySequence::StandardKey::SaveAs, (Qt::SHIFT | Qt::Key_Save) },
-    { QKeySequence::StandardKey::Preferences, Qt::Key_Settings },
-    { QKeySequence::StandardKey::Quit, Qt::Key_Exit },
-    { QKeySequence::StandardKey::Cancel, Qt::Key_Cancel }
-};
-
 void CommandShortcutsRegister::init()
 {
     multiwindowsProvider()->resourceChanged().onReceive(this, [this](const std::string& resourceName) {
@@ -76,8 +54,6 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     bool ok = readFromFile(m_defaultShortcuts, defPath);
 
     if (ok) {
-        expandStandardKeys(m_defaultShortcuts);
-
         if (!onlyDef) {
             if (!io::File::exists(userPath)) {
                 ok = false;
@@ -101,7 +77,6 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     }
 
     if (ok) {
-        expandStandardKeys(m_shortcuts);
         makeUnique(m_shortcuts);
         m_shortcutsChanged.notify();
     }
@@ -176,64 +151,6 @@ void CommandShortcutsRegister::makeUnique(ShortcutList& shortcuts)
         }
 
         foundSc.sequences.insert(foundSc.sequences.end(), sc.sequences.begin(), sc.sequences.end());
-    }
-}
-
-void CommandShortcutsRegister::expandStandardKeys(ShortcutList& shortcuts) const
-{
-    TRACEFUNC;
-
-    ShortcutList expanded;
-    ShortcutList notbonded;
-
-    for (Shortcut& shortcut : shortcuts) {
-        QKeySequence ignoredSeq = QKeySequence(muse::value(COMMAND_SHORTCUTS_EXPAND_IGNORE_MAP, shortcut.standardKey, Qt::Key_unknown));
-
-        if (!shortcut.sequences.empty()) {
-            std::string ignoredSeqStr = ignoredSeq.toString().toStdString();
-            muse::remove_if(shortcut.sequences, [&ignoredSeqStr](const std::string& seq) {
-                return seq == ignoredSeqStr;
-            });
-
-            continue;
-        }
-
-        QList<QKeySequence> kslist = QKeySequence::keyBindings(shortcut.standardKey);
-        if (kslist.isEmpty()) {
-            notbonded.push_back(shortcut);
-            continue;
-        }
-
-        const QKeySequence& first = kslist.first();
-        shortcut.sequences.push_back(first.toString().toStdString());
-        //LOGD() << "for standard key: " << sc.standardKey << ", sequence: " << sc.sequence;
-
-        //! NOTE If the keyBindings contains more than one result,
-        //! these can be considered alternative shortcuts on the same platform for the given key.
-        for (int i = 1; i < kslist.count(); ++i) {
-            const QKeySequence& seq = kslist.at(i);
-            if (seq == ignoredSeq) {
-                continue;
-            }
-
-            Shortcut esc = shortcut;
-            esc.sequences = { seq.toString().toStdString() };
-            //LOGD() << "for standard key: " << esc.standardKey << ", alternative sequence: " << esc.sequence;
-            expanded.push_back(esc);
-        }
-    }
-
-    if (!notbonded.empty()) {
-        LOGD() << "removed " << notbonded.size() << " shortcut, because they are not bound to standard key";
-        for (const Shortcut& sc : notbonded) {
-            shortcuts.remove(sc);
-        }
-    }
-
-    if (!expanded.empty()) {
-        LOGD() << "added " << expanded.size() << " shortcut, because they are alternative shortcuts for the given standard keys";
-
-        shortcuts.splice(shortcuts.end(), expanded);
     }
 }
 

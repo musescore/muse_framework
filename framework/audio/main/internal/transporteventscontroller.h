@@ -25,13 +25,13 @@
 #include "modularity/ioc.h"
 
 #include "audio/common/rpc/irpcchannel.h"
-#include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
 
 namespace muse::audio {
 class TransportEventsController : public async::Asyncable, public Contextable
 {
     GlobalInject<rpc::IRpcChannel> channel;
-    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
 
 public:
     TransportEventsController(const muse::modularity::ContextPtr& iocCtx)

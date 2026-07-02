@@ -36,6 +36,7 @@ public:
     virtual IModuleCommandsRegisterPtr moduleRegister(const std::string& moduleName) const = 0;
 
     virtual std::vector<CommandInfo> commandInfoList() const = 0;
+    virtual const CommandInfo& commandInfo(const Command& command) const = 0;
 
     virtual const std::string& commandModuleName(const Command& command) const = 0;
 };

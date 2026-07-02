@@ -37,6 +37,15 @@ constexpr std::string_view COMMAND_SCHEME = "command://";
 using Command = Uri;
 using CommandQuery = UriQuery;
 
+inline CommandQuery make_query(const std::string& command, const std::vector<std::pair<std::string, Val> >& params)
+{
+    CommandQuery query(command);
+    for (const auto& param : params) {
+        query.addParam(param.first, param.second);
+    }
+    return query;
+}
+
 // Info
 
 enum class DataType {
@@ -55,6 +64,10 @@ struct Arg {
     String description;
     Val min;
     Val max;
+
+    Arg() = default;
+    Arg(DataType type, const String& description, const Val& min = Val(), const Val& max = Val())
+        : type(type), description(description), min(min), max(max) {}
 };
 
 struct InputSchema {
@@ -76,6 +89,8 @@ struct Decoration {
         : iconCode(iconCode) {}
     Decoration(ui::IconCode::Code iconCode, Color iconColor)
         : iconCode(iconCode), iconColor(iconColor) {}
+    Decoration(ui::IconCode::Code iconCode, Checkable checkable)
+        : iconCode(iconCode), checkable(checkable) {}
     Decoration(ui::IconCode::Code iconCode, Color iconColor, Checkable checkable)
         : iconCode(iconCode), iconColor(iconColor), checkable(checkable) {}
 };
@@ -87,6 +102,8 @@ struct CommandInfo
     TranslatableString description;
     InputSchema inputSchema;
     Decoration decoration;
+
+    bool isValid() const { return command.isValid(); }
 };
 
 struct CommandState {

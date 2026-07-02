@@ -22,6 +22,7 @@
 #include "uiactionsregister.h"
 
 #include "global/async/async.h"
+#include "global/stringutils.h"
 
 #include "muse_framework_config.h"
 
@@ -43,6 +44,10 @@ void UiActionsRegister::init()
             requestUpdateEnabledAll();
         });
     }
+
+    commandsState()->commandStateChanged().onReceive(this, [this](const rcommand::Command& command, const rcommand::CommandState&) {
+        m_actionStateChanged.send({ command.toString() });
+    });
 }
 
 void UiActionsRegister::reg(const IUiActionsModulePtr& module)
@@ -129,6 +134,31 @@ std::vector<UiAction> UiActionsRegister::actionList() const
 
 const UiAction& UiActionsRegister::action(const ActionCode& code) const
 {
+    if (muse::strings::startsWith(code, rcommand::COMMAND_SCHEME)) {
+        auto it = m_commandActions.find(code);
+        if (it != m_commandActions.end()) {
+            return it->second;
+        }
+
+        const rcommand::CommandInfo& info = commandsRegister()->commandInfo(rcommand::Command(code));
+        if (!info.isValid()) {
+            LOGE() << "not valid command: " << code;
+            static UiAction null;
+            return null;
+        }
+
+        UiAction action;
+        action.code = code;
+        action.title = info.title;
+        action.description = info.description;
+        action.iconCode = info.decoration.iconCode;
+        action.iconColor = QString::fromStdString(info.decoration.iconColor.toString());
+        action.checkable = static_cast<Checkable>(info.decoration.checkable);
+
+        it = m_commandActions.emplace(code, action).first;
+        return it->second;
+    }
+
     return info(code).action;
 }
 
@@ -151,6 +181,11 @@ async::Channel<UiActionList> UiActionsRegister::actionsChanged() const
 
 UiActionState UiActionsRegister::actionState(const ActionCode& code) const
 {
+    if (muse::strings::startsWith(code, rcommand::COMMAND_SCHEME)) {
+        const rcommand::CommandState& state = commandsState()->commandState(rcommand::Command(code));
+        return UiActionState { state.enabled, state.checked };
+    }
+
     const Info& inf = info(code);
     if (!inf.action.isValid()) {
         LOGE() << "not found action with code: " << code;

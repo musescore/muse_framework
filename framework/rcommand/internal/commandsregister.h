@@ -34,6 +34,7 @@ public:
     IModuleCommandsRegisterPtr moduleRegister(const std::string& moduleName) const override;
 
     std::vector<CommandInfo> commandInfoList() const override;
+    const CommandInfo& commandInfo(const Command& command) const override;
 
     const std::string& commandModuleName(const Command& command) const override;
 

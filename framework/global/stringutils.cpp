@@ -196,13 +196,47 @@ bool muse::strings::startsWith(const std::string& str, const std::string& start)
     return true;
 }
 
+bool muse::strings::startsWith(const std::string& str, const std::string_view& start)
+{
+    if (str.size() < start.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < start.size(); ++i) {
+        if (str.at(i) != start.at(i)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool muse::strings::startsWith(const std::string& str, const char* start)
+{
+    return startsWith(str, std::string_view(start));
+}
+
 bool muse::strings::endsWith(const std::string& str, const std::string& ending)
 {
     if (ending.size() > str.size()) {
         return false;
     }
     std::string ss = str.substr(str.size() - ending.size());
-    return ss.compare(ending.c_str()) == 0;
+    return ss == ending;
+}
+
+bool muse::strings::endsWith(const std::string& str, const std::string_view& ending)
+{
+    if (ending.size() > str.size()) {
+        return false;
+    }
+    std::string ss = str.substr(str.size() - ending.size());
+    return ss == ending;
+}
+
+bool muse::strings::endsWith(const std::string& str, const char* end)
+{
+    return endsWith(str, std::string_view(end));
 }
 
 std::string muse::strings::leftJustified(const std::string& val, size_t width)

@@ -34,10 +34,13 @@ public:
     virtual ~ICommandDispatcher() = default;
 
     using CallBack = std::function<Response (const Request& request)>;
+    using CallBackRet = std::function<Ret ()>;
 
     virtual async::Promise<Response> dispatch(const Request& request) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
     virtual void unreg(Commandable* client) = 0;
+
+    // Helpers for convenience
 
     async::Promise<Response> dispatch(const CommandQuery& query)
     {
@@ -47,6 +50,13 @@ public:
     async::Promise<Response> dispatch(const Command& query)
     {
         return dispatch(CommandQuery(query));
+    }
+
+    void onRequest(Commandable* client, const Command& command, const CallBackRet& callback)
+    {
+        onRequest(client, command, [callback](const Request& request) {
+            return make_response(request, callback());
+        });
     }
 };
 }

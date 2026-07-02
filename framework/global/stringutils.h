@@ -40,7 +40,11 @@ void trim(std::string& s);
 
 std::string toLower(const std::string& source);
 bool startsWith(const std::string& str, const std::string& start);
+bool startsWith(const std::string& str, const std::string_view& start);
+bool startsWith(const std::string& str, const char* start);
 bool endsWith(const std::string& str, const std::string& end);
+bool endsWith(const std::string& str, const std::string_view& end);
+bool endsWith(const std::string& str, const char* end);
 std::string leftJustified(const std::string& val, size_t width);
 
 // Locale-independent version of std::to_string

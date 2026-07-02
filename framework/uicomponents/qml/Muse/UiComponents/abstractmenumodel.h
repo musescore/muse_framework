@@ -32,6 +32,7 @@
 #include "ui/iuiactionsregister.h"
 #include "shortcuts/ishortcutsregister.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
 
 namespace muse::uicomponents {
 class AbstractMenuModel : public QAbstractListModel, public muse::Contextable, public async::Asyncable
@@ -47,6 +48,7 @@ public:
     muse::ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };
     muse::ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
     muse::ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+    muse::ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
 
 public:
     explicit AbstractMenuModel(QObject* parent = nullptr);
