@@ -83,6 +83,7 @@ private:
     IAudioTaskSchedulerPtr m_audioTaskScheduler;
     IAudioDriverPtr m_audioDriver;
     async::Notification m_currentAudioDriverChanged;
+    IAudioDriver::Spec m_lastValidSpec;
     async::Notification m_availableOutputDevicesChanged;
     async::Channel<IAudioDriver::Spec> m_activeSpecChanged;
     async::Notification m_outputDeviceChanged;
