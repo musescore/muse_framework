@@ -63,6 +63,8 @@ void AudioConfiguration::init()
     settings()->setDefaultValue(AUDIO_DRIVER_KEY, Val("WASAPI"));
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     settings()->setDefaultValue(AUDIO_DRIVER_KEY, Val("ALSA"));
+#elif defined(Q_OS_MACOS)
+    settings()->setDefaultValue(AUDIO_DRIVER_KEY, Val("CoreAudio"));
 #endif
     settings()->valueChanged(AUDIO_DRIVER_KEY).onReceive(nullptr, [this](const Val&) {
         m_currentAudioDriverChanged.notify();
