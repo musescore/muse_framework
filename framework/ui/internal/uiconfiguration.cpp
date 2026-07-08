@@ -405,22 +405,44 @@ QStringList UiConfiguration::possibleAccentColors() const
 {
     static const QStringList lightAccentColors {
         "#F28585",
-        "#EDB17A",
-        "#E0CC87",
-        "#8BC9C5",
-        "#70AFEA",
-        "#A09EEF",
-        "#DBA0C7"
+        "#F9906F",
+        "#F0A663",
+        "#EDBE6E",
+        "#DAD153",
+        "#C0D84A",
+        "#9DDA60",
+        "#79D88E",
+        "#67D2A4",
+        "#51CAC2",
+        "#46BCD3",
+        "#70B8FA",
+        "#8999FF",
+        "#B69BFF",
+        "#D093FB",
+        "#E39CEB",
+        "#F298D3",
+        "#FF92B6"
     };
 
     static const QStringList darkAccentColors {
-        "#F25555",
-        "#E1720B",
-        "#AC8C1A",
-        "#27A341",
-        "#2093FE",
-        "#926BFF",
-        "#E454C4"
+        "#D73838",
+        "#DA5931",
+        "#CA6100",
+        "#AD720C",
+        "#898006",
+        "#728707",
+        "#4B8C09",
+        "#1D9337",
+        "#0E935B",
+        "#019086",
+        "#018DA9",
+        "#2082DD",
+        "#5B6FF3",
+        "#8D64FF",
+        "#B252F7",
+        "#D830EA",
+        "#E03DAA",
+        "#E9447B"
     };
 
     if (isDarkMode()) {
