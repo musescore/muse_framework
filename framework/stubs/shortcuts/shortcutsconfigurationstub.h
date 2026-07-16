@@ -21,9 +21,13 @@
  */
 #pragma once
 
-#include "shortcuts/ishortcutsconfiguration.h"
-
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/ishortcutsconfiguration.h"
+#else
+#include "shortcuts/ishortcutsconfiguration.h"
+#endif
 
 namespace muse::shortcuts {
 class ShortcutsConfigurationStub : public IShortcutsConfiguration
