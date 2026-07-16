@@ -317,9 +317,9 @@ bool ShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::path_t& 
 
 Shortcut ShortcutsRegister::readShortcut(XmlStreamReader& reader) const
 {
-    Shortcut shortcut;
+    Shortcut shortcut; // Memory corruption or undefined behavior here...
 
-    while (reader.readNextStartElement()) {
+    while (reader.readNextStartElement()) { // ...causes CRASH here.
         const std::string tag(reader.name());
 
         if (tag == ACTION_CODE_TAG) {
