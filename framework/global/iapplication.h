@@ -29,8 +29,9 @@
 #include "modularity/ioc.h"
 
 #ifndef NO_QT_SUPPORT
+#include <QEvent>
+
 class QObject;
-class QEvent;
 class QWindow;
 #endif
 
@@ -81,6 +82,7 @@ public:
     virtual bool notify(QObject* object, QEvent* event) = 0;
 
     virtual Qt::KeyboardModifiers keyboardModifiers() const = 0;
+    virtual std::vector<std::unique_ptr<QEvent> > takeEarlyEvents(QEvent::Type) { return {}; }
 #endif
 };
 }

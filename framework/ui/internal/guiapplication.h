@@ -29,13 +29,17 @@
 #include "global/internal/baseapplication.h"
 #include "global/internal/cmdoptions.h"
 
+#include "earlyeventsbuffer.h"
+
 class QQuickWindow;
 
 namespace muse::ui {
 class GuiApplication : public BaseApplication
 {
 public:
-    GuiApplication(const std::shared_ptr<CmdOptions>& options);
+    GuiApplication(const std::shared_ptr<CmdOptions>& options, const std::set<QEvent::Type>& earlyEventTypes = {});
+
+    std::vector<std::unique_ptr<QEvent> > takeEarlyEvents(QEvent::Type type) override;
 
 protected:
 
@@ -55,5 +59,9 @@ protected:
     QTimer m_delayedInitTimer;
 
     std::map<muse::modularity::IoCID, QQuickWindow*> m_windows;
+
+private:
+    EarlyEventsBuffer* m_earlyEventsBuffer = nullptr;
+    std::set<QEvent::Type> m_earlyEventTypes = {};
 };
 }

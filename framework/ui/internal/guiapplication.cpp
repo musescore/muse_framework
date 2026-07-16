@@ -38,9 +38,38 @@
 using namespace muse;
 using namespace muse::ui;
 
-GuiApplication::GuiApplication(const std::shared_ptr<CmdOptions>& options)
+GuiApplication::GuiApplication(const std::shared_ptr<CmdOptions>& options, const std::set<QEvent::Type>& earlyEventTypes)
     : BaseApplication(options)
 {
+    IF_ASSERT_FAILED(qApp) {
+        return;
+    }
+
+    if (!earlyEventTypes.empty()) {
+        m_earlyEventTypes = earlyEventTypes;
+        m_earlyEventsBuffer = new EarlyEventsBuffer(m_earlyEventTypes, qApp);
+        qApp->installEventFilter(m_earlyEventsBuffer);
+    }
+}
+
+std::vector<std::unique_ptr<QEvent> > GuiApplication::takeEarlyEvents(QEvent::Type type)
+{
+    if (!m_earlyEventsBuffer) {
+        return {};
+    }
+
+    if (m_earlyEventTypes.empty()) {
+        return {};
+    }
+
+    auto eventList = m_earlyEventsBuffer->take(type);
+    m_earlyEventTypes.erase(type);
+
+    if (m_earlyEventTypes.empty()) {
+        qApp->removeEventFilter(m_earlyEventsBuffer);
+    }
+
+    return eventList;
 }
 
 void GuiApplication::doSetup(const std::shared_ptr<CmdOptions>& options)
