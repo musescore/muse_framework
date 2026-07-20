@@ -71,7 +71,7 @@ function main()
             }},
             {name: "Note input mode", func: function() {
                 // api.dispatcher.dispatch("note-input")
-                // api.dispatcher.dispatch("command://notation/pad-note-8")
+                // api.dispatcher.dispatch("command://notation/set-duration-eighth")
 
                 // OR
 
