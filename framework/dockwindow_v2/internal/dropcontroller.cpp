@@ -42,6 +42,7 @@
 #include "kddockwidgets/src/core/DragController_p.h"
 #endif
 
+#include "kddockwidgets/src/core/DockWidget.h"
 #include "kddockwidgets/src/qtquick/views/DockWidget.h"
 #include "kddockwidgets/src/qtquick/views/View.h"
 
