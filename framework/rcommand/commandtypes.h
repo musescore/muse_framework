@@ -93,6 +93,8 @@ struct Decoration {
         : iconCode(iconCode), checkable(checkable) {}
     Decoration(ui::IconCode::Code iconCode, Color iconColor, Checkable checkable)
         : iconCode(iconCode), iconColor(iconColor), checkable(checkable) {}
+    Decoration(Checkable checkable)
+        : checkable(checkable) {}
 };
 
 struct CommandInfo
