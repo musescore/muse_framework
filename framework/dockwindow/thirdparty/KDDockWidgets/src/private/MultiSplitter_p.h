@@ -55,7 +55,7 @@ public:
      * @brief Adds a widget to this MultiSplitter.
      */
     void addWidget(QWidgetOrQuick *widget, KDDockWidgets::Location location,
-                   Frame *relativeTo = nullptr,
+                   Layouting::Item *relativeTo = nullptr,
                    InitialOption option = DefaultSizeMode::Fair);
 
     /**
@@ -65,7 +65,7 @@ public:
      * of widgetBar when the whole splitter is dropped into this one.
      */
     void addMultiSplitter(MultiSplitter *splitter, KDDockWidgets::Location location,
-                          Frame *relativeTo = nullptr,
+                          Layouting::Item *relativeTo = nullptr,
                           InitialOption option = DefaultSizeMode::Fair);
 
     /**
@@ -95,7 +95,7 @@ private:
 
     // For debug/hardening
     bool validateInputs(QWidgetOrQuick *widget, KDDockWidgets::Location location,
-                        const Frame *relativeToFrame, InitialOption option) const;
+                        const Layouting::Item *relativeTo, InitialOption option) const;
 
 
     void setRootItem(Layouting::ItemBoxContainer *);

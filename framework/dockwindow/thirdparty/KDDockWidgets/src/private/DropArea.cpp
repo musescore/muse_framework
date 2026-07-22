@@ -111,6 +111,15 @@ void DropArea::addDockWidget(DockWidgetBase *dw, Location location,
 
     Frame *frame = nullptr;
     Frame *relativeToFrame = relativeTo ? relativeTo->d->frame() : nullptr;
+    Layouting::Item *relativeToItem = itemForFrame(relativeToFrame);
+
+    if (relativeTo && !relativeToItem) {
+        // relativeTo is hidden, so it has no frame, anchor to its placeholder item instead
+        if (Layouting::Item *placeholder = relativeTo->d->lastPositions().lastItem()) {
+            if (placeholder->hostWidget() && placeholder->hostWidget()->asQObject() == this)
+                relativeToItem = placeholder;
+        }
+    }
 
     dw->d->saveLastFloatingGeometry();
 
@@ -133,9 +142,9 @@ void DropArea::addDockWidget(DockWidgetBase *dw, Location location,
     }
 
     if (option.startsHidden()) {
-        addWidget(dw, location, relativeToFrame, option);
+        addWidget(dw, location, relativeToItem, option);
     } else {
-        addWidget(frame, location, relativeToFrame, option);
+        addWidget(frame, location, relativeToItem, option);
     }
 
     if (hadSingleFloatingFrame && !hasSingleFloatingFrame()) {
@@ -318,13 +327,13 @@ bool DropArea::drop(QWidgetOrQuick *droppedWindow, KDDockWidgets::Location locat
 
         auto frame = Config::self(m_ctx).frameworkWidgetFactory()->createFrame();
         frame->addWidget(dock);
-        addWidget(frame, location, relativeTo, DefaultSizeMode::FairButFloor);
+        addWidget(frame, location, itemForFrame(relativeTo), DefaultSizeMode::FairButFloor);
     } else if (auto floatingWindow = qobject_cast<FloatingWindow *>(droppedWindow)) {
         if (!validateAffinity(floatingWindow))
             return false;
 
         const bool hadSingleFloatingFrame = hasSingleFloatingFrame();
-        addMultiSplitter(floatingWindow->dropArea(), location, relativeTo,
+        addMultiSplitter(floatingWindow->dropArea(), location, itemForFrame(relativeTo),
                          DefaultSizeMode::FairButFloor);
         if (hadSingleFloatingFrame != hasSingleFloatingFrame())
             updateFloatingActions();
