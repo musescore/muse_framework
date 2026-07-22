@@ -57,7 +57,7 @@ MultiSplitter::~MultiSplitter()
 }
 
 bool MultiSplitter::validateInputs(QWidgetOrQuick *widget, Location location,
-                                   const Frame *relativeToFrame, InitialOption option) const
+                                   const Layouting::Item *relativeTo, InitialOption option) const
 {
     if (!widget) {
         qWarning() << Q_FUNC_INFO << "Widget is null";
@@ -77,7 +77,7 @@ bool MultiSplitter::validateInputs(QWidgetOrQuick *widget, Location location,
         return false;
     }
 
-    if (relativeToFrame && relativeToFrame == widget) {
+    if (relativeTo && relativeTo->guestAsQObject() == widget) {
         qWarning() << "widget can't be relative to itself";
         return false;
     }
@@ -94,13 +94,9 @@ bool MultiSplitter::validateInputs(QWidgetOrQuick *widget, Location location,
         return false;
     }
 
-    const bool relativeToThis = relativeToFrame == nullptr;
-
-    Layouting::Item *relativeToItem = itemForFrame(relativeToFrame);
-    if (!relativeToThis && !containsItem(relativeToItem)) {
+    if (relativeTo && !containsItem(relativeTo)) {
         qWarning() << "MultiSplitter::addWidget: Doesn't contain relativeTo:"
-                   << "; relativeToFrame=" << relativeToFrame
-                   << "; relativeToItem=" << relativeToItem
+                   << "; relativeToItem=" << relativeTo
                    << "; options=" << option;
         return false;
     }
@@ -109,11 +105,18 @@ bool MultiSplitter::validateInputs(QWidgetOrQuick *widget, Location location,
 }
 
 void MultiSplitter::addWidget(QWidgetOrQuick *w, Location location,
-                              Frame *relativeToWidget,
+                              Layouting::Item *relativeTo,
                               InitialOption option)
 {
     auto frame = qobject_cast<Frame *>(w);
-    if (itemForFrame(frame) != nullptr) {
+    Layouting::Item *item = itemForFrame(frame);
+
+    if (relativeTo && relativeTo == item) {
+        qWarning() << "widget can't be relative to itself";
+        return;
+    }
+
+    if (item != nullptr) {
         // Item already exists, remove it.
         // Changing the frame parent will make the item clean itself up. It turns into a placeholder and is removed by unrefOldPlaceholders
         frame->QWidgetAdapter::setParent(nullptr); // so ~Item doesn't delete it
@@ -121,10 +124,9 @@ void MultiSplitter::addWidget(QWidgetOrQuick *w, Location location,
     }
 
     // Make some sanity checks:
-    if (!validateInputs(w, location, relativeToWidget, option))
+    if (!validateInputs(w, location, relativeTo, option))
         return;
 
-    Layouting::Item *relativeTo = itemForFrame(relativeToWidget);
     if (!relativeTo)
         relativeTo = m_rootItem;
 
@@ -166,7 +168,7 @@ void MultiSplitter::addWidget(QWidgetOrQuick *w, Location location,
 }
 
 void MultiSplitter::addMultiSplitter(MultiSplitter *sourceMultiSplitter, Location location,
-                                     Frame *relativeTo,
+                                     Layouting::Item *relativeTo,
                                      InitialOption option)
 {
     qCDebug(addwidget) << Q_FUNC_INFO << sourceMultiSplitter << location << relativeTo;
