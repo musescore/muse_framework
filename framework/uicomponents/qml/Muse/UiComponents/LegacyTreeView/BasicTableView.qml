@@ -356,7 +356,7 @@ FocusScope {
     function resizeColumnsToContents () {
         for (var i = 0; i < __columns.length; ++i) {
             var col = getColumn(i)
-            var header = __listView.headerItem.headerRepeater.itemAt(i)
+            var header = listView.headerItem.headerRepeater.itemAt(i)
             if (col) {
                 col.resizeToContents()
                 if (col.width < header.implicitWidth)
@@ -394,17 +394,6 @@ FocusScope {
 
     /*! \internal */
     default property alias __columns: root.data
-
-    /*! \internal */
-    property alias __currentRowItem: listView.currentItem
-
-    /*! \internal
-        This property is forwarded to TableView::currentRow, but not to any TreeView property.
-    */
-    property alias __currentRow: listView.currentIndex
-
-    /*! \internal */
-    readonly property alias __listView: listView
 
     /*! \internal */
     property Component __itemDelegateLoader: null
@@ -528,7 +517,7 @@ FocusScope {
                     height: rowfiller.rowHeight
                     sourceComponent: root.rowDelegate
                     property QtObject styleData: QtObject {
-                        readonly property bool alternate: (index + __listView.count) % 2 === 1
+                        readonly property bool alternate: (index + listView.count) % 2 === 1
                         readonly property bool selected: false
                         readonly property bool hasActiveFocus: false
                         readonly property bool pressed: false

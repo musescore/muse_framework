@@ -131,7 +131,6 @@ BasicTableView {
         property var pressedIndex: undefined
         property bool selectOnRelease: false
         property int pressedColumn: -1
-        readonly property alias currentRow: root.__currentRow
         readonly property alias currentIndex: root.currentIndex
 
         // Handle vertical scrolling whem dragging mouse outside boundaries
@@ -223,7 +222,7 @@ BasicTableView {
                 }
             }
 
-            return row === currentRow
+            return row === root.listView.currentIndex
                    && (selectionMode === L.SelectionMode.SingleSelection
                        || (selectionMode > L.SelectionMode.SingleSelection && !selection))
         }
