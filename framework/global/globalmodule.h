@@ -36,6 +36,7 @@ namespace muse {
 class SystemInfo;
 class GlobalConfiguration;
 class BaseApplication;
+class IApplicationEventController;
 class ITickerProvider;
 class GlobalModule : public modularity::IModuleSetup
 {
@@ -60,6 +61,7 @@ private:
     std::shared_ptr<GlobalConfiguration> m_configuration;
     std::shared_ptr<SystemInfo> m_systemInfo;
     std::shared_ptr<ITickerProvider> m_tickerProvider;
+    std::shared_ptr<IApplicationEventController> m_eventController;
     Ticker m_asyncTicker;
 
     std::optional<muse::logger::Level> m_loggerLevel;
