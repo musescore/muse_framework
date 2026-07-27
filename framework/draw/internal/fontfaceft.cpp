@@ -291,7 +291,13 @@ std::vector<GlyphPos> FontFaceFT::glyphs(const char32_t* text, int text_length) 
         hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(hb_buffer, NULL);
 
         for (unsigned int i = 0; i < len; i++) {
-            result.push_back({ info[i].codepoint, static_cast<f26dot6_t>(pos[i].x_advance) });
+            f26dot6_t xAdvance = static_cast<f26dot6_t>(pos[i].x_advance);
+            hb_position_t hbAdvance = hb_font_get_glyph_h_advance(m_data->hb_font, info[i].codepoint);
+            if (GlyphMetrics* metrics = glyphMetrics(info[i].codepoint)) {
+                xAdvance += metrics->linearAdvance - hbAdvance;
+            }
+
+            result.push_back({ info[i].codepoint, xAdvance });
         }
 
         hb_buffer_destroy(hb_buffer);

@@ -76,6 +76,11 @@ static const IFontFace* findSubtitutionFont(char32_t ch, const std::vector<IFont
     return founded;
 }
 
+static bool fitsQtGlyphCacheMetrics(const FBBox& bbox, f26dot6_t advance)
+{
+    return (bbox.width() >> 6) <= 0xFF && (bbox.height() >> 6) <= 0xFF && advance <= 0x7FFF;
+}
+
 static bool isZeroAdvanceChar(char32_t ch)
 {
     return ch == U'\n' || ch == U'\r';
@@ -123,7 +128,7 @@ void FontsEngine::init()
 
 double FontsEngine::lineSpacing(const Font& f) const
 {
-    RequireFace* rf = fontFace(f, f.type() == Font::Type::MusicSymbol);
+    RequireFace* rf = fontFace(f);
     IF_ASSERT_FAILED(rf && rf->face) {
         return 0.0;
     }
@@ -292,15 +297,19 @@ RectF FontsEngine::boundingRect(const Font& f, const std::u32string& text) const
             f26dot6_t x = xOffset + bbox.x();
             f26dot6_t y = bbox.y();
 
+            bool useCachedGlyphMetrics = fitsQtGlyphCacheMetrics(bbox, fontFace->glyphAdvance(g.idx));
+            f26dot6_t glyphRight = useCachedGlyphMetrics ? ((x + 63) & -64) + bbox.width() : x + bbox.width();
+            f26dot6_t glyphBottom = useCachedGlyphMetrics ? ((y + 63) & -64) + bbox.height() : y + bbox.height();
+
             if (!hasGlyph) {
                 rect.setX(x);
-                xmax = x + bbox.width();
-                ymax = y + bbox.height();
+                xmax = glyphRight;
+                ymax = glyphBottom;
                 hasGlyph = true;
             } else {
                 rect.setX(std::min(rect.x(), x));
-                xmax = std::max(xmax, x + bbox.width());
-                ymax = std::max(ymax, y + bbox.height());
+                xmax = std::max(xmax, glyphRight);
+                ymax = std::max(ymax, glyphBottom);
             }
 
             rect.setY(std::min(rect.y(), y));
@@ -359,17 +368,20 @@ RectF FontsEngine::tightBoundingRect(const Font& f, const std::u32string& text) 
             f26dot6_t x = xOffset + bbox.x();
             f26dot6_t y = bbox.y();
 
+            f26dot6_t glyphRight = ((x + 63) & -64) + bbox.width();
+            f26dot6_t glyphBottom = ((y + 63) & -64) + bbox.height();
+
             if (!hasGlyph) {
                 rect.setX(x);
                 rect.setY(y);
-                xmax = x + bbox.width();
-                ymax = y + bbox.height();
+                xmax = glyphRight;
+                ymax = glyphBottom;
                 hasGlyph = true;
             } else {
                 rect.setX(std::min(rect.x(), x));
                 rect.setY(std::min(rect.y(), y));
-                xmax = std::max(xmax, x + bbox.width());
-                ymax = std::max(ymax, y + bbox.height());
+                xmax = std::max(xmax, glyphRight);
+                ymax = std::max(ymax, glyphBottom);
             }
 
             xOffset += g.x_advance;
@@ -537,11 +549,6 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
         requireKey.pixelSize = DEFAULT_PIXEL_SIZE;
     }
 
-    //! NOTE For symbol mode, a fixed pixelSize is used
-    if (isSymbolMode) {
-        requireKey.pixelSize = SYMBOLS_PIXEL_SIZE;
-    }
-
     //! NOTE At the moment, in some cases, the type may not be specified,
     //! so set as Text
     if (requireKey.type == Font::Type::Undefined || requireKey.type == Font::Type::Unknown) {
@@ -564,10 +571,9 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
     FontDataKey actualDataKey = fontsDatabase()->actualFont(requireKey.dataKey, requireKey.type);
 
     //! NOTE We are looking for the font face we real need among the previously loaded ones
-    //! IMPORTANT We use font faces with a fixed pixelSize, so we need to find the right face only from the data
     IFontFace* face = nullptr;
     for (IFontFace* ff : m_loadedFaces) {
-        if (ff->key().dataKey == actualDataKey && ff->isSymbolMode() == isSymbolMode) {
+        if (ff->key().dataKey == actualDataKey && ff->key().pixelSize == requireKey.pixelSize && ff->isSymbolMode() == isSymbolMode) {
             face = ff;
             break;
         }
@@ -583,7 +589,7 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
         FaceKey loadedKey;
         loadedKey.dataKey = actualDataKey;
         loadedKey.type = requireKey.type;
-        loadedKey.pixelSize = LOADED_PIXEL_SIZE;
+        loadedKey.pixelSize = requireKey.pixelSize;
 
         face = createFontFace(fontPath);
 
@@ -597,7 +603,7 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
     auto subtitutionFontDataKeys = fontsDatabase()->substitutionFonts(requireKey.type);
     for (const FontDataKey& dataKey : subtitutionFontDataKeys) {
         for (IFontFace* ff : m_loadedFaces) {
-            if (ff->key().dataKey == dataKey && ff->isSymbolMode() == isSymbolMode) {
+            if (ff->key().dataKey == dataKey && ff->key().pixelSize == requireKey.pixelSize && ff->isSymbolMode() == isSymbolMode) {
                 subtitutionFace = ff;
                 break;
             }
@@ -612,7 +618,7 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
             FaceKey loadedKey;
             loadedKey.dataKey = dataKey;
             loadedKey.type = requireKey.type;
-            loadedKey.pixelSize = LOADED_PIXEL_SIZE;
+            loadedKey.pixelSize = requireKey.pixelSize;
 
             subtitutionFace = createFontFace(fontPath);
 
