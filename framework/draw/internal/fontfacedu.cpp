@@ -28,7 +28,6 @@ struct DummyGlyph {
     f26dot6_t textAdvance = 0;
     FBBox symBbox;
     f26dot6_t symAdvance = 0;
-    GlyphImage glyphImage;
 };
 
 static const DummyGlyph& dummyGlyph()
@@ -142,7 +141,8 @@ f26dot6_t FontFaceDU::glyphAdvance(glyph_idx_t idx) const
 const GlyphImage& FontFaceDU::glyphImage(glyph_idx_t idx) const
 {
     if (idx == 0) {
-        return dummyGlyph().glyphImage;
+        static const GlyphImage emptyImage;
+        return emptyImage;
     }
 
     return m_origin->glyphImage(idx);
