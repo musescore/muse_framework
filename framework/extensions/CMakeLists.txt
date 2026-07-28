@@ -74,7 +74,7 @@ if (MUSE_QT_SUPPORT)
 endif()
 
 if (MUSE_MODULE_EXTENSIONS_TESTS)
-#    add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()
 
 if (MUSE_MODULE_EXTENSIONS_QML)
