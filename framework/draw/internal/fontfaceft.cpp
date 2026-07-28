@@ -110,6 +110,7 @@ struct muse::draw::FData
 static const int SDF_DIM = 28; //! default dimension of generated SDF. Real SDF can have another size
 static const int SDF_SHAPE_SIZE = 100; //! effective shape size
 static const double MIN_SDF_OUTLINE_PIXELS = 7.0;
+static const double MAX_SDF_SCALE = 4.0;
 
 static double sdfScaleForShape(const msdfgen::Vector2& shapeDims, double baseScale)
 {
@@ -118,7 +119,7 @@ static double sdfScaleForShape(const msdfgen::Vector2& shapeDims, double baseSca
         return baseScale;
     }
 
-    return std::max(baseScale, MIN_SDF_OUTLINE_PIXELS / minDim);
+    return std::min(std::max(baseScale, MIN_SDF_OUTLINE_PIXELS / minDim), MAX_SDF_SCALE);
 }
 
 static void generateSdf(GlyphImage& out, msdfgen::Shape& shape)
@@ -502,7 +503,7 @@ const GlyphImage& FontFaceFT::glyphImage(glyph_idx_t idx) const
     msdfgen::Shape shape;
     msdfgen::readFreetypeOutline(shape, &m_data->face->glyph->outline);
     if (shape.contours.empty()) {
-        return null;
+        return m_cache.insert({ idx, GlyphImage() }).first->second;
     }
 
     std::pair<glyph_idx_t, GlyphImage> v;
