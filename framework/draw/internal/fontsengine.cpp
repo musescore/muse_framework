@@ -434,10 +434,10 @@ std::vector<GlyphImage> FontsEngine::render(const Font& f, const std::u32string&
 
         for (const GlyphPos& g : glyphs) {
             if (NOT_RENDER_GLYPHS.find(g.idx) == NOT_RENDER_GLYPHS.end()) {
-                GlyphImage image;// = m_renderCache.load(ffBlock.face->key(), g.idx);
+                GlyphImage image = m_renderCache.load(ffBlock.face->key(), g.idx);
                 if (image.isNull()) {
                     image = ffBlock.face->glyphImage(g.idx);
-                    //m_renderCache.store(ffBlock.face->key(), g.idx, image);
+                    m_renderCache.store(ffBlock.face->key(), g.idx, image);
                 }
 
                 image.rect = scaleRect(image.rect, pixelScale);

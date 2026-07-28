@@ -109,42 +109,19 @@ struct muse::draw::FData
 #ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
 static const int SDF_DIM = 28; //! default dimension of generated SDF. Real SDF can have another size
 static const int SDF_SHAPE_SIZE = 100; //! effective shape size
+static const double MIN_SDF_OUTLINE_PIXELS = 7.0;
 
-struct SdfGlyphSizeOverride
+static double sdfScaleForShape(const msdfgen::Vector2& shapeDims, double baseScale)
 {
-    std::string family;
-    glyph_idx_t glyphIdx = 0;
-    double scale = 0.;
-};
-
-static const SdfGlyphSizeOverride SDF_GLYPH_SIZE_OVERRIDES[] = {
-    { "bravura", 4, 2.0 },
-    { "leland", 4, 2.0 },
-    { "bravura", 445, 2.5 },
-    { "leland", 445, 2.5 },
-};
-
-static const SdfGlyphSizeOverride* sdfGlyphSizeOverride(const std::string& family, glyph_idx_t glyphIdx)
-{
-    for (const SdfGlyphSizeOverride& item : SDF_GLYPH_SIZE_OVERRIDES) {
-        if (item.glyphIdx == glyphIdx && family == item.family) {
-            return &item;
-        }
-    }
-    return nullptr;
-}
-
-static double sdfScaleOverride(const std::string& fontFamily, glyph_idx_t glyphIdx, double baseScale)
-{
-    const std::string normalizedFamily = muse::strings::toLower(fontFamily);
-    if (const SdfGlyphSizeOverride* gl = sdfGlyphSizeOverride(normalizedFamily, glyphIdx)) {
-        baseScale *= gl->scale;
+    double minDim = std::min(shapeDims.x, shapeDims.y);
+    if (minDim <= 0.0) {
+        return baseScale;
     }
 
-    return baseScale;
+    return std::max(baseScale, MIN_SDF_OUTLINE_PIXELS / minDim);
 }
 
-static void generateSdf(GlyphImage& out, const std::string& fontFamily, glyph_idx_t glyphIdx, msdfgen::Shape& shape)
+static void generateSdf(GlyphImage& out, msdfgen::Shape& shape)
 {
     struct Bounds
     {
@@ -161,7 +138,7 @@ static void generateSdf(GlyphImage& out, const std::string& fontFamily, glyph_id
     int pxRange = 4;
     int pixelFrameWidth = 3;
     double scale = static_cast<double>(SDF_DIM) / SDF_SHAPE_SIZE;
-    scale = sdfScaleOverride(fontFamily, glyphIdx, scale);
+    scale = sdfScaleForShape(shapeDims, scale);
 
     int sdfWidth = static_cast<int>(std::ceil(scale * shapeDims.x));
     int sdfHeight = static_cast<int>(std::ceil(scale * shapeDims.y));
@@ -531,7 +508,7 @@ const GlyphImage& FontFaceFT::glyphImage(glyph_idx_t idx) const
     std::pair<glyph_idx_t, GlyphImage> v;
     v.first = idx;
     shape.inverseYAxis = true;
-    generateSdf(v.second, m_key.dataKey.family().id().toStdString(), idx, shape);
+    generateSdf(v.second, shape);
 
     return m_cache.insert(std::move(v)).first->second;
 #else
