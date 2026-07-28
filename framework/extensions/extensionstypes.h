@@ -26,6 +26,7 @@
 
 #include "global/types/uri.h"
 #include "global/types/string.h"
+#include "global/types/val.h"
 #include "global/io/path.h"
 #include "global/types/translatablestring.h"
 #include "ui/uiaction.h"
@@ -197,7 +198,11 @@ manifest.json
 "category": String,               //
 "thumbnail": String,              //
 "version": String,                //
-"apiversion": String              // Optional default 2
+"apiversion": String,             // Optional default 2
+
+"contributes": {                  // Optional map of contribution points
+    String: [Object, ...]
+},
 
 "main": String                    // Path (name) of main file (qml or js)
 }*/
@@ -228,6 +233,8 @@ struct Manifest {
     int apiversion = DEFAULT_API_VERSION;
     bool legacyPlugin = false;
     bool isRemovable = false;
+
+    std::map<std::string, std::vector<ValMap> > contributes;
 
     std::vector<Action> actions;
 

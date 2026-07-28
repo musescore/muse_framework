@@ -38,6 +38,49 @@ using namespace muse::extensions;
 const std::string MANIFEST("manifest.json");
 const std::string DEV_EXTENSIONS("extensions/dev/");
 
+namespace {
+Val jsonValue(const JsonValue& value);
+
+ValMap jsonMap(const JsonObject& object)
+{
+    ValMap result;
+    for (const std::string& key : object.keys()) {
+        result.emplace(key, jsonValue(object.value(key)));
+    }
+    return result;
+}
+
+ValList jsonList(const JsonArray& array)
+{
+    ValList result;
+    result.reserve(array.size());
+    for (size_t index = 0; index < array.size(); ++index) {
+        result.push_back(jsonValue(array.at(index)));
+    }
+    return result;
+}
+
+Val jsonValue(const JsonValue& value)
+{
+    if (value.isBool()) {
+        return Val(value.toBool());
+    }
+    if (value.isNumber()) {
+        return Val(value.toDouble());
+    }
+    if (value.isString()) {
+        return Val(value.toStdString());
+    }
+    if (value.isArray()) {
+        return Val(jsonList(value.toArray()));
+    }
+    if (value.isObject()) {
+        return Val(jsonMap(value.toObject()));
+    }
+    return {};
+}
+} // namespace
+
 ManifestList ExtensionsLoader::loadManifestList(const io::path_t& defPath, const io::path_t& extPath) const
 {
     TRACEFUNC;
@@ -161,6 +204,26 @@ RetVal<Manifest> ExtensionsLoader::parseManifest(const ByteArray& data) const
     m.thumbnail = obj.value("thumbnail").toStdString();
     m.version = obj.value("version").toString();
     m.apiversion = obj.value("apiversion", DEFAULT_API_VERSION).toInt();
+    const JsonValue contributes = obj.value("contributes");
+    if (contributes.isObject()) {
+        const JsonObject declared = contributes.toObject();
+        for (const std::string& name : declared.keys()) {
+            const JsonValue value = declared.value(name);
+            if (!value.isArray()) {
+                continue;
+            }
+            std::vector<ValMap> contribution;
+            const JsonArray items = value.toArray();
+            contribution.reserve(items.size());
+            for (size_t index = 0; index < items.size(); ++index) {
+                const JsonValue item = items.at(index);
+                if (item.isObject()) {
+                    contribution.push_back(jsonMap(item.toObject()));
+                }
+            }
+            m.contributes.emplace(name, std::move(contribution));
+        }
+    }
 
     //! NOTE Default for actions
     const String uiCtx = obj.value("ui_context", String(DEFAULT_UI_CONTEXT)).toString();
