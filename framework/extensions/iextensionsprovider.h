@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <memory>
+
 #include "modularity/imoduleinterface.h"
 
 #include "global/types/ret.h"
@@ -30,6 +32,8 @@
 #include "extensionstypes.h"
 
 namespace muse::extensions {
+class IExtensionSession;
+
 class IExtensionsProvider : MODULE_CONTEXT_INTERFACE
 {
     INTERFACE_ID(IExtensionsProvider)
@@ -51,6 +55,8 @@ public:
 
     virtual Ret perform(const UriQuery& uri) = 0;
     virtual Ret run(const UriQuery& uri) = 0;
+
+    virtual std::unique_ptr<IExtensionSession> newSession(const Uri& uri, const io::path_t& relativeScriptPath) const = 0;
 
     virtual Ret setExecPoint(const Uri& uri, const ExecPointName& name) = 0;
     virtual std::vector<ExecPoint> execPoints(const Uri& uri) const = 0;

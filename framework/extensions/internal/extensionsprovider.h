@@ -57,6 +57,7 @@ public:
 
     Ret perform(const UriQuery& uri) override;
     Ret run(const UriQuery& uri) override;
+    std::unique_ptr<IExtensionSession> newSession(const Uri& uri, const io::path_t& relativeScriptPath) const override;
 
     Ret setExecPoint(const Uri& uri, const ExecPointName& name) override;
     std::vector<ExecPoint> execPoints(const Uri& uri) const override;
@@ -64,8 +65,8 @@ public:
     void performPointAsync(const ExecPointName& name) override;
 
 private:
-
-    Ret run(const Action& a);
+    Ret run(const Action& action, const Manifest& manifest);
+    std::unique_ptr<IExtensionSession> newSession(const Manifest& manifest, const io::path_t& scriptPath) const;
 
     mutable ManifestList m_manifests;
     async::Notification m_manifestListChanged;

@@ -25,9 +25,11 @@ include(api/v1/apiv1.cmake)
 target_sources(muse_extensions PRIVATE
     extensionsmodule.cpp
     extensionsmodule.h
+    extensionbundle.h
     extensionstypes.h
     extensionserrors.h
     iextensionsprovider.h
+    iextensionsession.h
     iextensionsconfiguration.h
     iextensionsuiengine.h
     iextensioninstaller.h
@@ -39,12 +41,13 @@ target_sources(muse_extensions PRIVATE
 
     internal/extensionsprovider.cpp
     internal/extensionsprovider.h
+    internal/extensionbundle.cpp
     internal/extensionsconfiguration.cpp
     internal/extensionsconfiguration.h
     internal/extensionsloader.cpp
     internal/extensionsloader.h
-    internal/extensionrunner.cpp
-    internal/extensionrunner.h
+    internal/extensionsession.cpp
+    internal/extensionsession.h
     internal/extensionsuiengine.cpp
     internal/extensionsuiengine.h
     internal/scriptengine.cpp
