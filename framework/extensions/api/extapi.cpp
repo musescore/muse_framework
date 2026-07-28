@@ -41,18 +41,17 @@ ExtApi::~ExtApi()
 
 QJSValue ExtApi::api(const std::string& name) const
 {
-    if (!apiRegister()) {
-        return QJSValue();
-    }
-
     Api a = m_apis.value(name);
     if (!a.jsval.isUndefined()) {
         return a.jsval;
     }
 
-    auto api = apiRegister()->createApi(name, m_engine);
-    a.obj = api.first;
-    a.isNeedDelete = api.second;
+    if (apiRegister()) {
+        auto api = apiRegister()->createApi(name, m_engine);
+        a.obj = api.first;
+        a.isNeedDelete = api.second;
+    }
+
     if (!a.obj) {
         LOGW() << "Not allowed api: " << name;
         return QJSValue();
