@@ -139,6 +139,7 @@ struct Sdf {
 struct GlyphImage {
     muse::RectF rect;
     Sdf sdf;
+    float range = 0.f;
 
     bool isNull() const { return rect.isNull(); }
 };

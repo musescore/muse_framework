@@ -21,11 +21,6 @@
  */
 #include "fontsengine.h"
 
-#ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
-#include <msdfgen.h>
-#include <ext/import-font.h>
-#endif
-
 #include "global/io/fileinfo.h"
 
 #include "ifontface.h"
@@ -63,6 +58,11 @@ static inline RectF fromFBBox(const FBBox& bb, double scale)
 {
     return RectF(from_f26d6(bb.left()) * scale, from_f26d6(bb.top()) * scale,
                  from_f26d6(bb.width()) * scale, from_f26d6(bb.height()) * scale);
+}
+
+static inline RectF scaleRect(const RectF& r, double scale)
+{
+    return RectF(r.x() * scale, r.y() * scale, r.width() * scale, r.height() * scale);
 }
 
 static const IFontFace* findSubtitutionFont(char32_t ch, const std::vector<IFontFace*>& subtitutionFaces)
@@ -398,74 +398,6 @@ RectF FontsEngine::tightBoundingRect(const Font& f, const std::u32string& text) 
     return fromFBBox(rect, rf->pixelScale());
 }
 
-#ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
-static void generateSdf(GlyphImage& out, glyph_idx_t glyphIdx, const IFontFace* face)
-{
-    struct Bounds
-    {
-        double l, b, r, t;
-    };
-    Bounds bounds = { 1e240, 1e240, -1e240, -1e240 };
-
-    msdfgen::Shape shape = face->glyphShape(glyphIdx);
-    if (shape.contours.empty()) {
-        //! NOTE Maybe not printable, like ' '
-        return;
-    }
-
-    shape.bounds(bounds.l, bounds.b, bounds.r, bounds.t);
-
-    uint32_t pxRange = std::min(SDF_WIDTH, SDF_HEIGHT) >> 3;
-
-    std::pair<double, double> sdfScale;
-    msdfgen::Vector2 translate;
-    double scale = 0.0;
-    msdfgen::Vector2 frame(SDF_WIDTH, SDF_HEIGHT);
-    frame -= 2 * pxRange;
-    assert(frame.x >= 0 && frame.y >= 0 && bounds.l < bounds.r && bounds.b < bounds.t);
-    msdfgen::Vector2 dims(bounds.r - bounds.l, bounds.t - bounds.b);
-    if (dims.x * frame.y < dims.y * frame.x) { // fit restricted by height
-        translate = { -bounds.l, -bounds.b };
-        scale = frame.y / dims.y;
-        sdfScale = { (frame.x - dims.x * scale) / (dims.x * scale), 0.0f };
-    } else { // fit restricted by width
-        translate = { -bounds.l, -bounds.b };
-        scale = frame.x / dims.x;
-        sdfScale = { 0.0, (frame.y - dims.y * scale) / (dims.y * scale) };
-    }
-
-    double boundsWidth = bounds.r - bounds.l;
-    double boundsHeight = bounds.t - bounds.b;
-    double widthWhitespace = boundsWidth * sdfScale.first;
-    double heightWhitespace = boundsHeight * sdfScale.second;
-    double pxRangeScaled = pxRange / scale;
-
-    double left = bounds.l - pxRangeScaled;
-    double top = -bounds.t - heightWhitespace - pxRangeScaled;
-    double width = boundsWidth + widthWhitespace + pxRangeScaled * 2;
-    double height = boundsHeight + heightWhitespace + pxRangeScaled * 2;
-
-    double range = pxRange / scale;
-    translate += range;
-
-    shape.mergeContours();
-
-    auto sdf = msdfgen::Bitmap<uint8_t>(SDF_WIDTH, SDF_HEIGHT);
-    msdfgen::generateSDF(sdf, shape, bounds.l, range, scale, translate);
-
-    out.sdf.bitmap = mu::ByteArray(sdf.takeMemoryAway(), SDF_WIDTH * SDF_HEIGHT);
-    out.sdf.width = SDF_WIDTH;
-    out.sdf.height = SDF_HEIGHT;
-    out.sdf.hash = std::hash<std::string_view> {}({ reinterpret_cast<const char*>(out.sdf.bitmap.data()), out.sdf.bitmap.size() });
-
-    out.rect.setTop(top);
-    out.rect.setLeft(left);
-    out.rect.setWidth(width);
-    out.rect.setHeight(height);
-}
-
-#endif
-
 std::vector<GlyphImage> FontsEngine::render(const Font& f, const std::u32string& text) const
 {
     //! NOTE for rendering, all fonts, including symbols fonts, are processed as text
@@ -502,10 +434,10 @@ std::vector<GlyphImage> FontsEngine::render(const Font& f, const std::u32string&
 
         for (const GlyphPos& g : glyphs) {
             if (NOT_RENDER_GLYPHS.find(g.idx) == NOT_RENDER_GLYPHS.end()) {
-                GlyphImage image;// = m_renderCache.load(ffBlock.face->key(), g.idx);
+                GlyphImage image = m_renderCache.load(ffBlock.face->key(), g.idx);
                 if (image.isNull()) {
-                    generateSdf(image, g.idx, ffBlock.face);
-                    //m_renderCache.store(ffBlock.face->key(), g.idx, image);
+                    image = ffBlock.face->glyphImage(g.idx);
+                    m_renderCache.store(ffBlock.face->key(), g.idx, image);
                 }
 
                 image.rect = scaleRect(image.rect, pixelScale);

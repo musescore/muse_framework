@@ -21,6 +21,7 @@
  */
 #include "fontfaceft.h"
 
+#include <cmath>
 #include <unordered_map>
 
 #include <ft2build.h>
@@ -31,6 +32,7 @@
 #include <hb-ft.h>
 
 #ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
+#include <msdfgen.h>
 #include <ext/import-font.h>
 #endif
 
@@ -103,6 +105,85 @@ struct muse::draw::FData
     FT_Size_Metrics metrics;
     HeightMetrics heightMetrics;
 };
+
+#ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
+static const int SDF_DIM = 28; //! default dimension of generated SDF. Real SDF can have another size
+static const int SDF_SHAPE_SIZE = 100; //! effective shape size
+static const double MIN_SDF_OUTLINE_PIXELS = 7.0;
+static const double MAX_SDF_SCALE = 4.0;
+
+static double sdfScaleForShape(const msdfgen::Vector2& shapeDims, double baseScale)
+{
+    double minDim = std::min(shapeDims.x, shapeDims.y);
+    if (minDim <= 0.0) {
+        return baseScale;
+    }
+
+    return std::min(std::max(baseScale, MIN_SDF_OUTLINE_PIXELS / minDim), MAX_SDF_SCALE);
+}
+
+static void generateSdf(GlyphImage& out, msdfgen::Shape& shape)
+{
+    struct Bounds
+    {
+        double l, b, r, t;
+    };
+    Bounds bounds = { 1e240, 1e240, -1e240, -1e240 };
+
+    shape.normalize();
+    shape.orientContours();
+
+    shape.bound(bounds.l, bounds.b, bounds.r, bounds.t);
+    msdfgen::Vector2 shapeDims(bounds.r - bounds.l, bounds.t - bounds.b);
+
+    int pxRange = 4;
+    int pixelFrameWidth = 3;
+    double scale = static_cast<double>(SDF_DIM) / SDF_SHAPE_SIZE;
+    scale = sdfScaleForShape(shapeDims, scale);
+
+    int sdfWidth = static_cast<int>(std::ceil(scale * shapeDims.x));
+    int sdfHeight = static_cast<int>(std::ceil(scale * shapeDims.y));
+
+    sdfWidth += 2 * pixelFrameWidth;
+    sdfHeight += 2 * pixelFrameWidth;
+
+    msdfgen::Vector2 translate = { -bounds.l, -bounds.b };
+
+    double pxRangeScaled = pixelFrameWidth / scale;
+
+    double left = bounds.l - pxRangeScaled;
+    double top = -bounds.t - pxRangeScaled;
+    double width = shapeDims.x + pxRangeScaled * 2;
+    double height = shapeDims.y + pxRangeScaled * 2;
+
+    double range = pxRange / scale;
+    translate += pxRangeScaled;
+
+    auto sdf = msdfgen::Bitmap<float, 1>(sdfWidth, sdfHeight);
+    msdfgen::SDFTransformation t(msdfgen::Projection(scale, translate), msdfgen::Range(range));
+    msdfgen::generateSDF(sdf, shape, t);
+    msdfgen::distanceSignCorrection(sdf, shape, t, msdfgen::FILL_NONZERO);
+
+    out.sdf.bitmap.reserve(sdfWidth * sdfHeight);
+    for (int y = 0; y < sdf.height(); ++y) {
+        for (int x = 0; x < sdf.width(); ++x) {
+            uint8_t px = static_cast<uint8_t>(msdfgen::pixelFloatToByte(*sdf(x, y)));
+            out.sdf.bitmap.push_back(px);
+        }
+    }
+    out.sdf.width = sdfWidth;
+    out.sdf.height = sdfHeight;
+    out.range = range;
+
+    out.rect.setTop(top);
+    out.rect.setLeft(left);
+    out.rect.setWidth(width);
+    out.rect.setHeight(height);
+
+    out.sdf.hash = std::hash<std::string_view> {}({ reinterpret_cast<const char*>(out.sdf.bitmap.data()), out.sdf.bitmap.size() });
+}
+
+#endif
 
 static f26dot6_t tableValueToF26Dot6(FT_Face face, long value, int pixelSize)
 {
@@ -400,11 +481,11 @@ f26dot6_t FontFaceFT::glyphAdvance(glyph_idx_t idx) const
     }
 }
 
-#ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
-const msdfgen::Shape& FontFaceFT::glyphShape(glyph_idx_t idx) const
+const GlyphImage& FontFaceFT::glyphImage(glyph_idx_t idx) const
 {
-    static const msdfgen::Shape null;
+    static GlyphImage null;
 
+#ifndef MUSE_MODULE_DRAW_USE_QTTEXTDRAW
     FT_UInt index = static_cast<FT_UInt>(idx);
     if (index == 0) {
         return null;
@@ -419,16 +500,23 @@ const msdfgen::Shape& FontFaceFT::glyphShape(glyph_idx_t idx) const
         return null;
     }
 
-    std::pair<glyph_idx_t, msdfgen::Shape> v;
+    msdfgen::Shape shape;
+    msdfgen::readFreetypeOutline(shape, &m_data->face->glyph->outline);
+    if (shape.contours.empty()) {
+        return m_cache.insert({ idx, GlyphImage() }).first->second;
+    }
+
+    std::pair<glyph_idx_t, GlyphImage> v;
     v.first = idx;
-    v.second = msdfgen::loadGlyphSlot(m_data->face->glyph, nullptr);
-    v.second.normalize();
-    v.second.inverseYAxis = true;
+    shape.inverseYAxis = true;
+    generateSdf(v.second, shape);
 
     return m_cache.insert(std::move(v)).first->second;
-}
-
+#else
+    UNUSED(idx);
+    return null;
 #endif
+}
 
 f26dot6_t FontFaceFT::leading() const
 {
