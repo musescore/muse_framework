@@ -22,6 +22,8 @@
 #pragma once
 
 #include <chrono>
+#include <string>
+#include <vector>
 
 #include "global/modularity/imoduleinterface.h"
 #include "ui/view/iconcodes.h"

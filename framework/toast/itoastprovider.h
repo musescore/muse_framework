@@ -21,11 +21,13 @@
  */
 #pragma once
 
+#include <memory>
+
 #include "global/modularity/imoduleinterface.h"
 #include "global/async/channel.h"
 #include "global/async/promise.h"
 
-#include "internal/toastitem.h"
+#include "toastitem.h"
 #include "toasttypes.h"
 
 namespace muse::toast {

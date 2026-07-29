@@ -56,7 +56,7 @@ public:
 
 private:
     enum RoleNames {
-        IdRole,
+        IdRole = Qt::UserRole + 1,
         IconCodeRole,
         TitleRole,
         MessageRole,

@@ -21,7 +21,10 @@
  */
 #pragma once
 
+#include <chrono>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "global/async/notification.h"
 #include "ui/view/iconcodes.h"
@@ -37,7 +40,7 @@ public:
               std::chrono::seconds timeout = std::chrono::seconds(0), std::vector<ToastAction> actions = {});
 
     ToastItem(const std::string& title, const std::string& message, muse::ui::IconCode::Code iconCode, bool dismissible,
-              std::vector<ToastAction> actions = {}, std::shared_ptr<muse::Progress> progress = nullptr, bool showProgressInfo = false);
+              std::vector<ToastAction> actions, std::shared_ptr<muse::Progress> progress, bool showProgressInfo);
     ~ToastItem() = default;
 
     int id() const;

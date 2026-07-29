@@ -25,7 +25,7 @@
 #include <QString>
 
 #include "toastlistmodel.h"
-#include "toast/internal/toastitem.h"
+#include "toast/toastitem.h"
 
 using namespace muse::toast;
 
@@ -95,19 +95,16 @@ void ToastListModel::executeAction(int id, QString actionStr)
 {
     for (int i = 0; i < static_cast<int>(m_toasts.size()); ++i) {
         if (m_toasts.at(i)->id() == id) {
-            if (m_toasts.at(i)->actions().empty()) {
+            const auto& actions = m_toasts.at(i)->actions();
+            auto it = std::find_if(actions.cbegin(), actions.cend(), [&actionStr](const ToastAction& action) {
+                return action.text == actionStr.toStdString();
+            });
+
+            if (it == actions.cend()) {
                 return;
             }
 
-            const auto action = m_toasts.at(i)->actions()
-                                .at(std::distance(m_toasts.at(i)->actions().cbegin(),
-                                                  std::find_if(m_toasts.at(i)->actions().cbegin(),
-                                                               m_toasts.at(i)->actions().cend(),
-                                                               [actionStr](const ToastAction& action) {
-                return action.text == actionStr.toStdString();
-            })));
-
-            toastProvider()->executeAction(id, action.code);
+            toastProvider()->executeAction(id, it->code);
             return;
         }
     }

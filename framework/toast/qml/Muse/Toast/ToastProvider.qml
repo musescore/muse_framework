@@ -66,8 +66,6 @@ StyledListView {
         x: root.width
         opacity: 0
 
-        property bool enableAnimation: false
-
         title: model.title
         iconCode: model.iconCode
         message: model.message

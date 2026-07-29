@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "ui/view/iconcodes.h"
-#include "toast/internal/toastitem.h"
+#include "toast/toastitem.h"
 
 #include "toastservice.h"
 

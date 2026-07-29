@@ -25,10 +25,10 @@ target_sources(muse_toast PRIVATE
     toastmodule.h
     itoastprovider.h
     itoastservice.h
+    toastitem.cpp
+    toastitem.h
     toasttypes.h
 
-    internal/toastitem.cpp
-    internal/toastitem.h
     internal/toastprovider.cpp
     internal/toastprovider.h
     internal/toastservice.cpp

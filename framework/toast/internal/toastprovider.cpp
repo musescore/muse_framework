@@ -23,6 +23,13 @@
 
 using namespace muse::toast;
 
+ToastProvider::~ToastProvider()
+{
+    for (const auto& pair : m_progressTimers) {
+        delete pair.second;
+    }
+}
+
 muse::async::Promise<ToastActionCode> ToastProvider::show(ToastItem item)
 {
     return muse::async::make_promise<ToastActionCode>([this, item](auto resolve, auto) {
@@ -72,12 +79,22 @@ void ToastProvider::cleanup(int id)
 {
     auto timerIt = m_progressTimers.find(id);
     if (timerIt != m_progressTimers.end()) {
+        // cleanup() may run from within the timer's own timeout callback (progress reaching 100%),
+        // so defer the actual destruction instead of freeing it while its signal is still on the stack
+        QTimer* timer = timerIt->second;
+        timer->stop();
+        timer->deleteLater();
         m_progressTimers.erase(timerIt);
     }
 
-    auto progressIt = m_progresses.find(id);
-    if (progressIt != m_progresses.end()) {
-        m_progresses.erase(progressIt);
+    const auto itemIt = std::find_if(m_toasts.begin(), m_toasts.end(), [id](const std::shared_ptr<ToastItem>& toast) {
+        return toast->id() == id;
+    });
+    if (itemIt != m_toasts.end()) {
+        if (auto progress = (*itemIt)->progress()) {
+            progress->progressChanged().disconnect(this);
+            progress->finished().disconnect(this);
+        }
     }
 
     auto resolverIt = m_resolvers.find(id);
@@ -132,7 +149,7 @@ void ToastProvider::checkTimer(int id)
 
         if (timeoutMs > 0) {
             int interval = static_cast<int>(timeoutMs / 100);
-            auto timer = std::make_unique<QTimer>();
+            QTimer* timer = new QTimer();
             timer->setInterval(interval);
             timer->setSingleShot(false);
             timer->start();
@@ -144,7 +161,7 @@ void ToastProvider::checkTimer(int id)
                 }
             });
 
-            m_progressTimers[item->id()] = std::move(timer);
+            m_progressTimers[item->id()] = timer;
         }
     }
 }

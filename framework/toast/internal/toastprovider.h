@@ -39,6 +39,8 @@ namespace muse::toast {
 class ToastProvider : public IToastProvider, public muse::async::Asyncable
 {
 public:
+    ~ToastProvider() override;
+
     muse::async::Promise<ToastActionCode> show(ToastItem item) override;
 
     muse::async::Channel <std::shared_ptr<ToastItem> > toastAdded() const override;
@@ -58,8 +60,7 @@ private:
     muse::async::Channel<std::shared_ptr<ToastItem> > m_toastAdded;
     muse::async::Channel<int> m_toastDismissed;
 
-    std::map<int, std::unique_ptr<QTimer> > m_progressTimers;
-    std::map<int, std::shared_ptr<muse::Progress> > m_progresses;
+    std::map<int, QTimer*> m_progressTimers;
     std::map<int, muse::async::Promise<ToastActionCode>::Resolve> m_resolvers;
 };
 }
