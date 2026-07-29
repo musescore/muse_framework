@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <mutex>
 #include <atomic>
 
 #include "../ivstplugininstance.h"
@@ -59,14 +58,11 @@ public:
     PluginComponentPtr component() const override;
     PluginMidiMappingPtr midiMapping() const override;
 
-    bool isAbleForInput() const;
-
     void updatePluginConfig(const muse::audio::AudioUnitConfig& config) override;
     void refreshConfig() override;
 
     void load();
 
-    bool isValid() const;
     bool isLoaded() const override;
 
     async::Notification loadingCompleted() const override;
@@ -74,16 +70,15 @@ public:
     async::Channel<muse::audio::AudioUnitConfig> pluginSettingsChanged() const override;
 
 private:
-    void rescanParams();
-    void stateBufferFromString(VstMemoryStream& buffer, char* strData, const size_t strSize) const;
     void syncControllerToComponentState();
+    void rescanParams();
+    void setPluginConfig(const muse::audio::AudioUnitConfig& config);
 
     VstPluginInstanceId m_id = 0;
     muse::audio::AudioResourceId m_resourceId;
 
     PluginModulePtr m_module = nullptr;
     std::unique_ptr<VstPluginProvider> m_pluginProvider;
-    ClassInfo m_classInfo;
 
     Steinberg::FUnknownPtr<VstComponentHandler> m_componentHandlerPtr = nullptr;
 
@@ -93,9 +88,5 @@ private:
 
     std::atomic_bool m_isLoaded = false;
     async::Notification m_loadingCompleted;
-
-    std::atomic_bool m_updatingState = false;
-
-    mutable std::mutex m_mutex;
 };
 }

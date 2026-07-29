@@ -39,6 +39,17 @@ static const std::string_view CONTROLLER_STATE_KEY = "controllerState";
 
 static VstPluginInstanceId s_lastId = 0;
 
+static void stateBufferFromString(VstMemoryStream& buffer, char* strData, const size_t strSize)
+{
+    if (strSize == 0) {
+        return;
+    }
+
+    buffer.setSize(0);
+    buffer.write(strData, static_cast<Steinberg::int32>(strSize), nullptr);
+    buffer.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
+}
+
 VstPluginInstance::VstPluginInstance(const muse::audio::AudioResourceId& resourceId)
     : m_resourceId(resourceId), m_componentHandlerPtr(new VstComponentHandler())
 {
@@ -47,12 +58,18 @@ VstPluginInstance::VstPluginInstance(const muse::audio::AudioResourceId& resourc
     m_id = ++s_lastId;
 
     m_componentHandlerPtr->pluginParamsChanged().onNotify(this, [this]() {
-        rescanParams();
+        Async::call(this, [this]() {
+            rescanParams();
+        }, threadSecurer()->mainThreadId());
     });
 }
 
 VstPluginInstance::~VstPluginInstance()
 {
+    //! NOTE: Signal early so any rescanParams() already queued to the main thread
+    //! returns before touching members (provider, etc.)
+    m_isLoaded = false;
+
     muse::audio::AudioResourceId resourceId = m_resourceId;
     std::shared_ptr<VstPluginProvider> provider = std::move(m_pluginProvider);
     PluginModulePtr module = std::move(m_module);
@@ -107,8 +124,6 @@ void VstPluginInstance::load()
     Async::call(this, [this]() {
         ONLY_MAIN_THREAD(threadSecurer);
 
-        std::lock_guard lock(m_mutex);
-
         m_module = modulesRepo()->pluginModule(m_resourceId);
         if (!m_module) {
             modulesRepo()->addPluginModule(m_resourceId);
@@ -128,7 +143,6 @@ void VstPluginInstance::load()
             }
 
             m_pluginProvider = std::make_unique<VstPluginProvider>(factory, classInfo);
-            m_classInfo = classInfo;
             break;
         }
 
@@ -157,6 +171,8 @@ void VstPluginInstance::load()
 
 void VstPluginInstance::syncControllerToComponentState()
 {
+    ONLY_MAIN_THREAD(threadSecurer);
+
     // Synchronize controller to the component's default state.
     // Some plugins (e.g. Roland Cloud ZENOLOGY) rely on this to
     // fully initialize internal data structures; without it the
@@ -183,9 +199,9 @@ void VstPluginInstance::syncControllerToComponentState()
 
 void VstPluginInstance::rescanParams()
 {
-    ONLY_AUDIO_OR_MAIN_THREAD(threadSecurer);
+    ONLY_MAIN_THREAD(threadSecurer);
 
-    if (!m_isLoaded || m_updatingState) {
+    if (!m_isLoaded) {
         return;
     }
 
@@ -232,96 +248,13 @@ void VstPluginInstance::rescanParams()
     m_pluginSettingsChanges.send(updatedConfig);
 }
 
-void VstPluginInstance::stateBufferFromString(VstMemoryStream& buffer, char* strData, const size_t strSize) const
-{
-    if (strSize == 0) {
-        return;
-    }
-
-    buffer.setSize(0);
-    buffer.write(strData, static_cast<Steinberg::int32>(strSize), nullptr);
-    buffer.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
-}
-
-PluginViewPtr VstPluginInstance::createView() const
+void VstPluginInstance::setPluginConfig(const audio::AudioUnitConfig& config)
 {
     ONLY_MAIN_THREAD(threadSecurer);
 
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
-        return nullptr;
+    if (!m_isLoaded) {
+        return;
     }
-
-    PluginControllerPtr controller = m_pluginProvider->controller();
-    if (!controller) {
-        return nullptr;
-    }
-
-    return owned(controller->createView(PluginEditorViewType::kEditor));
-}
-
-PluginControllerPtr VstPluginInstance::controller() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
-        return nullptr;
-    }
-
-    return m_pluginProvider->controller();
-}
-
-PluginComponentPtr VstPluginInstance::component() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
-        return nullptr;
-    }
-
-    return m_pluginProvider->component();
-}
-
-PluginMidiMappingPtr VstPluginInstance::midiMapping() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    if (!m_pluginProvider) {
-        return nullptr;
-    }
-
-    return m_pluginProvider->midiMapping();
-}
-
-bool VstPluginInstance::isAbleForInput() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    auto search = std::find_if(m_classInfo.subCategories().begin(),
-                               m_classInfo.subCategories().end(), [](const std::string& subCategoryStr) {
-        return subCategoryStr == PluginSubCategory::Synth
-               || subCategoryStr == PluginSubCategory::Piano
-               || subCategoryStr == PluginSubCategory::Drum
-               || subCategoryStr == PluginSubCategory::External;
-    });
-
-    return search != m_classInfo.subCategories().cend();
-}
-
-void VstPluginInstance::updatePluginConfig(const muse::audio::AudioUnitConfig& config)
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
 
     if (!m_pluginProvider) {
         LOGE() << "Plugin provider is not initialized";
@@ -343,9 +276,9 @@ void VstPluginInstance::updatePluginConfig(const muse::audio::AudioUnitConfig& c
         return;
     }
 
-    m_updatingState = true;
+    m_componentHandlerPtr->setSuppressNotify(true);
     DEFER {
-        m_updatingState = false;
+        m_componentHandlerPtr->setSuppressNotify(false);
     };
 
     try {
@@ -372,27 +305,70 @@ void VstPluginInstance::updatePluginConfig(const muse::audio::AudioUnitConfig& c
     }
 }
 
+PluginViewPtr VstPluginInstance::createView() const
+{
+    ONLY_MAIN_THREAD(threadSecurer);
+
+    if (!m_isLoaded || !m_pluginProvider) {
+        return nullptr;
+    }
+
+    PluginControllerPtr controller = m_pluginProvider->controller();
+    if (!controller) {
+        return nullptr;
+    }
+
+    return owned(controller->createView(PluginEditorViewType::kEditor));
+}
+
+PluginControllerPtr VstPluginInstance::controller() const
+{
+    ONLY_AUDIO_THREAD(threadSecurer);
+
+    if (!m_isLoaded || !m_pluginProvider) {
+        return nullptr;
+    }
+
+    return m_pluginProvider->controller();
+}
+
+PluginComponentPtr VstPluginInstance::component() const
+{
+    // TODO: Audio engine or process thread
+    // ONLY_AUDIO_THREAD(threadSecurer);
+
+    if (!m_isLoaded || !m_pluginProvider) {
+        return nullptr;
+    }
+
+    return m_pluginProvider->component();
+}
+
+PluginMidiMappingPtr VstPluginInstance::midiMapping() const
+{
+    ONLY_AUDIO_THREAD(threadSecurer);
+
+    if (!m_isLoaded || !m_pluginProvider) {
+        return nullptr;
+    }
+
+    return m_pluginProvider->midiMapping();
+}
+
+void VstPluginInstance::updatePluginConfig(const audio::AudioUnitConfig& config)
+{
+    ONLY_AUDIO_THREAD(threadSecurer);
+
+    Async::call(this, [this, config]() {
+        setPluginConfig(config);
+    }, threadSecurer()->mainThreadId());
+}
+
 void VstPluginInstance::refreshConfig()
 {
     ONLY_MAIN_THREAD(threadSecurer);
 
-    std::lock_guard lock(m_mutex);
-
     rescanParams();
-}
-
-bool VstPluginInstance::isValid() const
-{
-    ONLY_AUDIO_THREAD(threadSecurer);
-
-    std::lock_guard lock(m_mutex);
-
-    if (!m_module
-        || !m_pluginProvider) {
-        return false;
-    }
-
-    return true;
 }
 
 bool VstPluginInstance::isLoaded() const
