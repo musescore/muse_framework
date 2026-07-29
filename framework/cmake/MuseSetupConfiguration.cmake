@@ -4,6 +4,10 @@ if (NOT MUSE_MODULE_AUDIO)
     set(MUSE_MODULE_MUSESAMPLER OFF)
 endif()
 
+if (NOT MUSE_MODULE_UI)
+    set(MUSE_MODULE_TOAST OFF) # Hard dependency
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/MuseModules.cmake)
 
 # Disable sub-options of disabled modules
