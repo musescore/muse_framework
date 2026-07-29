@@ -37,6 +37,10 @@ if (MUSE_MODULE_INTERACTIVE)
     add_subdirectory(interactive)
 endif()
 
+if (MUSE_MODULE_TOAST)
+    add_subdirectory(toast)
+endif()
+
 if (MUSE_MODULE_DOCKWINDOW)
     if (MUSE_MODULE_DOCKWINDOW_KDDOCKWIDGETS_V2)
         add_subdirectory(dockwindow_v2)
