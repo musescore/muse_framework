@@ -123,7 +123,12 @@ FontsEngine::~FontsEngine()
 
 void FontsEngine::init()
 {
-    //m_renderCache.init();
+    m_renderCache.init();
+}
+
+void FontsEngine::setRenderCacheDirPath(const io::path_t& path, const std::string& revision)
+{
+    m_renderCache.setCacheDirPath(path, revision);
 }
 
 double FontsEngine::lineSpacing(const Font& f) const
