@@ -54,23 +54,30 @@ Item {
     property int actionButtonMargins: 6
     property int actionButtonsSpacing: 8
 
+    property int shadowMargin: 8
+
     signal dismissed
     signal actionTriggered(string actionStr)
 
     width: 360
     height: implicitHeight
 
-    implicitHeight: mainContainer.childrenRect.height + 24
+    implicitHeight: mainContainer.childrenRect.height + 24 + shadowMargin * 2
+
+    StyledRectangularShadow {
+        anchors.fill: backgroundRect
+
+        radius: backgroundRect.radius
+    }
 
     Rectangle {
         id: backgroundRect
 
         anchors.fill: parent
+        anchors.margins: root.shadowMargin
 
-        color: ui.theme.backgroundPrimaryColor
+        color: ui.theme.popupBackgroundColor
         radius: 8
-
-        opacity: 0.95
 
         Rectangle {
             id: progressBar
@@ -87,16 +94,16 @@ Item {
 
             color: ui.theme.accentColor
 
-            bottomLeftRadius: parent.radius - parent.border.width
+            bottomLeftRadius: parent.radius
         }
     }
 
     Row {
         id: mainContainer
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
+        anchors.left: backgroundRect.left
+        anchors.right: backgroundRect.right
+        anchors.top: backgroundRect.top
 
         anchors.topMargin: root.verticalMargin
         anchors.bottomMargin: root.verticalMargin
