@@ -42,6 +42,8 @@ StyledListView {
 
     model: toastmodel
 
+    visible: root.count > 0
+
     ToastListModel {
         id: toastmodel
     }
