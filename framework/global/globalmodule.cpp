@@ -36,6 +36,10 @@
 #include "internal/systeminfo.h"
 #include "internal/tickerprovider.h"
 
+#ifndef NO_QT_SUPPORT
+#include "internal/applicationeventcontroller.h"
+#endif
+
 #include "runtime.h"
 #include "async/processevents.h"
 
@@ -90,6 +94,11 @@ void GlobalModule::registerExports()
     globalIoc()->registerExport<IProcess>(moduleName(), new Process());
     globalIoc()->registerExport<ITickerProvider>(moduleName(), m_tickerProvider);
     globalIoc()->registerExport<api::IApiRegister>(moduleName(), new api::ApiRegister());
+
+#ifndef NO_QT_SUPPORT
+    m_eventController = std::make_shared<ApplicationEventController>();
+    globalIoc()->registerExport<IApplicationEventController>(moduleName(), m_eventController);
+#endif
 
 #ifdef Q_OS_WASM
     globalIoc()->registerExport<IFileSystem>(moduleName(), new MemFileSystem());
