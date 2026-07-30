@@ -55,6 +55,7 @@ declare_muse_module_opt(DRAW ON)
 option(MUSE_MODULE_DRAW_TRACE "Trace draw objects" OFF)
 option(MUSE_MODULE_DRAW_USE_QTFONTMETRICS "Use Qt font metrics (for some metrics)" ON)
 option(MUSE_MODULE_DRAW_USE_QTTEXTDRAW "Use Qt text drawing path" ON)
+option(MUSE_MODULE_DRAW_USE_STATIC_DEPS "Use static draw dependencies" OFF)
 
 declare_muse_module_opt(EXTENSIONS ON)
 
