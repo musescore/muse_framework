@@ -44,6 +44,21 @@ void PolylinePointStyle::setCenterRadius(qreal r)
     emit styleChanged();
 }
 
+qreal PolylinePointStyle::centerRadiusHovered() const
+{
+    return m_centerRadiusHovered;
+}
+
+void PolylinePointStyle::setCenterRadiusHovered(qreal r)
+{
+    if (m_centerRadiusHovered == r) {
+        return;
+    }
+
+    m_centerRadiusHovered = r;
+    emit styleChanged();
+}
+
 QColor PolylinePointStyle::centerColor() const
 {
     return m_centerColor;
@@ -59,18 +74,48 @@ void PolylinePointStyle::setCenterColor(const QColor& c)
     emit styleChanged();
 }
 
+QColor PolylinePointStyle::centerColorHovered() const
+{
+    return m_centerColorHovered;
+}
+
+void PolylinePointStyle::setCenterColorHovered(const QColor& c)
+{
+    if (m_centerColorHovered == c) {
+        return;
+    }
+
+    m_centerColorHovered = c;
+    emit styleChanged();
+}
+
 qreal PolylinePointStyle::middleRingWidth() const
 {
     return m_middleRingWidth;
 }
 
-void PolylinePointStyle::setMiddleRingWidth(qreal r)
+void PolylinePointStyle::setMiddleRingWidth(qreal w)
 {
-    if (m_middleRingWidth == r) {
+    if (m_middleRingWidth == w) {
         return;
     }
 
-    m_middleRingWidth = r;
+    m_middleRingWidth = w;
+    emit styleChanged();
+}
+
+qreal PolylinePointStyle::middleRingWidthHovered() const
+{
+    return m_middleRingWidthHovered;
+}
+
+void PolylinePointStyle::setMiddleRingWidthHovered(qreal w)
+{
+    if (m_middleRingWidthHovered == w) {
+        return;
+    }
+
+    m_middleRingWidthHovered = w;
     emit styleChanged();
 }
 
@@ -89,6 +134,21 @@ void PolylinePointStyle::setMiddleRingColor(const QColor& c)
     emit styleChanged();
 }
 
+QColor PolylinePointStyle::middleRingColorHovered() const
+{
+    return m_middleRingColorHovered;
+}
+
+void PolylinePointStyle::setMiddleRingColorHovered(const QColor& c)
+{
+    if (m_middleRingColorHovered == c) {
+        return;
+    }
+
+    m_middleRingColorHovered = c;
+    emit styleChanged();
+}
+
 qreal PolylinePointStyle::outlineWidth() const
 {
     return m_outlineWidth;
@@ -104,6 +164,21 @@ void PolylinePointStyle::setOutlineWidth(qreal w)
     emit styleChanged();
 }
 
+qreal PolylinePointStyle::outlineWidthHovered() const
+{
+    return m_outlineWidthHovered;
+}
+
+void PolylinePointStyle::setOutlineWidthHovered(qreal w)
+{
+    if (m_outlineWidthHovered == w) {
+        return;
+    }
+
+    m_outlineWidthHovered = w;
+    emit styleChanged();
+}
+
 QColor PolylinePointStyle::outlineColor() const
 {
     return m_outlineColor;
@@ -116,5 +191,20 @@ void PolylinePointStyle::setOutlineColor(const QColor& c)
     }
 
     m_outlineColor = c;
+    emit styleChanged();
+}
+
+QColor PolylinePointStyle::outlineColorHovered() const
+{
+    return m_outlineColorHovered;
+}
+
+void PolylinePointStyle::setOutlineColorHovered(const QColor& c)
+{
+    if (m_outlineColorHovered == c) {
+        return;
+    }
+
+    m_outlineColorHovered = c;
     emit styleChanged();
 }

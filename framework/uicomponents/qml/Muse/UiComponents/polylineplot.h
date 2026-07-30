@@ -50,7 +50,6 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
     Q_OBJECT
 
     Q_PROPERTY(PolylinePointStyle * standardPointStyle READ standardPointStyle CONSTANT)
-    Q_PROPERTY(PolylinePointStyle * hoveredPointStyle READ hoveredPointStyle CONSTANT)
     Q_PROPERTY(PolylinePointStyle * ghostPointStyle READ ghostPointStyle CONSTANT)
 
     Q_PROPERTY(QColor lineColor READ lineColor WRITE setLineColor NOTIFY lineColorChanged)
@@ -96,7 +95,6 @@ public:
     Q_INVOKABLE void init();
 
     PolylinePointStyle* standardPointStyle();
-    PolylinePointStyle* hoveredPointStyle();
     PolylinePointStyle* ghostPointStyle();
 
     QColor lineColor() const;
@@ -223,7 +221,7 @@ private:
     QPointF snapToNeighbor(qreal dragPxX, QPointF pDomain) const;
     void updateActivePoint();
 
-    void paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre) const;
+    void paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre, bool useHoveredStyle) const;
 
 private:
     QColor m_lineColor;
@@ -231,7 +229,6 @@ private:
     qreal m_baselineN = 0.5;
 
     PolylinePointStyle* m_standardPointStyle = nullptr;
-    PolylinePointStyle* m_hoveredPointStyle = nullptr;
     PolylinePointStyle* m_ghostPointStyle = nullptr;
 
     qreal m_hitRadius = 9.0;

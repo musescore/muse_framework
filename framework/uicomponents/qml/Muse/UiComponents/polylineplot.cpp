@@ -148,11 +148,6 @@ PolylinePlot::PolylinePlot(QQuickItem* parent)
         update();
     });
 
-    m_hoveredPointStyle = new PolylinePointStyle(this);
-    QObject::connect(m_hoveredPointStyle, &PolylinePointStyle::styleChanged, this, [this]() {
-        update();
-    });
-
     m_ghostPointStyle = new PolylinePointStyle(this);
     QObject::connect(m_ghostPointStyle, &PolylinePointStyle::styleChanged, this, [this]() {
         update();
@@ -175,11 +170,6 @@ void PolylinePlot::init()
 PolylinePointStyle* PolylinePlot::standardPointStyle()
 {
     return m_standardPointStyle;
-}
-
-PolylinePointStyle* PolylinePlot::hoveredPointStyle()
-{
-    return m_hoveredPointStyle;
 }
 
 PolylinePointStyle* PolylinePlot::ghostPointStyle()
@@ -1027,15 +1017,20 @@ void PolylinePlot::geometryChange(const QRectF& newG, const QRectF& oldG)
     }
 }
 
-void PolylinePlot::paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre) const
+void PolylinePlot::paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre, bool useHoveredStyle) const
 {
     IF_ASSERT_FAILED(painter && style) {
         return;
     }
 
-    const qreal centerRadius = style->centerRadius();
-    const qreal middleRingWidth = style->middleRingWidth();
-    const qreal outlineWidth = style->outlineWidth();
+    const qreal centerRadius = useHoveredStyle ? style->centerRadiusHovered() : style->centerRadius();
+    const QColor centerColor = useHoveredStyle ? style->centerColorHovered() : style->centerColor();
+
+    const qreal middleRingWidth = useHoveredStyle ? style->middleRingWidthHovered() : style->middleRingWidth();
+    const QColor middleRingColor = useHoveredStyle ? style->middleRingColorHovered() : style->middleRingColor();
+
+    const qreal outlineWidth = useHoveredStyle ? style->outlineWidthHovered() : style->outlineWidth();
+    const QColor outlineColor = useHoveredStyle ? style->outlineColorHovered() : style->outlineColor();
 
     if (middleRingWidth > 0.0) {
         const qreal middleRadius = centerRadius + middleRingWidth;
@@ -1043,23 +1038,23 @@ void PolylinePlot::paintPoint(QPainter* painter, const PolylinePointStyle* style
 
         painter->setPen(Qt::NoPen);
 
-        painter->setBrush(style->outlineColor());
+        painter->setBrush(outlineColor);
         painter->drawEllipse(centre, outerRadius, outerRadius);
 
-        painter->setBrush(style->middleRingColor());
+        painter->setBrush(middleRingColor);
         painter->drawEllipse(centre, middleRadius, middleRadius);
 
-        painter->setBrush(style->centerColor());
+        painter->setBrush(centerColor);
         painter->drawEllipse(centre, centerRadius, centerRadius);
         return;
     }
 
     painter->setPen(Qt::NoPen);
-    painter->setBrush(style->centerColor());
+    painter->setBrush(centerColor);
     painter->drawEllipse(centre, centerRadius, centerRadius);
 
     if (outlineWidth > 0.0) {
-        QPen pen(style->outlineColor());
+        QPen pen(outlineColor);
         pen.setWidthF(outlineWidth);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
@@ -1102,7 +1097,7 @@ void PolylinePlot::paint(QPainter* painter)
     }
 
     // draw points
-    IF_ASSERT_FAILED(m_standardPointStyle && m_hoveredPointStyle && m_ghostPointStyle) {
+    IF_ASSERT_FAILED(m_standardPointStyle && m_ghostPointStyle) {
         return;
     }
 
@@ -1115,8 +1110,7 @@ void PolylinePlot::paint(QPainter* painter)
         const int domainIdx
             =(i < m_visibleToDomainIndex.size()) ? m_visibleToDomainIndex[i] : INVALID_POINT_IDX;
         const bool isHovered = (domainIdx >= 0 && domainIdx == hoveredIndex);
-        const PolylinePointStyle* style = isHovered ? m_hoveredPointStyle : m_standardPointStyle;
-        paintPoint(painter, style, centre);
+        paintPoint(painter, m_standardPointStyle, centre, /*useHoveredStyle*/ isHovered);
     }
 
     // draw hover ghost point
@@ -1133,7 +1127,7 @@ void PolylinePlot::paint(QPainter* painter)
         }
 
         if (pointIndexAtPx(hp) < 0 && isNearLinePx(hp)) {
-            paintPoint(painter, m_ghostPointStyle, hp);
+            paintPoint(painter, m_ghostPointStyle, hp, /*useHoveredStyle*/ false);
         }
     }
 }
