@@ -538,6 +538,79 @@ TEST_F(Ui_NavigationControllerTests, FirstActiveOnPrevPanel)
     delete sect2;
 }
 
+TEST_F(Ui_NavigationControllerTests, NextPanelOnSectionWithoutPanels)
+{
+    //! CASE The panels of the active section are gone (for example, they have been destroyed
+    //! along with the page they belong to), and we call next panel (Tab)
+
+    //! [GIVEN] Two section, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+    ASSERT_TRUE(sect1->section->active());
+
+    //! [GIVEN] Its panels have left the section, the section itself is still active
+    for (Panel* p : sect1->panels) {
+        p->panel->setSection(nullptr);
+    }
+
+    ASSERT_TRUE(sect1->section->active());
+
+    //! [WHEN] Send action `nav-next-panel` (usually Tab)
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    //! [THEN] The navigation has left the section it has nothing to navigate in
+    EXPECT_FALSE(sect1->section->active());
+
+    //! [THEN] The second section, the first panel, the first control must be activated
+    EXPECT_TRUE(sect2->section->active());
+    EXPECT_TRUE(sect2->panels[0]->panel->active());
+    EXPECT_TRUE(sect2->panels[0]->controls[0]->control->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, PrevPanelOnSectionWithoutPanels)
+{
+    //! CASE The same as above, but we call prev panel (Shift+Tab)
+
+    //! [GIVEN] Two section, the second one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    m_dispatcher->dispatch(PREV_PANEL_COMMAND);
+    ASSERT_TRUE(sect2->section->active());
+
+    //! [GIVEN] Its panels have left the section, the section itself is still active
+    for (Panel* p : sect2->panels) {
+        p->panel->setSection(nullptr);
+    }
+
+    ASSERT_TRUE(sect2->section->active());
+
+    //! [WHEN] Send action `nav-prev-panel` (usually Shift+Tab)
+    m_dispatcher->dispatch(PREV_PANEL_COMMAND);
+
+    //! [THEN] The navigation has left the section it has nothing to navigate in
+    EXPECT_FALSE(sect2->section->active());
+
+    //! [THEN] The first section, its last panel, the first control must be activated
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(sect1->panels[1]->panel->active());
+    EXPECT_TRUE(sect1->panels[1]->controls[0]->control->active());
+
+    delete sect1;
+    delete sect2;
+}
+
 TEST_F(Ui_NavigationControllerTests, UserPressedSomeKeyHasActiveKey)
 {
     //! [GIVEN] Two section, not active

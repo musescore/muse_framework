@@ -806,7 +806,11 @@ void NavigationController::goToNextPanel()
         if (first) {
             doActivatePanel(first);
             m_navigationChanged.notify();
+            return;
         }
+
+        MYLOG() << "the active section " << activeSec->name() << " has no enabled panels, go to the next section";
+        goToNextSection();
         return;
     }
 
@@ -849,7 +853,11 @@ void NavigationController::goToPrevPanel()
         if (lastPanel) {
             doActivatePanel(lastPanel);
             m_navigationChanged.notify();
+            return;
         }
+
+        MYLOG() << "the active section " << activeSec->name() << " has no enabled panels, go to the prev section";
+        goToPrevSection(true);
         return;
     }
 
