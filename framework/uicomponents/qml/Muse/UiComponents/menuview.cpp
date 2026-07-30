@@ -23,7 +23,6 @@
 #include "menuview.h"
 
 #include "log.h"
-#include "defer.h"
 
 using namespace muse::uicomponents;
 
@@ -110,9 +109,6 @@ void MenuView::updateGeometry()
     IF_ASSERT_FAILED(parent) {
         return;
     }
-
-    setLocalX(0);
-    setLocalY(parent->height());
 
     const QPointF parentTopLeft = parent->mapToGlobal(QPoint(0, 0));
 
@@ -317,7 +313,6 @@ void MenuView::setDesiredHeight(int desiredHeight)
     emit desiredHeightChanged();
 
     QMetaObject::invokeMethod(this, [this] {
-        updateGeometry();
         repositionWindowIfNeed();
     }, Qt::QueuedConnection);
 }
@@ -337,7 +332,6 @@ void MenuView::setDesiredWidth(int desiredWidth)
     emit desiredWidthChanged();
 
     QMetaObject::invokeMethod(this, [this] {
-        updateGeometry();
         repositionWindowIfNeed();
     }, Qt::QueuedConnection);
 }
