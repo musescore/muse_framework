@@ -22,6 +22,7 @@ set(MODULE_TEST muse_draw_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/painter_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/fontrendercache_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/fontsprovider_qt_tests.cpp
 )
 

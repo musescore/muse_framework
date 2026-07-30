@@ -8,6 +8,10 @@ if (MUSE_MODULE_DRAW)
     require_dep(libpng)
     require_dep(freetype)
     require_dep(harfbuzz)
+
+    if (NOT MUSE_MODULE_DRAW_USE_QTTEXTDRAW)
+        require_dep(msdfgen)
+    endif()
 endif()
 
 if (MUSE_MODULE_DOCKWINDOW AND MUSE_MODULE_DOCKWINDOW_KDDOCKWIDGETS_V2)

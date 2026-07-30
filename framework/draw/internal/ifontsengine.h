@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include "global/io/path.h"
 #include "global/modularity/imoduleinterface.h"
 #include "types/font.h"
 #include "types/geometry.h"
@@ -34,6 +35,8 @@ class IFontsEngine : MODULE_GLOBAL_INTERFACE
     INTERFACE_ID(muse::draw::IFontsEngine)
 public:
     virtual ~IFontsEngine() = default;
+
+    virtual void setRenderCacheDirPath(const io::path_t& path, const std::string& revision = std::string()) = 0;
 
     virtual double lineSpacing(const Font& f) const = 0;
     virtual double xHeight(const Font& f) const = 0;

@@ -85,9 +85,6 @@ else()
 
         internal/qfontprovider.cpp
         internal/qfontprovider.h
-        #internal/fontengineft.cpp
-        #internal/fontengineft.h
-
         internal/ifontsengine.h
         internal/ifontsdatabase.h
         internal/ifontface.h
@@ -97,18 +94,38 @@ else()
         internal/fontsdatabase.h
         internal/fontsengine.cpp
         internal/fontsengine.h
+        internal/fontrendercache.cpp
+        internal/fontrendercache.h
         internal/fontfaceft.cpp
         internal/fontfaceft.h
         internal/fontfacedu.cpp
         internal/fontfacedu.h
     )
 
-    target_compile_definitions(muse_draw PUBLIC MUSE_MODULE_DRAW_USE_QTTEXTDRAW)
+    if (MUSE_MODULE_DRAW_USE_QTTEXTDRAW)
+        target_compile_definitions(muse_draw PUBLIC MUSE_MODULE_DRAW_USE_QTTEXTDRAW)
+    endif()
+
+    if (COMMAND freetype_add_to_build)
+        freetype_add_to_build()
+    endif()
+
+    if (COMMAND harfbuzz_add_to_build)
+        harfbuzz_add_to_build()
+    endif()
 
     target_link_libraries(muse_draw PRIVATE
         freetype::freetype
         harfbuzz::harfbuzz
     )
+
+    if (NOT MUSE_MODULE_DRAW_USE_QTTEXTDRAW)
+        if (COMMAND msdfgen_add_to_build)
+            msdfgen_add_to_build()
+        endif()
+
+        target_link_libraries(muse_draw PRIVATE msdfgen::msdfgen)
+    endif()
 
 endif()
 
