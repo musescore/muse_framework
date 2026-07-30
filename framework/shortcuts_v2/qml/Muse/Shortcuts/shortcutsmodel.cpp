@@ -22,6 +22,7 @@
 
 #include "shortcutsmodel.h"
 
+#include "containers.h"
 #include "translation.h"
 #include "types/mnemonicstring.h"
 #include "types/translatablestring.h"
@@ -298,9 +299,19 @@ void ShortcutsModel::applySequenceToCurrentShortcut(const QString& newSequence, 
     LOGD() << "apply sequence to command: " << m_items[row].shortcut.command << " new sequence: " << newSequence.toStdString();
 
     if (conflictShortcutIndex >= 0 && conflictShortcutIndex < m_items.size()) {
-        m_items[conflictShortcutIndex].shortcut.clear();
-        m_items[conflictShortcutIndex].sequence = "";
-        LOGD() << "clear sequence for command: " << m_items[conflictShortcutIndex].shortcut.command;
+        const std::vector<std::string>& newSequences = m_items[row].shortcut.sequences;
+        Item& conflictItem = m_items[conflictShortcutIndex];
+
+        muse::remove_if(conflictItem.shortcut.sequences, [&newSequences](const std::string& sequence) {
+            return muse::contains(newSequences, sequence);
+        });
+
+        if (conflictItem.shortcut.sequences.empty()) {
+            conflictItem.shortcut.clear();
+        }
+
+        conflictItem.sequence = sequencesToNativeText(conflictItem.shortcut.sequences);
+        LOGD() << "clear sequence for command: " << conflictItem.shortcut.command;
         notifyAboutShortcutChanged(index(conflictShortcutIndex));
     }
 
