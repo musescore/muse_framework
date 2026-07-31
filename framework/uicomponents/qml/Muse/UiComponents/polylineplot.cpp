@@ -152,6 +152,11 @@ PolylinePlot::PolylinePlot(QQuickItem* parent)
     QObject::connect(m_ghostPointStyle, &PolylinePointStyle::styleChanged, this, [this]() {
         update();
     });
+
+    m_selectedPointStyle = new PolylinePointStyle(this);
+    QObject::connect(m_selectedPointStyle, &PolylinePointStyle::styleChanged, this, [this]() {
+        update();
+    });
 }
 
 void PolylinePlot::init()
@@ -175,6 +180,45 @@ PolylinePointStyle* PolylinePlot::standardPointStyle()
 PolylinePointStyle* PolylinePlot::ghostPointStyle()
 {
     return m_ghostPointStyle;
+}
+
+PolylinePointStyle* PolylinePlot::selectedPointStyle()
+{
+    return m_selectedPointStyle;
+}
+
+bool PolylinePlot::ghostPointsEnabled() const
+{
+    return m_ghostPointsEnabled;
+}
+
+void PolylinePlot::setGhostPointsEnabled(bool v)
+{
+    if (m_ghostPointsEnabled == v) {
+        return;
+    }
+
+    m_ghostPointsEnabled = v;
+    emit ghostPointsEnabledChanged();
+
+    update();
+}
+
+bool PolylinePlot::selectedPointsEnabled() const
+{
+    return m_selectedPointsEnabled;
+}
+
+void PolylinePlot::setSelectedPointsEnabled(bool v)
+{
+    if (m_selectedPointsEnabled == v) {
+        return;
+    }
+
+    m_selectedPointsEnabled = v;
+    emit selectedPointsEnabledChanged();
+
+    update();
 }
 
 QColor PolylinePlot::lineColor() const
@@ -630,6 +674,15 @@ void PolylinePlot::updateActivePoint()
                 bestScore = score;
                 draggedDisplayDomainIdx = i;
             }
+        }
+    }
+
+    // m_pressedPointIndex must stay at the original model index (so consumed neighbors can be restored), but selection indices
+    // need to shift when other indices are deleted...
+    if (m_selectedPointsEnabled && draggedDisplayDomainIdx >= 0) {
+        if (m_selectedPointsIndices.size() != 1 || !muse::contains(m_selectedPointsIndices, draggedDisplayDomainIdx)) {
+            m_selectedPointsIndices.clear();
+            m_selectedPointsIndices.insert(draggedDisplayDomainIdx);
         }
     }
 
@@ -1097,7 +1150,7 @@ void PolylinePlot::paint(QPainter* painter)
     }
 
     // draw points
-    IF_ASSERT_FAILED(m_standardPointStyle && m_ghostPointStyle) {
+    IF_ASSERT_FAILED(m_standardPointStyle && m_ghostPointStyle && m_selectedPointStyle) {
         return;
     }
 
@@ -1107,22 +1160,20 @@ void PolylinePlot::paint(QPainter* painter)
         QPointF pN = m_pointsNVisible[i];
         const QPointF centre(toPxX(this, pN.x()), toPxY(this, pN.y()));
 
-        const int domainIdx
-            =(i < m_visibleToDomainIndex.size()) ? m_visibleToDomainIndex[i] : INVALID_POINT_IDX;
-        const bool isHovered = (domainIdx >= 0 && domainIdx == hoveredIndex);
-        paintPoint(painter, m_standardPointStyle, centre, /*useHoveredStyle*/ isHovered);
+        const int domainIdx = (i < m_visibleToDomainIndex.size()) ? m_visibleToDomainIndex[i] : INVALID_POINT_IDX;
+        const bool isSelected = m_selectedPointsEnabled && domainIdx >= 0 && muse::contains(m_selectedPointsIndices, domainIdx);
+        const bool isHovered = !(m_pressed && isSelected) && domainIdx >= 0 && domainIdx == hoveredIndex;
+
+        const PolylinePointStyle* style = isSelected ? m_selectedPointStyle : m_standardPointStyle;
+        paintPoint(painter, style, centre, /*useHoveredStyle*/ isHovered);
     }
 
     // draw hover ghost point
-    if (m_hoveredOnLine && m_pressedPointIndex < 0) {
+    if (m_ghostPointsEnabled && m_hoveredOnLine && m_pressedPointIndex < 0) {
         QPointF hp = m_hoverGhostPx;
 
         if (m_pointsNVisible.size() < 2) {
-            const qreal yN
-                =(m_pointsNVisible.size() == 1)
-                  ? m_pointsNVisible[0].y()
-                  : m_baselineN;
-
+            const qreal yN = (m_pointsNVisible.size() == 1) ? m_pointsNVisible[0].y() : m_baselineN;
             hp.setY(toPxY(this, yN));
         }
 
@@ -1146,17 +1197,24 @@ void PolylinePlot::hoverMoveEvent(QHoverEvent* e)
 
     const bool nearPoint = (pointIndexAtPx(m_hoverPx) >= 0);
 
-    auto proj = ghostPointToPolylinePx(m_hoverPx);
-    const bool nearLine = (proj.distToSegment <= m_hitRadius);
+    bool nearLine = false;
+    if (m_ghostPointsEnabled) {
+        const auto proj = ghostPointToPolylinePx(m_hoverPx);
+        nearLine = (proj.distToSegment <= m_hitRadius);
+
+        if (m_pointsNVisible.size() >= 2) {
+            m_hoverGhostPx = proj.point;
+        } else {
+            m_hoverGhostPx = m_hoverPx;
+        }
+    } else {
+        // nearLine is still required for updateCursor (m_hoveredOnLine) and to accept events, but
+        // if ghost points are disabled we can skip the m_hoverGhostPx logic...
+        nearLine = isNearLinePx(m_hoverPx);
+    }
 
     m_hoveredOnLine = (nearPoint || nearLine);
     updateCursor();
-
-    if (m_pointsNVisible.size() >= 2) {
-        m_hoverGhostPx = proj.point;
-    } else {
-        m_hoverGhostPx = m_hoverPx;
-    }
 
     updateActivePoint();
     update();
@@ -1187,6 +1245,10 @@ void PolylinePlot::mousePressEvent(QMouseEvent* e)
         return;
     }
 
+    if (!m_selectedPointsIndices.empty()) {
+        m_selectedPointsIndices.clear();
+    }
+
     const int pointIndex = pointIndexAtPx(e->position());
     const bool onPoint = pointIndex >= 0;
     const bool onLine  = isNearLinePx(e->position());
@@ -1209,6 +1271,9 @@ void PolylinePlot::mousePressEvent(QMouseEvent* e)
         m_pressedOnPoint = true;
         m_pressedPointIndex = pointIndex;
         if (m_pressedPointIndex >= 0 && m_pressedPointIndex < m_points.size()) {
+            if (m_selectedPointsEnabled) {
+                m_selectedPointsIndices.insert(m_pressedPointIndex);
+            }
             m_draggedPointDomain = m_points[m_pressedPointIndex];
             m_hasDraggedPointDomain = true;
         }
