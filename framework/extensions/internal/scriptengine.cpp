@@ -36,14 +36,15 @@ using namespace muse;
 using namespace muse::extensions;
 using namespace muse::api;
 
-ScriptEngine::ScriptEngine(const modularity::ContextPtr& iocCtx, int apiversion)
+ScriptEngine::ScriptEngine(const modularity::ContextPtr& iocCtx, const muse::api::ApiContext& apiContext)
     : m_iocContext(iocCtx)
 {
+    const int apiversion = apiContext.apiversion;
     m_engine = new QJSEngine();
 
     m_engine->installExtensions(QJSEngine::ConsoleExtension);
     m_engine->setProperty("apiversion", apiversion);
-    m_apiengine = new JsApiEngine(m_engine, m_iocContext);
+    m_apiengine = new JsApiEngine(m_engine, m_iocContext, apiContext);
 
     QJSValue globalObj = m_engine->globalObject();
     if (apiversion == 1) {
@@ -190,12 +191,6 @@ Ret ScriptEngine::evaluate()
     }
 
     return Ret(Ret::Code::Ok);
-}
-
-Ret ScriptEngine::call(const QString& funcName, QJSValue* retVal)
-{
-    Ret ret = doCall(funcName, QJSValueList(), retVal);
-    return ret;
 }
 
 Ret ScriptEngine::call(const QString& funcName, const QJSValueList& args, QJSValue* retVal)

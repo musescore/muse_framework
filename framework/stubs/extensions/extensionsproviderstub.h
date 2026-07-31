@@ -43,6 +43,7 @@ public:
 
     Ret perform(const UriQuery& uri) override;
     Ret run(const UriQuery& uri) override;
+    std::unique_ptr<IExtensionSession> newSession(const Uri& uri, const io::path_t& relativeScriptPath) const override;
 
     Ret setExecPoint(const Uri& uri, const ExecPointName& name) override;
     std::vector<ExecPoint> execPoints(const Uri& uri) const override;

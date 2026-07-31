@@ -43,7 +43,7 @@ class ScriptEngine
     GlobalInject<muse::api::IApiRegister> apiRegister;
 
 public:
-    ScriptEngine(const modularity::ContextPtr& iocCtx, int apiversion);
+    ScriptEngine(const modularity::ContextPtr& iocCtx, const muse::api::ApiContext& apiContext);
     ~ScriptEngine();
 
     struct CallData {
@@ -56,8 +56,7 @@ public:
 
     Ret evaluate();
 
-    Ret call(const QString& funcName, QJSValue* retVal = nullptr);
-    Ret call(const QString& funcName, const QJSValueList& args, QJSValue* retVal = nullptr);
+    Ret call(const QString& funcName, const QJSValueList& args = {}, QJSValue* retVal = nullptr);
 
     void setGlobalProperty(const QString& name, const QJSValue& val);
     QJSValue globalProperty(const QString& name) const;
@@ -69,6 +68,10 @@ public:
     QJSValue requireFile(const QString& filePath);
     QJSValue exports() const;
     void setExports(const QJSValue& obj);
+    QJSEngine* jsEngine() const
+    {
+        return m_engine;
+    }
 
     static void dump(const QString& name, const QJSValue& val);
     static Ret jsValueToRet(const QJSValue& val);

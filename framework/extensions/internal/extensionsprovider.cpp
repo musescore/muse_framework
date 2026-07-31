@@ -28,7 +28,8 @@
 #include "extensionsloader.h"
 #include "legacy/extpluginsloader.h"
 
-#include "extensionrunner.h"
+#include "extensionsession.h"
+#include "../extensionbundle.h"
 #include "legacy/extpluginrunner.h"
 
 #include "../extensionserrors.h"
@@ -165,11 +166,28 @@ muse::Ret ExtensionsProvider::perform(const UriQuery& uri)
 
 muse::Ret ExtensionsProvider::run(const UriQuery& uri)
 {
-    Action a = action(uri);
-    return run(a);
+    const Action extensionAction = action(uri);
+    const Manifest& extensionManifest = manifest(uri.uri());
+    return run(extensionAction, extensionManifest);
 }
 
-muse::Ret ExtensionsProvider::run(const Action& a)
+std::unique_ptr<IExtensionSession> ExtensionsProvider::newSession(const Uri& uri, const io::path_t& relativeScriptPath) const
+{
+    const Manifest& extensionManifest = manifest(uri);
+    if (!extensionManifest.isValid()) {
+        LOGE() << "extension manifest not found: " << uri;
+        return {};
+    }
+    const auto scriptPath = resolveBundleFile(io::dirpath(extensionManifest.path), relativeScriptPath);
+    if (!scriptPath) {
+        LOGE() << "extension script not found in bundle: " << relativeScriptPath << ", manifest: " << extensionManifest.path;
+        return {};
+    }
+
+    return newSession(extensionManifest, *scriptPath);
+}
+
+muse::Ret ExtensionsProvider::run(const Action& a, const Manifest& manifest)
 {
     if (!a.isValid()) {
         return make_ret(Err::ExtNotFound);
@@ -182,11 +200,28 @@ muse::Ret ExtensionsProvider::run(const Action& a)
         legacy::ExtPluginRunner runner(iocContext());
         ret = runner.run(a);
     } else {
-        ExtensionRunner runner(iocContext());
-        ret = runner.run(a);
+        auto session = newSession(manifest, a.path);
+        if (!session) {
+            return make_ret(Err::ExtLoadError);
+        }
+        ret = session->evaluate();
+        if (!ret) {
+            LOGE() << "failed evaluate extension script: " << a.path << ", err: " << ret.toString();
+            return make_ret(Err::ExtLoadError);
+        }
+        ret = session->call(a.func);
+        if (!ret) {
+            LOGE() << "failed call extension function: " << a.func << ", script: " << a.path << ", err: " << ret.toString();
+            return make_ret(Err::ExtBadFormat);
+        }
     }
 
     return ret;
+}
+
+std::unique_ptr<IExtensionSession> ExtensionsProvider::newSession(const Manifest& extensionManifest, const io::path_t& scriptPath) const
+{
+    return std::make_unique<ExtensionSession>(iocContext(), extensionManifest, scriptPath);
 }
 
 muse::Ret ExtensionsProvider::setExecPoint(const Uri& uri, const ExecPointName& name)

@@ -21,6 +21,8 @@
  */
 #include "extensionsproviderstub.h"
 
+#include "extensions/iextensionsession.h"
+
 using namespace muse;
 using namespace muse::extensions;
 
@@ -74,6 +76,11 @@ Ret ExtensionsProviderStub::perform(const UriQuery&)
 Ret ExtensionsProviderStub::run(const UriQuery&)
 {
     return muse::make_ret(Ret::Code::NotSupported);
+}
+
+std::unique_ptr<IExtensionSession> ExtensionsProviderStub::newSession(const Uri&, const io::path_t&) const
+{
+    return {};
 }
 
 Ret ExtensionsProviderStub::setExecPoint(const Uri&, const ExecPointName&)

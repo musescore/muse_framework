@@ -65,15 +65,13 @@ QJSValue JsModuleLoader::require(QString module)
         return engine()->requireModule(module);
     }
     // require js file
-    else {
-        bool ok = false;
-        QString filePath = resolvePath(module, &ok);
-        if (!ok) {
-            return QJSValue();
-        }
-
+    bool ok = false;
+    QString filePath = resolvePath(module, &ok);
+    if (ok) {
         return engine()->requireFile(filePath);
     }
+
+    return engine()->requireModule(module);
 }
 
 QJSValue JsModuleLoader::exports() const
@@ -130,7 +128,7 @@ QString JsModuleLoader::resolvePath(const QString& basePath, const QString& modu
     }
 
     if (!ok) {
-        LOGE() << "Not found module: " << module;
+        LOGD() << "Not found module file: " << module;
     }
 
     if (_ok) {

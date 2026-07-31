@@ -59,21 +59,26 @@ QJSValue JsModuleLoader::require(QString module)
         return QJSValue();
     }
 
-    // require built-in module
     //! NOTE Only public modules are available
+    if (module.startsWith("MuseInternal.") || module.startsWith("api.")) {
+        LOGE() << "Not allowed module: " << module;
+        return QJSValue();
+    }
+
+    // require built-in module
     if (module.startsWith("MuseApi.")) {
         return engine()->requireModule(module);
     }
-    // require js file
-    else {
-        bool ok = false;
-        QString filePath = resolvePath(module, &ok);
-        if (!ok) {
-            return QJSValue();
-        }
 
+    // require js file
+    bool ok = false;
+    QString filePath = resolvePath(module, &ok);
+    if (ok) {
         return engine()->requireFile(filePath);
     }
+
+    // Require application module
+    return engine()->requireModule(module);
 }
 
 QJSValue JsModuleLoader::exports() const
@@ -129,7 +134,7 @@ QString JsModuleLoader::resolvePath(const QString& basePath, const QString& modu
     }
 
     if (!ok) {
-        LOGE() << "Not found module: " << module;
+        LOGD() << "Not found module file: " << module;
     }
 
     if (_ok) {
