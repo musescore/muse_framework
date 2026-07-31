@@ -50,6 +50,8 @@ public:
         NotImplemented  = 5,
 
         BadData         = 6,
+        BadArgs         = 7,
+        Busy            = 8,
 
         // Global errors
         GlobalFirst     = 20,

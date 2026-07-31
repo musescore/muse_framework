@@ -35,6 +35,7 @@ public:
 
     using CallBack = std::function<Response (const Request& request)>;
     using CallBackRet = std::function<Ret ()>;
+    using CallBackQueryRet = std::function<Ret (const CommandQuery& query)>;
 
     virtual async::Promise<Response> dispatch(const Request& request) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
@@ -56,6 +57,13 @@ public:
     {
         onRequest(client, command, [callback](const Request& request) {
             return make_response(request, callback());
+        });
+    }
+
+    void onRequest(Commandable* client, const Command& command, const CallBackQueryRet& callback)
+    {
+        onRequest(client, command, [callback](const Request& request) {
+            return make_response(request, callback(request.query));
         });
     }
 };
