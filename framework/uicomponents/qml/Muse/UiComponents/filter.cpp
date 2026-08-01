@@ -44,6 +44,7 @@ void Filter::setEnabled(const bool enabled)
     }
 
     m_enabled = enabled;
+    emit enabledChanged();
     emit dataChanged();
 }
 
@@ -59,6 +60,7 @@ void Filter::setAsync(const bool async)
     }
 
     m_async = async;
+    emit asyncChanged();
     emit dataChanged();
 }
 }

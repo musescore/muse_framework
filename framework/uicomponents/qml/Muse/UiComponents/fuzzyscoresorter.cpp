@@ -56,10 +56,12 @@ void FuzzyScoreSorter::setFuzzyFilter(FuzzyFilter* fuzzyFilter)
     disconnect(m_filterChangedConnection);
 
     m_fuzzyFilter = fuzzyFilter;
-    emit dataChanged();
 
     if (m_fuzzyFilter) {
         m_filterChangedConnection = connect(m_fuzzyFilter, &Filter::dataChanged, this, &Sorter::dataChanged);
     }
+
+    emit fuzzyFilterChanged();
+    emit dataChanged();
 }
 }

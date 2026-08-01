@@ -37,9 +37,9 @@ class Filter : public QObject
     QML_ELEMENT;
     QML_UNCREATABLE("")
 
-    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY dataChanged)
+    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
     /// Determines whether the SortFilterProxyModel should react asynchronously to the `dataChanged` signal.
-    Q_PROPERTY(bool async READ async WRITE setAsync NOTIFY dataChanged)
+    Q_PROPERTY(bool async READ async WRITE setAsync NOTIFY asyncChanged)
 
 public:
     explicit Filter(QObject* parent = nullptr);
@@ -55,6 +55,8 @@ public:
 
 signals:
     void dataChanged();
+    void enabledChanged();
+    void asyncChanged();
 
 private:
     bool m_enabled = true;

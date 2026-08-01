@@ -62,6 +62,7 @@ void FuzzyFilter::setFuzzyPattern(const QString& fuzzyPattern)
     m_fuzzyPattern = simplifiedPattern;
     compilePattern();
 
+    emit fuzzyPatternChanged();
     emit dataChanged();
 }
 
@@ -79,6 +80,7 @@ void FuzzyFilter::setRoleName(const QString& roleName)
     clearScoreCache();
 
     m_roleName = roleName;
+    emit roleNameChanged();
     emit dataChanged();
 }
 
@@ -95,6 +97,7 @@ void FuzzyFilter::setCaseSensitivity(const Qt::CaseSensitivity caseSensitivity)
 
     m_caseSensitivity = caseSensitivity;
     compilePattern();
+    emit caseSensitivityChanged();
     emit dataChanged();
 }
 

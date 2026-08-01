@@ -38,8 +38,8 @@ class Sorter : public QObject
     QML_ELEMENT;
     QML_UNCREATABLE("")
 
-    Q_PROPERTY(Qt::SortOrder sortOrder READ sortOrder WRITE setSortOrder NOTIFY dataChanged)
-    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY dataChanged)
+    Q_PROPERTY(Qt::SortOrder sortOrder READ sortOrder WRITE setSortOrder NOTIFY sortOrderChanged)
+    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
 
 public:
     explicit Sorter(QObject* parent = nullptr);
@@ -54,6 +54,8 @@ public:
 
 signals:
     void dataChanged();
+    void sortOrderChanged();
+    void enabledChanged();
 
 private:
     Qt::SortOrder m_sortOrder = Qt::AscendingOrder;

@@ -36,7 +36,7 @@ class FuzzyScoreSorter : public Sorter
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(muse::uicomponents::FuzzyFilter* fuzzyFilter READ fuzzyFilter WRITE setFuzzyFilter NOTIFY dataChanged REQUIRED)
+    Q_PROPERTY(muse::uicomponents::FuzzyFilter* fuzzyFilter READ fuzzyFilter WRITE setFuzzyFilter NOTIFY fuzzyFilterChanged REQUIRED)
 
 public:
     explicit FuzzyScoreSorter(QObject* parent = nullptr);
@@ -45,6 +45,9 @@ public:
 
     FuzzyFilter* fuzzyFilter() const;
     void setFuzzyFilter(FuzzyFilter*);
+
+signals:
+    void fuzzyFilterChanged();
 
 private:
     QPointer<FuzzyFilter> m_fuzzyFilter;

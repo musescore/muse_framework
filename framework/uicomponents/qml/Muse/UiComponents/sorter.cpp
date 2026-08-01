@@ -40,6 +40,7 @@ void Sorter::setSortOrder(const Qt::SortOrder sortOrder)
     }
 
     m_sortOrder = sortOrder;
+    emit sortOrderChanged();
     emit dataChanged();
 }
 
@@ -55,6 +56,7 @@ void Sorter::setEnabled(const bool enabled)
     }
 
     m_enabled = enabled;
+    emit enabledChanged();
     emit dataChanged();
 }
 }
