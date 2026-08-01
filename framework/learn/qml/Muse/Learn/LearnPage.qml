@@ -115,10 +115,6 @@ FocusScope {
             navigation.order: 1
 
             visible: tabBar.currentIndex !== 1 // Not visible for Classes tab
-
-            onSearchTextChanged: {
-                pageModel.setSearchText(searchText)
-            }
         }
     }
 
@@ -205,7 +201,25 @@ FocusScope {
         Playlist {
             id: getStartedComp
 
-            playlist: pageModel.startedPlaylist
+            playlist: SortFilterProxyModel {
+                sourceModel: pageModel.startedPlaylist
+                filters: [
+                    FuzzyFilter {
+                        id: fuzzyFilter
+                        enabled: Boolean(fuzzyPattern)
+                        fuzzyPattern: searchField.searchText
+                        roleName: "searchKey"
+                        caseSensitivity: Qt.CaseInsensitive
+                    }
+                ]
+
+                sorters: [
+                    FuzzyScoreSorter {
+                        enabled: fuzzyFilter.enabled
+                        fuzzyFilter: fuzzyFilter
+                    }
+                ]
+            }
 
             navigation.section: navSec
             navigation.order: 3

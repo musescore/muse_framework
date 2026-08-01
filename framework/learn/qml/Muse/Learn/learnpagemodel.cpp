@@ -19,57 +19,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "learnpagemodel.h"
 
-#include <QVariant>
-#include <QDateTime>
+#include "learnpagemodel.h"
 
 #include "translation.h"
 
 using namespace muse::learn;
 
 LearnPageModel::LearnPageModel(QObject* parent)
-    : QObject(parent), Contextable(muse::iocCtxForQmlObject(this))
+    : QObject(parent),
+    m_gettingStartedModel(new PlaylistModel(this)),
+    m_advancedModel(new PlaylistModel(this))
 {
 }
 
-QVariantList LearnPageModel::startedPlaylist() const
+PlaylistModel* LearnPageModel::startedPlaylist() const
 {
-    Playlist filteredPlaylist = filterPlaylistBySearch(m_startedPlaylist);
-    return playlistToVariantList(filteredPlaylist);
+    return m_gettingStartedModel;
 }
 
-QVariantList LearnPageModel::advancedPlaylist() const
+PlaylistModel* LearnPageModel::advancedPlaylist() const
 {
-    Playlist filteredPlaylist = filterPlaylistBySearch(m_advancedPlaylist);
-    return playlistToVariantList(filteredPlaylist);
+    return m_advancedModel;
 }
 
 void LearnPageModel::load()
 {
     learnService()->refreshPlaylists();
 
-    setStartedPlaylist(learnService()->startedPlaylist());
-    learnService()->startedPlaylistChanged().onReceive(this, [this](const Playlist& playlist) {
-        setStartedPlaylist(playlist);
+    m_gettingStartedModel->setPlaylist(learnService()->startedPlaylist());
+    learnService()->startedPlaylistChanged().onReceive(this, [this] (const Playlist& playlist) {
+        m_gettingStartedModel->setPlaylist(playlist);
     });
 
-    setAdvancedPlaylist(learnService()->advancedPlaylist());
-    learnService()->advancedPlaylistChanged().onReceive(this, [this](const Playlist& playlist) {
-        setAdvancedPlaylist(playlist);
+    m_advancedModel->setPlaylist(learnService()->advancedPlaylist());
+    learnService()->advancedPlaylistChanged().onReceive(this, [this] (const Playlist& playlist) {
+        m_advancedModel->setPlaylist(playlist);
     });
-}
-
-void LearnPageModel::setSearchText(const QString& text)
-{
-    if (m_searchText == text) {
-        return;
-    }
-
-    m_searchText = text;
-
-    emit startedPlaylistChanged();
-    emit advancedPlaylistChanged();
 }
 
 QVariantMap LearnPageModel::classesAuthor() const
@@ -103,73 +89,4 @@ QVariantMap LearnPageModel::classesAuthor() const
 bool LearnPageModel::classesEnabled()
 {
     return learnConfiguration()->classesEnabled();
-}
-
-void LearnPageModel::setStartedPlaylist(Playlist startedPlaylist)
-{
-    if (m_startedPlaylist == startedPlaylist) {
-        return;
-    }
-
-    m_startedPlaylist = startedPlaylist;
-    emit startedPlaylistChanged();
-}
-
-void LearnPageModel::setAdvancedPlaylist(Playlist advancedPlaylist)
-{
-    if (m_advancedPlaylist == advancedPlaylist) {
-        return;
-    }
-
-    m_advancedPlaylist = advancedPlaylist;
-    emit advancedPlaylistChanged();
-}
-
-QVariantList LearnPageModel::playlistToVariantList(const Playlist& playlist) const
-{
-    QVariantList result;
-
-    // h:mm:ss for anything over an hour
-    //    m:ss for anything under an hour
-    //    0:ss for anything under a minute
-    auto formatDuration = [](int durationSecs) {
-        int seconds = durationSecs;
-        int minutes = seconds / 60;
-        seconds -= minutes * 60;
-        int hours = minutes / 60;
-        minutes -= hours * 60;
-
-        return ((hours > 0)
-                ? (QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0'))
-                : QString::number(minutes)
-                ) + ":"
-               + QString::number(seconds).rightJustified(2, '0');
-    };
-
-    for (const PlaylistItem& item : playlist) {
-        QVariantMap itemObj;
-        itemObj["title"] = item.title;
-        itemObj["author"] = item.author;
-        itemObj["url"] = item.url;
-        itemObj["thumbnailUrl"] = item.thumbnailUrl;
-        itemObj["duration"] = formatDuration(item.durationSecs);
-
-        result << itemObj;
-    }
-
-    return result;
-}
-
-Playlist LearnPageModel::filterPlaylistBySearch(const Playlist& playlist) const
-{
-    Playlist result;
-
-    for (const PlaylistItem& playlistItem : playlist) {
-        if (playlistItem.title.contains(m_searchText, Qt::CaseInsensitive)
-            || playlistItem.author.contains(m_searchText, Qt::CaseInsensitive)) {
-            result.push_back(playlistItem);
-        }
-    }
-
-    return result;
 }

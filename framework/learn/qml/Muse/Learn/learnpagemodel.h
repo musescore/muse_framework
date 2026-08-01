@@ -27,20 +27,22 @@
 #include <QObject>
 #include <QVariant>
 
-#include "async/asyncable.h"
+#include "global/async/asyncable.h"
+#include "global/modularity/ioc.h"
 
-#include "modularity/ioc.h"
-#include "ilearnservice.h"
-#include "ilearnconfiguration.h"
+#include "learn/ilearnconfiguration.h"
+#include "learn/ilearnservice.h"
+
+#include "internal/playlistmodel.h"
 
 namespace muse::learn {
-class LearnPageModel : public QObject, public Contextable, public async::Asyncable
+class LearnPageModel : public QObject, public async::Asyncable
 {
     Q_OBJECT
     QML_ELEMENT;
 
-    Q_PROPERTY(QVariantList startedPlaylist READ startedPlaylist NOTIFY startedPlaylistChanged)
-    Q_PROPERTY(QVariantList advancedPlaylist READ advancedPlaylist NOTIFY advancedPlaylistChanged)
+    Q_PROPERTY(QAbstractItemModel * startedPlaylist READ startedPlaylist CONSTANT)
+    Q_PROPERTY(QAbstractItemModel * advancedPlaylist READ advancedPlaylist CONSTANT)
 
     GlobalInject<ILearnConfiguration> learnConfiguration;
     GlobalInject<ILearnService> learnService;
@@ -48,30 +50,15 @@ class LearnPageModel : public QObject, public Contextable, public async::Asyncab
 public:
     explicit LearnPageModel(QObject* parent = nullptr);
 
-    QVariantList startedPlaylist() const;
-    QVariantList advancedPlaylist() const;
+    PlaylistModel* startedPlaylist() const;
+    PlaylistModel* advancedPlaylist() const;
 
     Q_INVOKABLE void load();
-    Q_INVOKABLE void setSearchText(const QString& text);
     Q_INVOKABLE QVariantMap classesAuthor() const;
     Q_INVOKABLE bool classesEnabled();
 
-private slots:
-    void setStartedPlaylist(Playlist startedPlaylist);
-    void setAdvancedPlaylist(Playlist advancedPlaylist);
-
-signals:
-    void startedPlaylistChanged();
-    void advancedPlaylistChanged();
-
 private:
-    QVariantList playlistToVariantList(const Playlist& playlist) const;
-
-    Playlist filterPlaylistBySearch(const Playlist& playlist) const;
-
-    Playlist m_startedPlaylist;
-    Playlist m_advancedPlaylist;
-
-    QString m_searchText;
+    PlaylistModel* m_gettingStartedModel = nullptr;
+    PlaylistModel* m_advancedModel = nullptr;
 };
 }
