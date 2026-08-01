@@ -22,6 +22,8 @@
 #include "scriptengine.h"
 
 namespace muse::extensions {
+struct Manifest;
+
 class ExtensionSession final : public IExtensionSession
 {
 public:
