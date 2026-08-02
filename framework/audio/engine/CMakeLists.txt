@@ -92,6 +92,8 @@ else()
         internal/nodes/fxnode.h
         internal/nodes/fxchain.cpp
         internal/nodes/fxchain.h
+        internal/nodes/automationcontrolnode.cpp
+        internal/nodes/automationcontrolnode.h
         internal/nodes/controlnode.cpp
         internal/nodes/controlnode.h
         internal/nodes/signalnode.cpp

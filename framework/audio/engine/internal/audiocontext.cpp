@@ -65,9 +65,12 @@ Ret AudioContext::init()
     // Make the chain: audiocontext <- playheadnode
     // <- mastertrackchain <- mastersignalnode <- mastercontrolnode <- masterfxchain
     // <- mixer
+    AutomationControlNodePtr masterControlNode = std::make_shared<AutomationControlNode>();
+    masterControlNode->setPlayheadPosition(std::static_pointer_cast<IPlayheadPosition>(m_player));
+
     m_masterTrack.chain->setSource(m_mixer);
     m_masterTrack.chain->setFxChain(nullptr); //!< NOTE Master fx chain is not exists yet
-    m_masterTrack.chain->setControl(std::make_shared<ControlNode>());
+    m_masterTrack.chain->setControl(masterControlNode);
     m_masterTrack.chain->setSignal(std::make_shared<SignalNode>());
     m_masterTrack.chain->rebuild();
 
@@ -198,12 +201,15 @@ RetVal2<TrackId, TrackParams> AudioContext::addTrack(const std::string& trackNam
         return RetType::make_ret(source.ret);
     }
 
+    AutomationControlNodePtr controlNode = std::make_shared<AutomationControlNode>();
+    controlNode->setPlayheadPosition(std::static_pointer_cast<IPlayheadPosition>(m_player));
+
     TrackChainPtr trackChain = std::make_shared<TrackChain>(trackId, trackName);
     trackChain->setOutputSpec(outputSpec());
     trackChain->setMode(mode());
     trackChain->setSource(source.val);
     trackChain->setFxChain(nullptr); // will be added later
-    trackChain->setControl(std::make_shared<ControlNode>());
+    trackChain->setControl(controlNode);
     trackChain->setSignal(std::make_shared<SignalNode>());
     trackChain->rebuild();
 
@@ -239,11 +245,14 @@ RetVal2<TrackId, TrackParams> AudioContext::addAuxTrack(const std::string& track
 
     TrackId trackId = newTrackId();
 
+    AutomationControlNodePtr controlNode = std::make_shared<AutomationControlNode>();
+    controlNode->setPlayheadPosition(std::static_pointer_cast<IPlayheadPosition>(m_player));
+
     TrackChainPtr trackChain = std::make_shared<TrackChain>(trackId, trackName);
     trackChain->setOutputSpec(outputSpec());
     trackChain->setMode(mode());
     trackChain->setFxChain(nullptr); // will be added later
-    trackChain->setControl(std::make_shared<ControlNode>());
+    trackChain->setControl(controlNode);
     trackChain->setSignal(std::make_shared<SignalNode>());
     trackChain->rebuild();
 
@@ -302,7 +311,7 @@ void AudioContext::onControlParamsChanged(Track& track, const ControlParams& par
     if (auto control = track.chain->control()) {
         const bool mutedChanged = control->muted() != params.muted;
 
-        control->setVolume(muse::db_to_linear(params.volume));
+        control->setVolume(params.volume);
         control->setPan(params.balance);
         control->setMuted(params.muted);
 

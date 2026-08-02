@@ -192,8 +192,8 @@ TEST_F(Audio_RpcPackerTests, AuxSendParams)
 TEST_F(Audio_RpcPackerTests, ControlParams)
 {
     ControlParams origin;
-    origin.volume = 0.6f;
-    origin.balance = 0.5;
+    origin.volume = volume_db_t(0.6f);
+    origin.balance = balance_t(0.5f);
     origin.muted = true;
 
     KNOWN_FIELDS(origin,
@@ -207,6 +207,40 @@ TEST_F(Audio_RpcPackerTests, ControlParams)
     bool ok = rpc::RpcPacker::unpack(data, unpacked);
 
     EXPECT_TRUE(ok);
+    EXPECT_TRUE(origin == unpacked);
+}
+
+TEST_F(Audio_RpcPackerTests, ControlParams_Automation)
+{
+    mpe::AutomationPoint::Bend bend;
+    bend.t = 0.3;
+    bend.value = 0.7;
+
+    mpe::AutomationPoint p0;
+    p0.inValue = mpe::AutomationPoint::ArrivalFromPrevious {};
+    p0.outValue = 0.2;
+
+    mpe::AutomationPoint p1;
+    p1.inValue = mpe::AutomationPoint::ExplicitArrival { real_t(0.4), bend };
+    p1.outValue = 0.9;
+
+    AutomationEnvelope envelope;
+    envelope.insert({ secs_t(0.0), p0 });
+    envelope.insert({ secs_t(1.5), p1 });
+
+    ControlParams origin;
+    origin.volume = AutomatableValue<volume_db_t>(envelope);
+    origin.balance = AutomatableValue<balance_t>(envelope);
+    origin.muted = false;
+
+    ByteArray data = rpc::RpcPacker::pack(origin);
+
+    ControlParams unpacked;
+    bool ok = rpc::RpcPacker::unpack(data, unpacked);
+
+    EXPECT_TRUE(ok);
+    EXPECT_TRUE(unpacked.volume.hasAutomation());
+    EXPECT_TRUE(unpacked.balance.hasAutomation());
     EXPECT_TRUE(origin == unpacked);
 }
 
