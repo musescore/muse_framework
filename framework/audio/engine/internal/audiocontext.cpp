@@ -196,7 +196,8 @@ RetVal2<TrackId, TrackParams> AudioContext::addTrack(const std::string& trackNam
     };
 
     // Make source
-    RetVal<AudioSourceNodePtr> source = audioFactory()->makeEventSource(trackId, playbackData, params.source, onOffStreamReceived);
+    RetVal<AudioSourceNodePtr> source = audioFactory()->makeEventSource(trackId, trackName, playbackData, params.source,
+                                                                        onOffStreamReceived);
     if (!source.ret) {
         return RetType::make_ret(source.ret);
     }

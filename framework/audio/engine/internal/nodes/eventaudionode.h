@@ -39,7 +39,8 @@ class EventAudioNode : public AudioSourceNode, public async::Asyncable
 public:
     using OnOffStreamEventsReceived = std::function<void ()>;
 
-    explicit EventAudioNode(TrackId trackId, const mpe::PlaybackData& playbackData, OnOffStreamEventsReceived onOffStreamReceived);
+    explicit EventAudioNode(TrackId trackId, const std::string& hostTrackName, const mpe::PlaybackData& playbackData,
+                            OnOffStreamEventsReceived onOffStreamReceived);
 
     ~EventAudioNode() override;
 
@@ -78,6 +79,7 @@ private:
     void restoreSynthCtx(const SynthCtx& ctx);
 
     TrackId m_trackId = -1;
+    std::string m_hostTrackName;
     mpe::PlaybackData m_playbackData;
     synth::ISynthesizerPtr m_synth = nullptr;
     AudioInputParams m_params;
