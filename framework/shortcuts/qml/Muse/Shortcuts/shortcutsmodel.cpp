@@ -266,6 +266,10 @@ void ShortcutsModel::notifyAboutShortcutChanged(const QModelIndex& index)
 void ShortcutsModel::resetToDefaultSelectedShortcuts()
 {
     auto resolveConflicts = [this](const Shortcut& shortcut) {
+        if (shortcut.sequences.empty()) {
+            return;
+        }
+
         for (int i = 0; i < m_shortcuts.size(); ++i) {
             Shortcut& sc = m_shortcuts[i];
 

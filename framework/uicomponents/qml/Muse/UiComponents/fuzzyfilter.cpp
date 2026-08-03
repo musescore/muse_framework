@@ -44,7 +44,6 @@ bool FuzzyFilter::acceptsRow(int sourceRow, const QModelIndex& sourceParent, con
 void FuzzyFilter::invalidate()
 {
     clearScoreCache();
-    emit dataChanged();
 }
 
 QString FuzzyFilter::fuzzyPattern() const
