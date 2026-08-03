@@ -1,8 +1,9 @@
 # 00101 Replacing actions with commands
 
-Date: 2026-06-12
+Date: 2026-06-12  
+Tags: [actions, commands, mcp]
 
-### Status: Accepted
+## Status: Accepted
 
 ## Context
 
@@ -47,3 +48,4 @@ Each module must implement:
 * Module's commands register (/internal/modulecommandsregister.h/cpp) - is a static list of commands and command information. And register it. 
 * Module's commands state (/internal/modulecommandsstate.h/cpp) - is the command state controller (enabled, checked). And register it.
 * See examples in the code 
+  
