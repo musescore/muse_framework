@@ -48,11 +48,7 @@ if (GIT_DIFF_OUT)
 
     message(${MSG})
 
-    execute_process(
-        COMMAND git diff
-        OUTPUT_VARIABLE GIT_DIFF_OUT
-    )
-
-    message(FATAL_ERROR "${GIT_DIFF_OUT}")
+    execute_process(COMMAND git diff)
+    message(FATAL_ERROR "codestyle check failed")
 endif()
 
