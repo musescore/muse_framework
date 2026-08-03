@@ -876,10 +876,12 @@ private:
         int timestampChangesCount = 0;
 
         for (auto it = cbegin(); it != cend(); ++it) {
-            dynamic_level_t amplitudeDynamicLevel = it->second.appliedPatternSegment.expressionPattern.maxAmplitudeLevel();
-            dynamic_level_t dynamicLevelOffset = std::abs(amplitudeDynamicLevel - dynamicLevelFromType(DynamicType::Natural));
+            // Count only articulations that carry a dynamic pattern (matching sumUpOffsets): an empty
+            // one would otherwise average to an all-zero but non-empty curve, read as near-silence.
+            const ExpressionPattern& expPattern = it->second.appliedPatternSegment.expressionPattern;
 
-            if (dynamicLevelOffset != 0) {
+            if (!expPattern.dynamicOffsetMap.empty()
+                && expPattern.maxAmplitudeLevel() != dynamicLevelFromType(DynamicType::Natural)) {
                 dynamicChangesCount++;
             }
 
