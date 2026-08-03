@@ -109,6 +109,7 @@ else()
         internal/dsp/limiter.cpp
         internal/dsp/limiter.h
         internal/dsp/audiomathutils.h
+        internal/dsp/smoothlinearvalue.h
 
         # FX
         internal/fx/abstractfxresolver.cpp
@@ -129,7 +130,7 @@ else()
         internal/fx/reverb/reverbmatrices.h
         internal/fx/reverb/sampledelay.h
         internal/fx/reverb/simdtypes.h
-        internal/fx/reverb/smoothlinearvalue.h
+        internal/fx/reverb/smoothgain.h
         internal/fx/reverb/sparsefirfilter.h
         internal/fx/reverb/vectorops.h
         internal/fx/reverb/reverbprocessor.cpp

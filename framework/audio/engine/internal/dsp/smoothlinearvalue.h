@@ -23,9 +23,10 @@
 #ifndef MUSE_AUDIO_SMOOTHLINEARVALUE_H
 #define MUSE_AUDIO_SMOOTHLINEARVALUE_H
 
-#include "vectorops.h"
+#include <algorithm>
+#include <type_traits>
 
-namespace muse::audio::fx {
+namespace muse::audio::dsp {
 template<typename ValueT, int _initialSteps = 1024, typename StepT = double>
 class SmoothLinearValue
 {
@@ -179,24 +180,6 @@ protected:
     StepT m_targetSteps;
     StepT m_currentSteps;
 };
-
-/// helper logic to apply gain ramps to blocks of audio
-inline void apply_smooth_gain(SmoothLinearValue<float>& smooth_value, float** s_in, float** s_out,
-                              int num_channels, int num_s)
-{
-    if (smooth_value.isAtTargetValue()) {
-        for (int ch = 0; ch < num_channels; ++ch) {
-            vo::constantMultiply(s_in[ch], smooth_value.getTargetValue(), s_out[ch], num_s);
-        }
-    } else {
-        for (int i = 0; i < num_s; ++i) {
-            for (int ch = 0; ch < num_channels; ++ch) {
-                s_out[ch][i] = s_in[ch][i] * smooth_value.getValue();
-            }
-            smooth_value.tick();
-        }
-    }
-}
-} // namespace muse::audio::fx
+} // namespace muse::audio::dsp
 
 #endif // MUSE_AUDIO_SMOOTHLINEARVALUE_H

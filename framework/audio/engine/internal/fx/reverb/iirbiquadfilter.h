@@ -27,8 +27,6 @@
 #include <cassert>
 #include <cmath>
 
-#include "smoothlinearvalue.h"
-
 /**
  * Biquad filter routines with per-sample processing
  * and not containing any allocation/deallocation

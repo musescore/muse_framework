@@ -35,6 +35,7 @@
 #include "reverbmatrices.h"
 #include "sampledelay.h"
 #include "simdtypes.h"
+#include "smoothgain.h"
 
 namespace muse::audio::fx {
 float fromDecibel(float dB)
@@ -212,9 +213,9 @@ struct ReverbProcessor::impl
     ImprovedVelvetNoiseDecorrelation ivnd_out[max_num_delays];
     ImprovedVelvetNoiseDecorrelation ivnd_er[2];
 
-    SmoothLinearValue<float> dry_gain_smooth;
-    SmoothLinearValue<float> late_gain_smooth;
-    SmoothLinearValue<float> er_gain_smooth;
+    dsp::SmoothLinearValue<float> dry_gain_smooth;
+    dsp::SmoothLinearValue<float> late_gain_smooth;
+    dsp::SmoothLinearValue<float> er_gain_smooth;
 
     SamplesFloat ivnd_in_buffer;
     SamplesFloat delay_out_buffer;
