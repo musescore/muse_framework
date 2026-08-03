@@ -24,8 +24,12 @@
 #include "global/io/fileinfo.h"
 
 #include "ifontface.h"
+#ifdef MUSE_MODULE_DRAW_USE_FONTFACE_FT
 #include "fontfaceft.h"
-//#include "fontfacext.h"
+#endif
+#ifdef MUSE_MODULE_DRAW_USE_FONTFACE_XT
+#include "fontfacext.h"
+#endif
 #include "fontfacedu.h"
 
 #include "log.h"
@@ -470,7 +474,22 @@ IFontFace* FontsEngine::createFontFace(const io::path_t& path) const
         return m_fontFaceFactory(path);
     }
 
-    IFontFace* origin = new FontFaceFT();
+    IFontFace* origin = nullptr;
+    if (io::FileInfo::suffix(path).toLower() == u"ftx") {
+#ifdef MUSE_MODULE_DRAW_USE_FONTFACE_XT
+        origin = new FontFaceXT();
+#else
+        LOGE() << "XT font face backend is disabled: " << path;
+        return nullptr;
+#endif
+    } else {
+#ifdef MUSE_MODULE_DRAW_USE_FONTFACE_FT
+        origin = new FontFaceFT();
+#else
+        LOGE() << "FreeType font face backend is disabled: " << path;
+        return nullptr;
+#endif
+    }
 
     return new FontFaceDU(origin);
 }
@@ -529,16 +548,23 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
         loadedKey.pixelSize = requireKey.pixelSize;
 
         face = createFontFace(fontPath);
+        IF_ASSERT_FAILED(face) {
+            return nullptr;
+        }
 
-        face->load(loadedKey, fontPath, isSymbolMode);
+        if (!face->load(loadedKey, fontPath, isSymbolMode)) {
+            LOGE() << "failed load font face: " << fontPath;
+            delete face;
+            return nullptr;
+        }
         m_loadedFaces.push_back(face);
     }
 
     newFont->face = face;
 
-    IFontFace* subtitutionFace = nullptr;
     auto subtitutionFontDataKeys = fontsDatabase()->substitutionFonts(requireKey.type);
     for (const FontDataKey& dataKey : subtitutionFontDataKeys) {
+        IFontFace* subtitutionFace = nullptr;
         for (IFontFace* ff : m_loadedFaces) {
             if (ff->key().dataKey == dataKey && ff->key().pixelSize == requireKey.pixelSize && ff->isSymbolMode() == isSymbolMode) {
                 subtitutionFace = ff;
@@ -548,8 +574,9 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
 
         if (!subtitutionFace) {
             io::path_t fontPath = fontsDatabase()->fontPath(dataKey, requireKey.type);
-            IF_ASSERT_FAILED(!fontPath.empty()) {
-                return nullptr;
+            if (fontPath.empty()) {
+                LOGE() << "subtitution font path is empty: " << dataKey.family().id();
+                continue;
             }
 
             FaceKey loadedKey;
@@ -558,8 +585,16 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
             loadedKey.pixelSize = requireKey.pixelSize;
 
             subtitutionFace = createFontFace(fontPath);
+            if (!subtitutionFace) {
+                LOGE() << "failed create subtitution font face: " << fontPath;
+                continue;
+            }
 
-            subtitutionFace->load(loadedKey, fontPath, isSymbolMode);
+            if (!subtitutionFace->load(loadedKey, fontPath, isSymbolMode)) {
+                LOGE() << "failed load font face: " << fontPath;
+                delete subtitutionFace;
+                continue;
+            }
             m_loadedFaces.push_back(subtitutionFace);
         }
         newFont->subtitutionFaces.push_back(subtitutionFace);

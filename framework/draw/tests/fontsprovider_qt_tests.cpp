@@ -23,7 +23,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -150,14 +149,6 @@ static std::string to_string(double v)
     return std::to_string(v);
 }
 
-template<typename T>
-static void print(double pointSize, const T& qVal, const T& xVal)
-{
-    std::cout << "pointSize: " << pointSize << "\n";
-    std::cout << "    q_val: " << to_string(qVal) << "\n";
-    std::cout << "    x_val: " << to_string(xVal) << "\n";
-}
-
 inline bool ValIsEqual(double p1, double p2, double epsilon)
 {
     return std::abs(std::max(p1, p2) - std::min(p1, p2)) <= epsilon;
@@ -167,6 +158,19 @@ inline bool ValIsEqual(muse::RectF p1, muse::RectF p2, double epsilon)
 {
     return ValIsEqual(p1.top(), p2.top(), epsilon) && ValIsEqual(p1.left(), p2.left(), epsilon)
            && ValIsEqual(p1.width(), p2.width(), epsilon) && ValIsEqual(p1.height(), p2.height(), epsilon);
+}
+
+template<typename T>
+static ::testing::AssertionResult ValuesMatch(double pointSize, const T& qVal, const T& xVal, double epsilon)
+{
+    if (ValIsEqual(qVal, xVal, epsilon)) {
+        return ::testing::AssertionSuccess();
+    }
+
+    return ::testing::AssertionFailure()
+           << "pointSize: " << pointSize
+           << "\n    q_val: " << to_string(qVal)
+           << "\n    x_val: " << to_string(xVal);
 }
 
 TEST_F(Draw_FontsProviderQtTests, lineSpacing)
@@ -180,8 +184,7 @@ TEST_F(Draw_FontsProviderQtTests, lineSpacing)
         double qVal = env.qProvider.lineSpacing(f);
         double xVal = env.xProvider.lineSpacing(f);
 
-        print(f.pointSizeF(), qVal, xVal);
-        EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.05));
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.05));
     }
 }
 
@@ -196,8 +199,7 @@ TEST_F(Draw_FontsProviderQtTests, xHeight)
         double qVal = env.qProvider.xHeight(f);
         double xVal = env.xProvider.xHeight(f);
 
-        print(f.pointSizeF(), qVal, xVal);
-        EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.2));
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.2));
     }
 }
 
@@ -212,8 +214,7 @@ TEST_F(Draw_FontsProviderQtTests, height)
         double qVal = env.qProvider.height(f);
         double xVal = env.xProvider.height(f);
 
-        print(f.pointSizeF(), qVal, xVal);
-        EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.8));
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.8));
     }
 }
 
@@ -228,8 +229,7 @@ TEST_F(Draw_FontsProviderQtTests, ascent)
         double qVal = env.qProvider.ascent(f);
         double xVal = env.xProvider.ascent(f);
 
-        print(f.pointSizeF(), qVal, xVal);
-        EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.5));
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.5));
     }
 }
 
@@ -244,8 +244,7 @@ TEST_F(Draw_FontsProviderQtTests, descent)
         double qVal = env.qProvider.descent(f);
         double xVal = env.xProvider.descent(f);
 
-        print(f.pointSizeF(), qVal, xVal);
-        EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.8));
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.8));
     }
 }
 
@@ -261,8 +260,7 @@ TEST_F(Draw_FontsProviderQtTests, horizontalAdvance_Char)
             double qVal = env.qProvider.horizontalAdvance(f, ch);
             double xVal = env.xProvider.horizontalAdvance(f, ch);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -279,8 +277,7 @@ TEST_F(Draw_FontsProviderQtTests, horizontalAdvance_String)
             double qVal = env.qProvider.horizontalAdvance(f, str);
             double xVal = env.xProvider.horizontalAdvance(f, str);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -298,8 +295,7 @@ TEST_F(Draw_FontsProviderQtTests, boundingRect_Char)
             muse::RectF qVal = env.qProvider.boundingRect(f, ucs4);
             muse::RectF xVal = env.xProvider.boundingRect(f, ucs4);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -316,8 +312,7 @@ TEST_F(Draw_FontsProviderQtTests, boundingRect_String)
             muse::RectF qVal = env.qProvider.boundingRect(f, str);
             muse::RectF xVal = env.xProvider.boundingRect(f, str);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -334,8 +329,7 @@ TEST_F(Draw_FontsProviderQtTests, tightBoundingRect_String)
             muse::RectF qVal = env.qProvider.tightBoundingRect(f, str);
             muse::RectF xVal = env.xProvider.tightBoundingRect(f, str);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -352,8 +346,7 @@ TEST_F(Draw_FontsProviderQtTests, tightBoundingRect_String_FreeSerif)
         muse::RectF qVal = env.qProvider.tightBoundingRect(f, str);
         muse::RectF xVal = env.xProvider.tightBoundingRect(f, str);
 
-        print(f.pointSizeF(), qVal, xVal);
-        EXPECT_TRUE(ValIsEqual(qVal, xVal, 3));
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 3));
     }
 }
 
@@ -370,8 +363,7 @@ TEST_F(Draw_FontsProviderQtTests, boundingRect_Symbol)
             muse::RectF qVal = env.qProvider.boundingRect(f, ch);
             muse::RectF xVal = env.xProvider.boundingRect(f, ch);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 1.1));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 1.1));
         }
     }
 }
@@ -389,8 +381,7 @@ TEST_F(Draw_FontsProviderQtTests, boundingRect_Symbol_Bravura)
             muse::RectF qVal = env.qProvider.boundingRect(f, ch);
             muse::RectF xVal = env.xProvider.boundingRect(f, ch);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.7));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.7));
         }
     }
 }
@@ -409,8 +400,7 @@ TEST_F(Draw_FontsProviderQtTests, tightBoundingRect_Symbol)
             muse::RectF qVal = env.qProvider.tightBoundingRect(f, muse::String(text));
             muse::RectF xVal = env.xProvider.tightBoundingRect(f, muse::String(text));
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -429,8 +419,7 @@ TEST_F(Draw_FontsProviderQtTests, tightBoundingRect_Symbol_Bravura)
             muse::RectF qVal = env.qProvider.tightBoundingRect(f, muse::String(text));
             muse::RectF xVal = env.xProvider.tightBoundingRect(f, muse::String(text));
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.0));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
         }
     }
 }
@@ -447,8 +436,7 @@ TEST_F(Draw_FontsProviderQtTests, horizontalAdvance_Symbol)
             double qVal = env.qProvider.horizontalAdvance(f, ch);
             double xVal = env.xProvider.horizontalAdvance(f, ch);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.3));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.3));
         }
     }
 }
@@ -465,8 +453,7 @@ TEST_F(Draw_FontsProviderQtTests, horizontalAdvance_Symbol_Bravura)
             double qVal = env.qProvider.horizontalAdvance(f, ch);
             double xVal = env.xProvider.horizontalAdvance(f, ch);
 
-            print(f.pointSizeF(), qVal, xVal);
-            EXPECT_TRUE(ValIsEqual(qVal, xVal, 0.2));
+            EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.2));
         }
     }
 }
