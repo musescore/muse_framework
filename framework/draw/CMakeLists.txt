@@ -69,22 +69,21 @@ target_sources(muse_draw PRIVATE
 if (DRAW_NO_INTERNAL)
     target_compile_definitions(muse_draw PRIVATE DRAW_NO_INTERNAL DRAW_NO_QSVGRENDER)
 else()
-    target_sources(muse_draw PRIVATE
-        internal/qpainterprovider.cpp
-        internal/qpainterprovider.h
-        internal/qimageprovider.h
-        internal/qimageprovider.cpp
-        internal/qimagepainterprovider.cpp
-        internal/qimagepainterprovider.h
-    )
+    if (MUSE_QT_SUPPORT)
+        target_sources(muse_draw PRIVATE
+            internal/qpainterprovider.cpp
+            internal/qpainterprovider.h
+            internal/qimageprovider.h
+            internal/qimageprovider.cpp
+            internal/qimagepainterprovider.cpp
+            internal/qimagepainterprovider.h
+        )
+    else()
+        target_compile_definitions(muse_draw PRIVATE DRAW_NO_QSVGRENDER)
+    endif()
 
     # fonts
     target_sources(muse_draw PRIVATE
-        internal/fontproviderdispatcher.cpp
-        internal/fontproviderdispatcher.h
-
-        internal/qfontprovider.cpp
-        internal/qfontprovider.h
         internal/ifontsengine.h
         internal/ifontsdatabase.h
         internal/ifontface.h
@@ -99,6 +98,13 @@ else()
         internal/fontfacedu.cpp
         internal/fontfacedu.h
     )
+
+    if (MUSE_QT_SUPPORT)
+        target_sources(muse_draw PRIVATE
+            internal/qfontprovider.cpp
+            internal/qfontprovider.h
+        )
+    endif()
 
     if (NOT MUSE_MODULE_DRAW_USE_FONTFACE_FT AND NOT MUSE_MODULE_DRAW_USE_FONTFACE_XT)
         message(FATAL_ERROR "At least one font face backend must be enabled")

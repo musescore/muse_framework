@@ -24,10 +24,11 @@
 #include "global/modularity/ioc.h"
 
 #ifndef DRAW_NO_INTERNAL
+#ifndef NO_QT_SUPPORT
 #include "internal/qfontprovider.h"
 #include "internal/qimageprovider.h"
+#endif
 
-#include "internal/fontproviderdispatcher.h"
 #include "internal/fontprovider.h"
 #include "internal/fontsengine.h"
 #include "internal/fontsdatabase.h"
@@ -47,12 +48,18 @@ void DrawModule::registerExports()
 {
 #ifndef DRAW_NO_INTERNAL
 
+#ifndef NO_QT_SUPPORT
     globalIoc()->registerExport<draw::IImageProvider>(moduleName(), new QImageProvider());
 
     auto qtFProvider = std::make_shared<QFontProvider>();
+#endif
 
     m_fontsEngine = std::make_shared<FontsEngine>(globalCtx());
+#ifndef NO_QT_SUPPORT
     globalIoc()->registerExport<draw::IFontProvider>(moduleName(), qtFProvider);
+#else
+    globalIoc()->registerExport<draw::IFontProvider>(moduleName(), new FontProvider(globalCtx()));
+#endif
     globalIoc()->registerExport<draw::IFontsEngine>(moduleName(), m_fontsEngine);
     globalIoc()->registerExport<draw::IFontsDatabase>(moduleName(), new FontsDatabase());
 
