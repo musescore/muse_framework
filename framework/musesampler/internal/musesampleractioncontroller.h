@@ -27,15 +27,18 @@
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
 #include "musesamplerresolver.h"
 #include "imusesamplerconfiguration.h"
 
 namespace muse::musesampler {
-class MuseSamplerActionController : public Contextable, public actions::Actionable, public async::Asyncable
+class MuseSamplerActionController : public Contextable, public actions::Actionable, public rcommand::Commandable, public async::Asyncable
 {
     GlobalInject<IMuseSamplerConfiguration> configuration;
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
 
 public:

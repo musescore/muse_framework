@@ -24,6 +24,7 @@
 #include "global/async/promise.h"
 
 #include "commandtypes.h"
+#include "types/ret.h"
 
 namespace muse::rcommand {
 class Commandable;

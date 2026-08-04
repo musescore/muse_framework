@@ -26,6 +26,7 @@ target_sources(muse_musesampler PRIVATE
     imusesamplerconfiguration.h
     imusesamplerinfo.h
     musesamplertypes.h
+    musesamplercommands.h
 
     internal/musesamplerresolver.cpp
     internal/musesamplerresolver.h
@@ -42,4 +43,8 @@ target_sources(muse_musesampler PRIVATE
     internal/musesampleruiactions.h
     internal/musesampleractioncontroller.cpp
     internal/musesampleractioncontroller.h
+    internal/musesamplercommandsregister.cpp
+    internal/musesamplercommandsregister.h
+    internal/musesamplercommandsstate.cpp
+    internal/musesamplercommandsstate.h
 )
