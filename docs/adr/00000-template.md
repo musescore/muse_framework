@@ -1,7 +1,7 @@
 # XXXXX Title
 
 Date: YYYY-MM-DD  
-Tags: [tag1, tag2]
+Tags: tag1, tag2
 
 ## Status: Proposed/Accepted/Rejected/Deprecated/Superseded
 

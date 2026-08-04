@@ -1,7 +1,8 @@
 # 00102 Adding support for native code plugins
 
 Date: 2026-07-15  
-Tags: [extensions, api, native]
+Tags: extensions, api, native
+Maintainers: Dmitry Makarenko, Igor Korsukov
 
 ## Status: Accepted
 

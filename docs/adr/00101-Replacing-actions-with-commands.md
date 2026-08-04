@@ -1,7 +1,8 @@
 # 00101 Replacing actions with commands
 
 Date: 2026-06-12  
-Tags: [actions, commands, mcp]
+Tags: actions, commands, mcp
+Maintainers: Igor Korsukov
 
 ## Status: Accepted
 
