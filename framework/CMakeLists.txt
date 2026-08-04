@@ -113,6 +113,12 @@ if (MUSE_MODULE_RCONTROL)
     add_subdirectory(rcontrol)
 endif()
 
+if (MUSE_MODULE_SHORTCUTS_V2)
+    file(CREATE_LINK ${CMAKE_CURRENT_LIST_DIR}/shortcuts_v2 ${PROJECT_BINARY_DIR}/shortcuts SYMBOLIC)
+else()
+    file(REMOVE_RECURSE ${PROJECT_BINARY_DIR}/shortcuts)
+endif()
+
 if (MUSE_MODULE_SHORTCUTS)
     if (MUSE_MODULE_SHORTCUTS_V2)
         add_subdirectory(shortcuts_v2)
