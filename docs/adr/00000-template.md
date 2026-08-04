@@ -1,7 +1,8 @@
 # XXXXX Title
 
-Date: YYYY-MM-DD  
-Tags: tag1, tag2
+Date: YYYY-MM-DD   
+Tags: tag1, tag2   
+Maintainers: Name Surname   
 
 ## Status: Proposed/Accepted/Rejected/Deprecated/Superseded
 
