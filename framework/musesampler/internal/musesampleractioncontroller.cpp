@@ -21,7 +21,12 @@
  */
 #include "musesampleractioncontroller.h"
 
-#include "translation.h"
+#include "global/translation.h"
+
+#include "rcommand/actiontocommand.h"
+
+#include "../musesamplercommands.h"
+
 #include "log.h"
 
 using namespace muse::musesampler;
@@ -30,8 +35,19 @@ void MuseSamplerActionController::init(std::weak_ptr<MuseSamplerResolver> resolv
 {
     m_museSamplerResolver = resolver;
 
-    dispatcher()->reg(this, "musesampler-check", this, &MuseSamplerActionController::checkLibraryIsDetected);
-    dispatcher()->reg(this, "musesampler-reload", this, &MuseSamplerActionController::reloadMuseSampler);
+    commandDispatcher()->onRequest(this, MUSESAMPLER_CHECK_COMMAND, [this]() { checkLibraryIsDetected(); return muse::make_ok(); });
+    commandDispatcher()->onRequest(this, MUSESAMPLER_RELOAD_COMMAND, [this]() { reloadMuseSampler(); return muse::make_ok(); });
+
+    // compat
+    {
+        using namespace muse::rcommand;
+        static const std::vector<ActionToCommand> actionToCommands = {
+            { "musesampler-check", MUSESAMPLER_CHECK_COMMAND, {} },
+            { "musesampler-reload", MUSESAMPLER_RELOAD_COMMAND, {} }
+        };
+
+        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
+    }
 }
 
 void MuseSamplerActionController::checkLibraryIsDetected()
