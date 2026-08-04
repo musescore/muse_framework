@@ -50,8 +50,12 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
     Q_OBJECT
 
     Q_PROPERTY(PolylinePointStyle * standardPointStyle READ standardPointStyle CONSTANT)
-    Q_PROPERTY(PolylinePointStyle * hoveredPointStyle READ hoveredPointStyle CONSTANT)
+
+    Q_PROPERTY(bool ghostPointsEnabled READ ghostPointsEnabled WRITE setGhostPointsEnabled NOTIFY ghostPointsEnabledChanged)
     Q_PROPERTY(PolylinePointStyle * ghostPointStyle READ ghostPointStyle CONSTANT)
+
+    Q_PROPERTY(bool selectedPointsEnabled READ selectedPointsEnabled WRITE setSelectedPointsEnabled NOTIFY selectedPointsEnabledChanged)
+    Q_PROPERTY(PolylinePointStyle * selectedPointStyle READ selectedPointStyle CONSTANT)
 
     Q_PROPERTY(QColor lineColor READ lineColor WRITE setLineColor NOTIFY lineColorChanged)
     Q_PROPERTY(qreal lineWidth READ lineWidth WRITE setLineWidth NOTIFY lineWidthChanged)
@@ -96,8 +100,14 @@ public:
     Q_INVOKABLE void init();
 
     PolylinePointStyle* standardPointStyle();
-    PolylinePointStyle* hoveredPointStyle();
     PolylinePointStyle* ghostPointStyle();
+    PolylinePointStyle* selectedPointStyle();
+
+    bool ghostPointsEnabled() const;
+    void setGhostPointsEnabled(bool);
+
+    bool selectedPointsEnabled() const;
+    void setSelectedPointsEnabled(bool);
 
     QColor lineColor() const;
     void setLineColor(const QColor&);
@@ -156,6 +166,9 @@ public:
     void paint(QPainter* painter) override;
 
 signals:
+    void ghostPointsEnabledChanged();
+    void selectedPointsEnabledChanged();
+
     void lineColorChanged();
     void lineWidthChanged();
     void drawBackgroundChanged();
@@ -223,7 +236,7 @@ private:
     QPointF snapToNeighbor(qreal dragPxX, QPointF pDomain) const;
     void updateActivePoint();
 
-    void paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre) const;
+    void paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre, bool useHoveredStyle) const;
 
 private:
     QColor m_lineColor;
@@ -231,8 +244,12 @@ private:
     qreal m_baselineN = 0.5;
 
     PolylinePointStyle* m_standardPointStyle = nullptr;
-    PolylinePointStyle* m_hoveredPointStyle = nullptr;
+
+    bool m_ghostPointsEnabled = true;
     PolylinePointStyle* m_ghostPointStyle = nullptr;
+
+    bool m_selectedPointsEnabled = false;
+    PolylinePointStyle* m_selectedPointStyle = nullptr;
 
     qreal m_hitRadius = 9.0;
     bool m_isSnapEnabled = true;
@@ -259,6 +276,8 @@ private:
     bool m_hoveredOnLine = false;
     QPointF m_hoverPx;
     QPointF m_hoverGhostPx;
+
+    std::unordered_set<int> m_selectedPointsIndices;
 
     bool m_pressedOnLine = false;
     bool m_pressed = false;
