@@ -1,8 +1,8 @@
 # 00103 Adding automation support to the audio engine
 
 Date: 2026-08-04  
-Tags: audio, automation
-Maintainers: Roman Pudashkin, Igor Korsukov
+Tags: audio, automation   
+Maintainers: Roman Pudashkin, Igor Korsukov   
 
 ## Status: Accepted
 
