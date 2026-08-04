@@ -414,7 +414,7 @@ void EngineRpcController::init()
             }
         });
 
-        onLongRequest(ctxId, MsgCode::SetControlParams, [this](const Msg& msg) {
+        onQuickRequest(ctxId, MsgCode::SetControlParams, [this](const Msg& msg) {
             ONLY_AUDIO_RPC_THREAD;
             TrackId trackId = 0;
             ControlParams params;

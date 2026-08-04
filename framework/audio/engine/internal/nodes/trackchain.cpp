@@ -84,13 +84,13 @@ FxChainPtr TrackChain::fxChain() const
     return m_fxChain;
 }
 
-void TrackChain::setControl(ControlNodePtr controlNode)
+void TrackChain::setControl(AutomationControlNodePtr controlNode)
 {
     clear();
     m_control = controlNode;
 }
 
-ControlNodePtr TrackChain::control() const
+AutomationControlNodePtr TrackChain::control() const
 {
     return m_control;
 }

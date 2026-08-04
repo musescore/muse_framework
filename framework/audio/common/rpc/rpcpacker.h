@@ -52,6 +52,10 @@ void pack_custom(muse::msgpack::Packer& p, const muse::audio::AudioFxParams& val
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AudioFxParams& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::AuxSendParams& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AuxSendParams& value);
+template<typename T>
+void pack_custom(muse::msgpack::Packer& p, const muse::audio::AutomatableValue<T>& value);
+template<typename T>
+void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AutomatableValue<T>& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::ControlParams& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::ControlParams& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::TrackParams& value);
@@ -118,6 +122,18 @@ void pack_custom(muse::msgpack::Packer& p, const muse::mpe::ControllerChangeEven
 void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::ControllerChangeEvent& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::mpe::PlaybackEvent& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::PlaybackEvent& value);
+
+// AutomationPoint
+void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::Bend& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::Bend& value);
+void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::ArrivalFromPrevious& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::ArrivalFromPrevious& value);
+void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::ExplicitArrival& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::ExplicitArrival& value);
+void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::InValue& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::InValue& value);
+void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint& value);
 
 void pack_custom(muse::msgpack::Packer& p, const muse::mpe::SoundCategory& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::SoundCategory& value);
@@ -214,6 +230,35 @@ inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::AuxSendPara
 inline void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AuxSendParams& value)
 {
     p.process(value.signalAmount, value.active);
+}
+
+template<typename T>
+inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::AutomatableValue<T>& value)
+{
+    p.process(value.hasAutomation());
+
+    if (value.hasAutomation()) {
+        p.process(std::get<muse::audio::AutomationEnvelope>(value.value()));
+    } else {
+        p.process(std::get<T>(value.value()));
+    }
+}
+
+template<typename T>
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AutomatableValue<T>& value)
+{
+    bool hasAutomation = false;
+    p.process(hasAutomation);
+
+    if (hasAutomation) {
+        muse::audio::AutomationEnvelope envelope;
+        p.process(envelope);
+        value = muse::audio::AutomatableValue<T>(envelope);
+    } else {
+        T staticValue{};
+        p.process(staticValue);
+        value = muse::audio::AutomatableValue<T>(staticValue);
+    }
 }
 
 inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::ControlParams& value)
@@ -605,8 +650,92 @@ inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::PlaybackEvent& 
     } break;
     default: {
         assert(false && "unknown PlaybackEvent variant index");
+        p.cursor().error = true;
     }
     }
+}
+
+inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::Bend& value)
+{
+    p.process(value.t, value.value);
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::Bend& value)
+{
+    p.process(value.t, value.value);
+}
+
+inline void pack_custom(muse::msgpack::Packer&, const muse::mpe::AutomationPoint::ArrivalFromPrevious&)
+{
+    // no data
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker&, muse::mpe::AutomationPoint::ArrivalFromPrevious&)
+{
+    // no data
+}
+
+inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::ExplicitArrival& value)
+{
+    p.process(value.value, value.bend);
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::ExplicitArrival& value)
+{
+    p.process(value.value, value.bend);
+}
+
+inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::InValue& value)
+{
+    uint8_t idx = static_cast<uint8_t>(value.index());
+    p.process(idx);
+
+    switch (idx) {
+    case 0: {
+        const muse::mpe::AutomationPoint::ArrivalFromPrevious& arrival = std::get<muse::mpe::AutomationPoint::ArrivalFromPrevious>(value);
+        p.process(arrival);
+    } break;
+    case 1: {
+        const muse::mpe::AutomationPoint::ExplicitArrival& arrival = std::get<muse::mpe::AutomationPoint::ExplicitArrival>(value);
+        p.process(arrival);
+    } break;
+    default: {
+        assert(false && "unknown AutomationPoint::InValue variant index");
+    }
+    }
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::InValue& value)
+{
+    uint8_t idx = 0;
+    p.process(idx);
+
+    switch (idx) {
+    case 0: {
+        muse::mpe::AutomationPoint::ArrivalFromPrevious arrival;
+        p.process(arrival);
+        value = arrival;
+    } break;
+    case 1: {
+        muse::mpe::AutomationPoint::ExplicitArrival arrival;
+        p.process(arrival);
+        value = arrival;
+    } break;
+    default: {
+        assert(false && "unknown AutomationPoint::InValue variant index");
+        p.cursor().error = true;
+    }
+    }
+}
+
+inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint& value)
+{
+    p.process(value.inValue, value.outValue);
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint& value)
+{
+    p.process(value.inValue, value.outValue);
 }
 
 inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::SoundCategory& value)

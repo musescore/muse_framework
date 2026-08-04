@@ -26,6 +26,7 @@ target_sources(muse_mpe PRIVATE
     soundid.h
     mpetypes.h
     events.h
+    automationpoint.h
     playbacksetupdata.h
     iarticulationprofilesrepository.h
 

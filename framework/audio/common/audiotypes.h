@@ -40,6 +40,8 @@
 
 #include "mpe/events.h"
 
+#include "automatablevalue.h"
+
 #include "log.h"
 
 // Forward-declared audioplugins aliases; audio must not depend on that module.
@@ -60,7 +62,7 @@ using audioch_t = uint8_t;
 using volume_db_t = db_t;
 using volume_dbfs_t = db_t;
 using gain_t = float;
-using balance_t = float;
+using balance_t = number_t<float>;
 
 using AudioCtxId = uint16_t;
 
@@ -425,16 +427,21 @@ struct AuxSendParams {
 
 using AuxSendsParams = std::vector<AuxSendParams>;
 
+static constexpr volume_db_t VOLUME_DB_MIN = volume_db_t::make(-60.f);
+static constexpr volume_db_t VOLUME_DB_MAX = volume_db_t::make(12.f);
+static constexpr balance_t BALANCE_MIN = balance_t::make(-1.f);
+static constexpr balance_t BALANCE_MAX = balance_t::make(1.f);
+
 struct ControlParams {
-    volume_db_t volume = 0.f;
-    balance_t balance = 0.f;
+    AutomatableValue<volume_db_t> volume;
+    AutomatableValue<balance_t> balance;
     bool muted = false;
 
     bool operator ==(const ControlParams& other) const
     {
         return muted == other.muted
-               && muse::is_equal(volume, other.volume)
-               && muse::is_equal(balance, other.balance);
+               && volume == other.volume
+               && balance == other.balance;
     }
 
     bool operator !=(const ControlParams& other) const

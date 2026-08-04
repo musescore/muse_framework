@@ -25,7 +25,7 @@
 
 #include "audiosourcenode.h"
 #include "fxchain.h"
-#include "controlnode.h"
+#include "automationcontrolnode.h"
 #include "signalnode.h"
 
 namespace muse::audio {
@@ -53,8 +53,8 @@ public:
     void setFxChain(FxChainPtr fxChain);
     FxChainPtr fxChain() const;
 
-    void setControl(ControlNodePtr controlNode);
-    ControlNodePtr control() const;
+    void setControl(AutomationControlNodePtr controlNode);
+    AutomationControlNodePtr control() const;
 
     void setSignal(SignalNodePtr signalNode);
     SignalNodePtr signal() const;
@@ -70,7 +70,7 @@ protected:
 
     IAudioNodePtr m_source;
     FxChainPtr m_fxChain;
-    ControlNodePtr m_control;
+    AutomationControlNodePtr m_control;
     SignalNodePtr m_signal;
 };
 

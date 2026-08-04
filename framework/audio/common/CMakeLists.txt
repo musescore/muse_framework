@@ -24,6 +24,7 @@ target_include_directories(muse_audio_common PRIVATE ..)
 
 target_sources(muse_audio_common PRIVATE
     audiotypes.h
+    automatablevalue.h
     timeposition.h
     soundfonttypes.h
     audioerrors.h

@@ -26,6 +26,8 @@
 #include "audio/common/audiosanitizer.h"
 #include "audio/common/audioerrors.h"
 
+#include "nodes/signalnode.h"
+
 #include "log.h"
 
 using namespace muse;
