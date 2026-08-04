@@ -60,6 +60,7 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/geometry_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sharedmap_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sharedhashmap_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/stringsearch_tests.cpp
 )
 
 include(SetupGTest)

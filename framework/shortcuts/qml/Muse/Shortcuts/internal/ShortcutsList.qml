@@ -48,14 +48,23 @@ ValueList {
 
         filters: [
             FilterValue {
-                roleName: "searchKey"
-                roleValue: root.searchText
-                compareType: CompareType.Contains
-            },
-            FilterValue {
                 roleName: "title"
                 roleValue: ""
                 compareType: CompareType.NotEqual
+            },
+            FuzzyFilter {
+                id: fuzzyFilter
+
+                enabled: Boolean(fuzzyPattern)
+                fuzzyPattern: root.searchText
+                roleName: "searchKey"
+                caseSensitivity: Qt.CaseInsensitive
+            }
+        ]
+        sorters: [
+            FuzzyScoreSorter {
+                fuzzyFilter: fuzzyFilter
+                enabled: fuzzyFilter.enabled
             }
         ]
     }

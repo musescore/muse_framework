@@ -18,6 +18,8 @@
  */
 #include "extensionsession.h"
 
+#include "extensions/extensionstypes.h"
+
 using namespace muse;
 using namespace muse::extensions;
 

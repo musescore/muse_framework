@@ -45,6 +45,8 @@ target_sources(muse_global PRIVATE
     functional/inplace_function_mv.h
     dataformatter.cpp
     dataformatter.h
+    stringsearch.cpp
+    stringsearch.h
     stringutils.cpp
     stringutils.h
     ptrutils.h

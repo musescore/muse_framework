@@ -22,6 +22,8 @@
 
 #include "shortcutsmodel.h"
 
+#include <QStringList>
+
 #include "containers.h"
 #include "translation.h"
 #include "types/mnemonicstring.h"
@@ -57,10 +59,12 @@ QVariant ShortcutsModel::data(const QModelIndex& index, int role) const
     case RoleSequence: return sequencesToNativeText(shortcut.sequences);
     case RoleSearchKey: {
         const UiAction& action = this->action(shortcut.action);
-        return QString::fromStdString(action.code)
-               + action.title.qTranslatedWithoutMnemonic()
-               + action.description.qTranslated()
-               + sequencesToNativeText(shortcut.sequences);
+        QStringList searchKeyItems;
+        searchKeyItems << QString::fromStdString(action.code)
+                       << action.title.qTranslatedWithoutMnemonic()
+                       << action.description.qTranslated()
+                       << sequencesToNativeText(shortcut.sequences);
+        return searchKeyItems.join(u' ');
     }
     }
 
@@ -262,6 +266,10 @@ void ShortcutsModel::notifyAboutShortcutChanged(const QModelIndex& index)
 void ShortcutsModel::resetToDefaultSelectedShortcuts()
 {
     auto resolveConflicts = [this](const Shortcut& shortcut) {
+        if (shortcut.sequences.empty()) {
+            return;
+        }
+
         for (int i = 0; i < m_shortcuts.size(); ++i) {
             Shortcut& sc = m_shortcuts[i];
 

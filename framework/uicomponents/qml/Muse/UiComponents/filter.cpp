@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-CLA-applies
  *
- * MuseScore Studio
+ * MuseScore
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -20,31 +20,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <qqmlintegration.h>
-
-#include <QString>
-
-#include "sorter.h"
+#include "filter.h"
 
 namespace muse::uicomponents {
-class SorterValue : public Sorter
+Filter::Filter(QObject* parent)
+    : QObject(parent)
 {
-    Q_OBJECT
-    QML_ELEMENT
+}
 
-    Q_PROPERTY(QString roleName READ roleName WRITE setRoleName NOTIFY dataChanged)
+void Filter::invalidate()
+{
+}
 
-public:
-    explicit SorterValue(QObject* parent = nullptr);
+bool Filter::enabled() const
+{
+    return m_enabled;
+}
 
-    bool lessThan(const QModelIndex& sourceLeft, const QModelIndex& sourceRight, const SortFilterProxyModel&) override;
+void Filter::setEnabled(const bool enabled)
+{
+    if (m_enabled == enabled) {
+        return;
+    }
 
-    QString roleName() const;
-    void setRoleName(QString roleName);
+    m_enabled = enabled;
+    emit enabledChanged();
+    emit dataChanged();
+}
 
-private:
-    QString m_roleName;
-};
+bool Filter::async() const
+{
+    return m_async;
+}
+
+void Filter::setAsync(const bool async)
+{
+    if (m_async == async) {
+        return;
+    }
+
+    m_async = async;
+    emit asyncChanged();
+    emit dataChanged();
+}
 }

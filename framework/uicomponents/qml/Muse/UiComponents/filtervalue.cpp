@@ -19,33 +19,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 #include "filtervalue.h"
+
+#include "global/log.h"
+
+#include "sortfilterproxymodel.h"
 
 using namespace muse::uicomponents;
 
 FilterValue::FilterValue(QObject* parent)
-    : QObject(parent)
+    : Filter(parent)
 {
+}
+
+bool FilterValue::acceptsRow(const int sourceRow, const QModelIndex& sourceParent,
+                             const SortFilterProxyModel& proxyModel)
+{
+    const int roleId = proxyModel.roleIdFromName(m_roleName);
+    if (roleId < 0) {
+        return true;
+    }
+
+    const QAbstractItemModel* sourceModel = proxyModel.sourceModel();
+    IF_ASSERT_FAILED(sourceModel) {
+        return true;
+    }
+
+    const QModelIndex index = sourceModel->index(sourceRow, 0, sourceParent);
+    const QVariant data = sourceModel->data(index, roleId);
+    switch (m_compareType) {
+    case CompareType::Equal:
+        return data == m_roleValue;
+    case CompareType::NotEqual:
+        return data != m_roleValue;
+    case CompareType::Contains:
+        return data.toString().contains(m_roleValue.toString(), Qt::CaseInsensitive);
+    }
+
+    return false;
 }
 
 QString FilterValue::roleName() const
 {
     return m_roleName;
-}
-
-QVariant FilterValue::roleValue() const
-{
-    return m_roleValue;
-}
-
-CompareType::Type FilterValue::compareType() const
-{
-    return m_compareType;
-}
-
-bool FilterValue::enabled() const
-{
-    return m_enabled;
 }
 
 void FilterValue::setRoleName(QString roleName)
@@ -58,6 +75,11 @@ void FilterValue::setRoleName(QString roleName)
     emit dataChanged();
 }
 
+QVariant FilterValue::roleValue() const
+{
+    return m_roleValue;
+}
+
 void FilterValue::setRoleValue(QVariant value)
 {
     if (m_roleValue == value) {
@@ -68,6 +90,11 @@ void FilterValue::setRoleValue(QVariant value)
     emit dataChanged();
 }
 
+CompareType::Type FilterValue::compareType() const
+{
+    return m_compareType;
+}
+
 void FilterValue::setCompareType(CompareType::Type type)
 {
     if (m_compareType == type) {
@@ -75,30 +102,5 @@ void FilterValue::setCompareType(CompareType::Type type)
     }
 
     m_compareType = type;
-    emit dataChanged();
-}
-
-void FilterValue::setEnabled(bool enabled)
-{
-    if (m_enabled == enabled) {
-        return;
-    }
-
-    m_enabled = enabled;
-    emit dataChanged();
-}
-
-bool FilterValue::async() const
-{
-    return m_async;
-}
-
-void FilterValue::setAsync(bool async)
-{
-    if (m_async == async) {
-        return;
-    }
-
-    m_async = async;
     emit dataChanged();
 }
