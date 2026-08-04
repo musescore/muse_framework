@@ -562,7 +562,7 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
 
     newFont->face = face;
 
-    auto subtitutionFontDataKeys = fontsDatabase()->substitutionFonts(requireKey.type);
+    auto subtitutionFontDataKeys = fontsDatabase()->substitutionFonts(requireKey.dataKey);
     for (const FontDataKey& dataKey : subtitutionFontDataKeys) {
         IFontFace* subtitutionFace = nullptr;
         for (IFontFace* ff : m_loadedFaces) {

@@ -188,6 +188,18 @@ TEST_F(Draw_FontsProviderQtTests, lineSpacing)
     }
 }
 
+TEST_F(Draw_FontsProviderQtTests, insertSubstitution)
+{
+    Env env;
+    env.fontsDatabase->insertSubstitution(u"Edwin", u"FreeSerif");
+
+    std::vector<FontDataKey> substitutions = env.fontsDatabase->substitutionFonts(FontDataKey(u"Edwin", true, false));
+
+    ASSERT_EQ(1u, substitutions.size());
+    EXPECT_EQ(substitutions.front(), FontDataKey(u"FreeSerif"));
+    EXPECT_TRUE(env.fontsDatabase->substitutionFonts(FontDataKey(u"Leland")).empty());
+}
+
 TEST_F(Draw_FontsProviderQtTests, xHeight)
 {
     Env env;
