@@ -81,6 +81,9 @@ public:
     // Signals
     virtual RetVal<AudioSignalChanges> signalChanges(const TrackId trackId) const = 0;
 
+    // Automation
+    virtual RetVal<AutomatedControlParamsChanges> automatedControlParamsChanges(const TrackId trackId) const = 0;
+
     // Play
     virtual async::Promise<Ret> prepareToPlay() = 0;
 

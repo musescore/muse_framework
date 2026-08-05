@@ -47,6 +47,8 @@ public:
     void setMuted(bool muted);
     bool muted() const;
 
+    AutomatedControlParamsChanges automatedControlParamsChanges() const;
+
 protected:
 
     secs_t currentPos() const;
@@ -60,6 +62,13 @@ protected:
     AutomatableValue<balance_t> m_pan;
     std::vector<dsp::SmoothLinearValue<float> > m_channelGains;
     std::optional<secs_t> m_lastGainsPos;
+
+    std::optional<AutomatedControlParams> m_lastSentAutomatedControlParams;
+    AutomatedControlParamsChanges m_automatedControlParamsChanges = AutomatedControlParamsChanges(
+        async::makeOpt()
+        .name("audio::automatedControlParamsChanges")
+        .threads(100)
+        .disableWaitPendingsOnSend());
 };
 
 using AutomationControlNodePtr = std::shared_ptr<AutomationControlNode>;

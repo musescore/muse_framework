@@ -56,6 +56,11 @@ bool AutomationControlNode::muted() const
     return !enabled();
 }
 
+AutomatedControlParamsChanges AutomationControlNode::automatedControlParamsChanges() const
+{
+    return m_automatedControlParamsChanges;
+}
+
 void AutomationControlNode::onOutputSpecChanged(const OutputSpec&)
 {
     updateChannelGains(currentPos());
@@ -68,8 +73,11 @@ secs_t AutomationControlNode::currentPos() const
 
 void AutomationControlNode::updateChannelGains(secs_t pos)
 {
-    const float volume = muse::db_to_linear(m_volume.evaluateAt(pos, VOLUME_DB_MIN, VOLUME_DB_MAX).raw());
-    const float pan = m_pan.evaluateAt(pos, BALANCE_MIN, BALANCE_MAX);
+    const volume_db_t volumeDb = m_volume.evaluateAt(pos, VOLUME_DB_MIN, VOLUME_DB_MAX);
+    const balance_t panValue = m_pan.evaluateAt(pos, BALANCE_MIN, BALANCE_MAX);
+
+    const float volume = muse::db_to_linear(volumeDb.raw());
+    const float pan = panValue.raw();
 
     const audioch_t channelsCount = m_outputSpec.audioChannelCount;
     const bool firstUpdate = !m_lastGainsPos.has_value();
@@ -85,6 +93,27 @@ void AutomationControlNode::updateChannelGains(secs_t pos)
     }
 
     m_lastGainsPos = pos;
+
+    if (m_volume.hasAutomation() || m_pan.hasAutomation()) {
+        //! NOTE Avoid flooding m_automatedControlParamsChanges with updates the UI couldn't display anyway
+        constexpr volume_db_t VOLUME_MINIMAL_VALUABLE_DIFF = volume_db_t::make(0.1f);
+        constexpr balance_t PAN_MINIMAL_VALUABLE_DIFF = balance_t::make(0.01f);
+
+        bool volumeChanged = false;
+        bool panChanged = false;
+
+        if (m_lastSentAutomatedControlParams.has_value()) {
+            volumeChanged = std::abs(volumeDb - m_lastSentAutomatedControlParams->volume) >= VOLUME_MINIMAL_VALUABLE_DIFF;
+            panChanged = std::abs(panValue - m_lastSentAutomatedControlParams->balance) >= PAN_MINIMAL_VALUABLE_DIFF;
+        } else {
+            volumeChanged = panChanged = true;
+        }
+
+        if (volumeChanged || panChanged) {
+            m_lastSentAutomatedControlParams = AutomatedControlParams { volumeDb, panValue };
+            m_automatedControlParamsChanges.send(*m_lastSentAutomatedControlParams);
+        }
+    }
 }
 
 void AutomationControlNode::doSelfProcess(float* buffer, samples_t samplesPerChannel)

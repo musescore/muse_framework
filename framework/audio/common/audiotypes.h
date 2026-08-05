@@ -516,6 +516,13 @@ struct AudioSignalVal {
 using AudioSignalValuesMap = std::map<audioch_t, AudioSignalVal>;
 using AudioSignalChanges = async::Channel<AudioSignalValuesMap>;
 
+struct AutomatedControlParams {
+    volume_db_t volume = 0.f;
+    balance_t balance = 0.f;
+};
+
+using AutomatedControlParamsChanges = async::Channel<AutomatedControlParams>;
+
 enum class PlaybackStatus {
     Stopped = 0,
     Paused,

@@ -579,6 +579,32 @@ async::Promise<AudioSignalChanges> Playback::masterSignalChanges() const
     return signalChanges(MASTER_TRACK_ID);
 }
 
+async::Promise<AutomatedControlParamsChanges> Playback::automatedControlParamsChanges(const TrackId trackId) const
+{
+    ONLY_AUDIO_MAIN_THREAD;
+    return async::make_promise<AutomatedControlParamsChanges>([this, trackId](auto resolve, auto reject) {
+        ONLY_AUDIO_MAIN_THREAD;
+        Msg msg = rpc::make_request(ctxId(), MsgCode::GetAutomatedControlParamsChanges, RpcPacker::pack(trackId));
+        channel()->send(msg, [this, resolve, reject](const Msg& res) {
+            ONLY_AUDIO_MAIN_THREAD;
+            RetVal<StreamId> ret;
+            IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
+                doReject(MsgCode::GetAutomatedControlParamsChanges, reject, audio::make_ret(Err::InvalidRpcData));
+                return;
+            }
+
+            if (ret.ret) {
+                AutomatedControlParamsChanges ch;
+                channel()->addReceiveStream(StreamName::AutomatedControlParamsStream, ret.val, ch);
+                (void)resolve(ch);
+            } else {
+                doReject(MsgCode::GetAutomatedControlParamsChanges, reject, ret.ret);
+            }
+        });
+        return Promise<AutomatedControlParamsChanges>::dummy_result();
+    }, PromiseType::AsyncByBody);
+}
+
 async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice)
 {
     ONLY_AUDIO_MAIN_THREAD;

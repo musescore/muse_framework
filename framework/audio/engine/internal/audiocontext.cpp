@@ -649,6 +649,18 @@ RetVal<AudioSignalChanges> AudioContext::signalChanges(const TrackId trackId) co
     return RetVal<AudioSignalChanges>::make_ret(Err::InvalidTrackId);
 }
 
+RetVal<AutomatedControlParamsChanges> AudioContext::automatedControlParamsChanges(const TrackId trackId) const
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+    if (const Track* t = track(trackId)) {
+        if (auto control = t->chain->control()) {
+            return RetVal<AutomatedControlParamsChanges>::make_ok(control->automatedControlParamsChanges());
+        }
+    }
+
+    return RetVal<AutomatedControlParamsChanges>::make_ret(Err::InvalidTrackId);
+}
+
 void AudioContext::clearMasterOutputParams()
 {
     ONLY_AUDIO_ENGINE_THREAD;
