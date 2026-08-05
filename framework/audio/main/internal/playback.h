@@ -107,6 +107,9 @@ public:
     async::Promise<AudioSignalChanges> signalChanges(const TrackId trackId) const override;
     async::Promise<AudioSignalChanges> masterSignalChanges() const override;
 
+    // Automation
+    async::Promise<AutomatedControlParamsChanges> automatedControlParamsChanges(const TrackId trackId) const override;
+
     // Export
     async::Promise<bool> saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice) override;
     void abortSavingAllSoundTracks() override;

@@ -109,6 +109,9 @@ public:
     virtual async::Promise<AudioSignalChanges> signalChanges(const TrackId trackId) const = 0;
     virtual async::Promise<AudioSignalChanges> masterSignalChanges() const = 0;
 
+    // Automation
+    virtual async::Promise<AutomatedControlParamsChanges> automatedControlParamsChanges(const TrackId trackId) const = 0;
+
     // Export
     virtual async::Promise<bool> saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice) = 0;
     virtual void abortSavingAllSoundTracks() = 0;

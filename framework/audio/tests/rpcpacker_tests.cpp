@@ -354,6 +354,26 @@ TEST_F(Audio_RpcPackerTests, AudioSignalVal)
     EXPECT_TRUE(origin == unpacked);
 }
 
+TEST_F(Audio_RpcPackerTests, AutomatedControlParams)
+{
+    AutomatedControlParams origin;
+    origin.volume = volume_db_t(0.6f);
+    origin.balance = balance_t(0.5f);
+
+    KNOWN_FIELDS(origin,
+                 origin.volume,
+                 origin.balance);
+
+    ByteArray data = rpc::RpcPacker::pack(origin);
+
+    AutomatedControlParams unpacked;
+    bool ok = rpc::RpcPacker::unpack(data, unpacked);
+
+    EXPECT_TRUE(ok);
+    EXPECT_TRUE(origin.volume == unpacked.volume);
+    EXPECT_TRUE(origin.balance == unpacked.balance);
+}
+
 TEST_F(Audio_RpcPackerTests, InputProcessingProgress)
 {
     // InputProcessingProgress

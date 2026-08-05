@@ -118,6 +118,7 @@ enum class MsgCode {
 
     // Signals
     GetSignalChanges,
+    GetAutomatedControlParamsChanges,
 
     // Export
     SaveSoundTrack,
@@ -138,6 +139,7 @@ enum class MsgCode {
     PlaybackDataOffStream,
     AudioSignalStream,
     AudioMasterSignalStream,
+    AutomatedControlParamsStream,
     PlaybackStatusStream,
     PlaybackPositionStream,
     InputProcessingProgressStream,
@@ -214,6 +216,7 @@ inline std::string to_string(MsgCode m)
 
     // Signals
     case MsgCode::GetSignalChanges: return "GetSignalChanges";
+    case MsgCode::GetAutomatedControlParamsChanges: return "GetAutomatedControlParamsChanges";
 
     case MsgCode::SaveSoundTrack: return "SaveSoundTrack";
     case MsgCode::AbortSavingAllSoundTracks: return "AbortSavingAllSoundTracks";
@@ -233,6 +236,7 @@ inline std::string to_string(MsgCode m)
     case MsgCode::PlaybackDataOffStream: return "PlaybackDataOffStream";
     case MsgCode::AudioSignalStream: return "AudioSignalStream";
     case MsgCode::AudioMasterSignalStream: return "AudioMasterSignalStream";
+    case MsgCode::AutomatedControlParamsStream: return "AutomatedControlParamsStream";
     case MsgCode::PlaybackStatusStream: return "PlaybackStatusStream";
     case MsgCode::PlaybackPositionStream: return "PlaybackPositionStream";
     case MsgCode::InputProcessingProgressStream: return "InputProcessingProgressStream";

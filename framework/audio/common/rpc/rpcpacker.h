@@ -77,6 +77,9 @@ void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::SaveSoundTrackStage&
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::AudioSignalVal& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AudioSignalVal& value);
 
+void pack_custom(muse::msgpack::Packer& p, const muse::audio::AutomatedControlParams& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AutomatedControlParams& value);
+
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::InputProcessingProgress::ChunkInfo& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::InputProcessingProgress::ChunkInfo& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::InputProcessingProgress::ProgressInfo& value);
@@ -357,6 +360,16 @@ inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::AudioSignal
 inline void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AudioSignalVal& value)
 {
     p.process(value.pressure);
+}
+
+inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::AutomatedControlParams& value)
+{
+    p.process(value.volume, value.balance);
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AutomatedControlParams& value)
+{
+    p.process(value.volume, value.balance);
 }
 
 inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::InputProcessingProgress::ChunkInfo& value)

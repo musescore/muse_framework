@@ -102,6 +102,9 @@ public:
     // Signals
     RetVal<AudioSignalChanges> signalChanges(const TrackId trackId) const override;
 
+    // Automation
+    RetVal<AutomatedControlParamsChanges> automatedControlParamsChanges(const TrackId trackId) const override;
+
     // Play
     async::Promise<Ret> prepareToPlay() override;
 
