@@ -25,6 +25,7 @@ target_include_directories(muse_audio_main PRIVATE ..)
 target_sources(muse_audio_main PRIVATE
     audiomodule.cpp
     audiomodule.h
+    audiocommands.h
     iaudioconfiguration.h
     istartaudiocontroller.h
     iplayback.h
@@ -34,10 +35,12 @@ target_sources(muse_audio_main PRIVATE
 
     internal/audioconfiguration.cpp
     internal/audioconfiguration.h
-    internal/audiouiactions.cpp
-    internal/audiouiactions.h
     internal/audioactionscontroller.cpp
     internal/audioactionscontroller.h
+    internal/audiocommandsregister.cpp
+    internal/audiocommandsregister.h
+    internal/audiocommandsstate.cpp
+    internal/audiocommandsstate.h
     internal/transporteventscontroller.cpp
     internal/transporteventscontroller.h
     internal/startaudiocontroller.cpp

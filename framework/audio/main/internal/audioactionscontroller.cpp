@@ -21,20 +21,22 @@
  */
 #include "audioactionscontroller.h"
 
+#include "../audiocommands.h"
+#include "types/ret.h"
+
 using namespace muse;
 using namespace muse::audio;
 
 void AudioActionsController::init()
 {
-    dispatcher()->reg(this, "action://audio/dev/use-drivermode", [this]() { setMode(workmode::DriverMode); });
-    dispatcher()->reg(this, "action://audio/dev/use-hybridmode", [this]() { setMode(workmode::HybridMode); });
+    dispatcher()->onRequest(this, AUDIO_DEV_USE_DRIVER_MODE_COMMAND, [this]() { setMode(workmode::DriverMode); return muse::make_ok(); });
+    dispatcher()->onRequest(this, AUDIO_DEV_USE_HYBRID_MODE_COMMAND, [this]() { setMode(workmode::HybridMode); return muse::make_ok(); });
 }
 
 void AudioActionsController::setMode(workmode::Mode m)
 {
     workmode::setMode(m);
-    m_actionCheckedChanged.send({ "action://audio/dev/use-drivermode",
-                                  "action://audio/dev/use-hybridmode" });
+    m_modeChanged.notify();
 
     auto promise = interactive()->question("Changing the audio mode",
                                            "Restart required, do you want to perform it?",
@@ -47,18 +49,12 @@ void AudioActionsController::setMode(workmode::Mode m)
     });
 }
 
-bool AudioActionsController::actionChecked(const actions::ActionCode& act) const
+workmode::Mode AudioActionsController::mode() const
 {
-    if (act == "action://audio/dev/use-drivermode") {
-        return workmode::desiredMode() == workmode::DriverMode;
-    } else if (act == "action://audio/dev/use-hybridmode") {
-        return workmode::desiredMode() == workmode::HybridMode;
-    }
-
-    return false;
+    return workmode::desiredMode();
 }
 
-async::Channel<actions::ActionCodeList> AudioActionsController::actionCheckedChanged() const
+async::Notification AudioActionsController:: modeChanged() const
 {
-    return m_actionCheckedChanged;
+    return m_modeChanged;
 }
