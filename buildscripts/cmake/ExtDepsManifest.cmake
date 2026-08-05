@@ -14,6 +14,7 @@ if (MUSE_MODULE_DRAW)
             require_dep(freetype STATIC)
             require_dep(harfbuzz STATIC)
         else()
+            require_dep(libpng) # freetype links against libpng
             require_dep(freetype)
             require_dep(harfbuzz)
         endif()
