@@ -34,6 +34,7 @@ ValueList {
     valueTitle: qsTrc("shortcuts", "shortcut")
     iconRoleName: "icon"
     iconColorRoleName: "iconColor"
+    sectionRoleName: "group"
     readOnly: true
 
     property var sourceModel: null
@@ -42,6 +43,24 @@ ValueList {
     readonly property var sourceSelection: filterModel.mapSelectionToSource(root.selection)
 
     signal startEditCurrentShortcutRequested()
+
+    QtObject {
+        id: prv
+
+        property var collapsedSectionsBeforeSearch: null
+    }
+
+    onSearchTextChanged: {
+        if (Boolean(root.searchText)) {
+            if (prv.collapsedSectionsBeforeSearch === null) {
+                prv.collapsedSectionsBeforeSearch = root.collapsedSections
+                root.expandAllSections()
+            }
+        } else if (prv.collapsedSectionsBeforeSearch !== null) {
+            root.collapsedSections = prv.collapsedSectionsBeforeSearch
+            prv.collapsedSectionsBeforeSearch = null
+        }
+    }
 
     model: SortFilterProxyModel {
         id: filterModel

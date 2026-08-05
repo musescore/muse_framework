@@ -56,6 +56,7 @@ QVariant ShortcutsModel::data(const QModelIndex& index, int role) const
 
     switch (role) {
     case RoleTitle: return item.title;
+    case RoleGroup: return item.group;
     case RoleIcon: return item.icon;
     case RoleIconColor: return item.iconColor;
     case RoleSequence: return item.sequence;
@@ -95,6 +96,7 @@ QHash<int, QByteArray> ShortcutsModel::roleNames() const
 {
     static const QHash<int, QByteArray> roles {
         { RoleTitle, "title" },
+        { RoleGroup, "group" },
         { RoleIcon, "icon" },
         { RoleIconColor, "iconColor" },
         { RoleSequence, "sequence" },

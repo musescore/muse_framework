@@ -28,6 +28,8 @@
 #include <QStringList>
 #include <QStringListModel>
 
+#include "sectionedmodel.h"
+
 #include "uicomponents/qml/Muse/UiComponents/filtervalue.h"
 #include "uicomponents/qml/Muse/UiComponents/sortervalue.h"
 #include "uicomponents/qml/Muse/UiComponents/sortfilterproxymodel.h"
@@ -35,6 +37,18 @@
 using namespace Qt::StringLiterals;
 
 namespace muse::uicomponents {
+namespace {
+QStringList titles(const SortFilterProxyModel* model)
+{
+    QStringList result;
+    for (int row = 0; row < model->rowCount(); ++row) {
+        result << model->data(model->index(row, 0), SectionedModel::RoleTitle).toString();
+    }
+
+    return result;
+}
+}
+
 class UiComponents_SortFilterProxyModelTests : public ::testing::Test
 {
 public:
@@ -154,5 +168,76 @@ TEST_F(UiComponents_SortFilterProxyModelTests, testSorterValue)
                                                             proxyModel->data(proxyModel->index(row, 0)));
         EXPECT_TRUE(ordering == QPartialOrdering::Greater || ordering == QPartialOrdering::Equivalent);
     }
+}
+
+TEST(UiComponents_SortFilterProxyModelSectionTests, testSectionRoleName)
+{
+    auto model = std::make_unique<SectionedModel>();
+    auto proxyModel = std::make_unique<SortFilterProxyModel>();
+    proxyModel->setSourceModel(model.get());
+
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"b1"_s, u"a2"_s, u"x"_s, u"a1"_s, u"b2"_s }));
+
+    proxyModel->setSectionRoleName(u"group"_s);
+
+    //! NOTE: The sections are alphabetical, the items without a section are last,
+    //! within a section the original order is kept
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"a2"_s, u"a1"_s, u"b1"_s, u"b2"_s, u"x"_s }));
+}
+
+TEST(UiComponents_SortFilterProxyModelSectionTests, testSectionRoleNameSetBeforeSourceModel)
+{
+    auto model = std::make_unique<SectionedModel>();
+    auto proxyModel = std::make_unique<SortFilterProxyModel>();
+
+    proxyModel->setSectionRoleName(u"group"_s);
+    proxyModel->setSourceModel(model.get());
+
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"a2"_s, u"a1"_s, u"b1"_s, u"b2"_s, u"x"_s }));
+}
+
+TEST(UiComponents_SortFilterProxyModelSectionTests, testSourceModelSetAndReplaced)
+{
+    auto firstModel = std::make_unique<SectionedModel>();
+    auto secondModel = std::make_unique<SectionedModel>();
+    auto proxyModel = std::make_unique<SortFilterProxyModel>();
+
+    SorterValue* sorter = new SorterValue(proxyModel.get());
+    sorter->setRoleName(u"title"_s);
+
+    QQmlListProperty<Sorter> sorters = proxyModel->sorters();
+    ASSERT_TRUE(sorters.append);
+    sorters.append(&sorters, sorter);
+
+    proxyModel->setSectionRoleName(u"group"_s);
+    sorter->setEnabled(true);
+
+    proxyModel->setSourceModel(firstModel.get());
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"a1"_s, u"a2"_s, u"b1"_s, u"b2"_s, u"x"_s }));
+
+    proxyModel->setSourceModel(secondModel.get());
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"a1"_s, u"a2"_s, u"b1"_s, u"b2"_s, u"x"_s }));
+}
+
+TEST(UiComponents_SortFilterProxyModelSectionTests, testSectionRoleNameWithSorter)
+{
+    auto model = std::make_unique<SectionedModel>();
+    auto proxyModel = std::make_unique<SortFilterProxyModel>();
+    proxyModel->setSourceModel(model.get());
+    proxyModel->setSectionRoleName(u"group"_s);
+
+    SorterValue* sorter = new SorterValue(proxyModel.get());
+    sorter->setRoleName(u"title"_s);
+
+    QQmlListProperty<Sorter> sorters = proxyModel->sorters();
+    ASSERT_TRUE(sorters.append);
+    sorters.append(&sorters, sorter);
+
+    sorter->setEnabled(true);
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"a1"_s, u"a2"_s, u"b1"_s, u"b2"_s, u"x"_s }));
+
+    //! NOTE: The sort order applies within a section only, the sections stay alphabetical
+    sorter->setSortOrder(Qt::DescendingOrder);
+    EXPECT_EQ(titles(proxyModel.get()), QStringList({ u"a2"_s, u"a1"_s, u"b2"_s, u"b1"_s, u"x"_s }));
 }
 }

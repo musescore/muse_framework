@@ -48,6 +48,9 @@ Item {
     property string maxValueRoleName: "max"
     property string iconRoleName: "icon"
     property string iconColorRoleName: "iconColor"
+    property string sectionRoleName: ""
+
+    property alias collapsedSections: sectionProxyModel.collapsedSections
 
     property alias hasSelection: selectionModel.hasSelection
     readonly property var selection: sortFilterProxyModel.mapSelectionToSource(selectionModel.selection)
@@ -65,15 +68,30 @@ Item {
     property int navigationOrderStart: 0
 
     property alias currentIndex: view.currentIndex
-    readonly property int currentSourceRow: (
-        view.currentIndex >= 0
-            ? sortFilterProxyModel.mapToSource(sortFilterProxyModel.index(view.currentIndex, 0)).row
-            : -1
-    )
+    readonly property int currentSourceRow: {
+        if (view.currentIndex < 0) {
+            return -1
+        }
+
+        var filteredRow = sectionProxyModel.sourceRowOf(view.currentIndex)
+        if (filteredRow < 0) {
+            return -1
+        }
+
+        return sortFilterProxyModel.mapToSource(sortFilterProxyModel.index(filteredRow, 0)).row
+    }
 
     signal handleItem(var index, var item)
     signal keyEdited(int sourceRow, string newKey)
     signal valueEdited(int sourceRow, string newValue)
+
+    function expandAllSections() {
+        sectionProxyModel.expandAll()
+    }
+
+    function collapseAllSections() {
+        sectionProxyModel.collapseAll()
+    }
 
     QtObject {
         id: prv
@@ -81,6 +99,19 @@ Item {
         property real valueItemWidth: 126
         property real spacing: 4
         property real sideMargin: 30
+        property real rowHeight: 34
+
+        readonly property bool sectionsEnabled: root.sectionRoleName !== ""
+        property string noSectionTitle: qsTrc("ui", "Other")
+
+        function setSectionCollapsed(section, collapsed) {
+            if (collapsed) {
+                //! NOTE: Otherwise the selection would stay on the items that are not visible anymore
+                selectionModel.clear()
+            }
+
+            sectionProxyModel.setSectionCollapsed(section, collapsed)
+        }
 
         function toggleSorter(sorter: Sorter) {
             if (!sorter.enabled) {
@@ -108,6 +139,8 @@ Item {
     SortFilterProxyModel {
         id: sortFilterProxyModel
 
+        sectionRoleName: root.sectionRoleName
+
         sorters: [
             SorterValue {
                 id: keySorter
@@ -118,6 +151,13 @@ Item {
                 roleName: valueRoleName
             }
         ]
+    }
+
+    SectionProxyModel {
+        id: sectionProxyModel
+
+        sourceModel: sortFilterProxyModel
+        sectionRoleName: root.sectionRoleName
     }
 
     ItemMultiSelectionModel {
@@ -238,7 +278,7 @@ Item {
 
         height: Math.min(contentHeight, root.height - header.height - background.border.width - 1/*separator*/)
 
-        model: sortFilterProxyModel
+        model: sectionProxyModel
 
         property NavigationPanel navigation: NavigationPanel {
             name: "ValueListPanel"
@@ -259,83 +299,156 @@ Item {
 
         ScrollBar.vertical: StyledScrollBar {}
 
-        delegate: ValueListItem {
-            id: listItem
+        delegate: Loader {
+            id: rowLoader
 
-            item: model
+            width: view.width
+            height: prv.rowHeight
 
-            property var modelIndex: sortFilterProxyModel.index(model.index, 0)
-            property int sourceRow: sortFilterProxyModel.mapToSource(modelIndex).row
+            readonly property int rowIndex: model.index
+            readonly property bool isSectionRow: prv.sectionsEnabled && model.isSection === true
+            readonly property int filteredRow: sectionProxyModel.sourceRowOf(model.index)
 
-            keyRoleName: root.keyRoleName
-            valueRoleName: root.valueRoleName
-            valueTypeRole: root.valueTypeRole
-            valueEnabledRoleName: root.valueEnabledRoleName
-            minValueRoleName: root.minValueRoleName
-            maxValueRoleName: root.maxValueRoleName
-            iconRoleName: root.iconRoleName
-            iconColorRoleName: root.iconColorRoleName
+            sourceComponent: rowLoader.isSectionRow ? sectionItemComponent : valueItemComponent
 
-            isSelected: selectionModel.hasSelection && selectionModel.isSelected(modelIndex)
-            readOnly: root.readOnly
-            keyReadOnly: root.isKeyEditable ? root.isReadOnlyFunction(model.index) : true
+            Component {
+                id: sectionItemComponent
 
-            drawZebra: root.drawZebra
-            keyColumnWidth: root.keyColumnWidth
-            keysEditable: root.isKeyEditable
-            startEditByDoubleClick: root.startEditByDoubleClick
+                ValueListSectionItem {
+                    title: model.sectionName === "" ? prv.noSectionTitle : model.sectionName
+                    isExpanded: model.sectionExpanded
+                    drawZebra: root.drawZebra
 
-            spacing: prv.spacing
-            sideMargin: prv.sideMargin
-            valueItemWidth: prv.valueItemWidth
+                    spacing: prv.spacing
+                    sideMargin: prv.sideMargin
 
-            navigation.panel: view.navigation
-            navigation.enabled: root.isKeyEditable ? false : enabled
-            navigation.row: model.index
-            navigation.column: 0
+                    navigation.panel: view.navigation
+                    navigation.row: root.isKeyEditable ? rowLoader.rowIndex * 2 : rowLoader.rowIndex
+                    navigation.column: 0
 
-            navigation.onNavigationEvent: function(event) {
-                switch (event.type) {
-                case NavigationEvent.Up:
-                    if (model.index === 0) {
-                        event.accepted = true
+                    navigation.onNavigationEvent: function(event) {
+                        switch (event.type) {
+                        case NavigationEvent.Up:
+                            if (rowLoader.rowIndex === 0) {
+                                event.accepted = true
+                            }
+                            break
+                        case NavigationEvent.Down:
+                            if (rowLoader.rowIndex === view.model.rowCount - 1) {
+                                event.accepted = true
+                            }
+                            break
+                        case NavigationEvent.Left:
+                            if (model.sectionExpanded) {
+                                prv.setSectionCollapsed(model.sectionName, true)
+                                event.accepted = true
+                            }
+                            break
+                        case NavigationEvent.Right:
+                            if (!model.sectionExpanded) {
+                                prv.setSectionCollapsed(model.sectionName, false)
+                                event.accepted = true
+                            }
+                            break
+                        }
                     }
-                    break
-                case NavigationEvent.Down:
-                    if (model.index === view.model.rowCount - 1) {
-                        event.accepted = true
+
+                    onToggleRequested: {
+                        view.currentIndex = rowLoader.rowIndex
+                        prv.setSectionCollapsed(model.sectionName, model.sectionExpanded)
                     }
-                    break
+
+                    onFocusChanged: {
+                        if (activeFocus) {
+                            view.positionViewAtIndex(rowLoader.rowIndex, ListView.Contain)
+                        }
+                    }
                 }
             }
 
-            onClicked: {
-                selectionModel.select(modelIndex)
-                view.currentIndex = index
-            }
+            Component {
+                id: valueItemComponent
 
-            onDoubleClicked: {
-                selectionModel.select(modelIndex)
-                view.currentIndex = index
-                Qt.callLater(root.handleItem, sortFilterProxyModel.mapToSource(modelIndex), item)
-            }
+                ValueListItem {
+                    id: listItem
 
-            onNavigationTriggered: {
-                root.handleItem(sortFilterProxyModel.mapToSource(modelIndex), item)
-            }
+                    item: model
 
-            onFocusChanged: {
-                if (activeFocus) {
-                    view.positionViewAtIndex(index, ListView.Contain)
+                    property var modelIndex: sortFilterProxyModel.index(rowLoader.filteredRow, 0)
+                    property int sourceRow: sortFilterProxyModel.mapToSource(modelIndex).row
+
+                    keyRoleName: root.keyRoleName
+                    valueRoleName: root.valueRoleName
+                    valueTypeRole: root.valueTypeRole
+                    valueEnabledRoleName: root.valueEnabledRoleName
+                    minValueRoleName: root.minValueRoleName
+                    maxValueRoleName: root.maxValueRoleName
+                    iconRoleName: root.iconRoleName
+                    iconColorRoleName: root.iconColorRoleName
+
+                    isSelected: selectionModel.hasSelection && selectionModel.isSelected(modelIndex)
+                    readOnly: root.readOnly
+                    keyReadOnly: root.isKeyEditable ? root.isReadOnlyFunction(rowLoader.filteredRow) : true
+
+                    drawZebra: root.drawZebra
+                    zebraIndex: prv.sectionsEnabled ? model.indexInSection : rowLoader.rowIndex
+                    keyColumnWidth: root.keyColumnWidth
+                    keysEditable: root.isKeyEditable
+                    startEditByDoubleClick: root.startEditByDoubleClick
+
+                    spacing: prv.spacing
+                    sideMargin: prv.sideMargin
+                    valueItemWidth: prv.valueItemWidth
+
+                    navigation.panel: view.navigation
+                    navigation.enabled: root.isKeyEditable ? false : enabled
+                    navigation.row: rowLoader.rowIndex
+                    navigation.column: 0
+
+                    navigation.onNavigationEvent: function(event) {
+                        switch (event.type) {
+                        case NavigationEvent.Up:
+                            if (rowLoader.rowIndex === 0) {
+                                event.accepted = true
+                            }
+                            break
+                        case NavigationEvent.Down:
+                            if (rowLoader.rowIndex === view.model.rowCount - 1) {
+                                event.accepted = true
+                            }
+                            break
+                        }
+                    }
+
+                    onClicked: {
+                        selectionModel.select(modelIndex)
+                        view.currentIndex = rowLoader.rowIndex
+                    }
+
+                    onDoubleClicked: {
+                        selectionModel.select(modelIndex)
+                        view.currentIndex = rowLoader.rowIndex
+                        Qt.callLater(root.handleItem, sortFilterProxyModel.mapToSource(modelIndex), item)
+                    }
+
+                    onNavigationTriggered: {
+                        root.handleItem(sortFilterProxyModel.mapToSource(modelIndex), item)
+                    }
+
+                    onFocusChanged: {
+                        if (activeFocus) {
+                            view.positionViewAtIndex(rowLoader.rowIndex, ListView.Contain)
+                        }
+                    }
+
+                    onKeyEdited: function(newKey) {
+                        root.keyEdited(sourceRow, newKey)
+                    }
+
+                    onValueEdited: function(newVal) {
+                        root.valueEdited(sourceRow, newVal)
+                    }
                 }
-            }
-
-            onKeyEdited: function(newKey) {
-                root.keyEdited(sourceRow, newKey)
-            }
-
-            onValueEdited: function(newVal) {
-                root.valueEdited(sourceRow, newVal)
             }
         }
     }

@@ -45,6 +45,8 @@ class SortFilterProxyModel : public QSortFilterProxyModel
     Q_PROPERTY(QList<int> alwaysIncludeIndices READ alwaysIncludeIndices WRITE setAlwaysIncludeIndices NOTIFY alwaysIncludeIndicesChanged)
     Q_PROPERTY(QList<int> alwaysExcludeIndices READ alwaysExcludeIndices WRITE setAlwaysExcludeIndices NOTIFY alwaysExcludeIndicesChanged)
 
+    Q_PROPERTY(QString sectionRoleName READ sectionRoleName WRITE setSectionRoleName NOTIFY sectionRoleNameChanged)
+
 public:
     explicit SortFilterProxyModel(QObject* parent = nullptr);
 
@@ -57,6 +59,9 @@ public:
     QList<int> alwaysExcludeIndices() const;
     void setAlwaysExcludeIndices(const QList<int>& indices);
 
+    QString sectionRoleName() const;
+    void setSectionRoleName(const QString& roleName);
+
     int roleIdFromName(const QString&) const;
     QHash<int, QByteArray> roleNames() const override;
 
@@ -67,6 +72,7 @@ signals:
 
     void alwaysIncludeIndicesChanged();
     void alwaysExcludeIndicesChanged();
+    void sectionRoleNameChanged();
 
     void sourceModelRoleNamesChanged();
 
@@ -75,9 +81,12 @@ protected:
     bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 
 private:
+    static constexpr int INVALID_ROLE_ID = -1;
+
     void updateRoleIds();
     Sorter* currentSorter() const;
     void invalidateFilters();
+    void updateSorting();
 
     QHash<QByteArray, int> m_roleIds;
 
@@ -86,6 +95,9 @@ private:
 
     QList<int> m_alwaysIncludeIndices;
     QList<int> m_alwaysExcludeIndices;
+
+    QString m_sectionRoleName;
+    int m_sectionRoleId = INVALID_ROLE_ID;
 
     QMetaObject::Connection m_subSourceModelConnection;
     QMetaObject::Connection m_sourceDataChangedConnection;
