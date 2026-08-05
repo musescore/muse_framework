@@ -21,21 +21,21 @@
  */
 #pragma once
 
-#include "actions/actionable.h"
-#include "global/async/channel.h"
+#include "global/async/notification.h"
 
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "global/iapplication.h"
 #include "interactive/iinteractive.h"
 
 #include "audio/common/workmode.h"
 
 namespace muse::audio {
-class AudioActionsController : public actions::Actionable, public muse::Contextable
+class AudioActionsController : public muse::Contextable, public muse::rcommand::Commandable
 {
-    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     GlobalInject<IApplication> application;
+    ContextInject<muse::rcommand::ICommandDispatcher> dispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
 
 public:
@@ -44,13 +44,13 @@ public:
 
     void init();
 
-    bool actionChecked(const actions::ActionCode& act) const;
-    async::Channel<actions::ActionCodeList> actionCheckedChanged() const;
+    workmode::Mode mode() const;
+    async::Notification modeChanged() const;
 
 private:
 
     void setMode(workmode::Mode m);
 
-    async::Channel<actions::ActionCodeList> m_actionCheckedChanged;
+    async::Notification m_modeChanged;
 };
 }

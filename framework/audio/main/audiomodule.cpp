@@ -22,8 +22,9 @@
 #include "audiomodule.h"
 
 #include "common/iaudiotaskscheduler.h"
-#include "ui/iuiactionsregister.h"
 #include "global/modularity/ioc.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 
 #include "audio/common/audiosanitizer.h"
 #include "audio/common/audiothreadsecurer.h"
@@ -38,8 +39,9 @@
 
 #include "internal/audioconfiguration.h"
 #include "internal/audioactionscontroller.h"
+#include "internal/audiocommandsregister.h"
+#include "internal/audiocommandsstate.h"
 #include "internal/transporteventscontroller.h"
-#include "internal/audiouiactions.h"
 #include "internal/startaudiocontroller.h"
 #include "internal/playback.h"
 #include "internal/audiodrivercontroller.h"
@@ -96,6 +98,11 @@ void AudioModule::registerExports()
 void AudioModule::resolveImports()
 {
     m_engineGlobalSetup->resolveImports();
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<AudioCommandsRegister>());
+    }
 }
 
 void AudioModule::onInit(const IApplication::RunMode& mode)
@@ -158,9 +165,9 @@ void AudioContext::registerExports()
 
 void AudioContext::resolveImports()
 {
-    auto ar = ioc()->resolve<ui::IUiActionsRegister>(mname);
-    if (ar) {
-        ar->reg(std::make_shared<AudioUiActions>(m_actionsController));
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<AudioCommandsState>(iocContext(), m_actionsController));
     }
 }
 
