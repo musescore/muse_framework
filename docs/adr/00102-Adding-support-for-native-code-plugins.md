@@ -81,4 +81,3 @@ EXT_EXPORT int32_t extension_dispatch_v0(const char* call, const ext_value* args
     return EXT_STATUS_OK;
 }
 ```
-
