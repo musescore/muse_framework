@@ -35,11 +35,7 @@ However, we saw the following drawbacks:
 ## Implementation 
 
 effect.js
-<<<<<<< HEAD
 ```js
-=======
-```
->>>>>>> 265438e2f4 (added adr: Adding support for native code plugins)
 const native = require("MuseApi.Native")
 
 
@@ -57,11 +53,7 @@ const native = require("MuseApi.Native")
 ```
 
 gain.c 
-<<<<<<< HEAD
 ```c
-=======
-```
->>>>>>> 265438e2f4 (added adr: Adding support for native code plugins)
 #include "extension.h"
 
 #include <string.h>
