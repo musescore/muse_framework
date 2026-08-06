@@ -35,13 +35,13 @@ public:
     muse::audio::gain_t currentGain() const;
 
 private:
-    void updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;
-    void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;
+    void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics) override;
+    void updateOffStreamEvents(const mpe::PlaybackEventsMap& events) override;
 
     using SostenutoTimeAndDurations = std::vector<mpe::TimestampAndDuration>;
 
     void addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events);
-    void addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicLevelLayers& layers);
+    void addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicAutomationLayers& layers);
     void addNoteEvent(EventSequenceMap& destination, const mpe::NoteEvent& noteEvent, SostenutoTimeAndDurations& sostenutoTimeAndDurations);
     void addPedalEvent(EventSequenceMap& destination, const mpe::ArticulationMeta& meta);
     void addControlChangeEvent(EventSequenceMap& destination, const mpe::timestamp_t timestamp, const mpe::ControllerChangeEvent& event);

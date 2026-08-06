@@ -32,6 +32,7 @@
 
 #include "types/sharedhashmap.h"
 #include "types/sharedmap.h"
+#include "types/number.h"
 
 #include "soundid.h"
 
@@ -375,6 +376,11 @@ using dynamic_level_t = percentage_t;
 constexpr dynamic_level_t MAX_DYNAMIC_LEVEL = HUNDRED_PERCENT;
 constexpr dynamic_level_t MIN_DYNAMIC_LEVEL = 0;
 constexpr dynamic_level_t DYNAMIC_LEVEL_STEP = 5 * ONE_PERCENT;
+
+inline dynamic_level_t dynamicLevelFromNormalized(const real_t normalized)
+{
+    return static_cast<dynamic_level_t>(lround(normalized.raw() * MAX_DYNAMIC_LEVEL));
+}
 
 enum class DynamicType : percentage_t {
     Undefined = -1,

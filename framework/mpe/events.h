@@ -31,6 +31,7 @@
 #include "types/number.h"
 #include "types/sharedmap.h"
 
+#include "automationpoint.h"
 #include "mpetypes.h"
 #include "playbacksetupdata.h"
 
@@ -341,16 +342,16 @@ using PlaybackEvent = std::variant<std::monostate,
 using PlaybackEventList = std::vector<PlaybackEvent>;
 using PlaybackEventsMap = SharedMap<timestamp_t, PlaybackEventList>;
 
-using DynamicLevelMap = SharedMap<timestamp_t, dynamic_level_t>;
-using DynamicLevelLayers = SharedMap<layer_idx_t, DynamicLevelMap>;
+using DynamicAutomationMap = AutomationCurve<timestamp_t>;
+using DynamicAutomationLayers = SharedMap<layer_idx_t, DynamicAutomationMap>;
 
-using MainStreamChanges = async::Channel<PlaybackEventsMap, DynamicLevelLayers>;
-using OffStreamChanges = async::Channel<PlaybackEventsMap, DynamicLevelLayers, bool /*flushOffstream*/>;
+using MainStreamChanges = async::Channel<PlaybackEventsMap, DynamicAutomationLayers>;
+using OffStreamChanges = async::Channel<PlaybackEventsMap, bool /*flushOffstream*/>;
 
 struct PlaybackData {
     PlaybackEventsMap originEvents;
     PlaybackSetupData setupData;
-    DynamicLevelLayers dynamics;
+    DynamicAutomationLayers dynamics;
 
     MainStreamChanges mainStream;
     OffStreamChanges offStream;

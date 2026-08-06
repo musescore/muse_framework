@@ -26,7 +26,11 @@
 #include <optional>
 #include <type_traits>
 
+#include "types/sharedmap.h"
 #include "types/number.h"
+
+#include "containers.h"
+#include "realfn.h"
 
 namespace muse::mpe {
 struct AutomationPoint {
@@ -63,6 +67,9 @@ struct AutomationPoint {
         return inValue == p.inValue && outValue == p.outValue;
     }
 };
+
+template<typename KeyT>
+using AutomationCurve = SharedMap<KeyT, AutomationPoint>;
 
 //! NOTE: this point's bend, if it can have one; nullopt for ArrivalFromPrevious
 inline std::optional<AutomationPoint::Bend> bend(const AutomationPoint& point) noexcept
@@ -127,5 +134,58 @@ inline real_t evaluateAt(const AutomationPoint& point, std::optional<real_t> pre
 
     const real_t q2 = std::clamp(bendValue + remainder * halfSlope, lo, hi);
     return quadraticBezier((t - pointBend->t) / remainder, bendValue, q2, thisIn);
+}
+
+template<typename Key>
+inline real_t evaluateCurveAt(const AutomationCurve<Key>& curve, const typename AutomationCurve<Key>::key_type& pos)
+{
+    if (curve.empty()) {
+        return real_t {};
+    }
+
+    auto it = findLessOrEqual(curve, pos);
+    if (it == curve.end()) {
+        //! NOTE: hold the first point's value backwards in time, matching standard envelope semantics
+        return curve.begin()->second.outValue;
+    }
+
+    real_t normalized = it->second.outValue;
+    const auto next = std::next(it);
+    if (next != curve.end()) {
+        const real_t t = static_cast<real_t>(pos - it->first) / static_cast<real_t>(next->first - it->first);
+        normalized = evaluateAt(next->second, it->second.outValue, t);
+    }
+
+    return normalized;
+}
+
+//! NOTE: resamples a curve into discrete samples for consumers that can't evaluate on read
+template<typename Key, typename Callback>
+void resampleCurve(const AutomationCurve<Key>& curve, Key stepInterval, Callback&& onSample)
+{
+    for (auto it = curve.cbegin(); it != curve.cend(); ++it) {
+        onSample(it->first, it->second.outValue);
+
+        const auto next = std::next(it);
+        if (next == curve.cend()) {
+            continue;
+        }
+
+        const real_t nextArrival = resolveInValue(next->second, it->second.outValue);
+        const std::optional<AutomationPoint::Bend> nextBend = bend(next->second);
+        const bool isFlat = (!nextBend || nextBend->isNone()) && muse::RealIsEqual(nextArrival, it->second.outValue);
+        if (isFlat) {
+            continue;
+        }
+
+        const Key intervalDuration = next->first - it->first;
+        const size_t steps = std::max(size_t((intervalDuration + stepInterval - 1) / stepInterval), size_t(1));
+
+        for (size_t j = 1; j < steps; ++j) {
+            const Key t = it->first + intervalDuration * j / steps;
+            const real_t normalized = evaluateAt(next->second, it->second.outValue, real_t(j) / real_t(steps));
+            onSample(t, normalized);
+        }
+    }
 }
 }

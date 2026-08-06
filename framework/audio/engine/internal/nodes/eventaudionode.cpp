@@ -40,7 +40,6 @@ EventAudioNode::EventAudioNode(TrackId trackId, const mpe::PlaybackData& playbac
 
     if (onOffStreamReceived) {
         m_playbackData.offStream.onReceive(this, [onOffStreamReceived](const PlaybackEventsMap&,
-                                                                       const DynamicLevelLayers&,
                                                                        bool) {
             onOffStreamReceived();
         });

@@ -61,7 +61,7 @@ public:
         m_playbackData = data;
 
         m_playbackData.mainStream.onReceive(this, [this](const mpe::PlaybackEventsMap& events,
-                                                         const mpe::DynamicLevelLayers& dynamics) {
+                                                         const mpe::DynamicAutomationLayers& dynamics) {
             m_playbackData.originEvents = events;
             m_playbackData.dynamics = dynamics;
             m_shouldUpdateMainStreamEvents = true;
@@ -72,13 +72,12 @@ public:
         });
 
         m_playbackData.offStream.onReceive(this, [this](const mpe::PlaybackEventsMap& events,
-                                                        const mpe::DynamicLevelLayers& dynamics,
                                                         bool flush) {
             if (flush) {
                 flushOffstream();
             }
 
-            updateOffStreamEvents(events, dynamics);
+            updateOffStreamEvents(events);
         });
 
         updateMainStreamEvents(data.originEvents, data.dynamics);
@@ -168,11 +167,11 @@ public:
     mpe::dynamic_level_t dynamicLevel(const msecs_t position) const
     {
         for (const auto& layer : m_playbackData.dynamics) {
-            const mpe::DynamicLevelMap& dynamics = layer.second;
-            auto it = muse::findLessOrEqual(dynamics, position);
-            if (it != dynamics.end()) {
-                return it->second;
+            if (layer.second.empty()) {
+                continue;
             }
+
+            return mpe::dynamicLevelFromNormalized(mpe::evaluateCurveAt(layer.second, position));
         }
 
         return mpe::dynamicLevelFromType(muse::mpe::DynamicType::Natural);
@@ -211,8 +210,8 @@ public:
     }
 
 protected:
-    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) = 0;
-    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) = 0;
+    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics) = 0;
+    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap& events) = 0;
 
     void resetAllIterators()
     {

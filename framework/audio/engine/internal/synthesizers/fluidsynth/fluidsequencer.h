@@ -45,13 +45,13 @@ public:
     int lastStaff() const;
 
 private:
-    void updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;
-    void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;
+    void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics) override;
+    void updateOffStreamEvents(const mpe::PlaybackEventsMap& events) override;
 
     using SostenutoTimeAndDurations = std::map<midi::channel_t, std::vector<mpe::TimestampAndDuration> >;
 
     void addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events);
-    void addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicLevelLayers& dynamics);
+    void addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicAutomationLayers& layers);
     void addNoteEvent(EventSequenceMap& destination, const mpe::NoteEvent& noteEvent, SostenutoTimeAndDurations& sostenutoTimeAndDurations);
     void addPedalEvent(EventSequenceMap& destination, const mpe::ArticulationMeta& meta, const midi::channel_t channelIdx);
     void addControlChangeEvent(EventSequenceMap& destination, const mpe::timestamp_t timestamp, const mpe::ControllerChangeEvent& event);
