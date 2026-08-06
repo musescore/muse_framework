@@ -28,11 +28,33 @@ QtPlatform.FileDialog {
     property string objectId: ""
     property var ret: null
 
+    readonly property string allFilesExtension: "*"
+
     signal opened()
     signal closed()
 
     function show() {
+        //! NOTE `selectedNameFilter` is created on first access
+        root.selectedNameFilter.index = 0
         root.open()
+    }
+
+    function appendSuffixIfNeeded(filePath) {
+        const extensions = root.selectedNameFilter.extensions || []
+        let defaultExtension = ""
+        for (let i = 0; i < extensions.length; ++i) {
+            const extension = extensions[i]
+            if (extension === "" || extension === root.allFilesExtension) {
+                continue
+            }
+            if (defaultExtension === "") {
+                defaultExtension = extension
+            }
+            if (filePath.endsWith("." + extension)) {
+                return filePath
+            }
+        }
+        return defaultExtension === "" ? filePath : filePath + "." + defaultExtension
     }
 
     onVisibleChanged: {
@@ -45,6 +67,8 @@ QtPlatform.FileDialog {
         if (root.fileMode === FileDialog.OpenFiles) {
             const selectedUrls = root.fileUrls || []
             root.ret = { "errcode": 0, "value": selectedUrls }
+        } else if (root.fileMode === FileDialog.SaveFile) {
+            root.ret = { "errcode": 0, "value": root.appendSuffixIfNeeded(root.currentFile.toString()) }
         } else {
             root.ret = { "errcode": 0, "value": root.currentFile.toString() }
         }
