@@ -40,8 +40,10 @@
 #include "internal/appupdateservice.h"
 
 #include "iupdateinstaller.h"
-#ifdef Q_OS_MAC
+#if defined(Q_OS_MAC)
 #include "internal/platform/mac/macupdateinstaller.h"
+#elif defined(Q_OS_WIN)
+#include "internal/platform/win/winupdateinstaller.h"
 #else
 #include "internal/platform/stub/updateinstallerstub.h"
 #endif
@@ -60,8 +62,10 @@ void UpdateModule::registerExports()
 {
     m_configuration = std::make_shared<UpdateConfiguration>(globalCtx());
 
-#ifdef Q_OS_MAC
+#if defined(Q_OS_MAC)
     m_updateInstaller = std::make_shared<MacUpdateInstaller>(globalCtx());
+#elif defined(Q_OS_WIN)
+    m_updateInstaller = std::make_shared<WinUpdateInstaller>(globalCtx());
 #else
     m_updateInstaller = std::make_shared<UpdateInstallerStub>();
 #endif

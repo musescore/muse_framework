@@ -28,11 +28,13 @@ namespace platform {
 //! Block until the process `pid` has exited, or `timeoutMs` elapses.
 void waitForProcessExit(long long pid, int timeoutMs);
 
+#ifndef _WIN32
 //! Verify that the swapped-in install at `path` is launchable.
 //! On macOS this checks the code signature; elsewhere it just checks existence.
 bool verifyInstall(const std::string& path);
 
 //! Launch the updated application. `path` is an .app bundle on macOS,
-//! an executable on Windows/Linux.
+//! an executable on Linux.
 bool relaunch(const std::string& path);
+#endif
 }

@@ -20,19 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "platform.h"
+#pragma once
 
-#include <windows.h>
-
-namespace platform {
-void waitForProcessExit(long long pid, int timeoutMs)
-{
-    HANDLE hProc = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
-    if (!hProc) {
-        // Already gone, or no access.
-        return;
-    }
-    WaitForSingleObject(hProc, static_cast<DWORD>(timeoutMs));
-    CloseHandle(hProc);
-}
+namespace swapper {
+//! Waits for the host application to exit, swaps the install location with the
+//! freshly unpacked update (keeping a backup for rollback) and relaunches the
+//! application.
+//!
+//!   --wait-pid <pid> --src <dir> --dst <dir> [--relaunch <path>] [--log <path>]
+//!
+//! Used where the install location is writable by the user running the
+//! application, which on Windows it is not - see command_win.h for that.
+int run(int argc, char** argv);
 }

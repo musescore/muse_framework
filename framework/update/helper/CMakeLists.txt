@@ -25,12 +25,24 @@ set(UPDATE_HELPER_SRC
     platform.h
 )
 
-if (OS_IS_MAC)
-    list(APPEND UPDATE_HELPER_SRC platform_mac.cpp)
-elseif (OS_IS_WIN)
-    list(APPEND UPDATE_HELPER_SRC platform_win.cpp)
+if (OS_IS_WIN)
+    list(APPEND UPDATE_HELPER_SRC
+        platform_win.cpp
+        updatetask_win.cpp
+        updatetask_win.h
+        ../internal/platform/win/winupdateshared.h
+    )
 else()
-    list(APPEND UPDATE_HELPER_SRC platform_unix.cpp)
+    list(APPEND UPDATE_HELPER_SRC
+        swap.cpp
+        swap.h
+    )
+
+    if (OS_IS_MAC)
+        list(APPEND UPDATE_HELPER_SRC platform_mac.cpp)
+    else()
+        list(APPEND UPDATE_HELPER_SRC platform_unix.cpp)
+    endif()
 endif()
 
 add_executable(${UPDATE_HELPER_TARGET} ${UPDATE_HELPER_SRC})
@@ -40,9 +52,30 @@ set_target_properties(${UPDATE_HELPER_TARGET} PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 
+if (OS_IS_WIN)
+    target_link_libraries(${UPDATE_HELPER_TARGET} PRIVATE
+        taskschd  # CLSID_TaskScheduler, IID_ITaskService, IID_IExecAction
+        ole32     # CoInitializeEx, CoCreateInstance
+        oleaut32  # SysAllocString, VariantInit
+        advapi32  # registry, security descriptors, DuplicateTokenEx, CreateProcessAsUserW
+        shell32   # CommandLineToArgvW
+        wintrust  # WinVerifyTrust and the WTHelper* signer accessors
+        crypt32   # CertGetNameStringW
+        userenv   # CreateEnvironmentBlock
+        wtsapi32  # WTSQueryUserToken
+    )
+endif()
+
 # On macOS the helper is embedded into the app bundle by the app target.
 if (NOT OS_IS_MAC)
+    set(UPDATE_HELPER_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}")
+    if (NOT UPDATE_HELPER_INSTALL_DIR)
+        # GNUInstallDirs is not necessarily in use; the application itself is
+        # installed into "bin" and the helper has to sit next to it.
+        set(UPDATE_HELPER_INSTALL_DIR "bin")
+    endif()
+
     install(TARGETS ${UPDATE_HELPER_TARGET}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${UPDATE_HELPER_INSTALL_DIR}
     )
 endif()

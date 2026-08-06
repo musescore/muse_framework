@@ -55,6 +55,14 @@ if (OS_IS_MAC)
         internal/platform/mac/macupdateinstaller.cpp
         internal/platform/mac/macupdateinstaller.h
     )
+elseif (OS_IS_WIN)
+    target_sources(muse_update PRIVATE
+        internal/platform/win/winupdateinstaller.cpp
+        internal/platform/win/winupdateinstaller.h
+        internal/platform/win/winupdateshared.h
+    )
+
+    target_link_libraries(muse_update PRIVATE taskschd ole32 oleaut32)
 else()
     target_sources(muse_update PRIVATE
         internal/platform/stub/updateinstallerstub.cpp
