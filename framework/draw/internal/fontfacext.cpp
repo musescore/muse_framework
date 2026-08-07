@@ -179,11 +179,11 @@ bool FontFaceXT::load(const FaceKey& key, const muse::io::path_t& path, bool isS
             }
 
             f26dot6_t advance = std::stoi(valStr);
-            std::pair<glyph_idx_t, glyph_idx_t> key;
-            key.first = std::stoi(keyStrs[0]);
-            key.second = std::stoi(keyStrs[1]);
+            std::pair<glyph_idx_t, glyph_idx_t> keyPair;
+            keyPair.first = std::stoi(keyStrs[0]);
+            keyPair.second = std::stoi(keyStrs[1]);
 
-            m_kernings.insert({ key, advance });
+            m_kernings.insert({ keyPair, advance });
         }
     }
 
