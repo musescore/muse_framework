@@ -154,7 +154,9 @@ const UiAction& UiActionsRegister::action(const ActionCode& code) const
         action.title = info.title;
         action.description = info.description;
         action.iconCode = info.decoration.iconCode;
-        action.iconColor = QString::fromStdString(info.decoration.iconColor.toString());
+        if (info.decoration.iconColor.isValid()) {
+            action.iconColor = QString::fromStdString(info.decoration.iconColor.toString());
+        }
         action.checkable = static_cast<Checkable>(info.decoration.checkable);
 
         it = m_commandActions.emplace(code, action).first;
