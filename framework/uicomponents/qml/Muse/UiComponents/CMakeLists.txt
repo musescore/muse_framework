@@ -82,6 +82,8 @@ qt_add_qml_module(muse_uicomponents_qml
         selectableitemlistmodel.h
         selectmultipledirectoriesmodel.cpp
         selectmultipledirectoriesmodel.h
+        sectionproxymodel.cpp
+        sectionproxymodel.h
         sorter.cpp
         sorter.h
         sortervalue.cpp
@@ -189,6 +191,7 @@ qt_add_qml_module(muse_uicomponents_qml
         internal/StyledMenuItem.qml
         internal/ValueListHeaderItem.qml
         internal/ValueListItem.qml
+        internal/ValueListSectionItem.qml
         internal/ViewScrollBar.qml
         internal/StyledTableViewColumn.qml
         internal/StyledTableViewCell.qml

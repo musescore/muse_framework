@@ -25,7 +25,7 @@
 #include "api/apiobject.h"
 
 #include "modularity/ioc.h"
-#include "shortcuts/ishortcutscontroller.h"
+#include "shortcuts_v2/ishortcutscontroller.h"
 
 namespace muse::api {
 class ShortcutsApi : public api::ApiObject

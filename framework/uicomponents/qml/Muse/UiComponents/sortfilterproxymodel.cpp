@@ -33,8 +33,6 @@
 
 using namespace muse::uicomponents;
 
-static constexpr int INVALID_ROLE_ID = -1;
-
 SortFilterProxyModel::SortFilterProxyModel(QObject* parent)
     : QSortFilterProxyModel(parent), m_filters(this), m_sorters(this)
 {
@@ -67,25 +65,13 @@ SortFilterProxyModel::SortFilterProxyModel(QObject* parent)
         connect(filter, &Filter::dataChanged, this, [onFilterChanged, filter] { onFilterChanged(filter); });
     });
 
-    auto onSortersChanged = [this] {
-        Sorter* sorter = currentSorter();
-        invalidate();
-
-        if (!sorter) {
-            sort(-1, Qt::AscendingOrder);
-            return;
-        }
-
-        sort(0, sorter->sortOrder());
-    };
-
-    connect(m_sorters.notifier(), &QmlListPropertyNotifier::appended, this, [this, onSortersChanged](int index) {
+    connect(m_sorters.notifier(), &QmlListPropertyNotifier::appended, this, [this](int index) {
         Sorter* sorter = m_sorters.at(index);
         if (sorter->enabled()) {
-            onSortersChanged();
+            updateSorting();
         }
 
-        connect(sorter, &Sorter::dataChanged, this, onSortersChanged);
+        connect(sorter, &Sorter::dataChanged, this, &SortFilterProxyModel::updateSorting);
     });
 
     connect(this, &SortFilterProxyModel::sourceModelRoleNamesChanged, this, [this]() {
@@ -147,6 +133,24 @@ void SortFilterProxyModel::setAlwaysExcludeIndices(const QList<int>& indices)
     emit alwaysExcludeIndicesChanged();
 }
 
+QString SortFilterProxyModel::sectionRoleName() const
+{
+    return m_sectionRoleName;
+}
+
+void SortFilterProxyModel::setSectionRoleName(const QString& roleName)
+{
+    if (m_sectionRoleName == roleName) {
+        return;
+    }
+
+    m_sectionRoleName = roleName;
+    m_sectionRoleId = roleIdFromName(m_sectionRoleName);
+    updateSorting();
+
+    emit sectionRoleNameChanged();
+}
+
 int SortFilterProxyModel::roleIdFromName(const QString& roleName) const
 {
     return m_roleIds.value(roleName.toUtf8(), INVALID_ROLE_ID);
@@ -203,6 +207,24 @@ bool SortFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& so
 
 bool SortFilterProxyModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
 {
+    if (m_sectionRoleId != INVALID_ROLE_ID) {
+        const QString leftSection = left.data(m_sectionRoleId).toString();
+        const QString rightSection = right.data(m_sectionRoleId).toString();
+
+        if (leftSection != rightSection) {
+            bool isLess = false;
+            if (leftSection.isEmpty()) {
+                isLess = false;
+            } else if (rightSection.isEmpty()) {
+                isLess = true;
+            } else {
+                isLess = QString::localeAwareCompare(leftSection, rightSection) < 0;
+            }
+
+            return sortOrder() == Qt::DescendingOrder ? !isLess : isLess;
+        }
+    }
+
     Sorter* sorter = currentSorter();
     if (!sorter) {
         return left < right;
@@ -232,6 +254,8 @@ void SortFilterProxyModel::updateRoleIds()
         const auto [it, didInsert] = m_roleIds.try_emplace(roleName, roleId);
         DO_ASSERT_X(didInsert, "duplicate role name");
     }
+
+    m_sectionRoleId = roleIdFromName(m_sectionRoleName);
 }
 
 void SortFilterProxyModel::invalidateFilters()
@@ -240,4 +264,17 @@ void SortFilterProxyModel::invalidateFilters()
     for (auto* filter : filters) {
         filter->invalidate();
     }
+}
+
+void SortFilterProxyModel::updateSorting()
+{
+    Sorter* sorter = currentSorter();
+    invalidate();
+
+    if (!sorter) {
+        sort(m_sectionRoleName.isEmpty() ? -1 : 0, Qt::AscendingOrder);
+        return;
+    }
+
+    sort(0, sorter->sortOrder());
 }

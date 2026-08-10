@@ -23,7 +23,10 @@ set(MODULE_TEST muse_uicomponents_qml_tests)
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/doubleinputvalidator_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/intinputvalidator_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/sectionproxymodel_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sortfilterproxymodel_tests.cpp
+
+    ${CMAKE_CURRENT_LIST_DIR}/sectionedmodel.h
     )
 
 set(MODULE_TEST_LINK
