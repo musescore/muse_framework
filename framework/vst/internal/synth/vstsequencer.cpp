@@ -24,6 +24,8 @@
 
 #include "global/interpolation.h"
 
+#include <map>
+
 using namespace muse;
 using namespace muse::vst;
 
@@ -83,12 +85,27 @@ void VstSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events)
 
 muse::audio::gain_t VstSequencer::currentGain() const
 {
-    if (m_useDynamicEvents) {
-        mpe::dynamic_level_t currentDynamicLevel = dynamicLevel(m_playbackPosition);
-        return expressionLevel(currentDynamicLevel);
+    if (!m_useDynamicEvents) {
+        return 0.5f;
     }
 
-    return 0.5f;
+    mpe::dynamic_level_t maxDynamicLevel = mpe::MIN_DYNAMIC_LEVEL;
+    bool foundAnyLevel = false;
+
+    for (const auto& [_, curve] : m_playbackData.dynamics) {
+        if (curve.empty()) {
+            continue;
+        }
+
+        foundAnyLevel = true;
+        maxDynamicLevel = std::max(maxDynamicLevel, mpe::dynamicLevelFromNormalized(mpe::evaluateCurveAt(curve, m_playbackPosition)));
+    }
+
+    if (!foundAnyLevel) {
+        maxDynamicLevel = mpe::dynamicLevelFromType(mpe::DynamicType::Natural);
+    }
+
+    return expressionLevel(maxDynamicLevel);
 }
 
 void VstSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events)
@@ -112,17 +129,33 @@ void VstSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::Dy
 {
     constexpr mpe::timestamp_t STEP_INTERVAL_US = 30000;
 
+    //! NOTE: VST instance has a single gain parameter, so merge layers by tracking each one's last-known level
+    std::map<mpe::timestamp_t, std::vector<std::pair<mpe::layer_idx_t, mpe::dynamic_level_t> > > updatesAt;
     for (const auto& [layerIdx, curve] : layers) {
-        std::optional<float> lastGain;
-
         mpe::resampleCurve(curve, STEP_INTERVAL_US, [&](mpe::timestamp_t t, muse::real_t normalized) {
-            const float gain = expressionLevel(mpe::dynamicLevelFromNormalized(normalized));
-            if (lastGain.has_value() && muse::RealIsEqual(*lastGain, gain)) {
-                return;
-            }
-            lastGain = gain;
-            destination[t].emplace_back(gain);
+            updatesAt[t].emplace_back(layerIdx, mpe::dynamicLevelFromNormalized(normalized));
         });
+    }
+
+    std::map<mpe::layer_idx_t, mpe::dynamic_level_t> currentLevel;
+    std::optional<float> lastGain;
+
+    for (const auto& [t, updates] : updatesAt) {
+        for (const auto& [layerIdx, level] : updates) {
+            currentLevel[layerIdx] = level;
+        }
+
+        mpe::dynamic_level_t maxDynamicLevel = mpe::MIN_DYNAMIC_LEVEL;
+        for (const auto& [_, level] : currentLevel) {
+            maxDynamicLevel = std::max(maxDynamicLevel, level);
+        }
+
+        const float gain = expressionLevel(maxDynamicLevel);
+        if (lastGain.has_value() && muse::RealIsEqual(*lastGain, gain)) {
+            continue;
+        }
+        lastGain = gain;
+        destination[t].emplace_back(gain);
     }
 }
 

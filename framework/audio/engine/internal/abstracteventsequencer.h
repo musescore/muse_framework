@@ -164,19 +164,6 @@ public:
         m_onMainStreamFlushed = flushed;
     }
 
-    mpe::dynamic_level_t dynamicLevel(const msecs_t position) const
-    {
-        for (const auto& layer : m_playbackData.dynamics) {
-            if (layer.second.empty()) {
-                continue;
-            }
-
-            return mpe::dynamicLevelFromNormalized(mpe::evaluateCurveAt(layer.second, position));
-        }
-
-        return mpe::dynamicLevelFromType(muse::mpe::DynamicType::Natural);
-    }
-
     EventSequenceMap movePlaybackForward(const msecs_t nextMsecs)
     {
         ONLY_AUDIO_ENGINE_THREAD;
