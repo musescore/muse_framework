@@ -35,6 +35,7 @@
 #include "../iknownaudiopluginsregister.h"
 #include "../iaudiopluginsscannerregister.h"
 #include "../iaudiopluginmetareaderregister.h"
+#include "../iaudiopluginsloadguard.h"
 
 namespace muse::audioplugins {
 class RegisterAudioPluginsScenario : public IRegisterAudioPluginsScenario, public Contextable, public async::Asyncable
@@ -46,6 +47,7 @@ public:
     GlobalInject<IKnownAudioPluginsRegister> knownPluginsRegister;
     GlobalInject<IAudioPluginsScannerRegister> scannerRegister;
     GlobalInject<IAudioPluginMetaReaderRegister> metaReaderRegister;
+    GlobalInject<IAudioPluginsLoadGuard> loadGuard;
     ContextInject<IInteractive> interactive = { this };
 
 public:
@@ -53,6 +55,8 @@ public:
         : Contextable(iocCtx) {}
 
     void init();
+
+    Ret markCrashedPluginsAsBroken();
 
     PluginScanResult scanPlugins(Progress* progress = nullptr) const override;
 

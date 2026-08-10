@@ -33,6 +33,7 @@
 #include <thread>
 #include <vector>
 
+#include "global/containers.h"
 #include "global/translation.h"
 
 #include "audiopluginserrors.h"
@@ -89,6 +90,53 @@ void RegisterAudioPluginsScenario::init()
     if (!ret) {
         LOGE() << ret.toString();
     }
+}
+
+Ret RegisterAudioPluginsScenario::markCrashedPluginsAsBroken()
+{
+    TRACEFUNC;
+
+    const PluginResourceIdList crashedIds = loadGuard()->danglingLoads();
+    if (crashedIds.empty()) {
+        return make_ok();
+    }
+
+    AudioPluginInfoList brokenInfos;
+
+    for (const AudioPluginInfo& info : knownPluginsRegister()->pluginInfoList()) {
+        if (!muse::contains(crashedIds, info.meta.id)) {
+            continue;
+        }
+
+        LOGI() << "Plugin crashed the application while loading in a previous run, marking as broken: " << info.meta.id;
+
+        AudioPluginInfo broken = info;
+        broken.state = AudioPluginState::Error;
+        broken.errorCode = static_cast<int>(Err::PluginCrashedOnLoad);
+        brokenInfos.push_back(std::move(broken));
+    }
+
+    Ret ret = make_ok();
+
+    if (!brokenInfos.empty()) {
+        PluginResourceIdList brokenIds;
+        brokenIds.reserve(brokenInfos.size());
+        for (const AudioPluginInfo& info : brokenInfos) {
+            brokenIds.push_back(info.meta.id);
+        }
+
+        ret = knownPluginsRegister()->unregisterPlugins(brokenIds);
+        if (ret) {
+            ret = knownPluginsRegister()->registerPlugins(brokenInfos);
+        }
+
+        if (!ret) {
+            LOGE() << "Failed to mark crashed plugins as broken: " << ret.toString();
+            return ret;
+        }
+    }
+
+    return loadGuard()->clearDanglingLoads();
 }
 
 PluginScanResult RegisterAudioPluginsScenario::scanPlugins(Progress* progress) const

@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-CLA-applies
  *
- * MuseScore Studio
+ * MuseScore
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -21,20 +21,17 @@
  */
 #pragma once
 
-#include "global/types/ret.h"
+#include <gmock/gmock.h>
+
+#include "audioplugins/iaudiopluginsloadguard.h"
 
 namespace muse::audioplugins {
-enum class Err {
-    Undefined       = int(Ret::Code::Undefined),
-    NoError         = int(Ret::Code::Ok),
-    UnknownError    = int(Ret::Code::AudioFirst),
-
-    UnknownPluginType = 351,
-    PluginCrashedOnLoad = 352,
-};
-
-inline Ret make_ret(Err e)
+class AudioPluginsLoadGuardMock : public IAudioPluginsLoadGuard
 {
-    return Ret(static_cast<int>(e));
-}
+public:
+    MOCK_METHOD(Ret, beginLoad, (const PluginResourceId&), (override));
+    MOCK_METHOD(void, endLoad, (const PluginResourceId&), (override));
+    MOCK_METHOD(PluginResourceIdList, danglingLoads, (), (const, override));
+    MOCK_METHOD(Ret, clearDanglingLoads, (), (override));
+};
 }

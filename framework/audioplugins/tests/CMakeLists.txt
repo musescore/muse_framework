@@ -28,7 +28,9 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/audiopluginsscannermock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/audiopluginmetareaderregistermock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/audiopluginmetareadermock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/audiopluginsloadguardmock.h
 
+    ${CMAKE_CURRENT_LIST_DIR}/audiopluginsloadguardtest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/knownaudiopluginsregistertest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/knownaudiopluginsmigrationregistertest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/registeraudiopluginsscenariotest.cpp
