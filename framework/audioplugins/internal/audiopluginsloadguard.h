@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-CLA-applies
  *
- * MuseScore Studio
+ * MuseScore
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -21,20 +21,27 @@
  */
 #pragma once
 
-#include "global/types/ret.h"
+#include "global/modularity/ioc.h"
+#include "global/iglobalconfiguration.h"
+#include "global/io/ifilesystem.h"
+
+#include "../iaudiopluginsloadguard.h"
 
 namespace muse::audioplugins {
-enum class Err {
-    Undefined       = int(Ret::Code::Undefined),
-    NoError         = int(Ret::Code::Ok),
-    UnknownError    = int(Ret::Code::AudioFirst),
-
-    UnknownPluginType = 351,
-    PluginCrashedOnLoad = 352,
-};
-
-inline Ret make_ret(Err e)
+class AudioPluginsLoadGuard : public IAudioPluginsLoadGuard
 {
-    return Ret(static_cast<int>(e));
-}
+public:
+    GlobalInject<IGlobalConfiguration> globalConfiguration;
+    GlobalInject<io::IFileSystem> fileSystem;
+
+    Ret beginLoad(const PluginResourceId& resourceId) override;
+    void endLoad(const PluginResourceId& resourceId) override;
+
+    PluginResourceIdList danglingLoads() const override;
+    Ret clearDanglingLoads() override;
+
+private:
+    io::path_t sentinelsDirPath() const;
+    io::path_t sentinelFilePath(const PluginResourceId& resourceId) const;
+};
 }

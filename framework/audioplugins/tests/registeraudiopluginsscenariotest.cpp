@@ -22,6 +22,7 @@
 #include <gmock/gmock.h>
 
 #include "audioplugins/internal/registeraudiopluginsscenario.h"
+#include "audioplugins/audiopluginserrors.h"
 
 #include "global/tests/mocks/globalconfigurationmock.h"
 #include "global/tests/mocks/processmock.h"
@@ -33,6 +34,7 @@
 #include "mocks/audiopluginsscannermock.h"
 #include "mocks/audiopluginmetareaderregistermock.h"
 #include "mocks/audiopluginmetareadermock.h"
+#include "mocks/audiopluginsloadguardmock.h"
 
 #include "translation.h"
 
@@ -62,6 +64,7 @@ protected:
         m_knownPlugins = std::make_shared<NiceMock<KnownAudioPluginsRegisterMock> >();
         m_scanners = { std::make_shared<NiceMock<AudioPluginsScannerMock> >() };
         m_metaReaderRegister = std::make_shared<NiceMock<AudioPluginMetaReaderRegisterMock> >();
+        m_loadGuard = std::make_shared<NiceMock<AudioPluginsLoadGuardMock> >();
 
         const auto metaReaderMock = std::make_shared<NiceMock<AudioPluginMetaReaderMock> >();
         m_metaReaders = { metaReaderMock };
@@ -73,6 +76,7 @@ protected:
         m_scenario->knownPluginsRegister.set(m_knownPlugins);
         m_scenario->scannerRegister.set(m_scannerRegister);
         m_scenario->metaReaderRegister.set(m_metaReaderRegister);
+        m_scenario->loadGuard.set(m_loadGuard);
 
         ON_CALL(*m_globalConfiguration, appBinPath())
         .WillByDefault(Return(m_appPath));
@@ -123,6 +127,7 @@ protected:
     std::shared_ptr<AudioPluginsScannerRegisterMock> m_scannerRegister;
     std::vector<IAudioPluginsScannerPtr> m_scanners;
     std::shared_ptr<AudioPluginMetaReaderRegisterMock> m_metaReaderRegister;
+    std::shared_ptr<AudioPluginsLoadGuardMock> m_loadGuard;
     std::vector<IAudioPluginMetaReaderPtr> m_metaReaders;
 
     std::string m_appPath = "/some/path/to/MuseScore";
@@ -653,6 +658,65 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, FailedValidationRecordsErr
 
     // [WHEN] Register the new plugin with validation enabled
     EXPECT_TRUE(m_scenario->registerNewPlugins(paths, /*validate*/ true));
+}
+
+TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, MarkCrashedPluginsAsBroken)
+{
+    // [GIVEN] Two validated plugins; loading the first one crashed the
+    // application in a previous run, leaving a dangling load sentinel
+    AudioPluginInfo crashedPlugin;
+    crashedPlugin.meta.id = "CrashingPlugin";
+    crashedPlugin.meta.type = "VstPlugin";
+    crashedPlugin.path = "/some/path/AAA.vst3";
+    crashedPlugin.state = AudioPluginState::Validated;
+
+    AudioPluginInfo healthyPlugin;
+    healthyPlugin.meta.id = "HealthyPlugin";
+    healthyPlugin.meta.type = "VstPlugin";
+    healthyPlugin.path = "/some/path/BBB.vst3";
+    healthyPlugin.state = AudioPluginState::Validated;
+
+    ON_CALL(*m_knownPlugins, pluginInfoList(_))
+    .WillByDefault(Return(AudioPluginInfoList { crashedPlugin, healthyPlugin }));
+
+    ON_CALL(*m_loadGuard, danglingLoads())
+    .WillByDefault(Return(PluginResourceIdList { crashedPlugin.meta.id }));
+
+    // [THEN] Only the crashed plugin is re-registered, as broken
+    AudioPluginInfo expectedBroken = crashedPlugin;
+    expectedBroken.state = AudioPluginState::Error;
+    expectedBroken.errorCode = static_cast<int>(Err::PluginCrashedOnLoad);
+
+    ::testing::InSequence seq;
+    EXPECT_CALL(*m_knownPlugins, unregisterPlugins(PluginResourceIdList { crashedPlugin.meta.id }))
+    .WillOnce(Return(make_ok()));
+    EXPECT_CALL(*m_knownPlugins, registerPlugins(AudioPluginInfoList { expectedBroken }))
+    .WillOnce(Return(make_ok()));
+
+    // [THEN] The sentinels are cleared
+    EXPECT_CALL(*m_loadGuard, clearDanglingLoads())
+    .WillOnce(Return(make_ok()));
+
+    // [WHEN] Handle crashed plugins
+    EXPECT_TRUE(m_scenario->markCrashedPluginsAsBroken());
+}
+
+TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, MarkCrashedPluginsAsBroken_NoDanglingLoads)
+{
+    // [GIVEN] No dangling load sentinels
+    ON_CALL(*m_loadGuard, danglingLoads())
+    .WillByDefault(Return(PluginResourceIdList {}));
+
+    // [THEN] The register is left untouched
+    EXPECT_CALL(*m_knownPlugins, unregisterPlugins(_))
+    .Times(0);
+    EXPECT_CALL(*m_knownPlugins, registerPlugins(_))
+    .Times(0);
+    EXPECT_CALL(*m_loadGuard, clearDanglingLoads())
+    .Times(0);
+
+    // [WHEN] Handle crashed plugins
+    EXPECT_TRUE(m_scenario->markCrashedPluginsAsBroken());
 }
 
 TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, TimedOutValidationRecordsErrorEntry)

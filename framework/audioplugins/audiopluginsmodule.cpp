@@ -22,6 +22,7 @@
 #include "audiopluginsmodule.h"
 
 #include "internal/audiopluginsconfiguration.h"
+#include "internal/audiopluginsloadguard.h"
 #include "internal/knownaudiopluginsregister.h"
 #include "internal/knownaudiopluginsmigrationregister.h"
 #include "internal/audiopluginsscannerregister.h"
@@ -49,6 +50,7 @@ void AudioPluginsModule::registerExports()
     globalIoc()->registerExport<IKnownAudioPluginsMigrationRegister>(moduleName(), std::make_shared<KnownAudioPluginsMigrationRegister>());
     globalIoc()->registerExport<IKnownAudioPluginsRegister>(moduleName(), std::make_shared<KnownAudioPluginsRegister>());
     globalIoc()->registerExport<IAudioPluginsScannerRegister>(moduleName(), std::make_shared<AudioPluginsScannerRegister>());
+    globalIoc()->registerExport<IAudioPluginsLoadGuard>(moduleName(), std::make_shared<AudioPluginsLoadGuard>());
     globalIoc()->registerExport<IAudioPluginMetaReaderRegister>(moduleName(), std::make_shared<AudioPluginMetaReaderRegister>());
 }
 
@@ -73,7 +75,11 @@ void AudioPluginsContext::registerExports()
     ioc()->registerExport<IRegisterAudioPluginsScenario>(mname, m_registerAudioPluginsScenario);
 }
 
-void AudioPluginsContext::onInit(const IApplication::RunMode&)
+void AudioPluginsContext::onInit(const IApplication::RunMode& mode)
 {
     m_registerAudioPluginsScenario->init();
+
+    if (mode != IApplication::RunMode::AudioPluginRegistration) {
+        m_registerAudioPluginsScenario->markCrashedPluginsAsBroken();
+    }
 }
