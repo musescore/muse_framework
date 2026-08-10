@@ -51,6 +51,8 @@ static constexpr unsigned int FLUID_AUDIO_CHANNELS_COUNT = FLUID_AUDIO_CHANNELS_
 
 static constexpr bool STAFF_TO_MIDIOUT_CHANNEL = true;
 
+static constexpr midi::channel_t MIDI_CHANNEL_COUNT = 16;
+
 struct muse::audio::synth::Fluid {
     fluid_settings_t* settings = nullptr;
     fluid_synth_t* synth = nullptr;
@@ -120,7 +122,7 @@ Ret FluidSynth::init(const OutputSpec& spec)
     fluid_settings_setint(m_fluid->settings, "synth.audio-channels", FLUID_AUDIO_CHANNELS_PAIR); // 1 pair of audio channels
     fluid_settings_setint(m_fluid->settings, "synth.lock-memory", 0);
     fluid_settings_setint(m_fluid->settings, "synth.threadsafe-api", 0);
-    fluid_settings_setint(m_fluid->settings, "synth.midi-channels", 16);
+    fluid_settings_setint(m_fluid->settings, "synth.midi-channels", MIDI_CHANNEL_COUNT);
     fluid_settings_setint(m_fluid->settings, "synth.dynamic-sample-loading", 1);
     fluid_settings_setint(m_fluid->settings, "synth.polyphony", 512);
 
@@ -169,8 +171,8 @@ void FluidSynth::doFlushSound()
 
     fluid_synth_all_notes_off(m_fluid->synth, -1);
 
-    int lastChannelIdx = static_cast<int>(m_sequencer.channels().lastIndex());
-    for (int i = 0; i < lastChannelIdx; ++i) {
+    const int channelCount = static_cast<int>(m_sequencer.channels().channelCount());
+    for (int i = 0; i < channelCount; ++i) {
         setControllerValue(i, midi::SUSTAIN_PEDAL_CONTROLLER, 0);
         setControllerValue(i, midi::SOSTENUTO_PEDAL_CONTROLLER, 0);
         setPitchBend(i, 8192);
@@ -192,7 +194,7 @@ void FluidSynth::doFlushSound()
             lowerBound = channel;
             upperBound = channel + 1;
         } else {
-            upperBound = min(lastChannelIdx, 16);
+            upperBound = min(channelCount, 16);
         }
         for (int i = lowerBound; i < upperBound; i++) {
             muse::midi::Event e(muse::midi::Event::Opcode::ControlChange, muse::midi::Event::MessageType::ChannelVoice20);
@@ -230,11 +232,7 @@ bool FluidSynth::handleEvent(const midi::Event& event)
         m_tuning.add(event.note(), event.pitchTuningCents());
     } break;
     case Event::Opcode::ControlChange: {
-        if (event.index() == muse::midi::EXPRESSION_CONTROLLER) {
-            ret = setExpressionLevel(event.data7());
-        } else {
-            ret = fluid_synth_cc(m_fluid->synth, event.channel(), event.index(), event.data7());
-        }
+        ret = fluid_synth_cc(m_fluid->synth, event.channel(), event.index(), event.data7());
     } break;
     case Event::Opcode::ProgramChange: {
         fluid_synth_program_change(m_fluid->synth, event.channel(), event.program());
@@ -274,7 +272,7 @@ void FluidSynth::setMode(const ProcessMode mode)
     AbstractSynthesizer::setMode(mode);
 
     m_sequencer.setActive(isModePlaying(mode));
-    toggleExpressionController();
+    updateExpressionLevels();
 }
 
 void FluidSynth::setOutputSpec(const OutputSpec& spec)
@@ -361,7 +359,7 @@ void FluidSynth::setupSound(const PlaybackSetupData& setupData)
     m_sequencer.channelAdded().onReceive(this, setupChannel,
                                          async::Asyncable::Mode::SetReplace);
 
-    m_sequencer.init(setupData, m_preset, setupData.supportsSingleNoteDynamics);
+    m_sequencer.init(setupData, m_preset, setupData.supportsSingleNoteDynamics, MIDI_CHANNEL_COUNT);
 
     for (const auto& voice : m_sequencer.channels().data()) {
         for (const auto& pair : voice.second) {
@@ -404,7 +402,7 @@ void FluidSynth::setPlaybackPosition(const TimePosition& position)
     m_sequencer.setPlaybackPosition(msecs_t(usecs.raw()));
 
     if (m_sequencer.isActive()) {
-        setExpressionLevel(m_sequencer.currentExpressionLevel());
+        updateExpressionLevels();
     }
 }
 
@@ -469,24 +467,41 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
     return result == FLUID_OK;
 }
 
-void FluidSynth::toggleExpressionController()
+void FluidSynth::updateExpressionLevels()
 {
+    IF_ASSERT_FAILED(m_fluid->synth) {
+        return;
+    }
+
+    std::vector<FluidSequencer::ChannelExpressionLevel> levels;
     if (m_sequencer.isActive()) {
-        setExpressionLevel(m_sequencer.currentExpressionLevel());
-    } else {
-        setExpressionLevel(m_sequencer.naturalExpressionLevel());
-    }
-}
-
-int FluidSynth::setExpressionLevel(int level)
-{
-    midi::channel_t lastChannelIdx = m_sequencer.channels().lastIndex();
-
-    for (midi::channel_t i = 0; i < lastChannelIdx; ++i) {
-        fluid_synth_cc(m_fluid->synth, i, muse::midi::EXPRESSION_CONTROLLER, level);
+        levels = m_sequencer.currentExpressionLevels();
     }
 
-    return FLUID_OK;
+    const int naturalLevel = m_sequencer.naturalExpressionLevel();
+    const midi::channel_t channelCount = m_sequencer.channels().channelCount();
+
+    if (levels.empty()) {
+        for (midi::channel_t i = 0; i < channelCount; ++i) {
+            fluid_synth_cc(m_fluid->synth, i, muse::midi::EXPRESSION_CONTROLLER, naturalLevel);
+        }
+        return;
+    }
+
+    std::vector<bool> covered(channelCount, false);
+
+    for (const FluidSequencer::ChannelExpressionLevel& expressionLevel : levels) {
+        fluid_synth_cc(m_fluid->synth, expressionLevel.channel, muse::midi::EXPRESSION_CONTROLLER, expressionLevel.level);
+        if (expressionLevel.channel < channelCount) {
+            covered[expressionLevel.channel] = true;
+        }
+    }
+
+    for (midi::channel_t i = 0; i < channelCount; ++i) {
+        if (!covered[i]) {
+            fluid_synth_cc(m_fluid->synth, i, muse::midi::EXPRESSION_CONTROLLER, naturalLevel);
+        }
+    }
 }
 
 int FluidSynth::setControllerValue(int channel, int ctrl, int value)
