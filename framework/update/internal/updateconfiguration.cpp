@@ -144,11 +144,7 @@ std::string UpdateConfiguration::privacyPolicyUrl() const
 
 muse::io::path_t UpdateConfiguration::updateDataPath() const
 {
-#if defined(Q_OS_LINUX)
-    return globalConfiguration()->downloadsPath() + "/";
-#else
     return globalConfiguration()->userAppDataPath() + "/update";
-#endif
 }
 
 muse::io::path_t UpdateConfiguration::updateRequestHistoryJsonPath() const

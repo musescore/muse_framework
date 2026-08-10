@@ -23,6 +23,8 @@
 #include "platform.h"
 
 #include <csignal>
+#include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -38,6 +40,31 @@ void sleepMs(int ms)
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = (ms % 1000) * 1000000L;
     nanosleep(&ts, nullptr);
+}
+
+//! An AppImage is an ELF executable carrying "AI" plus the format version in the
+//! bytes the ELF header reserves for the OS ABI. Only type 2 is published.
+bool hasAppImageHeader(const std::string& path)
+{
+    FILE* file = std::fopen(path.c_str(), "rb");
+    if (!file) {
+        return false;
+    }
+
+    unsigned char header[11] = { 0 };
+    const size_t read = std::fread(header, 1, sizeof(header), file);
+    std::fclose(file);
+
+    if (read != sizeof(header)) {
+        return false;
+    }
+
+    static const unsigned char ELF_MAGIC[] = { 0x7f, 'E', 'L', 'F' };
+    if (std::memcmp(header, ELF_MAGIC, sizeof(ELF_MAGIC)) != 0) {
+        return false;
+    }
+
+    return header[8] == 'A' && header[9] == 'I' && header[10] == 0x02;
 }
 }
 
@@ -57,8 +84,18 @@ void waitForProcessExit(long long pid, int timeoutMs)
 
 bool verifyInstall(const std::string& path)
 {
+    //! NOTE: There is no signature to check against on Linux, so this only
+    //! establishes that what was swapped in is a launchable AppImage - enough to
+    //! catch a truncated or half-copied file and roll back instead of leaving
+    //! the user without a working application.
+    //! The executable bit is not an integrity property - `relaunch` sets it
+    //! unconditionally - so it is deliberately not checked here.
     struct stat st;
-    return ::stat(path.c_str(), &st) == 0;
+    if (::stat(path.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) {
+        return false;
+    }
+
+    return hasAppImageHeader(path);
 }
 
 bool relaunch(const std::string& path)

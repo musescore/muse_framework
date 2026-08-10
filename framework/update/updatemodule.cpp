@@ -44,6 +44,8 @@
 #include "internal/platform/mac/macupdateinstaller.h"
 #elif defined(Q_OS_WIN)
 #include "internal/platform/win/winupdateinstaller.h"
+#elif defined(Q_OS_LINUX)
+#include "internal/platform/linux/linuxupdateinstaller.h"
 #else
 #include "internal/platform/stub/updateinstallerstub.h"
 #endif
@@ -66,6 +68,8 @@ void UpdateModule::registerExports()
     m_updateInstaller = std::make_shared<MacUpdateInstaller>(globalCtx());
 #elif defined(Q_OS_WIN)
     m_updateInstaller = std::make_shared<WinUpdateInstaller>(globalCtx());
+#elif defined(Q_OS_LINUX)
+    m_updateInstaller = std::make_shared<LinuxUpdateInstaller>(globalCtx());
 #else
     m_updateInstaller = std::make_shared<UpdateInstallerStub>();
 #endif

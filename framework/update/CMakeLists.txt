@@ -63,6 +63,11 @@ elseif (OS_IS_WIN)
     )
 
     target_link_libraries(muse_update PRIVATE taskschd ole32 oleaut32)
+elseif (OS_IS_LIN)
+    target_sources(muse_update PRIVATE
+        internal/platform/linux/linuxupdateinstaller.cpp
+        internal/platform/linux/linuxupdateinstaller.h
+    )
 else()
     target_sources(muse_update PRIVATE
         internal/platform/stub/updateinstallerstub.cpp

@@ -523,7 +523,6 @@ void AppUpdateService::clear()
 
 void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
 {
-#if !defined(Q_OS_LINUX)
     const io::path_t dir = configuration()->updateDataPath();
     if (!fileSystem()->exists(dir)) {
         return;
@@ -550,9 +549,6 @@ void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
             fileSystem()->remove(entry);
         }
     }
-#else
-    UNUSED(keepFileName);
-#endif
 }
 
 bool AppUpdateService::isReleaseDownloaded() const

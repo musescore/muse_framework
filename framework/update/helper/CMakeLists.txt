@@ -52,6 +52,17 @@ set_target_properties(${UPDATE_HELPER_TARGET} PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 
+if (OS_IS_LIN)
+    # The helper is copied out of the AppImage and runs after it has been
+    # unmounted, so it cannot rely on the libraries bundled inside it. Those are
+    # generally newer than what the host provides, and linking against them
+    # dynamically would make the helper fail to start on exactly the systems
+    # where it is needed.
+    if (CC_IS_GCC OR CC_IS_CLANG)
+        target_link_options(${UPDATE_HELPER_TARGET} PRIVATE -static-libstdc++ -static-libgcc)
+    endif()
+endif()
+
 if (OS_IS_WIN)
     target_link_libraries(${UPDATE_HELPER_TARGET} PRIVATE
         taskschd  # CLSID_TaskScheduler, IID_ITaskService, IID_IExecAction
