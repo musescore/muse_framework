@@ -51,3 +51,7 @@ target_link_libraries(muse_shortcuts PRIVATE Qt::Gui)
 if (MUSE_MODULE_SHORTCUTS_QML)
     add_subdirectory(qml/Muse/Shortcuts)
 endif()
+
+if (MUSE_MODULE_SHORTCUTS_TESTS)
+    add_subdirectory(tests)
+endif()

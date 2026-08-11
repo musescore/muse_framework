@@ -124,6 +124,30 @@ void CommandShortcutsRegister::applyShortcutsDiff(const std::string& shortcutsNa
     shortcuts = diff;
 }
 
+//! NOTE Scope and autoRepeat always take default values on merge, so only sequences are compared
+ShortcutList CommandShortcutsRegister::makeDiff(const ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const
+{
+    ShortcutList diff;
+
+    for (const Shortcut& sc : shortcuts) {
+        auto it = std::find_if(defaultShortcuts.begin(), defaultShortcuts.end(), [&sc](const Shortcut& defSc) {
+            return defSc.command == sc.command;
+        });
+
+        if (it == defaultShortcuts.end() || it->sequences != sc.sequences) {
+            diff.push_back(sc);
+        }
+    }
+
+    return diff;
+}
+
+void CommandShortcutsRegister::removeUserFile()
+{
+    mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
+    io::File::remove(userShortcutsPath());
+}
+
 void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const
 {
     TRACEFUNC;
@@ -331,11 +355,17 @@ Ret CommandShortcutsRegister::setShortcuts(const ShortcutList& shortcuts)
     }
 
     ShortcutList needToWrite = filterAndUpdateAdditionalShortcuts(shortcuts);
+    ShortcutList diff = makeDiff(needToWrite, m_defaultShortcuts);
 
-    bool ok = writeToFile(needToWrite, userShortcutsPath());
+    bool ok = true;
+    if (diff.empty()) {
+        removeUserFile();
+    } else {
+        ok = writeToFile(diff, userShortcutsPath());
+    }
 
     if (ok) {
-        m_shortcuts = needToWrite;
+        m_shortcuts = diff;
         mergeShortcuts(m_shortcuts, m_defaultShortcuts);
         mergeAdditionalShortcuts(m_shortcuts);
         m_shortcutsChanged.notify();
@@ -346,11 +376,7 @@ Ret CommandShortcutsRegister::setShortcuts(const ShortcutList& shortcuts)
 
 void CommandShortcutsRegister::resetShortcuts()
 {
-    {
-        mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
-        io::File::remove(userShortcutsPath());
-    }
-
+    removeUserFile();
     reload();
 }
 

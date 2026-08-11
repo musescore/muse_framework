@@ -1,0 +1,8 @@
+{
+    "TEST": [
+        {
+            "command": "test://b",
+            "sequences": ["Alt+B"]
+        }
+    ]
+}

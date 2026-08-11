@@ -1,0 +1,22 @@
+{
+    "TEST": [
+        {
+            "command": "test://a",
+            "sequences": ["Ctrl+A"]
+        },
+        {
+            "command": "test://b",
+            "sequences": ["Ctrl+B"]
+        },
+        {
+            "command": "test://c",
+            "sequences": ["1", "Num+1"]
+        }
+    ],
+    "OTHER": [
+        {
+            "command": "test://d",
+            "sequences": ["D"]
+        }
+    ]
+}

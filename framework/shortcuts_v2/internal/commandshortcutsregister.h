@@ -66,6 +66,9 @@ private:
     io::path_t userShortcutsPath() const;
 
     void applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const;
+    ShortcutList makeDiff(const ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const;
+
+    void removeUserFile();
 
     bool readFromFile(ShortcutList& shortcuts, const io::path_t& path) const;
     bool writeToFile(const ShortcutList& shortcuts, const io::path_t& path) const;

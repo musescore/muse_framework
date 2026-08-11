@@ -1,0 +1,8 @@
+{
+    "TEST": [
+        {
+            "command": "test://c",
+            "sequences": ["&", "Num+1"]
+        }
+    ]
+}
