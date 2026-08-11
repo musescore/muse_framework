@@ -21,6 +21,8 @@
  */
 #include "toastprovider.h"
 
+#include "async/async.h"
+
 using namespace muse::toast;
 
 ToastProvider::~ToastProvider()
@@ -122,13 +124,13 @@ void ToastProvider::checkProgress(int id)
                 item->setCurrentProgress(newProgress);
 
                 if (newProgress >= 100.0) {
-                    dismissToast(item->id());
+                    async::Async::call(this, [this, item]() { dismissToast(item->id()); });
                 }
             }
         });
 
         progress->finished().onReceive(this, [this, item](const muse::ProgressResult&) {
-            dismissToast(item->id());
+            async::Async::call(this, [this, item]() { dismissToast(item->id()); });
         });
     }
 }
