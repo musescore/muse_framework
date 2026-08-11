@@ -47,8 +47,10 @@ public:
     io::path_t shortcutsUserAppDataPath() const override;
     io::path_t shortcutsAppDataPath() const override;
 
+    std::string defaultShortcutsName() const override;
+
     io::path_t commandShortcutsUserAppDataPath() const override;
-    io::path_t commandShortcutsAppDataPath() const override;
+    io::path_t commandShortcutsAppDataPath(const std::string& shortcutsName) const override;
 
 private:
     Config m_config;

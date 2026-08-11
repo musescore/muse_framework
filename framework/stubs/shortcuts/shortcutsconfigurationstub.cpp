@@ -44,12 +44,17 @@ io::path_t ShortcutsConfigurationStub::shortcutsAppDataPath() const
 }
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
+std::string ShortcutsConfigurationStub::defaultShortcutsName() const
+{
+    return "shortcuts";
+}
+
 io::path_t ShortcutsConfigurationStub::commandShortcutsUserAppDataPath() const
 {
     return io::path_t();
 }
 
-io::path_t ShortcutsConfigurationStub::commandShortcutsAppDataPath() const
+io::path_t ShortcutsConfigurationStub::commandShortcutsAppDataPath(const std::string&) const
 {
     return io::path_t();
 }

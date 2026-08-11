@@ -31,6 +31,7 @@ using namespace muse::shortcuts;
 using namespace muse::async;
 
 static const std::string COMMAND_SHORTCUTS_TAG("CommandShortcuts");
+static const std::string DEFAULT_SHORTCUTS_NAME("shortcuts");
 
 void CommandShortcutsRegister::init()
 {
@@ -50,10 +51,20 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     m_shortcuts.clear();
     m_defaultShortcuts.clear();
 
-    io::path_t defPath = configuration()->commandShortcutsAppDataPath();
+    io::path_t defPath = configuration()->commandShortcutsAppDataPath(DEFAULT_SHORTCUTS_NAME);
     io::path_t userPath = configuration()->commandShortcutsUserAppDataPath();
 
     bool ok = readFromFile(m_defaultShortcuts, defPath);
+
+    //! NOTE The platform default shortcuts file is a diff from the base one
+    std::string defaultName = configuration()->defaultShortcutsName();
+    if (ok && defaultName != DEFAULT_SHORTCUTS_NAME) {
+        ShortcutList diff;
+        if (readFromFile(diff, configuration()->commandShortcutsAppDataPath(defaultName))) {
+            mergeShortcuts(diff, m_defaultShortcuts);
+            m_defaultShortcuts = diff;
+        }
+    }
 
     if (ok) {
         if (!onlyDef) {

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "modularity/imoduleinterface.h"
 #include "io/path.h"
 #include "types/retval.h"
@@ -40,7 +42,9 @@ public:
     virtual io::path_t shortcutsUserAppDataPath() const = 0;
     virtual io::path_t shortcutsAppDataPath() const = 0;
 
+    virtual std::string defaultShortcutsName() const = 0;
+
     virtual io::path_t commandShortcutsUserAppDataPath() const = 0;
-    virtual io::path_t commandShortcutsAppDataPath() const = 0;
+    virtual io::path_t commandShortcutsAppDataPath(const std::string& shortcutsName) const = 0;
 };
 }

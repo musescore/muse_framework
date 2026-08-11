@@ -63,16 +63,21 @@ io::path_t ShortcutsConfiguration::shortcutsAppDataPath() const
 #endif
 }
 
+std::string ShortcutsConfiguration::defaultShortcutsName() const
+{
+#if defined(Q_OS_MACOS)
+    return "shortcuts_mac";
+#else
+    return "shortcuts";
+#endif
+}
+
 io::path_t ShortcutsConfiguration::commandShortcutsUserAppDataPath() const
 {
     return globalConfiguration()->userAppDataPath() + "/shortcuts.json";
 }
 
-io::path_t ShortcutsConfiguration::commandShortcutsAppDataPath() const
+io::path_t ShortcutsConfiguration::commandShortcutsAppDataPath(const std::string& shortcutsName) const
 {
-#if defined(Q_OS_MACOS)
-    return m_config.value("command_shortcuts_mac").toPath();
-#else
-    return m_config.value("command_shortcuts").toPath();
-#endif
+    return m_config.value("command_" + shortcutsName).toPath();
 }

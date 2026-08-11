@@ -36,8 +36,10 @@ public:
     io::path_t shortcutsAppDataPath() const override;
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
+    std::string defaultShortcutsName() const override;
+
     io::path_t commandShortcutsUserAppDataPath() const override;
-    io::path_t commandShortcutsAppDataPath() const override;
+    io::path_t commandShortcutsAppDataPath(const std::string& shortcutsName) const override;
 #endif
 };
 }
