@@ -188,6 +188,10 @@ void ShortcutsModel::load()
         }, async::Asyncable::Mode::SetReplace);
     }
 
+    configuration()->currentShortcutsPresetNameChanged().onReceive(this, [this](const std::string&) {
+        emit currentPresetNameChanged();
+    }, async::Asyncable::Mode::SetReplace);
+
     std::sort(m_items.begin(), m_items.end(), [](const Item& i1, const Item& i2) {
         return i1.group > i2.group || (i1.group == i2.group && i1.title < i2.title);
     });
@@ -387,6 +391,51 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
 
         notifyAboutShortcutChanged(index);
     }
+}
+
+QVariantList ShortcutsModel::presets() const
+{
+    auto makePreset = [](const QString& name, const QString& title) {
+        QVariantMap preset;
+        preset["name"] = name;
+        preset["title"] = title;
+        return preset;
+    };
+
+    QVariantList result;
+    result << makePreset(QString(), muse::qtrc("shortcuts", "Default"));
+
+    for (const std::string& name : configuration()->availableShortcutsPresets()) {
+        result << makePreset(QString::fromStdString(name), presetTitle(name));
+    }
+
+    return result;
+}
+
+QString ShortcutsModel::presetTitle(const std::string& presetName) const
+{
+    static const QString PREFIX("shortcuts_");
+
+    QString title = QString::fromStdString(presetName);
+    if (title.startsWith(PREFIX)) {
+        title = title.mid(PREFIX.length());
+    }
+
+    return title.toUpper();
+}
+
+QString ShortcutsModel::currentPresetName() const
+{
+    return QString::fromStdString(configuration()->currentShortcutsPresetName());
+}
+
+void ShortcutsModel::setCurrentPresetName(const QString& name)
+{
+    if (name == currentPresetName()) {
+        return;
+    }
+
+    configuration()->setCurrentShortcutsPresetName(name.toStdString());
 }
 
 QVariantList ShortcutsModel::shortcuts() const

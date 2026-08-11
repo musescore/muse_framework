@@ -36,8 +36,12 @@ RowLayout {
 
     property int buttonMinWidth: 0
 
+    property var presets: null
+    property string currentPresetName: ""
+
     signal startEditCurrentShortcutRequested()
     signal clearSelectedShortcutsRequested()
+    signal presetChangeRequested(string presetName)
 
     property NavigationPanel navigation: NavigationPanel {
         name: "ShortcutsTopPanel"
@@ -56,6 +60,28 @@ RowLayout {
         searchField.currentText = text
     }
 
+    StyledDropdown {
+        id: presetsDropdown
+
+        Layout.preferredWidth: 160
+
+        visible: Boolean(root.presets) && root.presets.length > 1
+
+        model: root.presets
+        textRole: "title"
+        valueRole: "name"
+
+        currentIndex: presetsDropdown.indexOfValue(root.currentPresetName)
+
+        navigation.name: "ShortcutsPresetDropdown"
+        navigation.panel: root.navigation
+        navigation.column: 0
+
+        onActivated: function(index, value) {
+            root.presetChangeRequested(value)
+        }
+    }
+
     FlatButton {
         id: editButton
 
@@ -65,7 +91,7 @@ RowLayout {
 
         navigation.name: "DefineShortcutButton"
         navigation.panel: root.navigation
-        navigation.column: 0
+        navigation.column: 1
 
         onClicked: {
             root.startEditCurrentShortcutRequested()
@@ -81,7 +107,7 @@ RowLayout {
 
         navigation.name: "ClearShortcutsButton"
         navigation.panel: root.navigation
-        navigation.column: 1
+        navigation.column: 2
 
         onClicked: {
             root.clearSelectedShortcutsRequested()
@@ -99,6 +125,6 @@ RowLayout {
 
         navigation.name: "ShortcutSearchField"
         navigation.panel: root.navigation
-        navigation.column: 2
+        navigation.column: 3
     }
 }

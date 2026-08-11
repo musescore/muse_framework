@@ -47,6 +47,9 @@ class ShortcutsModel : public QAbstractListModel, public Contextable, public asy
     Q_PROPERTY(QItemSelection selection READ selection WRITE setSelection NOTIFY selectionChanged)
     Q_PROPERTY(QVariant currentShortcut READ currentShortcut NOTIFY selectionChanged)
 
+    Q_PROPERTY(QVariantList presets READ presets NOTIFY presetsChanged)
+    Q_PROPERTY(QString currentPresetName READ currentPresetName WRITE setCurrentPresetName NOTIFY currentPresetNameChanged)
+
     QML_ELEMENT
 
     GlobalInject<IShortcutsConfiguration> configuration;
@@ -67,6 +70,10 @@ public:
     QItemSelection selection() const;
     QVariant currentShortcut() const;
 
+    QVariantList presets() const;
+    QString currentPresetName() const;
+    void setCurrentPresetName(const QString& name);
+
     Q_INVOKABLE void load();
     Q_INVOKABLE bool apply();
     Q_INVOKABLE void reset();
@@ -86,8 +93,12 @@ public slots:
 
 signals:
     void selectionChanged();
+    void presetsChanged();
+    void currentPresetNameChanged();
 
 private:
+    QString presetTitle(const std::string& presetName) const;
+
     const muse::ui::UiAction& action(const std::string& actionCode) const;
     QString actionText(const std::string& actionCode) const;
 

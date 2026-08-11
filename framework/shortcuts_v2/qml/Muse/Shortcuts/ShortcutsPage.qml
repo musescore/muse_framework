@@ -89,6 +89,9 @@ Item {
 
             buttonMinWidth: prv.buttonMinWidth
 
+            presets: shortcutsModel.presets
+            currentPresetName: shortcutsModel.currentPresetName
+
             navigation.section: root.navigationSection
             navigation.order: root.navigationOrderStart + 1
 
@@ -98,6 +101,10 @@ Item {
 
             onClearSelectedShortcutsRequested: {
                 shortcutsModel.clearSelectedShortcuts()
+            }
+
+            onPresetChangeRequested: function(presetName) {
+                shortcutsModel.currentPresetName = presetName
             }
         }
 
