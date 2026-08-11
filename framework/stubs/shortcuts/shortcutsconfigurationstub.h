@@ -37,8 +37,13 @@ public:
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
     std::string defaultShortcutsName() const override;
+    std::vector<std::string> availableShortcutsPresets() const override;
 
-    io::path_t commandShortcutsUserAppDataPath() const override;
+    std::string currentShortcutsPresetName() const override;
+    void setCurrentShortcutsPresetName(const std::string& name) override;
+    async::Channel<std::string> currentShortcutsPresetNameChanged() const override;
+
+    io::path_t commandShortcutsUserAppDataPath(const std::string& shortcutsName) const override;
     io::path_t commandShortcutsAppDataPath(const std::string& shortcutsName) const override;
 #endif
 };

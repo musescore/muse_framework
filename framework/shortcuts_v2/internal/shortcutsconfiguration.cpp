@@ -31,9 +31,18 @@
 using namespace muse;
 using namespace muse::shortcuts;
 
+static const muse::Settings::Key CURRENT_SHORTCUTS_PRESET_KEY("shortcuts", "shortcuts/currentPreset");
+
 void ShortcutsConfiguration::init()
 {
     m_config = ConfigReader::read(":/configs/shortcuts.cfg");
+
+    settings()->setDefaultValue(CURRENT_SHORTCUTS_PRESET_KEY, Val(""));
+    settings()->valueChanged(CURRENT_SHORTCUTS_PRESET_KEY).onReceive(this, [this](const Val& name) {
+        m_currentPresetNameChanged.send(name.toString());
+    });
+
+    fileSystem()->makePath(userShortcutsDirPath());
 }
 
 QString ShortcutsConfiguration::currentKeyboardLayout() const
@@ -72,9 +81,41 @@ std::string ShortcutsConfiguration::defaultShortcutsName() const
 #endif
 }
 
-io::path_t ShortcutsConfiguration::commandShortcutsUserAppDataPath() const
+std::vector<std::string> ShortcutsConfiguration::availableShortcutsPresets() const
 {
-    return globalConfiguration()->userAppDataPath() + "/shortcuts.json";
+    std::vector<std::string> result;
+
+    ValList presets = m_config.value("command_shortcuts_presets").toList();
+    for (const Val& preset : presets) {
+        result.push_back(preset.toString());
+    }
+
+    return result;
+}
+
+std::string ShortcutsConfiguration::currentShortcutsPresetName() const
+{
+    return settings()->value(CURRENT_SHORTCUTS_PRESET_KEY).toString();
+}
+
+void ShortcutsConfiguration::setCurrentShortcutsPresetName(const std::string& name)
+{
+    settings()->setSharedValue(CURRENT_SHORTCUTS_PRESET_KEY, Val(name));
+}
+
+async::Channel<std::string> ShortcutsConfiguration::currentShortcutsPresetNameChanged() const
+{
+    return m_currentPresetNameChanged;
+}
+
+io::path_t ShortcutsConfiguration::userShortcutsDirPath() const
+{
+    return globalConfiguration()->userAppDataPath() + "/shortcuts";
+}
+
+io::path_t ShortcutsConfiguration::commandShortcutsUserAppDataPath(const std::string& shortcutsName) const
+{
+    return userShortcutsDirPath() + "/" + shortcutsName + ".json";
 }
 
 io::path_t ShortcutsConfiguration::commandShortcutsAppDataPath(const std::string& shortcutsName) const

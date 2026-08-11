@@ -49,7 +49,26 @@ std::string ShortcutsConfigurationStub::defaultShortcutsName() const
     return "shortcuts";
 }
 
-io::path_t ShortcutsConfigurationStub::commandShortcutsUserAppDataPath() const
+std::vector<std::string> ShortcutsConfigurationStub::availableShortcutsPresets() const
+{
+    return {};
+}
+
+std::string ShortcutsConfigurationStub::currentShortcutsPresetName() const
+{
+    return std::string();
+}
+
+void ShortcutsConfigurationStub::setCurrentShortcutsPresetName(const std::string&)
+{
+}
+
+muse::async::Channel<std::string> ShortcutsConfigurationStub::currentShortcutsPresetNameChanged() const
+{
+    return {};
+}
+
+io::path_t ShortcutsConfigurationStub::commandShortcutsUserAppDataPath(const std::string&) const
 {
     return io::path_t();
 }

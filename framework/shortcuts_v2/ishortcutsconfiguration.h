@@ -23,10 +23,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "modularity/imoduleinterface.h"
 #include "io/path.h"
 #include "types/retval.h"
+#include "async/channel.h"
 
 namespace muse::shortcuts {
 class IShortcutsConfiguration : MODULE_GLOBAL_INTERFACE
@@ -43,8 +45,13 @@ public:
     virtual io::path_t shortcutsAppDataPath() const = 0;
 
     virtual std::string defaultShortcutsName() const = 0;
+    virtual std::vector<std::string> availableShortcutsPresets() const = 0;
 
-    virtual io::path_t commandShortcutsUserAppDataPath() const = 0;
+    virtual std::string currentShortcutsPresetName() const = 0;
+    virtual void setCurrentShortcutsPresetName(const std::string& name) = 0;
+    virtual async::Channel<std::string> currentShortcutsPresetNameChanged() const = 0;
+
+    virtual io::path_t commandShortcutsUserAppDataPath(const std::string& shortcutsName) const = 0;
     virtual io::path_t commandShortcutsAppDataPath(const std::string& shortcutsName) const = 0;
 };
 }

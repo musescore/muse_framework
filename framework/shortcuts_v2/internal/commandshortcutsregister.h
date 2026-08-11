@@ -62,6 +62,8 @@ public:
 
 private:
 
+    io::path_t userShortcutsPath() const;
+
     bool readFromFile(ShortcutList& shortcuts, const io::path_t& path) const;
     bool writeToFile(const ShortcutList& shortcuts, const io::path_t& path) const;
 

@@ -52,7 +52,7 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     m_defaultShortcuts.clear();
 
     io::path_t defPath = configuration()->commandShortcutsAppDataPath(DEFAULT_SHORTCUTS_NAME);
-    io::path_t userPath = configuration()->commandShortcutsUserAppDataPath();
+    io::path_t userPath = userShortcutsPath();
 
     bool ok = readFromFile(m_defaultShortcuts, defPath);
 
@@ -93,6 +93,11 @@ void CommandShortcutsRegister::reload(bool onlyDef)
         makeUnique(m_shortcuts);
         m_shortcutsChanged.notify();
     }
+}
+
+io::path_t CommandShortcutsRegister::userShortcutsPath() const
+{
+    return configuration()->commandShortcutsUserAppDataPath(configuration()->defaultShortcutsName());
 }
 
 void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const
@@ -303,7 +308,7 @@ Ret CommandShortcutsRegister::setShortcuts(const ShortcutList& shortcuts)
 
     ShortcutList needToWrite = filterAndUpdateAdditionalShortcuts(shortcuts);
 
-    bool ok = writeToFile(needToWrite, configuration()->commandShortcutsUserAppDataPath());
+    bool ok = writeToFile(needToWrite, userShortcutsPath());
 
     if (ok) {
         m_shortcuts = needToWrite;
@@ -319,7 +324,7 @@ void CommandShortcutsRegister::resetShortcuts()
 {
     {
         mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
-        io::File::remove(configuration()->commandShortcutsUserAppDataPath());
+        io::File::remove(userShortcutsPath());
     }
 
     reload();
@@ -356,7 +361,7 @@ Ret CommandShortcutsRegister::importFromFile(const io::path_t& filePath)
 {
     {
         mi::ReadResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
-        Ret ret = io::File::copy(filePath, configuration()->commandShortcutsUserAppDataPath(), true);
+        Ret ret = io::File::copy(filePath, userShortcutsPath(), true);
         if (!ret) {
             LOGE() << "failed import file: " << ret.toString();
             return ret;
