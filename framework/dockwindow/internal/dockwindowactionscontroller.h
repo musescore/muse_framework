@@ -27,13 +27,17 @@
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "../idockwindowprovider.h"
+#include "types/ret.h"
 
 namespace muse::dock {
-class DockWindowActionsController : public muse::Contextable, public muse::actions::Actionable
+class DockWindowActionsController : public muse::Contextable, public muse::actions::Actionable, public muse::rcommand::Commandable
 {
     muse::ContextInject<IDockWindowProvider> dockWindowProvider = { this };
-    muse::ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
+    muse::ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    muse::ContextInject<rcommand::ICommandDispatcher> commandsDispatcher = { this };
 
 public:
     DockWindowActionsController(const muse::modularity::ContextPtr& iocCtx)
@@ -42,11 +46,11 @@ public:
     void init();
 
 private:
-    void setDockOpen(const muse::actions::ActionData& args);
-    void toggleOpened(const muse::actions::ActionData& args);
-    void toggleFloating(const muse::actions::ActionData& args);
+    muse::Ret setDockOpen(const rcommand::CommandQuery& query);
+    muse::Ret toggleOpened(const rcommand::CommandQuery& query);
+    muse::Ret toggleFloating(const rcommand::CommandQuery& query);
 
-    void restoreDefaultLayout();
+    muse::Ret restoreDefaultLayout();
 
     IDockWindow* window() const;
 };

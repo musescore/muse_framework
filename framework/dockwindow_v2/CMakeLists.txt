@@ -24,6 +24,7 @@ target_sources(muse_dockwindow PRIVATE
     dockmodule.cpp
     dockmodule.h
     docktypes.h
+    dockcommands.h
     idockwindow.h
     idockwindowprovider.h
 
@@ -37,6 +38,10 @@ target_sources(muse_dockwindow PRIVATE
     internal/docktitlebar.h
     internal/dockwindowactionscontroller.cpp
     internal/dockwindowactionscontroller.h
+    internal/dockcommandsregister.cpp
+    internal/dockcommandsregister.h
+    internal/dockcommandsstate.cpp
+    internal/dockcommandsstate.h 
     internal/dockwindowprovider.cpp
     internal/dockwindowprovider.h
     internal/dropcontroller.cpp
