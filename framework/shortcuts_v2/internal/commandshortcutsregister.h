@@ -62,7 +62,10 @@ public:
 
 private:
 
+    std::string activeShortcutsName() const;
     io::path_t userShortcutsPath() const;
+
+    void applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const;
 
     bool readFromFile(ShortcutList& shortcuts, const io::path_t& path) const;
     bool writeToFile(const ShortcutList& shortcuts, const io::path_t& path) const;

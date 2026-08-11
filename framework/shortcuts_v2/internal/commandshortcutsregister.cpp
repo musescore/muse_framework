@@ -41,6 +41,10 @@ void CommandShortcutsRegister::init()
         }
     });
 
+    configuration()->currentShortcutsPresetNameChanged().onReceive(this, [this](const std::string&) {
+        reload();
+    });
+
     reload();
 }
 
@@ -56,13 +60,16 @@ void CommandShortcutsRegister::reload(bool onlyDef)
 
     bool ok = readFromFile(m_defaultShortcuts, defPath);
 
-    //! NOTE The platform default shortcuts file is a diff from the base one
-    std::string defaultName = configuration()->defaultShortcutsName();
-    if (ok && defaultName != DEFAULT_SHORTCUTS_NAME) {
-        ShortcutList diff;
-        if (readFromFile(diff, configuration()->commandShortcutsAppDataPath(defaultName))) {
-            mergeShortcuts(diff, m_defaultShortcuts);
-            m_defaultShortcuts = diff;
+    if (ok) {
+        //! NOTE Platform and preset shortcuts files are diffs from the base one
+        std::string defaultName = configuration()->defaultShortcutsName();
+        if (defaultName != DEFAULT_SHORTCUTS_NAME) {
+            applyShortcutsDiff(defaultName, m_defaultShortcuts);
+        }
+
+        std::string presetName = configuration()->currentShortcutsPresetName();
+        if (!presetName.empty()) {
+            applyShortcutsDiff(presetName, m_defaultShortcuts);
         }
     }
 
@@ -95,9 +102,26 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     }
 }
 
+std::string CommandShortcutsRegister::activeShortcutsName() const
+{
+    std::string presetName = configuration()->currentShortcutsPresetName();
+    return presetName.empty() ? configuration()->defaultShortcutsName() : presetName;
+}
+
 io::path_t CommandShortcutsRegister::userShortcutsPath() const
 {
-    return configuration()->commandShortcutsUserAppDataPath(configuration()->defaultShortcutsName());
+    return configuration()->commandShortcutsUserAppDataPath(activeShortcutsName());
+}
+
+void CommandShortcutsRegister::applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const
+{
+    ShortcutList diff;
+    if (!readFromFile(diff, configuration()->commandShortcutsAppDataPath(shortcutsName))) {
+        return;
+    }
+
+    mergeShortcuts(diff, shortcuts);
+    shortcuts = diff;
 }
 
 void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const
