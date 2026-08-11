@@ -19,6 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#pragma once
+
+#include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "../shortcuts_v2/shortcutcontext.h"
+#else
+
 #ifndef MUSE_SHORTCUTS_SHORTCUTCONTEXT_H
 #define MUSE_SHORTCUTS_SHORTCUTCONTEXT_H
 
@@ -51,3 +59,5 @@ public:
 }
 
 #endif // MUSE_SHORTCUTS_SHORTCUTCONTEXT_H
+
+#endif // MUSE_MODULE_SHORTCUTS_V2

@@ -19,6 +19,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#pragma once
+
+#include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "../shortcuts_v2/ishortcutsconfiguration.h"
+#else
 
 #pragma once
 
@@ -41,3 +48,5 @@ public:
     virtual io::path_t shortcutsAppDataPath() const = 0;
 };
 }
+
+#endif // MUSE_MODULE_SHORTCUTS_V2
