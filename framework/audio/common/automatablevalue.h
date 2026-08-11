@@ -26,13 +26,11 @@
 
 #include "global/types/secs.h"
 #include "global/types/number.h"
-#include "global/types/sharedmap.h"
-#include "global/containers.h"
 
 #include "mpe/automationpoint.h"
 
 namespace muse::audio {
-using AutomationEnvelope = SharedMap<muse::secs_t, mpe::AutomationPoint>;
+using AutomationEnvelope = mpe::AutomationCurve<muse::secs_t>;
 
 //! NOTE: a parameter that is either a fixed value, or driven by an AutomationEnvelope over time
 template<typename T>
@@ -58,19 +56,7 @@ public:
             return T {};
         }
 
-        auto it = findLessOrEqual(envelope, pos);
-        if (it == envelope.end()) {
-            //! NOTE: hold the first point's value backwards in time, matching standard envelope semantics
-            it = envelope.begin();
-        }
-
-        real_t normalized = it->second.outValue;
-        const auto next = std::next(it);
-        if (next != envelope.end()) {
-            const real_t t = static_cast<real_t>(pos - it->first) / static_cast<real_t>(next->first - it->first);
-            normalized = mpe::evaluateAt(next->second, it->second.outValue, t);
-        }
-
+        const real_t normalized = mpe::evaluateCurveAt(envelope, pos);
         const T mapped = min + static_cast<T>(normalized.raw()) * (max - min);
         return std::clamp(mapped, min, max);
     }

@@ -127,8 +127,8 @@ void pack_custom(muse::msgpack::Packer& p, const muse::mpe::PlaybackEvent& value
 void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::PlaybackEvent& value);
 
 // AutomationPoint
-void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::Bend& value);
-void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::Bend& value);
+void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::Ease& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::Ease& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::ArrivalFromPrevious& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::ArrivalFromPrevious& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::ExplicitArrival& value);
@@ -668,12 +668,12 @@ inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::PlaybackEvent& 
     }
 }
 
-inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::Bend& value)
+inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::Ease& value)
 {
     p.process(value.t, value.value);
 }
 
-inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::Bend& value)
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::Ease& value)
 {
     p.process(value.t, value.value);
 }
@@ -690,12 +690,12 @@ inline void unpack_custom(muse::msgpack::UnPacker&, muse::mpe::AutomationPoint::
 
 inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::ExplicitArrival& value)
 {
-    p.process(value.value, value.bend);
+    p.process(value.value, value.ease);
 }
 
 inline void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::AutomationPoint::ExplicitArrival& value)
 {
-    p.process(value.value, value.bend);
+    p.process(value.value, value.ease);
 }
 
 inline void pack_custom(muse::msgpack::Packer& p, const muse::mpe::AutomationPoint::InValue& value)

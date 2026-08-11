@@ -24,6 +24,8 @@
 
 #include "global/interpolation.h"
 
+#include <map>
+
 using namespace muse;
 using namespace muse::vst;
 
@@ -53,18 +55,7 @@ void VstSequencer::init(ParamsMapping&& mapping, bool useDynamicEvents)
     updateMainStreamEvents(m_playbackData.originEvents, m_playbackData.dynamics);
 }
 
-void VstSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics)
-{
-    addPlaybackEvents(m_offStreamEvents, events);
-
-    if (m_useDynamicEvents) {
-        addDynamicEvents(m_offStreamEvents, dynamics);
-    }
-
-    updateOffSequenceIterator();
-}
-
-void VstSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics)
+void VstSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics)
 {
     if (!m_inited) {
         return;
@@ -86,14 +77,35 @@ void VstSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, 
     updateMainSequenceIterator();
 }
 
+void VstSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events)
+{
+    addPlaybackEvents(m_offStreamEvents, events);
+    updateOffSequenceIterator();
+}
+
 muse::audio::gain_t VstSequencer::currentGain() const
 {
-    if (m_useDynamicEvents) {
-        mpe::dynamic_level_t currentDynamicLevel = dynamicLevel(m_playbackPosition);
-        return expressionLevel(currentDynamicLevel);
+    if (!m_useDynamicEvents) {
+        return 0.5f;
     }
 
-    return 0.5f;
+    mpe::dynamic_level_t maxDynamicLevel = mpe::MIN_DYNAMIC_LEVEL;
+    bool foundAnyLevel = false;
+
+    for (const auto& [_, curve] : m_playbackData.dynamics) {
+        if (curve.empty()) {
+            continue;
+        }
+
+        foundAnyLevel = true;
+        maxDynamicLevel = std::max(maxDynamicLevel, mpe::dynamicLevelFromNormalized(mpe::evaluateCurveAt(curve, m_playbackPosition)));
+    }
+
+    if (!foundAnyLevel) {
+        maxDynamicLevel = mpe::dynamicLevelFromType(mpe::DynamicType::Natural);
+    }
+
+    return expressionLevel(maxDynamicLevel);
 }
 
 void VstSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events)
@@ -113,12 +125,37 @@ void VstSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::P
     addSostenutoEvents(destination, sostenutoTimeAndDurations);
 }
 
-void VstSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicLevelLayers& layers)
+void VstSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicAutomationLayers& layers)
 {
-    for (const auto& layer : layers) {
-        for (const auto& dynamic : layer.second) {
-            destination[dynamic.first].emplace_back(expressionLevel(dynamic.second));
+    constexpr mpe::timestamp_t STEP_INTERVAL_US = 30000;
+
+    //! NOTE: VST instance has a single gain parameter, so merge layers by tracking each one's last-known level
+    std::map<mpe::timestamp_t, std::vector<std::pair<mpe::layer_idx_t, mpe::dynamic_level_t> > > updatesAt;
+    for (const auto& [layerIdx, curve] : layers) {
+        mpe::resampleCurve(curve, STEP_INTERVAL_US, [&](mpe::timestamp_t t, muse::real_t normalized) {
+            updatesAt[t].emplace_back(layerIdx, mpe::dynamicLevelFromNormalized(normalized));
+        });
+    }
+
+    std::map<mpe::layer_idx_t, mpe::dynamic_level_t> currentLevel;
+    std::optional<float> lastGain;
+
+    for (const auto& [t, updates] : updatesAt) {
+        for (const auto& [layerIdx, level] : updates) {
+            currentLevel[layerIdx] = level;
         }
+
+        mpe::dynamic_level_t maxDynamicLevel = mpe::MIN_DYNAMIC_LEVEL;
+        for (const auto& [_, level] : currentLevel) {
+            maxDynamicLevel = std::max(maxDynamicLevel, level);
+        }
+
+        const float gain = expressionLevel(maxDynamicLevel);
+        if (lastGain.has_value() && muse::RealIsEqual(*lastGain, gain)) {
+            continue;
+        }
+        lastGain = gain;
+        destination[t].emplace_back(gain);
     }
 }
 
@@ -131,6 +168,10 @@ void VstSequencer::addNoteEvent(EventSequenceMap& destination, const mpe::NoteEv
     const float tuning = noteTuning(noteEvent, noteId);
 
     if (arrangementCtx.hasStart()) {
+        if (m_useDynamicEvents) {
+            destination[arrangementCtx.actualTimestamp].emplace_back(expressionLevel(noteEvent.expressionCtx().nominalDynamicLevel));
+        }
+
         destination[arrangementCtx.actualTimestamp].emplace_back(buildEvent(VstEvent::kNoteOnEvent, noteId, velocityFraction, tuning));
     }
 

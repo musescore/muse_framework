@@ -35,8 +35,8 @@ public:
     void init(MuseSamplerLibHandlerPtr samplerLib, ms_MuseSampler sampler, IMuseSamplerTracks* tracks, std::string&& defaultPresetCode);
 
 private:
-    void updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;
-    void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics) override;
+    void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics) override;
+    void updateOffStreamEvents(const mpe::PlaybackEventsMap& events) override;
 
     void clearAllTracks();
     void finalizeAllTracks();
@@ -47,7 +47,7 @@ private:
     const TrackList& allTracks() const;
 
     void loadEvents(const mpe::PlaybackEventsMap& changes);
-    void loadDynamicEvents(const mpe::DynamicLevelLayers& changes);
+    void loadDynamicEvents(const mpe::DynamicAutomationLayers& changes);
 
     void addNoteEvent(const mpe::NoteEvent& noteEvent);
     void addPedalEvent(const mpe::ArticulationMeta& meta, ms_Track track);

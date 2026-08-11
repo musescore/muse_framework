@@ -143,7 +143,21 @@ void MuseSamplerSequencer::init(MuseSamplerLibHandlerPtr samplerLib, ms_MuseSamp
     m_defaultPresetCode = std::move(defaultPresetCode);
 }
 
-void MuseSamplerSequencer::updateOffStreamEvents(const PlaybackEventsMap& events, const DynamicLevelLayers&)
+void MuseSamplerSequencer::updateMainStreamEvents(const PlaybackEventsMap& events, const DynamicAutomationLayers& dynamics)
+{
+    IF_ASSERT_FAILED(m_samplerLib && m_sampler) {
+        return;
+    }
+
+    clearAllTracks();
+
+    loadEvents(events);
+    loadDynamicEvents(dynamics);
+
+    finalizeAllTracks();
+}
+
+void MuseSamplerSequencer::updateOffStreamEvents(const PlaybackEventsMap& events)
 {
     m_auditionParamsCache.clear();
 
@@ -160,20 +174,6 @@ void MuseSamplerSequencer::updateOffStreamEvents(const PlaybackEventsMap& events
     }
 
     updateOffSequenceIterator();
-}
-
-void MuseSamplerSequencer::updateMainStreamEvents(const PlaybackEventsMap& events, const DynamicLevelLayers& dynamics)
-{
-    IF_ASSERT_FAILED(m_samplerLib && m_sampler) {
-        return;
-    }
-
-    clearAllTracks();
-
-    loadEvents(events);
-    loadDynamicEvents(dynamics);
-
-    finalizeAllTracks();
 }
 
 void MuseSamplerSequencer::clearAllTracks()
@@ -280,17 +280,26 @@ void MuseSamplerSequencer::loadEvents(const PlaybackEventsMap& changes)
     }
 }
 
-void MuseSamplerSequencer::loadDynamicEvents(const DynamicLevelLayers& changes)
+void MuseSamplerSequencer::loadDynamicEvents(const DynamicAutomationLayers& changes)
 {
+    constexpr timestamp_t STEP_INTERVAL_US = 30000;
+
     for (const auto& layer : changes) {
         ms_Track track = findTrack(layer.first);
         if (!track) {
             continue;
         }
 
-        for (const auto& dynamic : layer.second) {
-            m_samplerLib->addDynamicsEvent(m_sampler, track, DynamicEvent { dynamic.first, dynamicLevelRatio(dynamic.second) });
-        }
+        std::optional<double> lastRatio;
+
+        resampleCurve(layer.second, STEP_INTERVAL_US, [&](timestamp_t t, real_t normalized) {
+            const double ratio = dynamicLevelRatio(dynamicLevelFromNormalized(normalized));
+            if (lastRatio.has_value() && RealIsEqual(*lastRatio, ratio)) {
+                return;
+            }
+            lastRatio = ratio;
+            m_samplerLib->addDynamicsEvent(m_sampler, track, DynamicEvent { t, ratio });
+        });
     }
 }
 

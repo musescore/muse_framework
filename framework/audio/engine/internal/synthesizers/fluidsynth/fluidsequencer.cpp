@@ -22,6 +22,8 @@
 
 #include "fluidsequencer.h"
 
+#include <set>
+
 #include "global/interpolation.h"
 
 #include "log.h"
@@ -36,21 +38,44 @@ static constexpr uint32_t CTRL_ON = 127;
 static constexpr uint32_t CTRL_OFF = 0;
 
 void FluidSequencer::init(const PlaybackSetupData& setupData, const std::optional<midi::Program>& programOverride,
-                          bool useDynamicEvents)
+                          bool useDynamicEvents, const channel_t maxChannels)
 {
     TRACEFUNC;
 
-    m_channels.init(setupData, programOverride);
+    m_channels.init(setupData, programOverride, maxChannels);
     m_useDynamicEvents = useDynamicEvents;
 }
 
-int FluidSequencer::currentExpressionLevel() const
+bool FluidSequencer::usesDynamicEvents() const
 {
-    if (m_useDynamicEvents) {
-        return expressionLevel(dynamicLevel(m_playbackPosition));
+    return m_useDynamicEvents;
+}
+
+std::vector<FluidSequencer::ChannelExpressionLevel> FluidSequencer::currentExpressionLevels() const
+{
+    std::vector<ChannelExpressionLevel> result;
+
+    if (!m_useDynamicEvents) {
+        return result;
     }
 
-    return naturalExpressionLevel();
+    for (const auto& [layerIdx, curve] : m_playbackData.dynamics) {
+        if (curve.empty()) {
+            continue;
+        }
+
+        auto voiceIt = m_channels.data().find(layerIdx);
+        if (voiceIt == m_channels.data().cend()) {
+            continue;
+        }
+
+        const int level = expressionLevel(mpe::dynamicLevelFromNormalized(mpe::evaluateCurveAt(curve, m_playbackPosition)));
+        for (const auto& [_, mapping] : voiceIt->second) {
+            result.push_back({ mapping.first, level });
+        }
+    }
+
+    return result;
 }
 
 int FluidSequencer::naturalExpressionLevel() const
@@ -59,18 +84,7 @@ int FluidSequencer::naturalExpressionLevel() const
     return NATURAL_EXP_LVL;
 }
 
-void FluidSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics)
-{
-    addPlaybackEvents(m_offStreamEvents, events);
-
-    if (m_useDynamicEvents) {
-        addDynamicEvents(m_offStreamEvents, dynamics);
-    }
-
-    updateOffSequenceIterator();
-}
-
-void FluidSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicLevelLayers& dynamics)
+void FluidSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics)
 {
     m_mainStreamEvents.clear();
 
@@ -78,13 +92,19 @@ void FluidSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events
         m_onMainStreamFlushed();
     }
 
-    addPlaybackEvents(m_mainStreamEvents, events);
+    addPlaybackEvents(m_mainStreamEvents, events, true /*isMainStream*/);
 
     if (m_useDynamicEvents) {
         addDynamicEvents(m_mainStreamEvents, dynamics);
     }
 
     updateMainSequenceIterator();
+}
+
+void FluidSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events)
+{
+    addPlaybackEvents(m_offStreamEvents, events, false /*isMainStream*/);
+    updateOffSequenceIterator();
 }
 
 muse::async::Channel<channel_t, Program> FluidSequencer::channelAdded() const
@@ -102,14 +122,14 @@ int FluidSequencer::lastStaff() const
     return m_lastStaff;
 }
 
-void FluidSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events)
+void FluidSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events, const bool isMainStream)
 {
     SostenutoTimeAndDurations sostenutoTimeAndDurations;
 
     for (const auto& pair : events) {
         for (const mpe::PlaybackEvent& event : pair.second) {
             if (std::holds_alternative<mpe::NoteEvent>(event)) {
-                addNoteEvent(destination, std::get<mpe::NoteEvent>(event), sostenutoTimeAndDurations);
+                addNoteEvent(destination, std::get<mpe::NoteEvent>(event), sostenutoTimeAndDurations, isMainStream);
             } else if (std::holds_alternative<mpe::ControllerChangeEvent>(event)) {
                 addControlChangeEvent(destination, pair.first, std::get<mpe::ControllerChangeEvent>(event));
             }
@@ -119,24 +139,46 @@ void FluidSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe:
     addSostenutoEvents(destination, sostenutoTimeAndDurations);
 }
 
-void FluidSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicLevelLayers& dynamics)
+void FluidSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::DynamicAutomationLayers& layers)
 {
-    for (const auto& layer : dynamics) {
-        for (const auto& dynamic : layer.second) {
-            midi::Event event(muse::midi::Event::Opcode::ControlChange, Event::MessageType::ChannelVoice10);
-            event.setIndex(midi::EXPRESSION_CONTROLLER);
-            event.setData(expressionLevel(dynamic.second));
+    constexpr mpe::timestamp_t STEP_INTERVAL_US = 30000;
 
-            destination[dynamic.first].emplace_back(std::move(event));
+    for (const auto& [layerIdx, curve] : layers) {
+        auto voiceIt = m_channels.data().find(layerIdx);
+        if (voiceIt == m_channels.data().cend()) {
+            continue;
         }
+
+        std::set<channel_t> channels;
+        for (const auto& [_, mapping] : voiceIt->second) {
+            channels.insert(mapping.first);
+        }
+
+        std::optional<int> lastLevel;
+
+        mpe::resampleCurve(curve, STEP_INTERVAL_US, [&](mpe::timestamp_t t, muse::real_t normalized) {
+            const int level = expressionLevel(mpe::dynamicLevelFromNormalized(normalized));
+            if (lastLevel == level) {
+                return;
+            }
+            lastLevel = level;
+
+            for (const channel_t channelIdx : channels) {
+                midi::Event event(Event::Opcode::ControlChange, Event::MessageType::ChannelVoice10);
+                event.setChannel(channelIdx);
+                event.setIndex(midi::EXPRESSION_CONTROLLER);
+                event.setData(level);
+                destination[t].emplace_back(event);
+            }
+        });
     }
 }
 
 void FluidSequencer::addNoteEvent(EventSequenceMap& destination, const mpe::NoteEvent& noteEvent,
-                                  SostenutoTimeAndDurations& sostenutoTimeAndDurations)
+                                  SostenutoTimeAndDurations& sostenutoTimeAndDurations, const bool isMainStream)
 {
     const ArrangementContext& arrangementCtx = noteEvent.arrangementCtx();
-    const channel_t channelIdx = channel(noteEvent);
+    const channel_t channelIdx = resolveChannel(noteEvent);
     const note_idx_t noteIdx = noteIndex(noteEvent.pitchCtx().nominalPitchLevel);
     const velocity_t velocity = noteVelocity(noteEvent);
     const tuning_t tuning = noteTuning(noteEvent, noteIdx);
@@ -146,6 +188,14 @@ void FluidSequencer::addNoteEvent(EventSequenceMap& destination, const mpe::Note
     m_lastStaff = noteEvent.arrangementCtx().staffLayerIndex;
 
     if (arrangementCtx.hasStart()) {
+        if (m_useDynamicEvents && !isMainStream) {
+            midi::Event expressionEvent(Event::Opcode::ControlChange, Event::MessageType::ChannelVoice10);
+            expressionEvent.setChannel(channelIdx);
+            expressionEvent.setIndex(midi::EXPRESSION_CONTROLLER);
+            expressionEvent.setData(expressionLevel(noteEvent.expressionCtx().nominalDynamicLevel));
+            destination[arrangementCtx.actualTimestamp].emplace_back(std::move(expressionEvent));
+        }
+
         midi::Event noteOn(Event::Opcode::NoteOn, Event::MessageType::ChannelVoice20);
         noteOn.setChannel(channelIdx);
         noteOn.setNote(noteIdx);
@@ -212,7 +262,7 @@ void FluidSequencer::addPedalEvent(EventSequenceMap& destination, const mpe::Art
 void FluidSequencer::addControlChangeEvent(EventSequenceMap& destination, const mpe::timestamp_t timestamp,
                                            const mpe::ControllerChangeEvent& event)
 {
-    const channel_t lastChannelIdx = m_channels.lastIndex();
+    const channel_t lastChannelIdx = m_channels.channelCount();
 
     for (channel_t channelIdx = 0; channelIdx < lastChannelIdx; ++channelIdx) {
         switch (event.type) {
@@ -332,7 +382,7 @@ void FluidSequencer::addSostenutoEvents(EventSequenceMap& destination, const Sos
     }
 }
 
-channel_t FluidSequencer::channel(const mpe::NoteEvent& noteEvent) const
+channel_t FluidSequencer::resolveChannel(const mpe::NoteEvent& noteEvent) const
 {
     return m_channels.resolveChannelForEvent(noteEvent);
 }

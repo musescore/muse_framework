@@ -212,16 +212,16 @@ TEST_F(Audio_RpcPackerTests, ControlParams)
 
 TEST_F(Audio_RpcPackerTests, ControlParams_Automation)
 {
-    mpe::AutomationPoint::Bend bend;
-    bend.t = 0.3;
-    bend.value = 0.7;
+    mpe::AutomationPoint::Ease ease;
+    ease.t = 0.3;
+    ease.value = 0.7;
 
     mpe::AutomationPoint p0;
     p0.inValue = mpe::AutomationPoint::ArrivalFromPrevious {};
     p0.outValue = 0.2;
 
     mpe::AutomationPoint p1;
-    p1.inValue = mpe::AutomationPoint::ExplicitArrival { real_t(0.4), bend };
+    p1.inValue = mpe::AutomationPoint::ExplicitArrival { real_t(0.4), ease };
     p1.outValue = 0.9;
 
     AutomationEnvelope envelope;
