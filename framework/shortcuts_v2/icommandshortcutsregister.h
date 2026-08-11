@@ -22,8 +22,12 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "modularity/imoduleinterface.h"
 #include "shortcutstypes.h"
+#include "async/channel.h"
 #include "async/notification.h"
 #include "types/ret.h"
 #include "io/path.h"
@@ -46,6 +50,16 @@ public:
 
     virtual Ret importFromFile(const io::path_t& filePath) = 0;
     virtual Ret exportToFile(const io::path_t& filePath) const = 0;
+
+    virtual std::vector<std::string> availablePresets() const = 0;
+
+    virtual std::string currentPresetName() const = 0;
+    virtual void setCurrentPresetName(const std::string& presetName) = 0;
+    virtual async::Channel<std::string> currentPresetNameChanged() const = 0;
+
+    virtual bool isPresetEdited(const std::string& presetName) const = 0;
+    virtual bool canDeletePreset(const std::string& presetName) const = 0;
+    virtual void deletePreset(const std::string& presetName) = 0;
 
     // for testflow tests
     virtual void reload(bool onlyDef = false) = 0;

@@ -30,7 +30,6 @@
 #include "modularity/ioc.h"
 #include "ishortcutsregister.h"
 #include "icommandshortcutsregister.h"
-#include "ishortcutsconfiguration.h"
 #include "ui/iuiactionsregister.h"
 #include "async/asyncable.h"
 #include "interactive/iinteractive.h"
@@ -49,10 +48,11 @@ class ShortcutsModel : public QAbstractListModel, public Contextable, public asy
 
     Q_PROPERTY(QVariantList presets READ presets NOTIFY presetsChanged)
     Q_PROPERTY(QString currentPresetName READ currentPresetName WRITE setCurrentPresetName NOTIFY currentPresetNameChanged)
+    Q_PROPERTY(bool isCurrentPresetEdited READ isCurrentPresetEdited NOTIFY presetsChanged)
+    Q_PROPERTY(bool canDeleteCurrentPreset READ canDeleteCurrentPreset NOTIFY presetsChanged)
 
     QML_ELEMENT
 
-    GlobalInject<IShortcutsConfiguration> configuration;
     GlobalInject<IGlobalConfiguration> globalConfiguration;
     GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
@@ -73,6 +73,12 @@ public:
     QVariantList presets() const;
     QString currentPresetName() const;
     void setCurrentPresetName(const QString& name);
+
+    bool isCurrentPresetEdited() const;
+    bool canDeleteCurrentPreset() const;
+
+    Q_INVOKABLE void resetCurrentPreset();
+    Q_INVOKABLE void deleteCurrentPreset();
 
     Q_INVOKABLE void load();
     Q_INVOKABLE bool apply();
@@ -98,6 +104,9 @@ signals:
 
 private:
     QString presetTitle(const std::string& presetName) const;
+    bool isPresetEdited(const std::string& presetName) const;
+    bool isPresetEditedOrHasUnsavedChanges(const std::string& presetName) const;
+    void markUnsavedChanges();
 
     const muse::ui::UiAction& action(const std::string& actionCode) const;
     QString actionText(const std::string& actionCode) const;
@@ -128,5 +137,6 @@ private:
 
     QList<Item> m_items;
     QItemSelection m_selection;
+    bool m_hasUnsavedChanges = false;
 };
 }

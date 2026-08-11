@@ -115,6 +115,11 @@ io::path_t ShortcutsConfiguration::userShortcutsDirPath() const
 
 io::path_t ShortcutsConfiguration::commandShortcutsUserAppDataPath(const std::string& shortcutsName) const
 {
+    if (!io::isAllowedFileName(shortcutsName)) {
+        LOGE() << "invalid shortcuts name: " << shortcutsName;
+        return io::path_t();
+    }
+
     return userShortcutsDirPath() + "/" + shortcutsName + ".json";
 }
 

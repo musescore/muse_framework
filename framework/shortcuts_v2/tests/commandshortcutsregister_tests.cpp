@@ -63,6 +63,9 @@ public:
         ON_CALL(*m_configuration, defaultShortcutsName())
         .WillByDefault(Return("shortcuts"));
 
+        ON_CALL(*m_configuration, availableShortcutsPresets())
+        .WillByDefault(Return(std::vector<std::string> { "shortcuts_azerty" }));
+
         ON_CALL(*m_configuration, commandShortcutsAppDataPath(_))
         .WillByDefault(Invoke([](const std::string& name) {
             return io::path_t(std::string(SHORTCUTS_TESTDATA_DIR) + "/" + name + ".json");
@@ -437,5 +440,60 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, UserDiffIsWrittenForActivePreset
     b = findShortcut(m_register->shortcuts(), "test://b");
     ASSERT_NE(b, nullptr);
     EXPECT_EQ(b->sequences, seqs({ "Z" }));
+}
+
+TEST_F(Shortcuts_CommandShortcutsRegisterTests, IsPresetEditedReflectsUserFile)
+{
+    //! [GIVEN] The register with default shortcuts, no user file
+    initRegister();
+    EXPECT_FALSE(m_register->isPresetEdited(""));
+
+    //! [WHEN] One shortcut is modified
+    ShortcutList modified = m_register->shortcuts();
+    modified.front().sequences = seqs({ "Y" });
+    ASSERT_TRUE(m_register->setShortcuts(modified));
+
+    //! [THEN] The active set is edited
+    EXPECT_TRUE(m_register->isPresetEdited(""));
+
+    //! [WHEN] The shortcuts are reset
+    m_register->resetShortcuts();
+
+    //! [THEN] The active set is not edited anymore
+    EXPECT_FALSE(m_register->isPresetEdited(""));
+}
+
+TEST_F(Shortcuts_CommandShortcutsRegisterTests, BuiltinPresetsCannotBeDeleted)
+{
+    //! [GIVEN] The register and an edited builtin preset
+    writeUserFile("shortcuts_azerty", R"({ "TEST": [ { "command": "test://a", "sequences": ["X"] } ] })");
+    initRegister();
+
+    //! [THEN] Neither the default set nor builtin presets can be deleted
+    EXPECT_FALSE(m_register->canDeletePreset(""));
+    EXPECT_FALSE(m_register->canDeletePreset("shortcuts_azerty"));
+
+    //! [WHEN] Trying to delete a builtin preset anyway
+    m_register->deletePreset("shortcuts_azerty");
+
+    //! [THEN] Its user file is intact
+    EXPECT_TRUE(io::File::exists(userPath("shortcuts_azerty")));
+}
+
+TEST_F(Shortcuts_CommandShortcutsRegisterTests, DeletePresetRemovesUserFileAndFallsBackToDefault)
+{
+    //! [GIVEN] A custom preset (user file without a builtin twin) is selected
+    writeUserFile("my_preset", R"({ "TEST": [ { "command": "test://a", "sequences": ["X"] } ] })");
+    m_currentPresetName = "my_preset";
+    initRegister();
+
+    EXPECT_TRUE(m_register->canDeletePreset("my_preset"));
+
+    //! [WHEN] The preset is deleted
+    EXPECT_CALL(*m_configuration, setCurrentShortcutsPresetName(std::string()));
+    m_register->deletePreset("my_preset");
+
+    //! [THEN] The user file is removed and the current preset is switched to default
+    EXPECT_FALSE(io::File::exists(userPath("my_preset")));
 }
 }

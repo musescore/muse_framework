@@ -26,7 +26,7 @@ import QtQuick.Layouts
 import Muse.Ui
 import Muse.UiComponents
 
-RowLayout {
+ColumnLayout {
     id: root
 
     property alias canEditCurrentShortcut: editButton.enabled
@@ -38,15 +38,20 @@ RowLayout {
 
     property var presets: null
     property string currentPresetName: ""
+    property bool isCurrentPresetEdited: false
+    property bool canDeleteCurrentPreset: false
 
     signal startEditCurrentShortcutRequested()
     signal clearSelectedShortcutsRequested()
     signal presetChangeRequested(string presetName)
+    signal resetPresetRequested()
+    signal deletePresetRequested()
+
+    spacing: 12
 
     property NavigationPanel navigation: NavigationPanel {
         name: "ShortcutsTopPanel"
         enabled: root.enabled && root.visible
-        direction: NavigationPanel.Horizontal
         accessible.name: qsTrc("shortcuts", "Shortcuts top panel")
 
         onActiveChanged: function(active) {
@@ -60,71 +65,112 @@ RowLayout {
         searchField.currentText = text
     }
 
-    StyledDropdown {
-        id: presetsDropdown
+    RowLayout {
+        Layout.fillWidth: true
 
-        Layout.preferredWidth: 160
-
-        visible: Boolean(root.presets) && root.presets.length > 1
-
-        model: root.presets
-        textRole: "title"
-        valueRole: "name"
-
-        currentIndex: presetsDropdown.indexOfValue(root.currentPresetName)
-
-        navigation.name: "ShortcutsPresetDropdown"
-        navigation.panel: root.navigation
-        navigation.column: 0
-
-        onActivated: function(index, value) {
-            root.presetChangeRequested(value)
+        StyledTextLabel {
+            text: qsTrc("shortcuts", "Presets:")
         }
+
+        StyledDropdown {
+            id: presetsDropdown
+
+            Layout.fillWidth: true
+
+            model: root.presets
+            textRole: "title"
+            valueRole: "name"
+
+            currentIndex: presetsDropdown.indexOfValue(root.currentPresetName)
+
+            navigation.name: "ShortcutsPresetDropdown"
+            navigation.panel: root.navigation
+            navigation.order: 1
+
+            onActivated: function(index, value) {
+                root.presetChangeRequested(value)
+            }
+        }
+
+        FlatButton {
+            icon: IconCode.UNDO
+            toolTipTitle: qsTrc("shortcuts", "Reset preset")
+
+            enabled: root.isCurrentPresetEdited
+
+            navigation.name: "ResetPresetButton"
+            navigation.panel: root.navigation
+            navigation.order: 2
+
+            onClicked: {
+                root.resetPresetRequested()
+            }
+        }
+
+        // NOTE: enable after adding user's presets
+        // FlatButton {
+        //     icon: IconCode.DELETE_TANK
+        //     toolTipTitle: qsTrc("shortcuts", "Delete preset")
+
+        //     enabled: root.canDeleteCurrentPreset
+
+        //     navigation.name: "DeletePresetButton"
+        //     navigation.panel: root.navigation
+        //     navigation.order: 3
+
+        //     onClicked: {
+        //         root.deletePresetRequested()
+        //     }
+        // }
     }
 
-    FlatButton {
-        id: editButton
+    RowLayout {
+        Layout.fillWidth: true
 
-        minWidth: root.buttonMinWidth
+        FlatButton {
+            id: editButton
 
-        text: qsTrc("shortcuts", "Define…")
+            minWidth: root.buttonMinWidth
 
-        navigation.name: "DefineShortcutButton"
-        navigation.panel: root.navigation
-        navigation.column: 1
+            text: qsTrc("shortcuts", "Define…")
 
-        onClicked: {
-            root.startEditCurrentShortcutRequested()
+            navigation.name: "DefineShortcutButton"
+            navigation.panel: root.navigation
+            navigation.order: 4
+
+            onClicked: {
+                root.startEditCurrentShortcutRequested()
+            }
         }
-    }
 
-    FlatButton {
-        id: clearButton
+        FlatButton {
+            id: clearButton
 
-        minWidth: root.buttonMinWidth
+            minWidth: root.buttonMinWidth
 
-        text: qsTrc("global", "Clear")
+            text: qsTrc("global", "Clear")
 
-        navigation.name: "ClearShortcutsButton"
-        navigation.panel: root.navigation
-        navigation.column: 2
+            navigation.name: "ClearShortcutsButton"
+            navigation.panel: root.navigation
+            navigation.order: 5
 
-        onClicked: {
-            root.clearSelectedShortcutsRequested()
+            onClicked: {
+                root.clearSelectedShortcutsRequested()
+            }
         }
-    }
 
-    Item { Layout.fillWidth: true }
+        Item { Layout.fillWidth: true }
 
-    SearchField {
-        id: searchField
+        SearchField {
+            id: searchField
 
-        Layout.preferredWidth: 160
+            Layout.preferredWidth: 160
 
-        hint: qsTrc("shortcuts", "Search shortcut")
+            hint: qsTrc("shortcuts", "Search shortcut")
 
-        navigation.name: "ShortcutSearchField"
-        navigation.panel: root.navigation
-        navigation.column: 3
+            navigation.name: "ShortcutSearchField"
+            navigation.panel: root.navigation
+            navigation.order: 6
+        }
     }
 }

@@ -188,7 +188,7 @@ void ShortcutsModel::load()
         }, async::Asyncable::Mode::SetReplace);
     }
 
-    configuration()->currentShortcutsPresetNameChanged().onReceive(this, [this](const std::string&) {
+    commandShortcutsRegister()->currentPresetNameChanged().onReceive(this, [this](const std::string&) {
         emit currentPresetNameChanged();
     }, async::Asyncable::Mode::SetReplace);
 
@@ -197,6 +197,9 @@ void ShortcutsModel::load()
     });
 
     endResetModel();
+
+    m_hasUnsavedChanges = false;
+    emit presetsChanged();
 }
 
 bool ShortcutsModel::apply()
@@ -231,6 +234,9 @@ bool ShortcutsModel::apply()
             return false;
         }
     }
+
+    m_hasUnsavedChanges = false;
+    emit presetsChanged();
 
     return true;
 }
@@ -335,6 +341,8 @@ void ShortcutsModel::applySequenceToCurrentShortcut(const QString& newSequence, 
     }
 
     notifyAboutShortcutChanged(currIndex);
+
+    markUnsavedChanges();
 }
 
 void ShortcutsModel::clearSelectedShortcuts()
@@ -344,6 +352,10 @@ void ShortcutsModel::clearSelectedShortcuts()
         item.shortcut.clear();
         item.sequence = "";
         notifyAboutShortcutChanged(index);
+    }
+
+    if (!m_selection.indexes().isEmpty()) {
+        markUnsavedChanges();
     }
 }
 
@@ -391,25 +403,74 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
 
         notifyAboutShortcutChanged(index);
     }
+
+    if (!m_selection.indexes().isEmpty()) {
+        markUnsavedChanges();
+    }
 }
 
 QVariantList ShortcutsModel::presets() const
 {
-    auto makePreset = [](const QString& name, const QString& title) {
+    auto makePreset = [this](const std::string& name, const QString& title) {
+        bool isEdited = isPresetEditedOrHasUnsavedChanges(name);
+
         QVariantMap preset;
-        preset["name"] = name;
-        preset["title"] = title;
+        preset["name"] = QString::fromStdString(name);
+        preset["title"] = isEdited ? title + " " + muse::qtrc("shortcuts", "(edited)") : title;
+        preset["isEdited"] = isEdited;
         return preset;
     };
 
     QVariantList result;
-    result << makePreset(QString(), muse::qtrc("shortcuts", "Default"));
+    result << makePreset(std::string(), muse::qtrc("shortcuts", "Default"));
 
-    for (const std::string& name : configuration()->availableShortcutsPresets()) {
-        result << makePreset(QString::fromStdString(name), presetTitle(name));
+    for (const std::string& name : commandShortcutsRegister()->availablePresets()) {
+        result << makePreset(name, presetTitle(name));
     }
 
     return result;
+}
+
+bool ShortcutsModel::isPresetEditedOrHasUnsavedChanges(const std::string& presetName) const
+{
+    if (presetName == currentPresetName().toStdString() && m_hasUnsavedChanges) {
+        return true;
+    }
+
+    return isPresetEdited(presetName);
+}
+
+bool ShortcutsModel::isPresetEdited(const std::string& presetName) const
+{
+    return commandShortcutsRegister()->isPresetEdited(presetName);
+}
+
+bool ShortcutsModel::isCurrentPresetEdited() const
+{
+    return m_hasUnsavedChanges || isPresetEdited(currentPresetName().toStdString());
+}
+
+void ShortcutsModel::markUnsavedChanges()
+{
+    if (!m_hasUnsavedChanges) {
+        m_hasUnsavedChanges = true;
+        emit presetsChanged();
+    }
+}
+
+bool ShortcutsModel::canDeleteCurrentPreset() const
+{
+    return commandShortcutsRegister()->canDeletePreset(currentPresetName().toStdString());
+}
+
+void ShortcutsModel::resetCurrentPreset()
+{
+    commandShortcutsRegister()->resetShortcuts();
+}
+
+void ShortcutsModel::deleteCurrentPreset()
+{
+    commandShortcutsRegister()->deletePreset(currentPresetName().toStdString());
 }
 
 QString ShortcutsModel::presetTitle(const std::string& presetName) const
@@ -426,7 +487,7 @@ QString ShortcutsModel::presetTitle(const std::string& presetName) const
 
 QString ShortcutsModel::currentPresetName() const
 {
-    return QString::fromStdString(configuration()->currentShortcutsPresetName());
+    return QString::fromStdString(commandShortcutsRegister()->currentPresetName());
 }
 
 void ShortcutsModel::setCurrentPresetName(const QString& name)
@@ -435,7 +496,7 @@ void ShortcutsModel::setCurrentPresetName(const QString& name)
         return;
     }
 
-    configuration()->setCurrentShortcutsPresetName(name.toStdString());
+    commandShortcutsRegister()->setCurrentPresetName(name.toStdString());
 }
 
 QVariantList ShortcutsModel::shortcuts() const
