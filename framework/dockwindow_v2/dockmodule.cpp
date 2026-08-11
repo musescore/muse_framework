@@ -22,12 +22,17 @@
 
 #include "dockmodule.h"
 
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
+
 #include "internal/dropcontroller.h"
 #include "internal/dockseparator.h"
 #include "internal/docktabbar.h"
 #include "internal/docktitlebar.h"
 #include "internal/dockwindowactionscontroller.h"
 #include "internal/dockwindowprovider.h"
+#include "internal/dockcommandsregister.h"
+#include "internal/dockcommandsstate.h"
 
 #include "kddockwidgets/src/Config.h"
 #include "kddockwidgets/src/ContextData.h"
@@ -141,6 +146,14 @@ void DockModule::registerExports()
 {
 }
 
+void DockModule::resolveImports()
+{
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(module_name);
+    if (cr) {
+        cr->reg(std::make_shared<DockCommandsRegister>());
+    }
+}
+
 void DockModule::onInit(const IApplication::RunMode&)
 {
 }
@@ -157,6 +170,14 @@ void DockContext::registerExports()
     m_actionsController = std::make_shared<DockWindowActionsController>(iocContext());
 
     ioc()->registerExport<IDockWindowProvider>(module_name, new DockWindowProvider());
+}
+
+void DockContext::resolveImports()
+{
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(module_name);
+    if (cs) {
+        cs->reg(std::make_shared<DockCommandsState>(iocContext()));
+    }
 }
 
 void DockContext::onInit(const IApplication::RunMode&)

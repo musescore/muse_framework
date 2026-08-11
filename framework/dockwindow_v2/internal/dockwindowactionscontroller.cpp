@@ -22,46 +22,91 @@
 
 #include "dockwindowactionscontroller.h"
 
-#include "../idockwindow.h"
+#include "rcommand/actiontocommand.h"
 
+#include "../idockwindow.h"
+#include "../dockcommands.h"
+
+using namespace muse;
 using namespace muse::dock;
 using namespace muse::actions;
+using namespace muse::rcommand;
 
-static QString dockNameFromArgs(const ActionData& args)
+static CommandQuery setOpenConv(const Command& command, const ActionData& args)
 {
-    return !args.empty() ? args.arg<QString>(0) : QString();
+    CommandQuery query(command);
+    if (args.count() < 2) {
+        return query;
+    }
+    query.addParam("dock_name", Val(args.arg<QString>(0).toStdString()));
+    query.addParam("open", Val(args.arg<bool>(1)));
+    return query;
+}
+
+static CommandQuery toggleConv(const Command& command, const ActionData& args)
+{
+    CommandQuery query(command);
+    if (args.count() < 1) {
+        return query;
+    }
+    query.addParam("dock_name", Val(args.arg<QString>(0).toStdString()));
+    return query;
 }
 
 void DockWindowActionsController::init()
 {
-    dispatcher()->reg(this, "dock-set-open", this, &DockWindowActionsController::setDockOpen);
-    dispatcher()->reg(this, "dock-toggle", this, &DockWindowActionsController::toggleOpened);
-    dispatcher()->reg(this, "dock-toggle-floating", this, &DockWindowActionsController::toggleFloating);
-    dispatcher()->reg(this, "dock-restore-default-layout", this, &DockWindowActionsController::restoreDefaultLayout);
+    auto cd = commandsDispatcher();
+    cd->onRequest(this, DOCK_SET_OPEN_COMMAND, [this](const CommandQuery& query) { return setDockOpen(query); });
+    cd->onRequest(this, DOCK_TOGGLE_COMMAND, [this](const CommandQuery& query) { return toggleOpened(query); });
+    cd->onRequest(this, DOCK_TOGGLE_FLOATING_COMMAND, [this](const CommandQuery& query) { return toggleFloating(query); });
+    cd->onRequest(this, DOCK_RESTORE_DEFAULT_LAYOUT_COMMAND, [this]() { return restoreDefaultLayout(); });
+
+    // compat
+    {
+        static std::vector<ActionToCommand> actionsToCommands = {
+            { "dock-set-open", DOCK_SET_OPEN_COMMAND, setOpenConv },
+            { "dock-toggle", DOCK_TOGGLE_COMMAND, toggleConv },
+            { "dock-toggle-floating", DOCK_TOGGLE_FLOATING_COMMAND, toggleConv },
+            { "dock-restore-default-layout", DOCK_RESTORE_DEFAULT_LAYOUT_COMMAND, {} },
+        };
+
+        rcommand::registerActionToCommand(this, actionsToCommands, commandsDispatcher(), dispatcher());
+    }
 }
 
-void DockWindowActionsController::setDockOpen(const ActionData& args)
+muse::Ret DockWindowActionsController::setDockOpen(const CommandQuery& query)
 {
-    if (args.count() < 2) {
-        return;
+    if (!(query.contains("dock_name") && query.contains("open"))) {
+        return muse::make_ret(Ret::Code::BadArgs);
     }
 
-    QString dockName = args.arg<QString>(0);
-    bool open = args.arg<bool>(1);
+    QString dockName = QString::fromStdString(query.param("dock_name").toString());
+    bool open = query.param("open").toBool();
 
     window()->setDockOpen(dockName, open);
+    return muse::make_ok();
 }
 
-void DockWindowActionsController::toggleOpened(const ActionData& args)
+muse::Ret DockWindowActionsController::toggleOpened(const CommandQuery& query)
 {
-    QString dockName = dockNameFromArgs(args);
+    if (!query.contains("dock_name")) {
+        return muse::make_ret(Ret::Code::BadArgs);
+    }
+
+    QString dockName = QString::fromStdString(query.param("dock_name").toString());
     window()->toggleDock(dockName);
+    return muse::make_ok();
 }
 
-void DockWindowActionsController::toggleFloating(const ActionData& args)
+muse::Ret DockWindowActionsController::toggleFloating(const CommandQuery& query)
 {
-    QString dockName = dockNameFromArgs(args);
+    if (!query.contains("dock_name")) {
+        return muse::make_ret(Ret::Code::BadArgs);
+    }
+
+    QString dockName = QString::fromStdString(query.param("dock_name").toString());
     window()->toggleDockFloating(dockName);
+    return muse::make_ok();
 }
 
 IDockWindow* DockWindowActionsController::window() const
@@ -69,7 +114,8 @@ IDockWindow* DockWindowActionsController::window() const
     return dockWindowProvider()->window();
 }
 
-void DockWindowActionsController::restoreDefaultLayout()
+muse::Ret DockWindowActionsController::restoreDefaultLayout()
 {
     window()->restoreDefaultLayout();
+    return muse::make_ok();
 }
