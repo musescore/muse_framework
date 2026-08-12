@@ -35,7 +35,6 @@ using namespace muse::mi;
 using namespace muse::ipc;
 using namespace muse::actions;
 
-static const muse::UriQuery DEV_SHOW_INFO_URI("muse://devtools/multiwindows/info?modal=false");
 static const QString METHOD_PROJECT_IS_OPENED("PROJECT_IS_OPENED");
 static const QString METHOD_ACTIVATE_WINDOW_WITH_PROJECT("ACTIVATE_WINDOW_WITH_PROJECT");
 static const QString METHOD_IS_WITHOUT_PROJECT("IS_WITHOUT_PROJECT");
@@ -70,15 +69,6 @@ void MultiProcessProvider::initOnGlobal()
     m_ipcChannel->instancesChanged().onNotify(this, [this]() { m_instancesChanged.notify(); });
 
     m_ipcChannel->connect();
-}
-
-void MultiProcessProvider::initOnContext()
-{
-    dispatcher()->reg(this, "multiwindows-dev-show-info", [this]() {
-        if (!interactive()->isOpened(DEV_SHOW_INFO_URI.uri()).val) {
-            interactive()->open(DEV_SHOW_INFO_URI);
-        }
-    });
 }
 
 bool MultiProcessProvider::isInited() const

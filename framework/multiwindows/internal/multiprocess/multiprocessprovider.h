@@ -32,7 +32,6 @@
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
-#include "actions/actionable.h"
 #include "async/asyncable.h"
 #include "async/notification.h"
 #include "interactive/iinteractive.h"
@@ -40,8 +39,7 @@
 #include "../../iprojectprovider.h"
 
 namespace muse::mi {
-class MultiProcessProvider : public IMultiWindowsProvider, public IMultiProcessProvider, public Contextable, public actions::Actionable,
-    public async::Asyncable
+class MultiProcessProvider : public IMultiWindowsProvider, public IMultiProcessProvider, public Contextable, public async::Asyncable
 {
     ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
@@ -59,7 +57,6 @@ public:
     ~MultiProcessProvider();
 
     void initOnGlobal();
-    void initOnContext();
 
     // Contexts info
     size_t windowCount() const override;
