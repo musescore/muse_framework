@@ -29,6 +29,7 @@ target_sources(muse_update PRIVATE
     iupdaterequestparamsprovider.h
     iappupdatescenario.h
     iappupdateservice.h
+    updatecommands.h
 
     internal/updateconfiguration.cpp
     internal/updateconfiguration.h
@@ -36,6 +37,10 @@ target_sources(muse_update PRIVATE
     internal/updateuiactions.h
     internal/updateactioncontroller.cpp
     internal/updateactioncontroller.h
+    internal/updatecommandsregister.cpp
+    internal/updatecommandsregister.h
+    internal/updatecommandsstate.cpp
+    internal/updatecommandsstate.h
     internal/appupdatescenario.cpp
     internal/appupdatescenario.h
     internal/appupdateservice.cpp

@@ -26,12 +26,15 @@
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "update/iappupdatescenario.h"
 
 namespace muse::update {
-class UpdateActionController : public Contextable, public muse::actions::Actionable
+class UpdateActionController : public Contextable, public muse::actions::Actionable, public rcommand::Commandable
 {
     ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IAppUpdateScenario> appUpdateScenario = { this };
 
 public:
