@@ -29,6 +29,7 @@
 
 #include "modularity/ioc.h"
 #include "audioplugins/iknownaudiopluginsregister.h"
+#include "audioplugins/iaudiopluginsloadguard.h"
 #include "audio/common/iaudiothreadsecurer.h"
 
 #include "vsttypes.h"
@@ -38,6 +39,7 @@ class VstModulesRepository : public IVstModulesRepository
 {
     muse::GlobalInject<muse::audio::IAudioThreadSecurer> threadSecurer;
     muse::GlobalInject<audioplugins::IKnownAudioPluginsRegister> knownPlugins;
+    muse::GlobalInject<audioplugins::IAudioPluginsLoadGuard> loadGuard;
 
 public:
     VstModulesRepository() = default;

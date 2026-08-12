@@ -76,7 +76,10 @@ void VstModulesRepository::addPluginModule(const muse::audio::AudioResourceId& r
         return;
     }
 
+    loadGuard()->beginLoad(resourceId);
     PluginModulePtr module = createModule(knownPlugins()->pluginPath(resourceId));
+    loadGuard()->endLoad(resourceId);
+
     if (!module) {
         return;
     }
