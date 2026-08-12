@@ -47,14 +47,25 @@ static const std::vector<CommandInfo> s_commandInfos = {
         VST_OPEN_FX_EDITOR_COMMAND,
         TranslatableString("vst", "Open FX editor"),
         TranslatableString("vst", "Open FX editor"),
-        InputSchema(),
+        InputSchema({
+            { "resourceId", Arg(DataType::String, u"VST FX resource ID") },
+            { "trackId", Arg(DataType::Integer, u"Track ID (optional)") },
+            { "chainOrder", Arg(DataType::Integer, u"FX chain order (optional)") },
+            { "operation", Arg(DataType::String, u"Editor operation: open or close (optional)") },
+            { "sync", Arg(DataType::Boolean, u"Use synchronous open/close (optional)") }
+        }),
         Decoration()
     },
     CommandInfo{
         VST_OPEN_INSTRUMENT_EDITOR_COMMAND,
         TranslatableString("vst", "Open instrument editor"),
         TranslatableString("vst", "Open instrument editor"),
-        InputSchema(),
+        InputSchema({
+            { "resourceId", Arg(DataType::String, u"VST instrument resource ID") },
+            { "trackId", Arg(DataType::Integer, u"Track ID (optional)") },
+            { "operation", Arg(DataType::String, u"Editor operation: open or close (optional)") },
+            { "sync", Arg(DataType::Boolean, u"Use synchronous open/close (optional)") }
+        }),
         Decoration()
     },
 };

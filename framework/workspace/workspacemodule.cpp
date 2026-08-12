@@ -25,10 +25,14 @@
 
 #include "framework/ui/iuiactionsregister.h"
 #include "framework/interactive/iinteractiveuriregister.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 
 #include "internal/workspaceconfiguration.h"
 #include "internal/workspacemanager.h"
 #include "internal/workspaceactioncontroller.h"
+#include "internal/workspacecommandsregister.h"
+#include "internal/workspacecommandsstate.h"
 #include "internal/workspaceuiactions.h"
 #include "internal/workspacesdataprovider.h"
 
@@ -60,6 +64,11 @@ void WorkspaceModule::resolveImports()
     if (ir) {
         ir->registerQmlUri(Uri("muse://workspace/select"), "Muse.Workspace", "WorkspacesDialog");
         ir->registerQmlUri(Uri("muse://workspace/create"), "Muse.Workspace", "NewWorkspaceDialog");
+    }
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<WorkspaceCommandsRegister>());
     }
 }
 
@@ -108,6 +117,11 @@ void WorkspaceContext::resolveImports()
     auto ar = ioc()->resolve<ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<WorkspaceUiActions>(m_actionController, iocContext()));
+    }
+
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<WorkspaceCommandsState>(iocContext()));
     }
 }
 

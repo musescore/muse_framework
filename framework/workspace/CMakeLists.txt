@@ -31,6 +31,7 @@ target_sources(muse_workspace PRIVATE
     iworkspace.h
     iworkspacemanager.h
     iworkspacesdataprovider.h
+    workspacecommands.h
 
     internal/workspaceconfiguration.cpp
     internal/workspaceconfiguration.h
@@ -46,6 +47,10 @@ target_sources(muse_workspace PRIVATE
     internal/workspaceuiactions.h
     internal/workspaceactioncontroller.cpp
     internal/workspaceactioncontroller.h
+    internal/workspacecommandsregister.cpp
+    internal/workspacecommandsregister.h
+    internal/workspacecommandsstate.cpp
+    internal/workspacecommandsstate.h
     internal/workspaceutils.cpp
     internal/workspaceutils.h
 )

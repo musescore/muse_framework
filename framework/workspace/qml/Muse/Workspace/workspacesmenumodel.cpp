@@ -69,8 +69,8 @@ void WorkspacesMenuModel::load()
     }
 
     items << makeSeparator()
-          << makeMenuItem("configure-workspaces")
-          << makeMenuItem("create-workspace");
+          << makeMenuItem("command://workspace/configure")
+          << makeMenuItem("command://workspace/create");
 
     workspacesManager()->currentWorkspaceChanged().onNotify(this, [this]() {
         load();
