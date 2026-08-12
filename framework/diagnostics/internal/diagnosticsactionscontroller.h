@@ -19,20 +19,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef MUSE_DIAGNOSTICS_DIAGNOSTICSACTIONSCONTROLLER_H
-#define MUSE_DIAGNOSTICS_DIAGNOSTICSACTIONSCONTROLLER_H
+#pragma once
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
 #include "actions/actionable.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
-#include "accessibility/iaccessibilitycontroller.h"
 #include "isavediagnosticfilesscenario.h"
 
 namespace muse::diagnostics {
-class DiagnosticsActionsController : public Contextable, public actions::Actionable
+class DiagnosticsActionsController : public Contextable, public actions::Actionable, public rcommand::Commandable
 {
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
     ContextInject<diagnostics::ISaveDiagnosticFilesScenario> saveDiagnosticsScenario = { this };
 
@@ -46,8 +47,6 @@ private:
     void openUri(const muse::UriQuery& uri, bool isSingle = true);
     void saveDiagnosticFiles();
 
-    void onActionQuery(const actions::ActionQuery& q);
+    muse::Ret onCommandQuery(const muse::rcommand::CommandQuery& query);
 };
 }
-
-#endif // MUSE_DIAGNOSTICS_DIAGNOSTICSACTIONSCONTROLLER_H
