@@ -33,7 +33,6 @@
 
 using namespace muse;
 using namespace muse::vst;
-using namespace muse::rcommand;
 
 static const char16_t* VST_EDITOR_URI = u"muse://vst/editor?instanceId=%1&modal=false&floating=true";
 
@@ -42,11 +41,12 @@ void VstActionsController::init()
     auto cd = commandDispatcher();
     cd->onRequest(this, VST_USE_OLDVIEW_COMMAND, [this]() { useView(false); return muse::make_ok(); });
     cd->onRequest(this, VST_USE_NEWVIEW_COMMAND, [this]() { useView(true); return muse::make_ok(); });
-    cd->onRequest(this, VST_OPEN_FX_EDITOR_COMMAND, [this](const CommandQuery& q) { return fxEditor(q); });
-    cd->onRequest(this, VST_OPEN_INSTRUMENT_EDITOR_COMMAND, [this](const CommandQuery& q) { return instEditor(q); });
+    cd->onRequest(this, VST_OPEN_FX_EDITOR_COMMAND, [this](const rcommand::CommandQuery& q) { return fxEditor(q); });
+    cd->onRequest(this, VST_OPEN_INSTRUMENT_EDITOR_COMMAND, [this](const rcommand::CommandQuery& q) { return instEditor(q); });
 
     // compat
     {
+        using namespace muse::rcommand;
         static const std::vector<ActionToCommand> actionToCommands = {
             { "vst-use-oldview", VST_USE_OLDVIEW_COMMAND, {} },
             { "vst-use-newview", VST_USE_NEWVIEW_COMMAND, {} }
@@ -54,7 +54,7 @@ void VstActionsController::init()
 
         rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
 
-        static const std::map<actions::ActionQuery, Command> actionQueryToCommands = {
+        static const std::vector<std::pair<actions::ActionQuery, Command> > actionQueryToCommands = {
             { actions::ActionQuery("action://vst/fx_editor"), VST_OPEN_FX_EDITOR_COMMAND },
             { actions::ActionQuery("action://vst/instrument_editor"), VST_OPEN_INSTRUMENT_EDITOR_COMMAND }
         };
@@ -69,7 +69,7 @@ void VstActionsController::init()
     }
 }
 
-muse::Ret VstActionsController::fxEditor(const CommandQuery& query)
+muse::Ret VstActionsController::fxEditor(const rcommand::CommandQuery& query)
 {
     LOGD() << query.toString();
 
@@ -107,7 +107,7 @@ muse::Ret VstActionsController::fxEditor(const CommandQuery& query)
     return make_ok();
 }
 
-muse::Ret VstActionsController::instEditor(const CommandQuery& query)
+muse::Ret VstActionsController::instEditor(const rcommand::CommandQuery& query)
 {
     LOGD() << query.toString();
 
