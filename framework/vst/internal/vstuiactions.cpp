@@ -36,13 +36,13 @@ const UiActionList VstUiActions::m_actions = {
              muse::ui::UiCtxAny,
              muse::shortcuts::CTX_DISABLED,
              TranslatableString("action", "Use old view"),
-             Checkable::Yes
+             muse::ui::Checkable::Yes
              ),
     UiAction("vst-use-newview",
              muse::ui::UiCtxAny,
              muse::shortcuts::CTX_DISABLED,
              TranslatableString("action", "Use new view"),
-             Checkable::Yes
+             muse::ui::Checkable::Yes
              )
 };
 
