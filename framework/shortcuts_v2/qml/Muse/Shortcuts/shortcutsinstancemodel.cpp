@@ -34,6 +34,10 @@ void ShortcutsInstanceModel::init()
         doLoadShortcuts();
     });
 
+    commandShortcutsRegister()->shortcutsChanged().onNotify(this, [this](){
+        doLoadShortcuts();
+    });
+
     shortcutsRegister()->activeChanged().onNotify(this, [this](){
         emit activeChanged();
     });
