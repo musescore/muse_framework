@@ -543,7 +543,7 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
         return nullptr;
     }
 
-    const int loadedPixelSize = loadedPixelSizeForFontPath(fontPath, requireKey.pixelSize);
+    int loadedPixelSize = loadedPixelSizeForFontPath(fontPath, requireKey.pixelSize);
 
     //! If we didn't find it, we create a new require font
     RequireFace* newFont = new RequireFace();
@@ -582,13 +582,13 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
 
     auto subtitutionFontDataKeys = fontsDatabase()->substitutionFonts(requireKey.dataKey);
     for (const FontDataKey& dataKey : subtitutionFontDataKeys) {
-        io::path_t fontPath = fontsDatabase()->fontPath(dataKey, requireKey.type);
+        fontPath = fontsDatabase()->fontPath(dataKey, requireKey.type);
         if (fontPath.empty()) {
             LOGE() << "subtitution font path is empty: " << dataKey.family().id();
             continue;
         }
 
-        const int loadedPixelSize = loadedPixelSizeForFontPath(fontPath, requireKey.pixelSize);
+        loadedPixelSize = loadedPixelSizeForFontPath(fontPath, requireKey.pixelSize);
 
         IFontFace* subtitutionFace = nullptr;
         for (IFontFace* ff : m_loadedFaces) {
