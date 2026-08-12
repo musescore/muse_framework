@@ -71,6 +71,10 @@ struct Arg {
 };
 
 struct InputSchema {
+    InputSchema() {}
+    InputSchema(std::map<std::string, Arg> _args)
+        : args(std::move(_args)) {}
+
     std::map<std::string, Arg> args;
 };
 
