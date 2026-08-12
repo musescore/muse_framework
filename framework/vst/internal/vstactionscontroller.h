@@ -25,18 +25,22 @@
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
 #include "interactive/iinteractiveuriregister.h"
 #include "../ivstinstancesregister.h"
 #include "../ivstconfiguration.h"
+#include "types/ret.h"
 
 namespace muse::vst {
-class VstActionsController : public actions::Actionable, public muse::Contextable
+class VstActionsController : public actions::Actionable, public rcommand::Commandable, public muse::Contextable
 {
     muse::GlobalInject<IVstConfiguration> configuration;
     muse::GlobalInject<interactive::IInteractiveUriRegister> interactiveUriRegister;
     muse::GlobalInject<IVstInstancesRegister> instancesRegister;
     muse::ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    muse::ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     muse::ContextInject<IInteractive> interactive = { this };
 
 public:
@@ -47,8 +51,8 @@ public:
 
     void init();
 
-    void fxEditor(const actions::ActionQuery& actionQuery);
-    void instEditor(const actions::ActionQuery& actionQuery);
+    muse::Ret fxEditor(const rcommand::CommandQuery& query);
+    muse::Ret instEditor(const rcommand::CommandQuery& query);
 
     void editorOperation(const std::string& operation, int instanceId, bool sync);
 

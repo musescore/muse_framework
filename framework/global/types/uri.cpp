@@ -280,6 +280,11 @@ const UriQuery::Params& UriQuery::params() const
     return m_params;
 }
 
+void UriQuery::setParams(const Params& params)
+{
+    m_params = params;
+}
+
 Val UriQuery::param(const std::string& key, const Val& def) const
 {
     auto it = m_params.find(key);
