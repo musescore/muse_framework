@@ -123,27 +123,17 @@ inline std::pair<Qt::Key, Qt::KeyboardModifiers> correctKeyInput(Qt::Key key, Qt
 
 inline QString sequencesToNativeText(const std::vector<std::string>& sequences)
 {
-    QList<QKeySequence> keySequenceList;
+    std::vector<std::string> seqs;
 
     for (const std::string& sequence : sequences) {
-        keySequenceList << QKeySequence(QString::fromStdString(sequence));
+        seqs.push_back(QKeySequence(QString::fromStdString(sequence)).toString(QKeySequence::NativeText).toStdString());
     }
 
-    return QKeySequence::listToString(keySequenceList, QKeySequence::NativeText);
+    return QString::fromStdString(Shortcut::sequencesToString(seqs));
 }
 
-inline bool areContextPrioritiesEqual(const std::string& shortcutCtx1, const std::string& shortcutCtx2)
+inline bool canShortcutsConflict(const std::string& scope1, const std::string& scope2)
 {
-    static constexpr std::string_view ANY_CTX("any");
-
-    if (shortcutCtx1 == ANY_CTX || shortcutCtx2 == ANY_CTX) {
-        return true;
-    }
-
-    if (shortcutCtx1.empty() || shortcutCtx2.empty()) {
-        return true;
-    }
-
-    return shortcutCtx1 == shortcutCtx2;
+    return scope1 == scope2;
 }
 }

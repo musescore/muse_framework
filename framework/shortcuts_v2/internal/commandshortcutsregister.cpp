@@ -34,6 +34,20 @@ using namespace muse::async;
 static const std::string COMMAND_SHORTCUTS_TAG("CommandShortcuts");
 static const std::string DEFAULT_SHORTCUTS_NAME("shortcuts");
 
+namespace muse::shortcuts::command {
+static const Shortcut& findShortcut(const ShortcutList& shortcuts, const std::string& command)
+{
+    for (const Shortcut& shortcut : shortcuts) {
+        if (shortcut.command == command) {
+            return shortcut;
+        }
+    }
+
+    static Shortcut null;
+    return null;
+}
+}
+
 void CommandShortcutsRegister::init()
 {
     multiwindowsProvider()->resourceChanged().onReceive(this, [this](const std::string& resourceName) {
@@ -426,6 +440,11 @@ ShortcutList CommandShortcutsRegister::shortcutsForSequence(const std::string& s
         }
     }
     return list;
+}
+
+const Shortcut& CommandShortcutsRegister::defaultShortcut(const std::string& command) const
+{
+    return command::findShortcut(m_defaultShortcuts, command);
 }
 
 Ret CommandShortcutsRegister::importFromFile(const io::path_t& filePath)
