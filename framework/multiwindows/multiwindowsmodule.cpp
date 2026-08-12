@@ -23,9 +23,14 @@
 #include "multiwindowsmodule.h"
 
 #include "internal/multiwindowsuiactions.h"
+#include "internal/multiwindowscommandscontroller.h"
+#include "internal/multiwindowscommandsregister.h"
+#include "internal/multiwindowscommandsstate.h"
 
 #include "modularity/ioc.h"
 #include "interactive/iinteractiveuriregister.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 #include "ui/iuiactionsregister.h"
 
 #include "muse_framework_config.h"
@@ -64,6 +69,11 @@ void MultiWindowsModule::resolveImports()
     if (ir) {
         ir->registerQmlUri(Uri("muse://devtools/multiwindows/info"), "Muse.MultiWindows", "MultiInstancesDevDialog");
     }
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<MultiWindowsCommandsRegister>());
+    }
 }
 
 void MultiWindowsModule::onPreInit(const IApplication::RunMode& mode)
@@ -80,11 +90,21 @@ IContextSetup* MultiWindowsModule::newContext(const muse::modularity::ContextPtr
     return new MultiWindowsContext(ctx);
 }
 
+void MultiWindowsContext::registerExports()
+{
+    m_commandsController = std::make_shared<MultiWindowsCommandsController>(iocContext());
+}
+
 void MultiWindowsContext::resolveImports()
 {
     auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<MultiInstancesUiActions>());
+    }
+
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<MultiWindowsCommandsState>(iocContext()));
     }
 }
 
@@ -105,8 +125,9 @@ void MultiWindowsContext::onInit(const IApplication::RunMode& mode)
         if (impl) {
             DO_ASSERT(impl->iocContext() == nullptr); // should be just one context
             impl->setContext(iocContext());
-            impl->initOnContext();
         }
     }
 #endif
+
+    m_commandsController->init();
 }

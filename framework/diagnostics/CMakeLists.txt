@@ -26,6 +26,7 @@ target_sources(muse_diagnostics PRIVATE
     diagnosticutils.h
     idiagnosticspathsregister.h
     idiagnosticsconfiguration.h
+    diagnosticscommands.h
 
     internal/diagnosticsconfiguration.cpp
     internal/diagnosticsconfiguration.h
@@ -33,6 +34,10 @@ target_sources(muse_diagnostics PRIVATE
     internal/diagnosticsactions.h
     internal/diagnosticsactionscontroller.cpp
     internal/diagnosticsactionscontroller.h
+    internal/diagnosticscommandsregister.cpp
+    internal/diagnosticscommandsregister.h
+    internal/diagnosticscommandsstate.cpp
+    internal/diagnosticscommandsstate.h
     internal/diagnosticspathsregister.cpp
     internal/diagnosticspathsregister.h
 

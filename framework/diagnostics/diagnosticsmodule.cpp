@@ -24,11 +24,15 @@
 #include "modularity/ioc.h"
 #include "global/iglobalconfiguration.h"
 #include "interactive/iinteractiveuriregister.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 #include "ui/iuiactionsregister.h"
 
 #include "internal/diagnosticsconfiguration.h"
 #include "internal/diagnosticsactions.h"
 #include "internal/diagnosticsactionscontroller.h"
+#include "internal/diagnosticscommandsregister.h"
+#include "internal/diagnosticscommandsstate.h"
 #include "internal/diagnosticspathsregister.h"
 #include "internal/savediagnosticfilesscenario.h"
 
@@ -68,6 +72,11 @@ void DiagnosticsModule::resolveImports()
         ir->registerQmlUri(Uri("muse://diagnostics/navigation/tree"), "Muse.Diagnostics", "DiagnosticNavigationDialog");
         ir->registerQmlUri(Uri("muse://diagnostics/accessible/tree"), "Muse.Diagnostics", "DiagnosticAccessibleDialog");
         ir->registerQmlUri(Uri("muse://diagnostics/actions/list"), "Muse.Diagnostics", "DiagnosticActionsDialog");
+    }
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<DiagnosticsCommandsRegister>());
     }
 }
 
@@ -131,6 +140,11 @@ void DiagnosticsContext::resolveImports()
     auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<DiagnosticsActions>());
+    }
+
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<DiagnosticsCommandsState>(iocContext()));
     }
 }
 

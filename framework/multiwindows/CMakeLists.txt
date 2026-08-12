@@ -27,11 +27,18 @@ target_sources(muse_multiwindows PRIVATE
     iprojectprovider.h
     resourcelockguard.h
     singleinstance.h
+    multiwindowscommands.h
 
     internal/singleinstance.cpp
 
     internal/multiwindowsuiactions.cpp
     internal/multiwindowsuiactions.h
+    internal/multiwindowscommandscontroller.cpp
+    internal/multiwindowscommandscontroller.h
+    internal/multiwindowscommandsregister.cpp
+    internal/multiwindowscommandsregister.h
+    internal/multiwindowscommandsstate.cpp
+    internal/multiwindowscommandsstate.h
 
     # Single process (multi window)
     internal/singleprocess/singleprocessprovider.cpp

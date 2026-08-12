@@ -35,6 +35,8 @@ class SingleProcessProvider;
 class MultiProcessProvider;
 #endif
 
+class MultiWindowsCommandsController;
+
 class MultiWindowsModule : public modularity::IModuleSetup
 {
 public:
@@ -61,7 +63,11 @@ public:
     {
     }
 
+    void registerExports() override;
     void resolveImports() override;
     void onInit(const IApplication::RunMode& mode) override;
+
+private:
+    std::shared_ptr<MultiWindowsCommandsController> m_commandsController;
 };
 }

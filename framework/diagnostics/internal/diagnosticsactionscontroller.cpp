@@ -21,6 +21,10 @@
  */
 #include "diagnosticsactionscontroller.h"
 
+#include "rcommand/actiontocommand.h"
+
+#include "../diagnosticscommands.h"
+
 #include "types/uri.h"
 
 #include "qml/Muse/Diagnostics/diagnosticaccessiblemodel.h"
@@ -29,8 +33,7 @@
 
 using namespace muse::diagnostics;
 using namespace muse;
-using namespace muse::accessibility;
-using namespace muse::actions;
+using namespace muse::rcommand;
 
 static const muse::UriQuery SYSTEM_PATHS_URI("muse://diagnostics/system/paths?modal=false&floating=true");
 static const muse::UriQuery GRAPHICSINFO_URI("muse://diagnostics/system/graphicsinfo?modal=false&floating=true");
@@ -45,23 +48,65 @@ static const muse::UriQuery RCOMMAND_LIST_URI("muse://diagnostics/rcommand/list?
 
 void DiagnosticsActionsController::init()
 {
-    dispatcher()->reg(this, "diagnostic-show-paths", [this]() { openUri(SYSTEM_PATHS_URI); });
-    dispatcher()->reg(this, "diagnostic-show-graphicsinfo", [this]() { openUri(GRAPHICSINFO_URI); });
-    dispatcher()->reg(this, "diagnostic-show-profiler", [this]() { openUri(PROFILER_URI); });
-    dispatcher()->reg(this, "diagnostic-show-navigation-tree", [this]() { openUri(NAVIGATION_TREE_URI); });
-    dispatcher()->reg(this, "diagnostic-show-accessible-tree", [this]() { openUri(ACCESSIBLE_TREE_URI); });
-    dispatcher()->reg(this, "diagnostic-accessible-tree-dump", []() { DiagnosticAccessibleModel().dumpTree(); });
-    dispatcher()->reg(this, "diagnostic-show-engraving-elements", [this]() { openUri(ENGRAVING_ELEMENTS_URI, false); });
-    dispatcher()->reg(this, "diagnostic-show-engraving-undostack", [this]() { openUri(ENGRAVING_UNDOSTACK_URI, false); });
-    dispatcher()->reg(this, "diagnostic-show-engraving-style", [this]() { openUri(ENGRAVING_STYLE_URI, false); });
-    dispatcher()->reg(this, "diagnostic-save-diagnostic-files", this, &DiagnosticsActionsController::saveDiagnosticFiles);
-    dispatcher()->reg(this, "diagnostic-show-actions", [this]() { openUri(ACTIONS_LIST_URI); });
-    dispatcher()->reg(this, "diagnostic-show-rcommands", [this]() { openUri(RCOMMAND_LIST_URI); });
+    auto cd = commandDispatcher();
+    cd->onRequest(this, DIAGNOSTICS_SAVE_FILES_COMMAND, [this]() { saveDiagnosticFiles(); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_PATHS_COMMAND, [this]() { openUri(SYSTEM_PATHS_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_GRAPHICSINFO_COMMAND, [this]() { openUri(GRAPHICSINFO_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_PROFILER_COMMAND, [this]() { openUri(PROFILER_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_NAVIGATION_TREE_COMMAND, [this]() { openUri(NAVIGATION_TREE_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_ACCESSIBLE_TREE_COMMAND, [this]() { openUri(ACCESSIBLE_TREE_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_DUMP_ACCESSIBLE_TREE_COMMAND, []() { DiagnosticAccessibleModel().dumpTree(); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_ENGRAVING_ELEMENTS_COMMAND, [this]() {
+        openUri(ENGRAVING_ELEMENTS_URI, false);
+        return muse::make_ok();
+    });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_ENGRAVING_UNDOSTACK_COMMAND, [this]() {
+        openUri(ENGRAVING_UNDOSTACK_URI, false);
+        return muse::make_ok();
+    });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_ENGRAVING_STYLE_COMMAND, [this]() {
+        openUri(ENGRAVING_STYLE_URI, false);
+        return muse::make_ok();
+    });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_ACTIONS_COMMAND, [this]() { openUri(ACTIONS_LIST_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, [this]() { openUri(RCOMMAND_LIST_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_ACTIONS_QUERY_COMMAND, [this](const CommandQuery& q) { return onCommandQuery(q); });
+    cd->onRequest(this, DIAGNOSTICS_ACTIONS_QUERY_PARAMS1_COMMAND, [this](const CommandQuery& q) { return onCommandQuery(q); });
+    cd->onRequest(this, DIAGNOSTICS_ACTIONS_QUERY_PARAMS2_COMMAND, [this](const CommandQuery& q) { return onCommandQuery(q); });
 
-    dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query"), this, &DiagnosticsActionsController::onActionQuery);
-    dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query_params1"), this, &DiagnosticsActionsController::onActionQuery);
-    dispatcher()->reg(this, ActionQuery("action://diagnostic/actions/query_params2?param1=val1"),
-                      this, &DiagnosticsActionsController::onActionQuery);
+    // compat
+    {
+        static const std::vector<ActionToCommand> actionToCommands = {
+            { "diagnostic-save-diagnostic-files", DIAGNOSTICS_SAVE_FILES_COMMAND, {} },
+            { "diagnostic-show-paths", DIAGNOSTICS_SHOW_PATHS_COMMAND, {} },
+            { "diagnostic-show-graphicsinfo", DIAGNOSTICS_SHOW_GRAPHICSINFO_COMMAND, {} },
+            { "diagnostic-show-profiler", DIAGNOSTICS_SHOW_PROFILER_COMMAND, {} },
+            { "diagnostic-show-navigation-tree", DIAGNOSTICS_SHOW_NAVIGATION_TREE_COMMAND, {} },
+            { "diagnostic-show-accessible-tree", DIAGNOSTICS_SHOW_ACCESSIBLE_TREE_COMMAND, {} },
+            { "diagnostic-accessible-tree-dump", DIAGNOSTICS_DUMP_ACCESSIBLE_TREE_COMMAND, {} },
+            { "diagnostic-show-engraving-elements", DIAGNOSTICS_SHOW_ENGRAVING_ELEMENTS_COMMAND, {} },
+            { "diagnostic-show-engraving-undostack", DIAGNOSTICS_SHOW_ENGRAVING_UNDOSTACK_COMMAND, {} },
+            { "diagnostic-show-engraving-style", DIAGNOSTICS_SHOW_ENGRAVING_STYLE_COMMAND, {} },
+            { "diagnostic-show-actions", DIAGNOSTICS_SHOW_ACTIONS_COMMAND, {} },
+            { "diagnostic-show-rcommands", DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, {} },
+        };
+
+        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
+
+        static const std::vector<std::pair<actions::ActionQuery, Command> > actionQueryToCommands = {
+            { actions::ActionQuery("action://diagnostic/actions/query"), DIAGNOSTICS_ACTIONS_QUERY_COMMAND },
+            { actions::ActionQuery("action://diagnostic/actions/query_params1"), DIAGNOSTICS_ACTIONS_QUERY_PARAMS1_COMMAND },
+            { actions::ActionQuery("action://diagnostic/actions/query_params2"), DIAGNOSTICS_ACTIONS_QUERY_PARAMS2_COMMAND },
+        };
+
+        for (const auto& [actionQuery, command] : actionQueryToCommands) {
+            dispatcher()->reg(this, actionQuery, [this, command](const actions::ActionQuery& aquery) {
+                CommandQuery query(command);
+                query.setParams(aquery.params());
+                commandDispatcher()->dispatch(query);
+            });
+        }
+    }
 }
 
 void DiagnosticsActionsController::openUri(const UriQuery& uri, bool isSingle)
@@ -81,7 +126,8 @@ void DiagnosticsActionsController::saveDiagnosticFiles()
     }
 }
 
-void DiagnosticsActionsController::onActionQuery(const actions::ActionQuery& q)
+muse::Ret DiagnosticsActionsController::onCommandQuery(const muse::rcommand::CommandQuery& query)
 {
-    interactive()->info("Test query action", q.toString());
+    interactive()->info("Test query action", query.toString());
+    return muse::make_ok();
 }
