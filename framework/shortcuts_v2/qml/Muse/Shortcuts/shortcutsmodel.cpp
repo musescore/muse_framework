@@ -378,7 +378,7 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
                 continue;
             }
 
-            if (!areContextPrioritiesEqual(shortcut.context, sc.context)) {
+            if (!canShortcutsConflict(shortcut.scope, sc.scope)) {
                 continue;
             }
 
@@ -515,7 +515,7 @@ QVariant ShortcutsModel::shortcutToObject(const Item& item) const
     QVariantMap obj;
     obj["title"] = item.title;
     obj["sequence"] = item.sequence;
-    obj["context"] = QString::fromStdString(item.shortcut.context);
+    obj["scope"] = QString::fromStdString(item.shortcut.scope);
     obj["autoRepeat"] = item.shortcut.autoRepeat;
 
     return obj;

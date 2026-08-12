@@ -45,6 +45,7 @@ void EditShortcutModel::load(const QVariant& originShortcut, const QVariantList&
     m_potentialConflictShortcuts.clear();
 
     QVariantMap originShortcutMap = originShortcut.toMap();
+    std::string originScope = originShortcutMap.value("scope").toString().toStdString();
     std::string originCtx = originShortcutMap.value("context").toString().toStdString();
 
     for (const QVariant& shortcut : allShortcuts) {
@@ -53,9 +54,9 @@ void EditShortcutModel::load(const QVariant& originShortcut, const QVariantList&
         }
 
         QVariantMap map = shortcut.toMap();
-        std::string ctx = map.value("context").toString().toStdString();
+        std::string scope = map.value("scope").toString().toStdString();
 
-        if (areContextPrioritiesEqual(originCtx, ctx)) {
+        if (canShortcutsConflict(originScope, scope)) {
             m_potentialConflictShortcuts << shortcut;
         }
     }
