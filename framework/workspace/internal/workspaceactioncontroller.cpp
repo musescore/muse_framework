@@ -21,27 +21,42 @@
  */
 #include "workspaceactioncontroller.h"
 
-#include "types/val.h"
+#include "rcommand/actiontocommand.h"
+
+#include "../workspacecommands.h"
 
 #include "log.h"
 
 using namespace muse::workspace;
 using namespace muse::actions;
+using namespace muse::rcommand;
 
 void WorkspaceActionController::init()
 {
-    dispatcher()->reg(this, "select-workspace", this, &WorkspaceActionController::selectWorkspace);
-    dispatcher()->reg(this, "configure-workspaces", this, &WorkspaceActionController::openConfigureWorkspacesDialog);
-    dispatcher()->reg(this, "create-workspace", this, &WorkspaceActionController::createNewWorkspace);
+    commandDispatcher()->onRequest(this, SELECT_WORKSPACE_COMMAND, [this](const CommandQuery& query) { return selectWorkspace(query); });
+    commandDispatcher()->onRequest(this, CONFIGURE_WORKSPACES_COMMAND, [this]() { openWorkspacesConfigure(); return muse::make_ok(); });
+    commandDispatcher()->onRequest(this, CREATE_WORKSPACE_COMMAND, [this]() { createNewWorkspace(); return muse::make_ok(); });
+
+    // compat
+    {
+        static const std::vector<ActionToCommand> actionToCommands = {
+            { "select-workspace", SELECT_WORKSPACE_COMMAND, make_conv({ { "name", param<std::string> } }) },
+            { "configure-workspaces", CONFIGURE_WORKSPACES_COMMAND, {} },
+            { "create-workspace", CREATE_WORKSPACE_COMMAND, {} }
+        };
+
+        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
+    }
 }
 
-void WorkspaceActionController::selectWorkspace(const ActionData& args)
+muse::Ret WorkspaceActionController::selectWorkspace(const muse::rcommand::CommandQuery& query)
 {
-    std::string selectedWorkspace = !args.empty() ? args.arg<std::string>(0) : "";
+    std::string selectedWorkspace = query.param("name").toString();
     manager()->changeCurrentWorkspace(selectedWorkspace);
+    return muse::make_ok();
 }
 
-void WorkspaceActionController::openConfigureWorkspacesDialog()
+void WorkspaceActionController::openWorkspacesConfigure()
 {
     manager()->openConfigureWorkspacesDialog();
 }

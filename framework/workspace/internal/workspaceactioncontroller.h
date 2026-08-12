@@ -27,14 +27,17 @@
 #include "modularity/ioc.h"
 #include "interactive/iinteractive.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "iworkspaceconfiguration.h"
 #include "iworkspacemanager.h"
 
 namespace muse::workspace {
-class WorkspaceActionController : public Contextable, public actions::Actionable
+class WorkspaceActionController : public Contextable, public actions::Actionable, public rcommand::Commandable
 {
     GlobalInject<IWorkspaceConfiguration> configuration;
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
     ContextInject<IWorkspaceManager> manager = { this };
 
@@ -45,8 +48,8 @@ public:
     void init();
 
 private:
-    void selectWorkspace(const muse::actions::ActionData& args);
-    void openConfigureWorkspacesDialog();
+    muse::Ret selectWorkspace(const muse::rcommand::CommandQuery& query);
+    void openWorkspacesConfigure();
     void createNewWorkspace();
 };
 }

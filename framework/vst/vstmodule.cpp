@@ -28,6 +28,8 @@
 #include "audioplugins/iaudiopluginsscannerregister.h"
 #include "audioplugins/iaudiopluginmetareaderregister.h"
 
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 #include "ui/iuiactionsregister.h"
 
 #include "internal/vstconfiguration.h"
@@ -38,6 +40,8 @@
 #include "internal/vstpluginsscanner.h"
 #include "internal/vstpluginmetareader.h"
 #include "internal/vstactionscontroller.h"
+#include "internal/vstcommandsregister.h"
+#include "internal/vstcommandsstate.h"
 #include "internal/vstuiactions.h"
 
 using namespace muse::vst;
@@ -86,6 +90,11 @@ void VSTModule::resolveImports()
     if (metaReaderRegister) {
         metaReaderRegister->registerReader(std::make_shared<VstPluginMetaReader>());
     }
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<VstCommandsRegister>());
+    }
 }
 
 void VSTModule::onInit(const IApplication::RunMode&)
@@ -124,6 +133,11 @@ void VSTContext::resolveImports()
     auto ar = ioc()->resolve<ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<VstUiActions>(m_actionsController));
+    }
+
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<VstCommandsState>(iocContext()));
     }
 }
 

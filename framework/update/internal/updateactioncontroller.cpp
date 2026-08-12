@@ -21,11 +21,28 @@
  */
 #include "updateactioncontroller.h"
 
+#include "rcommand/actiontocommand.h"
+
+#include "../updatecommands.h"
+
 using namespace muse::update;
 
 void UpdateActionController::init()
 {
-    dispatcher()->reg(this, "check-update", this, &UpdateActionController::checkForAppUpdate);
+    commandDispatcher()->onRequest(this, UPDATE_CHECK_COMMAND, [this]() {
+        checkForAppUpdate();
+        return muse::make_ok();
+    });
+
+    // compat
+    {
+        using namespace muse::rcommand;
+        static const std::vector<ActionToCommand> actionToCommands = {
+            { "check-update", UPDATE_CHECK_COMMAND, {} },
+        };
+
+        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
+    }
 }
 
 void UpdateActionController::checkForAppUpdate()

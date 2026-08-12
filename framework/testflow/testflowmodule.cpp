@@ -23,6 +23,8 @@
 
 #include "modularity/ioc.h"
 #include "interactive/iinteractiveuriregister.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 #include "ui/iuiactionsregister.h"
 
 #include "internal/testflow.h"
@@ -30,6 +32,8 @@
 
 #include "internal/testflowactionscontroller.h"
 #include "internal/testflowactions.h"
+#include "internal/testflowcommandsregister.h"
+#include "internal/testflowcommandsstate.h"
 #include "internal/testflowscriptsrepository.h"
 
 #include "internal/api/testflowapi.h"
@@ -67,6 +71,11 @@ void TestflowModule::resolveImports()
     if (api) {
         api->regApiCreator(mname, "MuseInternal.Testflow", new ApiCreator<api::TestflowApi>());
         api->regApiCreator(mname, "MuseInternal.TestflowContext", new ApiCreator<ContextApi>());
+    }
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<TestflowCommandsRegister>());
     }
 }
 
@@ -109,6 +118,11 @@ void TestflowContext::resolveImports()
     auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<TestflowActions>());
+    }
+
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<TestflowCommandsState>(iocContext()));
     }
 }
 

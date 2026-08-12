@@ -21,6 +21,10 @@
  */
 #include "testflowactionscontroller.h"
 
+#include "rcommand/actiontocommand.h"
+
+#include "../testflowcommands.h"
+
 #include "types/uri.h"
 
 using namespace muse::testflow;
@@ -29,7 +33,25 @@ static const muse::UriQuery SHOW_SCRIPTS_URI("muse://diagnostics/testflow/script
 
 void TestflowActionsController::init()
 {
-    dispatcher()->reg(this, "testflow-show-scripts", [this]() { openUri(SHOW_SCRIPTS_URI); });
+    commandDispatcher()->onRequest(this, TESTFLOW_OPEN_SCRIPTS_COMMAND, [this]() {
+        showScripts();
+        return muse::make_ok();
+    });
+
+    // compat
+    {
+        using namespace muse::rcommand;
+        static const std::vector<ActionToCommand> actionToCommands = {
+            { "testflow-show-scripts", TESTFLOW_OPEN_SCRIPTS_COMMAND, {} },
+        };
+
+        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
+    }
+}
+
+void TestflowActionsController::showScripts()
+{
+    openUri(SHOW_SCRIPTS_URI);
 }
 
 void TestflowActionsController::openUri(const UriQuery& uri, bool isSingle)

@@ -24,10 +24,14 @@
 #include "modularity/ioc.h"
 
 #include "interactive/iinteractiveuriregister.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 #include "ui/iuiactionsregister.h"
 
 #include "internal/updateconfiguration.h"
 #include "internal/updateactioncontroller.h"
+#include "internal/updatecommandsregister.h"
+#include "internal/updatecommandsstate.h"
 #include "internal/updateuiactions.h"
 
 #include "internal/appupdatescenario.h"
@@ -56,6 +60,11 @@ void UpdateModule::resolveImports()
     if (ir) {
         ir->registerQmlUri(Uri("muse://update/appreleaseinfo"), "Muse.Update", "AppReleaseInfoDialog");
         ir->registerQmlUri(Uri("muse://update/app"), "Muse.Update", "AppUpdateProgressDialog");
+    }
+
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<UpdateCommandsRegister>());
     }
 }
 
@@ -86,6 +95,11 @@ void UpdateContext::resolveImports()
     auto ar = ioc()->resolve<ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<UpdateUiActions>(m_actionController, iocContext()));
+    }
+
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<UpdateCommandsState>(iocContext()));
     }
 }
 

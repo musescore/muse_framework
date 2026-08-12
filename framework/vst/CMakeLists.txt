@@ -30,11 +30,16 @@ target_sources(muse_vst PRIVATE
     vsterrors.h
     vstpluginattrs.h
     vsttypes.h
+    vstcommands.h
     vstmodule.cpp
     vstmodule.h
 
     internal/vstactionscontroller.cpp
     internal/vstactionscontroller.h
+    internal/vstcommandsregister.cpp
+    internal/vstcommandsregister.h
+    internal/vstcommandsstate.cpp
+    internal/vstcommandsstate.h
     internal/vstuiactions.cpp
     internal/vstuiactions.h
     internal/vstmodulesrepository.cpp
