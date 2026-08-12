@@ -123,13 +123,13 @@ inline std::pair<Qt::Key, Qt::KeyboardModifiers> correctKeyInput(Qt::Key key, Qt
 
 inline QString sequencesToNativeText(const std::vector<std::string>& sequences)
 {
-    QList<QKeySequence> keySequenceList;
+    std::vector<std::string> seqs;
 
     for (const std::string& sequence : sequences) {
-        keySequenceList << QKeySequence(QString::fromStdString(sequence));
+        seqs.push_back(QKeySequence(QString::fromStdString(sequence)).toString(QKeySequence::NativeText).toStdString());
     }
 
-    return QKeySequence::listToString(keySequenceList, QKeySequence::NativeText);
+    return QString::fromStdString(Shortcut::sequencesToString(seqs));
 }
 
 inline bool canShortcutsConflict(const std::string& scope1, const std::string& scope2)
