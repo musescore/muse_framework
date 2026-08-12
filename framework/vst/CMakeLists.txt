@@ -77,6 +77,12 @@ target_sources(muse_vst PRIVATE
     widgets/vstviewdialog_qwidget.h
 )
 
+set_source_files_properties(
+    internal/vstuiactions.cpp
+    PROPERTIES
+    SKIP_UNITY_BUILD_INCLUSION ON
+)
+
 target_link_libraries(muse_vst PRIVATE vst3sdk)
 
 if (MUSE_QT_SUPPORT)
