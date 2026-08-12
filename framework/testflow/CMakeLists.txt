@@ -31,6 +31,7 @@ target_sources(muse_testflow PRIVATE
     itestflowconfiguration.h
     itestflowscriptsrepository.h
     testflowutils.h
+    testflowcommands.h
 
     internal/testflow.cpp
     internal/testflow.h
@@ -46,6 +47,10 @@ target_sources(muse_testflow PRIVATE
     internal/testflowactions.h
     internal/testflowactionscontroller.cpp
     internal/testflowactionscontroller.h
+    internal/testflowcommandsregister.cpp
+    internal/testflowcommandsregister.h
+    internal/testflowcommandsstate.cpp
+    internal/testflowcommandsstate.h
     internal/testflowscriptsrepository.cpp
     internal/testflowscriptsrepository.h
     internal/draw/abpaintprovider.cpp

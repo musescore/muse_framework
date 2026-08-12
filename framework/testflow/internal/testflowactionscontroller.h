@@ -25,12 +25,15 @@
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
 #include "actions/actionable.h"
+#include "rcommand/commandable.h"
+#include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
 
 namespace muse::testflow {
-class TestflowActionsController : public Contextable, public actions::Actionable
+class TestflowActionsController : public Contextable, public actions::Actionable, public rcommand::Commandable
 {
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
 
 public:
@@ -40,6 +43,7 @@ public:
     void init();
 
 private:
+    void showScripts();
     void openUri(const muse::UriQuery& uri, bool isSingle = true);
 };
 }
