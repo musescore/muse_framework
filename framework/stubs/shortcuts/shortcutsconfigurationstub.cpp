@@ -44,12 +44,36 @@ io::path_t ShortcutsConfigurationStub::shortcutsAppDataPath() const
 }
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
-io::path_t ShortcutsConfigurationStub::commandShortcutsUserAppDataPath() const
+std::string ShortcutsConfigurationStub::defaultShortcutsName() const
+{
+    return "shortcuts";
+}
+
+std::vector<std::string> ShortcutsConfigurationStub::availableShortcutsPresets() const
+{
+    return {};
+}
+
+std::string ShortcutsConfigurationStub::currentShortcutsPresetName() const
+{
+    return std::string();
+}
+
+void ShortcutsConfigurationStub::setCurrentShortcutsPresetName(const std::string&)
+{
+}
+
+muse::async::Channel<std::string> ShortcutsConfigurationStub::currentShortcutsPresetNameChanged() const
+{
+    return {};
+}
+
+io::path_t ShortcutsConfigurationStub::commandShortcutsUserAppDataPath(const std::string&) const
 {
     return io::path_t();
 }
 
-io::path_t ShortcutsConfigurationStub::commandShortcutsAppDataPath() const
+io::path_t ShortcutsConfigurationStub::commandShortcutsAppDataPath(const std::string&) const
 {
     return io::path_t();
 }

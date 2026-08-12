@@ -57,10 +57,28 @@ public:
     Ret importFromFile(const io::path_t& filePath) override;
     Ret exportToFile(const io::path_t& filePath) const override;
 
+    std::vector<std::string> availablePresets() const override;
+
+    std::string currentPresetName() const override;
+    void setCurrentPresetName(const std::string& presetName) override;
+    async::Channel<std::string> currentPresetNameChanged() const override;
+
+    bool isPresetEdited(const std::string& presetName) const override;
+    bool canDeletePreset(const std::string& presetName) const override;
+    void deletePreset(const std::string& presetName) override;
+
     // for testflow tests
     void reload(bool onlyDef = false) override;
 
 private:
+
+    std::string activeShortcutsName() const;
+    io::path_t userShortcutsPath() const;
+
+    void applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const;
+    ShortcutList makeDiff(const ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const;
+
+    bool removeUserFile();
 
     bool readFromFile(ShortcutList& shortcuts, const io::path_t& path) const;
     bool writeToFile(const ShortcutList& shortcuts, const io::path_t& path) const;

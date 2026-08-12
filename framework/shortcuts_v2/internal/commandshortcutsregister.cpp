@@ -21,6 +21,7 @@
  */
 #include "commandshortcutsregister.h"
 
+#include "containers.h"
 #include "global/io/file.h"
 #include "global/serialization/json.h"
 
@@ -31,6 +32,7 @@ using namespace muse::shortcuts;
 using namespace muse::async;
 
 static const std::string COMMAND_SHORTCUTS_TAG("CommandShortcuts");
+static const std::string DEFAULT_SHORTCUTS_NAME("shortcuts");
 
 void CommandShortcutsRegister::init()
 {
@@ -38,6 +40,10 @@ void CommandShortcutsRegister::init()
         if (resourceName == COMMAND_SHORTCUTS_TAG) {
             reload();
         }
+    });
+
+    configuration()->currentShortcutsPresetNameChanged().onReceive(this, [this](const std::string&) {
+        reload();
     });
 
     reload();
@@ -50,10 +56,23 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     m_shortcuts.clear();
     m_defaultShortcuts.clear();
 
-    io::path_t defPath = configuration()->commandShortcutsAppDataPath();
-    io::path_t userPath = configuration()->commandShortcutsUserAppDataPath();
+    io::path_t defPath = configuration()->commandShortcutsAppDataPath(DEFAULT_SHORTCUTS_NAME);
+    io::path_t userPath = userShortcutsPath();
 
     bool ok = readFromFile(m_defaultShortcuts, defPath);
+
+    if (ok) {
+        //! NOTE Platform and preset shortcuts files are diffs from the base one
+        std::string defaultName = configuration()->defaultShortcutsName();
+        if (defaultName != DEFAULT_SHORTCUTS_NAME) {
+            applyShortcutsDiff(defaultName, m_defaultShortcuts);
+        }
+
+        std::string presetName = configuration()->currentShortcutsPresetName();
+        if (!presetName.empty()) {
+            applyShortcutsDiff(presetName, m_defaultShortcuts);
+        }
+    }
 
     if (ok) {
         if (!onlyDef) {
@@ -82,6 +101,66 @@ void CommandShortcutsRegister::reload(bool onlyDef)
         makeUnique(m_shortcuts);
         m_shortcutsChanged.notify();
     }
+}
+
+std::string CommandShortcutsRegister::activeShortcutsName() const
+{
+    std::string presetName = configuration()->currentShortcutsPresetName();
+    return presetName.empty() ? configuration()->defaultShortcutsName() : presetName;
+}
+
+io::path_t CommandShortcutsRegister::userShortcutsPath() const
+{
+    return configuration()->commandShortcutsUserAppDataPath(activeShortcutsName());
+}
+
+void CommandShortcutsRegister::applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const
+{
+    ShortcutList diff;
+    if (!readFromFile(diff, configuration()->commandShortcutsAppDataPath(shortcutsName))) {
+        return;
+    }
+
+    mergeShortcuts(diff, shortcuts);
+    shortcuts = diff;
+}
+
+//! NOTE Scope and autoRepeat always take default values on merge, so only sequences are compared
+ShortcutList CommandShortcutsRegister::makeDiff(const ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const
+{
+    ShortcutList diff;
+
+    for (const Shortcut& sc : shortcuts) {
+        auto it = std::find_if(defaultShortcuts.begin(), defaultShortcuts.end(), [&sc](const Shortcut& defSc) {
+            return defSc.command == sc.command;
+        });
+
+        if (it == defaultShortcuts.end() || it->sequences != sc.sequences) {
+            diff.push_back(sc);
+        }
+    }
+
+    return diff;
+}
+
+bool CommandShortcutsRegister::removeUserFile()
+{
+    io::path_t path = userShortcutsPath();
+    if (path.empty()) {
+        return false;
+    }
+
+    bool ok = false;
+    {
+        mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
+        ok = io::File::remove(path);
+    }
+
+    if (!ok) {
+        LOGE() << "failed remove file: " << path;
+    }
+
+    return ok;
 }
 
 void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const
@@ -240,6 +319,11 @@ bool CommandShortcutsRegister::writeToFile(const ShortcutList& shortcuts, const 
 {
     TRACEFUNC;
 
+    if (path.empty()) {
+        LOGE() << "failed write shortcuts: empty path";
+        return false;
+    }
+
     JsonObject root;
     for (const Shortcut& shortcut : shortcuts) {
         JsonObject shortcutObj;
@@ -291,11 +375,17 @@ Ret CommandShortcutsRegister::setShortcuts(const ShortcutList& shortcuts)
     }
 
     ShortcutList needToWrite = filterAndUpdateAdditionalShortcuts(shortcuts);
+    ShortcutList diff = makeDiff(needToWrite, m_defaultShortcuts);
 
-    bool ok = writeToFile(needToWrite, configuration()->commandShortcutsUserAppDataPath());
+    bool ok = false;
+    if (diff.empty()) {
+        ok = removeUserFile();
+    } else {
+        ok = writeToFile(diff, userShortcutsPath());
+    }
 
     if (ok) {
-        m_shortcuts = needToWrite;
+        m_shortcuts = diff;
         mergeShortcuts(m_shortcuts, m_defaultShortcuts);
         mergeAdditionalShortcuts(m_shortcuts);
         m_shortcutsChanged.notify();
@@ -306,11 +396,8 @@ Ret CommandShortcutsRegister::setShortcuts(const ShortcutList& shortcuts)
 
 void CommandShortcutsRegister::resetShortcuts()
 {
-    {
-        mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
-        io::File::remove(configuration()->commandShortcutsUserAppDataPath());
-    }
-
+    //! NOTE Even if the removal failed, reload to keep the state in sync with the file
+    removeUserFile();
     reload();
 }
 
@@ -343,9 +430,15 @@ ShortcutList CommandShortcutsRegister::shortcutsForSequence(const std::string& s
 
 Ret CommandShortcutsRegister::importFromFile(const io::path_t& filePath)
 {
+    io::path_t userPath = userShortcutsPath();
+    if (userPath.empty()) {
+        LOGE() << "failed import file: invalid user shortcuts path";
+        return make_ret(Ret::Code::UnknownError);
+    }
+
     {
-        mi::ReadResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
-        Ret ret = io::File::copy(filePath, configuration()->commandShortcutsUserAppDataPath(), true);
+        mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
+        Ret ret = io::File::copy(filePath, userPath, true);
         if (!ret) {
             LOGE() << "failed import file: " << ret.toString();
             return ret;
@@ -360,4 +453,67 @@ Ret CommandShortcutsRegister::importFromFile(const io::path_t& filePath)
 Ret CommandShortcutsRegister::exportToFile(const io::path_t& filePath) const
 {
     return writeToFile(m_shortcuts, filePath);
+}
+
+std::vector<std::string> CommandShortcutsRegister::availablePresets() const
+{
+    return configuration()->availableShortcutsPresets();
+}
+
+std::string CommandShortcutsRegister::currentPresetName() const
+{
+    return configuration()->currentShortcutsPresetName();
+}
+
+void CommandShortcutsRegister::setCurrentPresetName(const std::string& presetName)
+{
+    configuration()->setCurrentShortcutsPresetName(presetName);
+}
+
+async::Channel<std::string> CommandShortcutsRegister::currentPresetNameChanged() const
+{
+    return configuration()->currentShortcutsPresetNameChanged();
+}
+
+bool CommandShortcutsRegister::isPresetEdited(const std::string& presetName) const
+{
+    std::string name = presetName.empty() ? configuration()->defaultShortcutsName() : presetName;
+    return io::File::exists(configuration()->commandShortcutsUserAppDataPath(name));
+}
+
+bool CommandShortcutsRegister::canDeletePreset(const std::string& presetName) const
+{
+    if (presetName.empty()) {
+        return false;
+    }
+
+    //! NOTE Built-in presets cannot be deleted
+    return !muse::contains(configuration()->availableShortcutsPresets(), presetName);
+}
+
+void CommandShortcutsRegister::deletePreset(const std::string& presetName)
+{
+    if (!canDeletePreset(presetName)) {
+        return;
+    }
+
+    io::path_t path = configuration()->commandShortcutsUserAppDataPath(presetName);
+    if (path.empty()) {
+        return;
+    }
+
+    bool ok = false;
+    {
+        mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
+        ok = io::File::remove(path);
+    }
+
+    if (!ok) {
+        LOGE() << "failed remove file: " << path;
+        return;
+    }
+
+    if (currentPresetName() == presetName) {
+        setCurrentPresetName(std::string());
+    }
 }

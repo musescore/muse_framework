@@ -21,6 +21,14 @@
  */
 #pragma once
 
+#include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "../shortcuts_v2/ishortcutsregister.h"
+#else
+
+#pragma once
+
 #include "modularity/imoduleinterface.h"
 #include "shortcutstypes.h"
 #include "async/notification.h"
@@ -58,3 +66,5 @@ public:
     virtual void reload(bool onlyDef = false) = 0;
 };
 }
+
+#endif // MUSE_MODULE_SHORTCUTS_V2
