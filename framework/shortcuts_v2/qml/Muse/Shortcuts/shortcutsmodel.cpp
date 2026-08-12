@@ -372,7 +372,8 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
         }
 
         for (int i = 0; i < m_items.size(); ++i) {
-            Shortcut& sc = m_items[i].shortcut;
+            Item& item = m_items[i];
+            Shortcut& sc = item.shortcut;
 
             if (shortcut == sc) {
                 continue;
@@ -382,22 +383,38 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
                 continue;
             }
 
-            if (shortcut.sequences == sc.sequences) {
-                sc.clear();
+            bool removed = muse::remove_if(sc.sequences, [&shortcut](const std::string& sequence) {
+                return muse::contains(shortcut.sequences, sequence);
+            });
+
+            if (removed) {
+                if (sc.sequences.empty()) {
+                    sc.clear();
+                }
+
+                item.sequence = sequencesToNativeText(sc.sequences);
                 notifyAboutShortcutChanged(index(i));
             }
         }
     };
 
     for (const QModelIndex& index : m_selection.indexes()) {
-        Shortcut& shortcut = m_items[index.row()].shortcut;
+        Item& item = m_items[index.row()];
+        Shortcut& shortcut = item.shortcut;
 
-        const Shortcut& defaultShortcut = shortcutsRegister()->defaultShortcut(shortcut.action);
-        if (defaultShortcut.isValid()) {
-            shortcut = defaultShortcut;
+        const Shortcut& defaultActionShortcut = shortcutsRegister()->defaultShortcut(shortcut.action);
+        if (defaultActionShortcut.isValid()) {
+            shortcut = defaultActionShortcut;
         } else {
-            shortcut.sequences = {};
+            const Shortcut& defaultCommandShortcut = commandShortcutsRegister()->defaultShortcut(shortcut.command);
+            if (defaultCommandShortcut.isValid()) {
+                shortcut = defaultCommandShortcut;
+            } else {
+                shortcut.sequences = {};
+            }
         }
+
+        item.sequence = sequencesToNativeText(shortcut.sequences);
 
         resolveConflicts(shortcut);
 

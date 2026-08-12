@@ -53,6 +53,7 @@ public:
     Ret setAdditionalShortcuts(const std::string& context, const ShortcutList& shortcuts) override;
 
     ShortcutList shortcutsForSequence(const std::string& sequence) const override;
+    const Shortcut& defaultShortcut(const std::string& command) const override;
 
     Ret importFromFile(const io::path_t& filePath) override;
     Ret exportToFile(const io::path_t& filePath) const override;
