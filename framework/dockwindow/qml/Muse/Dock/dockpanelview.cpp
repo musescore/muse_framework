@@ -117,11 +117,8 @@ private:
     {
         MenuItem* item = new MenuItem(this);
         item->setId(actionCode);
-
-        UiAction action;
-        action.code = codeFromQString(actionCode);
-        action.title = title;
-        item->setAction(action);
+        item->setActionCode(codeFromQString(actionCode));
+        item->setTitle(title);
 
         UiActionState state;
         state.enabled = true;
@@ -145,10 +142,7 @@ private:
             }
 
             MenuItem& item = this->item(index);
-
-            UiAction action = item.action();
-            action.title = toggleFloatingActionTitle();
-            item.setAction(action);
+            item.setTitle(toggleFloatingActionTitle());
         });
     }
 

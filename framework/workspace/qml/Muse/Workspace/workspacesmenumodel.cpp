@@ -51,11 +51,7 @@ void WorkspacesMenuModel::load()
     for (const IWorkspacePtr& workspace : workspaces) {
         MenuItem* item = new MenuItem(uiActionsRegister()->action("select-workspace"), this);
         item->setId(QString::number(index++));
-
-        UiAction action = item->action();
-        action.title = TranslatableString::untranslatable(String::fromStdString(workspace->name()));
-
-        item->setAction(action);
+        item->setTitle(TranslatableString::untranslatable(String::fromStdString(workspace->name())));
         item->setArgs(ActionData::make_arg1<std::string>(workspace->name()));
         item->setSelectable(true);
         item->setSelected(workspace == currentWorkspace);

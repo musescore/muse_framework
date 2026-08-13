@@ -27,9 +27,11 @@
 #include <QObject>
 #include <QString>
 
+#include "actions/actiontypes.h"
 #include "global/async/asyncable.h"
 
 #include "ui/uiaction.h"
+#include "rcommand/commandtypes.h"
 
 namespace muse::uicomponents {
 // This must be in sync with QAction::MenuRole
@@ -51,72 +53,93 @@ class MenuItem : public QObject, public async::Asyncable
     QML_ELEMENT
 
     Q_PROPERTY(QString id READ id NOTIFY idChanged)
+    Q_PROPERTY(QString code READ code_property NOTIFY itemChanged)
 
-    Q_PROPERTY(QString code READ code_property NOTIFY actionChanged)
+    Q_PROPERTY(QString title READ translatedTitle NOTIFY itemChanged)
+    Q_PROPERTY(QString titleWithMnemonicUnderline READ titleWithMnemonicUnderline NOTIFY itemChanged)
+    Q_PROPERTY(QString description READ translatedDescription NOTIFY itemChanged)
     Q_PROPERTY(QString shortcuts READ shortcutsTitle NOTIFY shortcutsChanged)
-    Q_PROPERTY(QString portableShortcuts READ portableShortcuts NOTIFY actionChanged)
+    Q_PROPERTY(QString portableShortcuts READ portableShortcuts NOTIFY shortcutsChanged)
 
-    Q_PROPERTY(QString title READ translatedTitle NOTIFY actionChanged)
-    Q_PROPERTY(QString titleWithMnemonicUnderline READ titleWithMnemonicUnderline NOTIFY actionChanged)
-    Q_PROPERTY(QString description READ description_property NOTIFY actionChanged)
+    Q_PROPERTY(int icon READ icon_property NOTIFY itemChanged)
+    Q_PROPERTY(QString iconColor READ iconColor_property NOTIFY itemChanged)
+
+    Q_PROPERTY(bool enabled READ enabled NOTIFY stateChanged)
+    Q_PROPERTY(bool checkable READ checkable NOTIFY itemChanged)
+    Q_PROPERTY(bool checked READ checked NOTIFY stateChanged)
+    Q_PROPERTY(bool selectable READ selectable NOTIFY selectableChanged)
+    Q_PROPERTY(bool selected READ selected NOTIFY selectedChanged)
+
     Q_PROPERTY(QString section READ section NOTIFY sectionChanged)
-
-    Q_PROPERTY(int icon READ icon_property NOTIFY actionChanged)
-    Q_PROPERTY(QString iconColor READ iconColor_property NOTIFY actionChanged)
-
-    Q_PROPERTY(bool enabled READ enabled_property NOTIFY stateChanged)
-
-    Q_PROPERTY(bool checkable READ checkable_property NOTIFY actionChanged)
-    Q_PROPERTY(bool checked READ checked_property NOTIFY stateChanged)
-
-    Q_PROPERTY(bool selectable READ selectable_property NOTIFY selectableChanged)
-    Q_PROPERTY(bool selected READ selected_property NOTIFY selectedChanged)
-
     Q_PROPERTY(int role READ role_property NOTIFY roleChanged)
-
     Q_PROPERTY(muse::uicomponents::MenuItemList subitems READ subitems NOTIFY subitemsChanged)
 
 public:
     MenuItem(QObject* parent = nullptr);
-    MenuItem(const ui::UiAction& action, QObject* parent = nullptr);
 
+    void setId(const QString& id);
     QString id() const;
+    std::string intent() const;
+    QString code_property() const;
+
+    void setTitle(const MnemonicString& title);
     QString translatedTitle() const;
     QString titleWithMnemonicUnderline() const;
-    QString section() const;
-
-    bool selectable() const;
-    bool selected() const;
-
-    MenuItemRole role() const;
-
-    MenuItemList subitems() const;
-
-    const ui::UiAction& action() const;
-    ui::UiActionState state() const;
-    muse::actions::ActionData args() const;
-    const muse::actions::ActionQuery& query() const;
-
-    bool isValid() const;
-
+    void setDescription(const TranslatableString& description);
+    QString translatedDescription() const;
+    void setShortcuts(const std::vector<std::string>& shortcuts);
     QString shortcutsTitle() const;
     QString portableShortcuts() const;
 
-public slots:
-    void setId(const QString& id);
-    void setTitle(const muse::TranslatableString& title);
-    void setSection(const QString& section);
-    void setState(const muse::ui::UiActionState& state);
-    void setSelectable(bool selectable);
-    void setSelected(bool selected);
+    void setIcon(ui::IconCode::Code icon);
+    int icon_property() const;
+    void setIconColor(const QString& iconColor);
+    QString iconColor_property() const;
+
+    void setEnabled(bool enabled);
+    bool enabled() const;
     void setCheckable(bool checkable);
+    bool checkable() const;
     void setChecked(bool checked);
-    void setRole(muse::uicomponents::MenuItemRole role);
-    void setSubitems(const uicomponents::MenuItemList& subitems);
+    bool checked() const;
+    void setSelectable(bool selectable);
+    bool selectable() const;
+    void setSelected(bool selected);
+    bool selected() const;
+
+    void setSection(const QString& section);
+    QString section() const;
+    void setRole(MenuItemRole role);
+    MenuItemRole role() const;
+    int role_property() const;
+    void setSubitems(const MenuItemList& subitems);
+    MenuItemList subitems() const;
+
+    bool isValid() const;
+
+    // command support
+    MenuItem(const rcommand::CommandInfo& info, QObject* parent = nullptr);
+    void setCommandInfo(const rcommand::CommandInfo& info);
+    rcommand::CommandInfo commandInfo() const;
+    void setCommand(const rcommand::Command& command);
+    rcommand::Command command() const;
+    void setCommandQuery(const rcommand::CommandQuery& query);
+    rcommand::CommandQuery commandQuery() const;
+    void setCommandState(const rcommand::CommandState& state);
+    rcommand::CommandState commandState() const;
+
+    // action support
+    MenuItem(const ui::UiAction& action, QObject* parent = nullptr);
+    void setActionCode(const actions::ActionCode& code);
+    actions::ActionCode actionCode() const;
     void setAction(const muse::ui::UiAction& action);
-    void setShortcuts(const std::vector<std::string>& shortcuts);
+    ui::UiAction action() const;
+    void setState(const muse::ui::UiActionState& state);
+    ui::UiActionState state() const;
     void setArgs(const muse::actions::ActionData& args);
+    muse::actions::ActionData args() const;
     void setQuery(const muse::actions::ActionQuery& query);
+    muse::actions::ActionQuery query() const;
 
 signals:
     void idChanged(QString id);
@@ -127,39 +150,31 @@ signals:
     void selectedChanged(bool selected);
     void roleChanged(int role);
     void subitemsChanged(uicomponents::MenuItemList subitems, const QString& menuId);
-    void actionChanged();
+    void itemChanged();
     void shortcutsChanged();
 
 private:
-    QString code_property() const;
-
-    QString description_property() const;
-
-    int icon_property() const;
-    QString iconColor_property() const;
-
-    bool enabled_property() const;
-
-    bool checkable_property() const;
-    bool checked_property() const;
-
-    bool selectable_property() const;
-    bool selected_property() const;
-
-    int role_property() const;
 
     QString m_id;
-    QString m_section;
-    ui::UiActionState m_state;
+    std::string m_intent;
+    MnemonicString m_title;
+    TranslatableString m_description;
+    std::vector<std::string> m_shortcuts;
+
+    ui::IconCode::Code m_icon = ui::IconCode::Code::NONE;
+    QString m_iconColor;
+
+    bool m_enabled = true;
+    bool m_checkable = false;
+    bool m_checked = false;
     bool m_selectable = false;
     bool m_selected = false;
+
+    QString m_section;
     MenuItemRole m_role = MenuItemRole::NoRole;
-    muse::actions::ActionData m_args;
-    muse::actions::ActionQuery m_query;
     MenuItemList m_subitems;
 
-    ui::UiAction m_action;
-    std::vector<std::string> m_shortcuts;
+    muse::actions::ActionData m_args;
 };
 
 inline QVariantList menuItemListToVariantList(const uicomponents::MenuItemList& list)
