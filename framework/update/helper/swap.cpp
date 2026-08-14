@@ -24,10 +24,21 @@
 
 #include "platform.h"
 
-#include <filesystem>
-#include <string>
-#include <map>
+#include <cerrno>
 #include <cstdio>
+#include <cstring>
+#include <filesystem>
+#include <map>
+#include <string>
+
+#ifdef __linux__
+#include <fcntl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#ifndef RENAME_EXCHANGE
+#define RENAME_EXCHANGE (1 << 1)
+#endif
+#endif
 
 namespace fs = std::filesystem;
 
@@ -70,6 +81,8 @@ Args parseArgs(int argc, char** argv)
 
 //! Move `from` to `to`, falling back to copy+remove when rename crosses a
 //! filesystem boundary (rename only succeeds within a single volume).
+//! Only safe while the install location is untouched: the copy is not atomic
+//! and a crash leaves a partial `to` behind.
 bool movePath(const fs::path& from, const fs::path& to, std::error_code& ec)
 {
     fs::rename(from, to, ec);
@@ -86,6 +99,23 @@ bool movePath(const fs::path& from, const fs::path& to, std::error_code& ec)
     std::error_code rmEc;
     fs::remove_all(from, rmEc);
     return true;
+}
+
+//! Atomically exchange `a` and `b` in a single syscall, so that there is no
+//! moment when the install location is empty or half-populated. Fails when the
+//! filesystem does not support it; the caller then falls back to two renames.
+bool exchangePaths(const fs::path& a, const fs::path& b)
+{
+#if defined(__APPLE__)
+    return ::renamex_np(a.c_str(), b.c_str(), RENAME_SWAP) == 0;
+#elif defined(SYS_renameat2)
+    return ::syscall(SYS_renameat2, AT_FDCWD, a.c_str(), AT_FDCWD, b.c_str(), RENAME_EXCHANGE) == 0;
+#else
+    (void)a;
+    (void)b;
+    errno = ENOTSUP;
+    return false;
+#endif
 }
 }
 
@@ -110,11 +140,15 @@ int swapper::run(int argc, char** argv)
 
     // 1. Wait for the host application to fully exit before touching its files.
     if (args.waitPid > 0) {
-        platform::waitForProcessExit(args.waitPid, /*timeoutMs*/ 60000);
+        if (!platform::waitForProcessExit(args.waitPid, /*timeoutMs*/ 60000)) {
+            logLine("error: host process is still running");
+            return 1;
+        }
     }
 
     const fs::path src(args.src);
     const fs::path dst(args.dst);
+    const fs::path staging = fs::path(dst).concat(".staging");
     const fs::path backup = fs::path(dst).concat(".bak");
 
     std::error_code ec;
@@ -124,45 +158,65 @@ int swapper::run(int argc, char** argv)
         return 1;
     }
 
-    // 2. Backup the current install location.
+    // 2. Stage the update next to dst. This is the only non-atomic phase (the
+    //    copy fallback when src is on another volume), and dst is still intact
+    //    throughout it: a crash here loses nothing but the downloaded update.
+    //    From here on every step that exposes dst is a same-volume rename.
+    fs::remove_all(staging, ec);
     fs::remove_all(backup, ec);
     ec.clear();
-    if (fs::exists(dst, ec)) {
-        if (!movePath(dst, backup, ec)) {
-            logLine("error: failed to backup dst: " + ec.message());
+    if (!movePath(src, staging, ec)) {
+        logLine("error: failed to stage the update: " + ec.message());
+        std::error_code rmEc;
+        fs::remove_all(staging, rmEc);
+        return 1;
+    }
+
+    // 3. Verify the staged install while dst is untouched (platform-specific
+    //    check, e.g. code signature validity on macOS), instead of verifying
+    //    after the swap and rolling back: this way a bad update never replaces
+    //    a working install even for a moment.
+    if (!platform::verifyInstall(staging.string())) {
+        logLine("error: staged install failed verification");
+        std::error_code rmEc;
+        fs::remove_all(staging, rmEc);
+        return 1;
+    }
+
+    // 4. Swap the staged install into place: preferably one atomic exchange
+    //    (no window at all), otherwise two renames (the window is only between
+    //    them, and the old install survives as a backup until the new one is
+    //    in place).
+    const bool dstExists = fs::exists(dst, ec);
+    ec.clear();
+
+    if (dstExists && exchangePaths(staging, dst)) {
+        std::error_code rmEc;
+        fs::remove_all(staging, rmEc); // now holds the old install
+    } else {
+        if (dstExists) {
+            logLine(std::string("atomic exchange unavailable: ") + std::strerror(errno));
+            fs::rename(dst, backup, ec);
+            if (ec) {
+                logLine("error: failed to move dst aside: " + ec.message());
+                std::error_code rmEc;
+                fs::remove_all(staging, rmEc);
+                return 1;
+            }
+        }
+        fs::rename(staging, dst, ec);
+        if (ec) {
+            logLine("error: failed to move staged install into place: " + ec.message());
+
+            std::error_code rbEc;
+            fs::rename(backup, dst, rbEc);
             return 1;
         }
+        std::error_code rmEc;
+        fs::remove_all(backup, rmEc);
     }
 
-    // 3. Swap in the new install.
-    if (!movePath(src, dst, ec)) {
-        logLine("error: failed to move src into place: " + ec.message());
-
-        // Rollback.
-        std::error_code rbEc;
-        if (fs::exists(backup, rbEc)) {
-            movePath(backup, dst, rbEc);
-        }
-        return 1;
-    }
-
-    // 4. Verify the result; rollback on failure (platform-specific check, e.g.
-    //    code signature validity on macOS).
-    if (!platform::verifyInstall(dst.string())) {
-        logLine("error: post-swap verification failed, rolling back");
-
-        std::error_code rbEc;
-        fs::remove_all(dst, rbEc);
-        if (fs::exists(backup, rbEc)) {
-            movePath(backup, dst, rbEc);
-        }
-        return 1;
-    }
-
-    // 5. Success: drop the backup.
-    fs::remove_all(backup, ec);
-
-    // 6. Relaunch the updated application.
+    // 5. Relaunch the updated application.
     const std::string relaunchTarget = args.relaunch.empty() ? dst.string() : args.relaunch;
     if (!platform::relaunch(relaunchTarget)) {
         logLine("error: failed to relaunch " + relaunchTarget);

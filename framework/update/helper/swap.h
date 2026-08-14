@@ -23,9 +23,9 @@
 #pragma once
 
 namespace swapper {
-//! Waits for the host application to exit, swaps the install location with the
-//! freshly unpacked update (keeping a backup for rollback) and relaunches the
-//! application.
+//! Waits for the host application to exit, stages the freshly unpacked update
+//! next to the install location, verifies it, atomically swaps it into place
+//! and relaunches the application.
 //!
 //!   --wait-pid <pid> --src <dir> --dst <dir> [--relaunch <path>] [--log <path>]
 //!

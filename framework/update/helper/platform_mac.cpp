@@ -54,18 +54,19 @@ int runDetachedAndWait(const char* path, char* const argv[])
 }
 
 namespace platform {
-void waitForProcessExit(long long pid, int timeoutMs)
+bool waitForProcessExit(long long pid, int timeoutMs)
 {
     const int step = 100;
     int waited = 0;
     while (waited < timeoutMs) {
         if (::kill(static_cast<pid_t>(pid), 0) != 0) {
             // No such process -> it has exited.
-            return;
+            return true;
         }
         sleepMs(step);
         waited += step;
     }
+    return ::kill(static_cast<pid_t>(pid), 0) != 0;
 }
 
 bool verifyInstall(const std::string& path)

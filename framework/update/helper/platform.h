@@ -26,7 +26,8 @@
 
 namespace platform {
 //! Block until the process `pid` has exited, or `timeoutMs` elapses.
-void waitForProcessExit(long long pid, int timeoutMs);
+//! Returns false when the process is still running after the timeout.
+bool waitForProcessExit(long long pid, int timeoutMs);
 
 #ifndef _WIN32
 //! Verify that the swapped-in install at `path` is launchable.
