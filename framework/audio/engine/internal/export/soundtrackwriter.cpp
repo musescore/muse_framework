@@ -166,6 +166,10 @@ Ret SoundTrackWriter::writeStreaming()
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, audioEnd - framesWritten));
 
+        //! NOTE The mixer mixes additively and relies on the caller to zero the output buffer
+        //! (real time does this via AudioEngine::fillSilent), so clear it before each block.
+        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
+
         m_source->process(m_intermBuffer.data(), chunk);
 
         const size_t encoded = m_encoderPtr->encode(chunk, m_intermBuffer.data());
