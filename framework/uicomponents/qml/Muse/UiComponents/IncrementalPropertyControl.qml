@@ -81,12 +81,14 @@ Item {
             } else {
                 newValue = value + step
             }
+            newValue = ui.df.roundReal(newValue, root.decimals)
 
             if (newValue === value) {
                 return
             }
         }
 
+        textInputField.endEditing()
         root.valueEdited(newValue)
         root.valueEditingFinished(newValue)
     }
@@ -102,12 +104,14 @@ Item {
             } else {
                 newValue = value - step
             }
+            newValue = ui.df.roundReal(newValue, root.decimals)
 
             if (newValue === value) {
                 return
             }
         }
 
+        textInputField.endEditing()
         root.valueEdited(newValue)
         root.valueEditingFinished(newValue)
     }
@@ -151,7 +155,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
 
-        currentText: ui.df.formatReal(root.currentValue ? root.currentValue : 0.0, decimals)
+        currentText: ui.df.formatRealForEdit(root.currentValue ? root.currentValue : 0.0, decimals)
 
         navigation.accessible.role: MUAccessible.SpinBox
         navigation.accessible.value: currentValue + (measureUnitsSymbol !== "" ? " " + measureUnitsSymbol : "")
@@ -259,13 +263,13 @@ Item {
                 return
             }
 
-            var newVal = Number.fromLocaleString(Qt.locale(), newTextValue)
-
-            if (isNaN(newVal)) {
-                newVal = 0
+            var newVal = ui.df.parseReal(newTextValue, root.decimals)
+            if (newVal === undefined) {
+                // Partial input (e.g. "-"): nothing to commit yet
+                return
             }
 
-            root.valueEdited(+newVal.toFixed(root.decimals))
+            root.valueEdited(newVal)
         }
 
         onTextEditingFinished: function(newTextValue) {
@@ -274,13 +278,12 @@ Item {
                 return
             }
 
-            var newVal = Number.fromLocaleString(Qt.locale(), newTextValue)
-
-            if (isNaN(newVal)) {
-                newVal = 0
+            var newVal = ui.df.parseReal(newTextValue, root.decimals)
+            if (newVal === undefined) {
+                newVal = root.currentValue ? root.currentValue : 0.0
             }
 
-            root.valueEditingFinished(+newVal.toFixed(root.decimals))
+            root.valueEditingFinished(newVal)
         }
 
         onAccepted: {
