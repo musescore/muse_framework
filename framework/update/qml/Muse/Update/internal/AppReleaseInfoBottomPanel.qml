@@ -68,6 +68,7 @@ RowLayout {
         Layout.alignment: Qt.AlignVCenter
 
         text: qsTrc("update", "Remind me later")
+        icon: IconCode.CLOCK
 
         navigation.name: "RemindMeLaterButton"
         navigation.panel: root.navigationPanel
@@ -84,6 +85,7 @@ RowLayout {
         Layout.alignment: Qt.AlignVCenter
 
         text: qsTrc("update", "Install update")
+        icon: IconCode.IMPORT
 
         accentButton: true
 

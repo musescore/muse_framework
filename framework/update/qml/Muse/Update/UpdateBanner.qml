@@ -74,7 +74,7 @@ Rectangle {
         FlatButton {
             Layout.fillWidth: true
 
-            text: qsTrc("update", "Restart and update")
+            text: qsTrc("update", "Update")
             accentButton: true
 
             onClicked: {

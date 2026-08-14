@@ -339,5 +339,36 @@ void AppUpdateScenario::installReadyUpdate()
         return;
     }
 
-    askToRestartAndInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
+    const ReleaseInfo& info = service()->lastCheckResult().val;
+
+    UriQuery query("muse://update/appreleaseinfo");
+    query.addParam("appName", Val(application()->title().toStdString()));
+    query.addParam("notes", Val(info.notes));
+    query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
+    query.addParam("version", Val(m_readyUpdateVersion));
+    query.addParam("readyToInstall", Val(true));
+
+    interactive()->open(query).onResolve(this, [this](const Val& val) {
+        const QString actionCode = val.toQString();
+
+        if (actionCode == "skip") {
+            configuration()->setSkippedReleaseVersion(m_readyUpdateVersion);
+            m_readyPackagePath = io::path_t();
+            m_hasReadyUpdateChanged.notify();
+            return;
+        }
+
+        if (actionCode != "install") {
+            return;
+        }
+
+        const Ret ret = service()->applyUpdate(m_readyPackagePath);
+        if (!ret) {
+            LOGE() << "failed to apply update in-place, falling back to manual install: " << ret.toString();
+            askToCloseAppAndCompleteInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
+            return;
+        }
+
+        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
+    });
 }
