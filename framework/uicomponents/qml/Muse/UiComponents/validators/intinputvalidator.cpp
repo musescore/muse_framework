@@ -31,7 +31,9 @@ IntInputValidator::IntInputValidator(QObject* parent)
 
 void IntInputValidator::fixup(QString& string) const
 {
+    // Editable fields never show group separators
     QLocale locale;
+    locale.setNumberOptions(locale.numberOptions() | QLocale::OmitGroupSeparator);
 
     if (string.isEmpty() || string.endsWith("-")) {
         string.append("0");
@@ -62,19 +64,15 @@ QValidator::State IntInputValidator::validate(QString& inputStr, int& cursorPos)
     QLocale locale;
     QString groupSep = locale.groupSeparator();
 
-    if (inputStr.contains(groupSep)) {
-        bool ok = false;
-        locale.toInt(inputStr, &ok);
-        if (!ok) {
-            // Handle group separator in the wrong place
-            int sepsBefore = inputStr.left(cursorPos).count(groupSep);
-            inputStr.remove(groupSep);
-            cursorPos -= sepsBefore;
-        }
+    // Group separators are display-only: strip them (e.g. from pasted text)
+    // so they never persist in an editable field
+    if (!groupSep.isEmpty() && inputStr.contains(groupSep)) {
+        int sepsBefore = inputStr.left(cursorPos).count(groupSep);
+        inputStr.remove(groupSep);
+        cursorPos -= sepsBefore;
     }
 
     QString digits = inputStr;
-    digits.remove(groupSep);
 
     QValidator::State state = Invalid;
 

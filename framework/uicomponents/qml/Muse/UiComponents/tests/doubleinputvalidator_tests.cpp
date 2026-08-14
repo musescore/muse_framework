@@ -78,10 +78,11 @@ TEST_F(DoubleInputValidatorTests, ValidateDotLocale) {
         { "00.", QValidator::Intermediate, "0" },
         { "2.00", QValidator::Intermediate, "2" },
         { "2.", QValidator::Intermediate, "2" },
-        { "-1000.1", QValidator::Intermediate, "-1,000" },
-        { "1000.1", QValidator::Intermediate, "1,000" },
+        { "-1000.1", QValidator::Intermediate, "-1000" },
+        { "1000.1", QValidator::Intermediate, "1000" },
+        { "1,000", QValidator::Acceptable }, // pasted separators are stripped
         { "1.123", QValidator::Invalid }, // more than 2 decimal places
-        { "1000", QValidator::Acceptable, "1,000" },
+        { "1000", QValidator::Acceptable },
         { "10000", QValidator::Invalid }, // more than top
         { "abc", QValidator::Invalid },
         { "", QValidator::Intermediate, "0" }
@@ -133,8 +134,9 @@ TEST_F(DoubleInputValidatorTests, ValidateCommaLocale) {
         { "00,", QValidator::Intermediate, "0" },
         { "2,00", QValidator::Intermediate, "2" },
         { "2,", QValidator::Intermediate, "2" },
-        { "-1000,1", QValidator::Intermediate, "-1.000" },
-        { "1000,1", QValidator::Intermediate, "1.000" },
+        { "-1000,1", QValidator::Intermediate, "-1000" },
+        { "1000,1", QValidator::Intermediate, "1000" },
+        { "1.000", QValidator::Acceptable }, // pasted separators are stripped
         { "1,123", QValidator::Invalid }, // more than 2 decimal places
         { "abc", QValidator::Invalid },
         { "", QValidator::Intermediate, "0" }
