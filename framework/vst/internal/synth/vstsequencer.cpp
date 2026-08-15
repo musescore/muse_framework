@@ -469,20 +469,33 @@ void VstSequencer::sortNoteOnEventsByPitch(EventSequenceMap& destination)
             continue;
         }
 
-        std::stable_sort(seq.begin(), seq.end(), [](const EventType& e1, const EventType& e2) {
-            if (!std::holds_alternative<VstEvent>(e1) || !std::holds_alternative<VstEvent>(e2)) {
-                return false;
+        // Reorder only the NoteOn events (by pitch), leaving every other event (NoteOff, param and
+        // gain changes) exactly where it is. Sorting the whole sequence with a comparator that
+        // returned "equal" for non-NoteOn events would not be a strict weak ordering.
+        std::vector<VstEvent> noteOns;
+        for (const EventType& event : seq) {
+            if (std::holds_alternative<VstEvent>(event)) {
+                const VstEvent& vstEvent = std::get<VstEvent>(event);
+                if (vstEvent.type == VstEvent::kNoteOnEvent) {
+                    noteOns.push_back(vstEvent);
+                }
             }
+        }
 
-            const VstEvent& ve1 = std::get<VstEvent>(e1);
-            const VstEvent& ve2 = std::get<VstEvent>(e2);
+        if (noteOns.size() <= 1) {
+            continue;
+        }
 
-            if (ve1.type == VstEvent::kNoteOnEvent && ve2.type == VstEvent::kNoteOnEvent) {
-                return ve1.noteOn.pitch < ve2.noteOn.pitch;
-            }
-
-            return false;
+        std::stable_sort(noteOns.begin(), noteOns.end(), [](const VstEvent& e1, const VstEvent& e2) {
+            return e1.noteOn.pitch < e2.noteOn.pitch;
         });
+
+        size_t noteOnIdx = 0;
+        for (EventType& event : seq) {
+            if (std::holds_alternative<VstEvent>(event) && std::get<VstEvent>(event).type == VstEvent::kNoteOnEvent) {
+                event = noteOns[noteOnIdx++];
+            }
+        }
     }
 }
 

@@ -370,3 +370,47 @@ TEST(VstSequencerKeyswitchTest, OffStreamKeyswitchPrecedesPlayedNote)
     ASSERT_GE(playedNoteIdx, 0);
     EXPECT_LT(keyswitchIdx, playedNoteIdx); // keyswitch precedes the played note
 }
+
+// A timestamp bucket can interleave a NoteOff (from a note ending there) with the NoteOns of a note
+// starting there. The sort must reorder only the NoteOns and leave the NoteOff in place; its
+// comparator must be a strict weak ordering over such a mixed bucket.
+TEST(VstSequencerKeyswitchTest, SortOrdersNoteOnsAndKeepsInterleavedNoteOff)
+{
+    VstSequencer seq;
+    seq.init({}, false, makeProfile());
+
+    PlaybackData data;
+    // Note A ends at t=500; the muted note B starts at t=500. Bucket 500 therefore holds A's NoteOff
+    // together with B's played NoteOn and its lower-pitched mute keyswitch NoteOn.
+    data.originEvents[0].push_back(makeNote(0, 500, { { ArticulationType::Standard, 0, 500 } }));
+    data.originEvents[500].push_back(makeNote(500, 500, { { ArticulationType::Mute, 500, 500 } }));
+    seq.load(data);
+
+    const auto events = collect(seq);
+
+    // The interleaved NoteOff survives the sort.
+    bool noteOffAt500 = false;
+    for (const Emitted& e : events) {
+        if (e.timestamp == 500 && e.type == NOTE_OFF) {
+            noteOffAt500 = true;
+        }
+    }
+    EXPECT_TRUE(noteOffAt500);
+
+    // And the mute keyswitch (low pitch) still precedes the played note NoteOn at t=500.
+    int keyswitchIdx = -1;
+    int playedNoteIdx = -1;
+    for (size_t i = 0; i < events.size(); ++i) {
+        if (events[i].timestamp != 500 || events[i].type != NOTE_ON) {
+            continue;
+        }
+        if (events[i].pitch == MUTE_KS && keyswitchIdx < 0) {
+            keyswitchIdx = static_cast<int>(i);
+        } else if (events[i].pitch != MUTE_KS && playedNoteIdx < 0) {
+            playedNoteIdx = static_cast<int>(i);
+        }
+    }
+    ASSERT_GE(keyswitchIdx, 0);
+    ASSERT_GE(playedNoteIdx, 0);
+    EXPECT_LT(keyswitchIdx, playedNoteIdx);
+}
