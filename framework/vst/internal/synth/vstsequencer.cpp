@@ -101,6 +101,7 @@ void VstSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, 
 void VstSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events)
 {
     addPlaybackEvents(m_offStreamEvents, events);
+    sortNoteOnEventsByPitch(m_offStreamEvents);
     updateOffSequenceIterator();
 }
 

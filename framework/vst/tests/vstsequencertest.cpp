@@ -318,3 +318,55 @@ TEST(VstSequencerKeyswitchTest, SlurredChordPressesLegatoOnce)
     const auto events = collect(seq);
     EXPECT_EQ(count(events, 0, NOTE_ON, LEGATO_KS), 1); // one legato press for the whole chord
 }
+
+// Off-stream (audition) playback must order NoteOns like the main stream: the keyswitch is a low
+// pitch that has to reach the instrument before the played note, or the audited note sounds before
+// its articulation is selected. updateMainStreamEvents sorts for this; updateOffStreamEvents must too.
+TEST(VstSequencerKeyswitchTest, OffStreamKeyswitchPrecedesPlayedNote)
+{
+    VstSequencer seq;
+    seq.init({}, false, makeProfile());
+
+    PlaybackData data;
+    seq.load(data); // no main-stream events; drive the off-stream (audition) path only
+
+    // Audition a single pizzicato note through the off-stream channel.
+    PlaybackEventsMap offStreamEvents;
+    offStreamEvents[0].push_back(makeNote(0, 500, { { ArticulationType::Pizzicato, 0, 500 } }));
+    data.offStream.send(offStreamEvents, true /*flush*/);
+
+    // The off-stream path is only delivered while inactive (movePlaybackForward serves the main
+    // stream when active), so collect it directly rather than through collect().
+    seq.setActive(false);
+    std::vector<Emitted> events;
+    for (const auto& seqPair : seq.movePlaybackForward(1000000)) {
+        for (const auto& variantEvent : seqPair.second) {
+            if (!std::holds_alternative<VstEvent>(variantEvent)) {
+                continue;
+            }
+            const VstEvent& e = std::get<VstEvent>(variantEvent);
+            if (e.type == VstEvent::kNoteOnEvent) {
+                events.push_back({ seqPair.first, e.type, e.noteOn.pitch });
+            }
+        }
+    }
+
+    // The pizzicato keyswitch (a low pitch) must be the first NoteOn at the onset, before the higher
+    // played note. Without the sort the played note would be emitted first.
+    ASSERT_TRUE(has(events, 0, NOTE_ON, PIZZICATO_KS));
+    int keyswitchIdx = -1;
+    int playedNoteIdx = -1;
+    for (size_t i = 0; i < events.size(); ++i) {
+        if (events[i].timestamp != 0) {
+            continue;
+        }
+        if (events[i].pitch == PIZZICATO_KS && keyswitchIdx < 0) {
+            keyswitchIdx = static_cast<int>(i);
+        } else if (events[i].pitch != PIZZICATO_KS && playedNoteIdx < 0) {
+            playedNoteIdx = static_cast<int>(i);
+        }
+    }
+    ASSERT_GE(keyswitchIdx, 0);
+    ASSERT_GE(playedNoteIdx, 0);
+    EXPECT_LT(keyswitchIdx, playedNoteIdx); // keyswitch precedes the played note
+}
