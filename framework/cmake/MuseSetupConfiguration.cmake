@@ -59,10 +59,6 @@ if (NOT MUSE_MODULE_MULTIWINDOWS)
     set(MUSE_MODULE_MULTIWINDOWS_QML OFF) # Stub does not have QML
 endif()
 
-if (NOT MUSE_MODULE_UPDATE)
-    set(MUSE_MODULE_UPDATE_QML OFF) # Stub does not have QML
-endif()
-
 if (NOT MUSE_MODULE_VST)
     set(MUSE_MODULE_VST_QML OFF) # Stub does not have QML
 endif()

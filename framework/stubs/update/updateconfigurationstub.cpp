@@ -52,6 +52,15 @@ muse::async::Notification UpdateConfigurationStub::needCheckForUpdateChanged() c
     return n;
 }
 
+bool UpdateConfigurationStub::autoInstallEnabled() const
+{
+    return false;
+}
+
+void UpdateConfigurationStub::setAutoInstallEnabled(bool)
+{
+}
+
 std::string UpdateConfigurationStub::skippedReleaseVersion() const
 {
     return "";

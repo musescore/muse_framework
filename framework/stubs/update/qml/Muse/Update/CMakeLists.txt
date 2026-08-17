@@ -18,17 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-muse_create_module(muse_update ALIAS muse::update STUB)
+muse_create_qml_module(muse_update_qml ALIAS muse::update_qml FOR muse_update STUB)
 
-target_sources(muse_update PRIVATE
-    updatestubmodule.cpp
-    updatestubmodule.h
-    updateconfigurationstub.cpp
-    updateconfigurationstub.h
-    appupdatescenariostub.cpp
-    appupdatescenariostub.h
-    appupdateservicestub.cpp
-    appupdateservicestub.h
+qt_add_qml_module(muse_update_qml
+    URI Muse.Update
+    VERSION 1.0
+    QML_FILES
+        UpdateBanner.qml
 )
 
-add_subdirectory(qml/Muse/Update)
+fixup_qml_module_dependencies(muse_update_qml)

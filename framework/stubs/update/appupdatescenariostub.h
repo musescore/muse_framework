@@ -31,9 +31,6 @@ public:
     bool needCheckForUpdate() const override;
     void checkForUpdate(bool manual) override;
 
-    bool checkInProgress() const override;
-    async::Notification checkInProgressChanged() const override;
-
     bool hasUpdate() const override;
 
     bool hasReadyUpdate() const override;

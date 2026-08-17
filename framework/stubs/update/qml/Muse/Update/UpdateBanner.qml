@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2025 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,39 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "appupdatescenariostub.h"
+import QtQuick
 
-using namespace muse::update;
+Item {
+    readonly property bool hasReadyUpdate: false
+    readonly property string updateVersion: ""
 
-bool AppUpdateScenarioStub::needCheckForUpdate() const
-{
-    return false;
-}
-
-void AppUpdateScenarioStub::checkForUpdate(bool)
-{
-}
-
-bool AppUpdateScenarioStub::hasUpdate() const
-{
-    return false;
-}
-
-bool AppUpdateScenarioStub::hasReadyUpdate() const
-{
-    return false;
-}
-
-muse::async::Notification AppUpdateScenarioStub::hasReadyUpdateChanged() const
-{
-    return {};
-}
-
-std::string AppUpdateScenarioStub::readyUpdateVersion() const
-{
-    return {};
-}
-
-void AppUpdateScenarioStub::installReadyUpdate()
-{
+    visible: false
 }
