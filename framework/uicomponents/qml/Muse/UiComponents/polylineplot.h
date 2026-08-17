@@ -68,6 +68,8 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
     Q_PROPERTY(qreal snapThresholdPx READ snapThresholdPx WRITE setSnapThresholdPx NOTIFY snapThresholdPxChanged)
 
     Q_PROPERTY(QVector<QPointF> points READ points WRITE setPoints NOTIFY pointsChanged)
+    // indices in the colorsUnderLine vector relate to the lines between points (not the points themselves)
+    Q_PROPERTY(QVector<QColor> colorsUnderLine READ colorsUnderLine WRITE setColorsUnderLine NOTIFY colorsUnderLineChanged)
 
     Q_PROPERTY(qreal defaultValue READ defaultValue WRITE setDefaultValue NOTIFY defaultValueChanged)
 
@@ -133,6 +135,9 @@ public:
     QVector<QPointF> points() const;
     void setPoints(const QVector<QPointF>&);
 
+    QVector<QColor> colorsUnderLine() const;
+    void setColorsUnderLine(const QVector<QColor>&);
+
     qreal defaultValue() const;
     void setDefaultValue(qreal v);
 
@@ -196,6 +201,8 @@ signals:
     void pointsNChanged();
     void pointsChanged();
 
+    void colorsUnderLineChanged();
+
     void activePointChanged();
 
 protected:
@@ -236,6 +243,7 @@ private:
     QPointF snapToNeighbor(qreal dragPxX, QPointF pDomain) const;
     void updateActivePoint();
 
+    void drawLinesAndFillUnder(QPainter* painter) const;
     void paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre, bool useHoveredStyle) const;
 
 private:
@@ -260,6 +268,8 @@ private:
 
     // mapping for m_pointsNVisible -> index in m_points
     QVector<int> m_visibleToDomainIndex;
+
+    QVector<QColor> m_colorsUnderLine;
 
     qreal m_defaultValue = 1.0;
 
