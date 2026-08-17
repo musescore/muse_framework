@@ -29,10 +29,14 @@
 #include "menuitem.h"
 
 #include "modularity/ioc.h"
+#include "rcommand/commandtypes.h"
+#include "types/uri.h"
 #include "ui/iuiactionsregister.h"
 #include "shortcuts/ishortcutsregister.h"
 #include "actions/iactionsdispatcher.h"
 #include "rcommand/icommanddispatcher.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
 
 namespace muse::uicomponents {
 class AbstractMenuModel : public QAbstractListModel, public muse::Contextable, public async::Asyncable
@@ -45,9 +49,11 @@ class AbstractMenuModel : public QAbstractListModel, public muse::Contextable, p
     QML_ELEMENT
 
 public:
+    muse::GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     muse::ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };
     muse::ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
     muse::ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+    muse::ContextInject<rcommand::ICommandsState> commandsState = { this };
     muse::ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
 
 public:
@@ -77,6 +83,7 @@ protected:
     };
 
     virtual void subscribeOnChanges();
+    virtual void onCommandStateChanged(const rcommand::Command& command, const rcommand::CommandState& state);
     virtual void onActionsStateChanges(const muse::actions::ActionCodeList& codes);
 
     void setItem(int index, MenuItem* item);
@@ -91,23 +98,29 @@ protected:
     MenuItem& findItem(const QString& itemId);
     MenuItem& findItem(const muse::actions::ActionCode& actionCode);
     MenuItemList findItems(const muse::actions::ActionCode& actionCode);
+    MenuItem& findItem(const muse::rcommand::Command& command);
+    MenuItemList findItems(const muse::rcommand::Command& command);
     MenuItem& findMenu(const QString& menuId);
 
     MenuItem* makeMenu(const TranslatableString& title, const MenuItemList& items, const QString& menuId = "", bool enabled = true);
 
     MenuItem* makeMenuItem(const muse::rcommand::Command& command, const TranslatableString& title = {});
+    MenuItem* makeMenuItem(const muse::rcommand::CommandQuery& query, const TranslatableString& title = {});
     MenuItem* makeMenuItem(const muse::actions::ActionCode& actionCode, const TranslatableString& title = {});
+
     MenuItem* makeSeparator();
 
     bool isIndexValid(int index) const;
-    void dispatch(const muse::actions::ActionCode& actionCode, const muse::actions::ActionData& args = muse::actions::ActionData());
-    void dispatch(const muse::actions::ActionQuery& actionQuery);
+    void dispatch(const std::string& command, const muse::actions::ActionData& args = muse::actions::ActionData());
+    void dispatch(const muse::UriQuery& query);
 
 private:
     MenuItem& item(MenuItemList& items, const QString& itemId);
-    MenuItemList items(MenuItemList& items, const muse::actions::ActionCode& actionCode);
+    MenuItemList items(const MenuItemList& items, const muse::actions::ActionCode& actionCode) const;
+    MenuItemList items(const MenuItemList& items, const muse::rcommand::Command& command) const;
     MenuItem& menu(MenuItemList& items, const QString& menuId);
 
+    void updateState(MenuItemList& items, const rcommand::Command& command, const rcommand::CommandState& state);
     void updateState(MenuItemList& items, const muse::actions::ActionCodeList& codes, std::map<muse::actions::ActionCode,
                                                                                                muse::ui::UiActionState>& states);
 

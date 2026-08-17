@@ -51,7 +51,7 @@ void ToolBarItem::handleMenuItem(const QString& menuId)
 {
     for (const MenuItem* menuItem : m_menuItems) {
         if (menuItem->id() == menuId) {
-            dispatcher()->dispatch(menuItem->action().code, menuItem->args());
+            dispatcher()->dispatch(menuItem->actionCode(), menuItem->args());
             return;
         }
     }

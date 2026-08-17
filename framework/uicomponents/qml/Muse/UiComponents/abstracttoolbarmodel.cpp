@@ -374,7 +374,7 @@ void AbstractToolBarModel::updateShortcutsAll()
 
 void AbstractToolBarModel::updateShortcuts(MenuItem* menuItem)
 {
-    std::vector<std::string> shortcuts = shortcutsRegister()->shortcut(menuItem->action().code).sequences;
+    std::vector<std::string> shortcuts = shortcutsRegister()->shortcut(menuItem->actionCode()).sequences;
     menuItem->setShortcuts(shortcuts);
 
     for (MenuItem* subItem : menuItem->subitems()) {
