@@ -29,12 +29,15 @@
 #include <wincrypt.h>
 #include <userenv.h>
 #include <wtsapi32.h>
+#include <msi.h>
+#include <msiquery.h>
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include "platform.h"
+#include "updateui_win.h"
 
 #include "../internal/platform/win/winupdateshared.h"
 
@@ -147,16 +150,6 @@ std::wstring modulePath()
 
         buffer.resize(buffer.size() * 2);
     }
-}
-
-std::wstring systemDirPath()
-{
-    wchar_t buffer[MAX_PATH] = { 0 };
-    const UINT size = ::GetSystemDirectoryW(buffer, MAX_PATH);
-    if (size == 0 || size >= MAX_PATH) {
-        return L"C:\\Windows\\System32";
-    }
-    return std::wstring(buffer, size);
 }
 
 bool makeDirectories(const std::wstring& path)
@@ -373,11 +366,30 @@ bool startProcessDetached(const std::wstring& application, const std::wstring& c
     return true;
 }
 
-//! We run as SYSTEM; starting the application directly would give it SYSTEM
-//! privileges too. Launch it with the token of the interactive user instead.
-bool relaunchInUserSession(const std::wstring& application)
+//! The session the application asking for the update is running in - the one
+//! its user is looking at, which is not necessarily the console session when
+//! more than one is logged on. Has to be asked while that process is still
+//! alive; falls back to the console session once it is gone.
+DWORD userSessionId(unsigned long long pid)
 {
-    const DWORD sessionId = ::WTSGetActiveConsoleSessionId();
+    DWORD sessionId = 0;
+    if (pid > 0 && ::ProcessIdToSessionId(static_cast<DWORD>(pid), &sessionId)) {
+        return sessionId;
+    }
+
+    return ::WTSGetActiveConsoleSessionId();
+}
+
+//! We run as SYSTEM, in session 0, where nothing we start would be visible and
+//! anything we start would have our privileges. Starts `application` as the
+//! user of `sessionId` instead, optionally passing `arguments` and inheriting
+//! the handles of this process.
+//!
+//! `process` receives the handle of the started process when given; the caller
+//! then owns it.
+bool startInUserSession(const std::wstring& application, const std::wstring& arguments, DWORD sessionId,
+                        bool inheritHandles = false, HANDLE* process = nullptr)
+{
     if (sessionId == 0xFFFFFFFF) {
         return false;
     }
@@ -397,6 +409,10 @@ bool relaunchInUserSession(const std::wstring& application)
     const BOOL hasEnvironment = ::CreateEnvironmentBlock(&environment, primaryToken, FALSE);
 
     std::wstring commandLine = quoted(application);
+    if (!arguments.empty()) {
+        commandLine += L" " + arguments;
+    }
+
     std::vector<wchar_t> mutableCommandLine(commandLine.begin(), commandLine.end());
     mutableCommandLine.push_back(L'\0');
 
@@ -409,14 +425,19 @@ bool relaunchInUserSession(const std::wstring& application)
     PROCESS_INFORMATION processInfo = { };
 
     const BOOL ok = ::CreateProcessAsUserW(primaryToken, application.c_str(), mutableCommandLine.data(),
-                                           nullptr, nullptr, FALSE,
+                                           nullptr, nullptr, inheritHandles ? TRUE : FALSE,
                                            CREATE_UNICODE_ENVIRONMENT | NORMAL_PRIORITY_CLASS,
                                            hasEnvironment ? environment : nullptr,
                                            workingDir.empty() ? nullptr : workingDir.c_str(),
                                            &startupInfo, &processInfo);
     if (ok) {
         ::CloseHandle(processInfo.hThread);
-        ::CloseHandle(processInfo.hProcess);
+
+        if (process) {
+            *process = processInfo.hProcess;
+        } else {
+            ::CloseHandle(processInfo.hProcess);
+        }
     }
 
     if (hasEnvironment) {
@@ -427,6 +448,143 @@ bool relaunchInUserSession(const std::wstring& application)
 
     return ok == TRUE;
 }
+
+// ============================================================================
+// The progress window
+// ============================================================================
+
+//! The half of the progress window that lives on this side: it starts the
+//! window as the user - we could not show one ourselves from session 0 - and
+//! drives it over a pipe.
+//!
+//! Nothing here is allowed to fail the update. An installation nobody can watch
+//! is worse than one nobody can watch happening.
+class ProgressUi
+{
+public:
+    ~ProgressUi()
+    {
+        stop();
+    }
+
+    void start(const shared::UpdateUi& ui, DWORD sessionId)
+    {
+        if (!ui.isValid()) {
+            return;
+        }
+
+        SECURITY_ATTRIBUTES attributes = { };
+        attributes.nLength = sizeof(attributes);
+        attributes.bInheritHandle = TRUE;
+
+        HANDLE readEnd = nullptr;
+        HANDLE writeEnd = nullptr;
+        if (!::CreatePipe(&readEnd, &writeEnd, &attributes, 64 * 1024)) {
+            logLine(L"progress-ui: failed to create the pipe");
+            return;
+        }
+
+        // Only the read end is the window's to inherit; a write end it could
+        // hold open would keep us from ever ending it by closing ours.
+        ::SetHandleInformation(writeEnd, HANDLE_FLAG_INHERIT, 0);
+
+        const std::wstring arguments = L"--ui --pipe "
+                                       + std::to_wstring(reinterpret_cast<uintptr_t>(readEnd));
+
+        HANDLE process = nullptr;
+        const bool started = startInUserSession(modulePath(), arguments, sessionId, /*inheritHandles*/ true, &process);
+
+        ::CloseHandle(readEnd);
+
+        if (!started) {
+            logLine(L"progress-ui: failed to start the window in session " + std::to_wstring(sessionId));
+            ::CloseHandle(writeEnd);
+            return;
+        }
+
+        m_write = writeEnd;
+        m_process = process;
+
+        // Whatever the application did not send keeps the default of the
+        // window rather than being sent as an empty value.
+        auto sendIfSet = [this](const char* command, const std::wstring& value) {
+            if (!value.empty()) {
+                send(command, shared::wideToUtf8(value));
+            }
+        };
+
+        sendIfSet(updateui::command::TITLE, ui.title);
+        sendIfSet(updateui::command::MESSAGE, ui.message);
+        sendIfSet(updateui::command::BACKGROUND, ui.backgroundColor);
+        sendIfSet(updateui::command::ACCENT, ui.accentColor);
+        sendIfSet(updateui::command::FOREGROUND, ui.foregroundColor);
+
+        send(updateui::command::SHOW, std::string());
+    }
+
+    //! Percentages of the installation itself; a negative value shows that
+    //! something is going on without saying how far along it is.
+    void setPercent(int percent)
+    {
+        if (percent > 100) {
+            percent = 100;
+        }
+
+        if (percent == m_percent) {
+            return;
+        }
+
+        m_percent = percent;
+        send(updateui::command::PROGRESS, std::to_string(percent));
+    }
+
+    void stop()
+    {
+        //! NOTE: The pipe may already be closed - the window can be closed by
+        //! hand - which is no reason to leave the process itself behind.
+        if (m_write != INVALID_HANDLE_VALUE) {
+            send(updateui::command::CLOSE, std::string());
+
+            ::CloseHandle(m_write);
+            m_write = INVALID_HANDLE_VALUE;
+        }
+
+        if (m_process) {
+            // The window must not outlive the installation it is reporting on.
+            if (::WaitForSingleObject(m_process, 5000) != WAIT_OBJECT_0) {
+                ::TerminateProcess(m_process, 0);
+            }
+
+            ::CloseHandle(m_process);
+            m_process = nullptr;
+        }
+    }
+
+private:
+    void send(const char* command, const std::string& argument)
+    {
+        if (m_write == INVALID_HANDLE_VALUE) {
+            return;
+        }
+
+        std::string line = command;
+        if (!argument.empty()) {
+            line += " " + argument;
+        }
+        line += "\n";
+
+        DWORD written = 0;
+        if (!::WriteFile(m_write, line.data(), static_cast<DWORD>(line.size()), &written, nullptr)) {
+            // The window is gone; carry on without it.
+            ::CloseHandle(m_write);
+            m_write = INVALID_HANDLE_VALUE;
+        }
+    }
+
+    HANDLE m_write = INVALID_HANDLE_VALUE;
+    HANDLE m_process = nullptr;
+    int m_percent = -1;
+};
 
 // ============================================================================
 // Task Scheduler
@@ -760,6 +918,151 @@ int unregisterTask(const std::wstring& appId)
 }
 
 // ============================================================================
+// Installing an MSI
+// ============================================================================
+
+//! Where the installation has got to, as the Windows Installer reports it.
+//!
+//! Progress arrives as ticks rather than as a percentage: the engine says how
+//! many it expects in total, then counts them off, and an action that turns out
+//! to be longer than costed adds to the total as it goes.
+struct MsiProgress {
+    ProgressUi* ui = nullptr;
+
+    int total = 0;
+    int done = 0;
+
+    //! Some actions (removing the previous version, mostly) count down from the
+    //! total instead of up from zero.
+    bool forward = true;
+
+    //! Actions that report each item they process have a tick value attached
+    //! once, before the items themselves start arriving.
+    bool actionDataEnabled = false;
+    int ticksPerActionData = 0;
+
+    int lastPercent = 0;
+};
+
+//! A field the engine did not fill in reads as MSI_NULL_INTEGER, which as a
+//! tick count would be a very large negative number.
+int recordInteger(MSIHANDLE record, unsigned int field)
+{
+    const int value = ::MsiRecordGetInteger(record, field);
+    return value == MSI_NULL_INTEGER ? 0 : value;
+}
+
+void reportProgress(MsiProgress& progress)
+{
+    if (!progress.ui || progress.total <= 0) {
+        return;
+    }
+
+    const int done = progress.forward ? progress.done : progress.total - progress.done;
+
+    int percent = static_cast<int>(static_cast<long long>(done) * 100 / progress.total);
+    percent = percent < 0 ? 0 : (percent > 99 ? 99 : percent);
+
+    //! NOTE: A major upgrade is several installations in a row, each with a
+    //! progress of its own that starts again from nothing. Only ever moving
+    //! forward is a better picture of what is happening than a bar that starts
+    //! over twice.
+    if (percent < progress.lastPercent) {
+        return;
+    }
+
+    progress.lastPercent = percent;
+    progress.ui->setPercent(percent);
+}
+
+INT WINAPI msiUiHandler(LPVOID context, UINT messageType, MSIHANDLE record)
+{
+    MsiProgress* progress = static_cast<MsiProgress*>(context);
+    if (!progress) {
+        return 0;
+    }
+
+    const INSTALLMESSAGE message = static_cast<INSTALLMESSAGE>(0xFF000000 & messageType);
+
+    switch (message) {
+    case INSTALLMESSAGE_ACTIONSTART:
+        // Whether the action about to run reports its items is said by the
+        // action itself, if at all.
+        progress->actionDataEnabled = false;
+        return IDOK;
+
+    case INSTALLMESSAGE_ACTIONDATA:
+        if (progress->actionDataEnabled && progress->ticksPerActionData > 0) {
+            progress->done += progress->ticksPerActionData;
+            reportProgress(*progress);
+        }
+        return IDOK;
+
+    case INSTALLMESSAGE_PROGRESS: {
+        if (!record) {
+            return IDOK;
+        }
+
+        switch (recordInteger(record, 1)) {
+        case 0: // reset: a new sequence with a total of its own
+            progress->total = recordInteger(record, 2);
+            progress->forward = recordInteger(record, 3) == 0;
+            progress->done = progress->forward ? 0 : progress->total;
+            progress->actionDataEnabled = false;
+            break;
+
+        case 1: // what one item of the current action is worth
+            progress->ticksPerActionData = recordInteger(record, 2);
+            progress->actionDataEnabled = recordInteger(record, 3) != 0;
+            break;
+
+        case 2: // ticks completed
+            progress->done += progress->forward ? recordInteger(record, 2) : -recordInteger(record, 2);
+            reportProgress(*progress);
+            break;
+
+        case 3: // the action turned out to be bigger than costed
+            progress->total += recordInteger(record, 2);
+            break;
+
+        default:
+            break;
+        }
+
+        return IDOK;
+    }
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+//! Installs `package` through the Windows Installer, reporting progress to
+//! `ui`. Returns the ERROR_* code msiexec would have exited with - it is the
+//! same engine, driven directly so that its progress can be watched.
+UINT installMsi(const std::wstring& package, const std::wstring& properties, ProgressUi& ui)
+{
+    MsiProgress progress;
+    progress.ui = &ui;
+
+    ::MsiSetInternalUI(INSTALLUILEVEL_NONE, nullptr);
+
+    INSTALLUI_HANDLER_RECORD previousHandler = nullptr;
+    const DWORD messageFilter = INSTALLLOGMODE_PROGRESS | INSTALLLOGMODE_ACTIONSTART | INSTALLLOGMODE_ACTIONDATA
+                                | INSTALLLOGMODE_FATALEXIT | INSTALLLOGMODE_ERROR;
+
+    ::MsiSetExternalUIRecord(msiUiHandler, messageFilter, &progress, &previousHandler);
+
+    const UINT result = ::MsiInstallProductW(package.c_str(), properties.c_str());
+
+    ::MsiSetExternalUIRecord(previousHandler, 0, nullptr, nullptr);
+
+    return result;
+}
+
+// ============================================================================
 // Applying an update
 // ============================================================================
 
@@ -816,12 +1119,23 @@ int applyRun(const std::wstring& appId)
 
     logLine(L"apply-run: request package=" + request.packagePath + L" pid=" + std::to_wstring(request.pid));
 
-    // 1. Let the application finish quitting before touching its files.
+    //! NOTE: Asked while the application is still running, and so still has a
+    //! session to be asked about.
+    const DWORD sessionId = userSessionId(request.pid);
+
+    // 1. Tell the user what is going on. Everything up to the point where the
+    //    engine starts costing the package takes an unknown amount of time, so
+    //    the window shows that something is happening rather than how far along
+    //    it is.
+    ProgressUi ui;
+    ui.start(request.ui, sessionId);
+
+    // 2. Let the application finish quitting before touching its files.
     if (request.pid > 0) {
         platform::waitForProcessExit(static_cast<long long>(request.pid), /*timeoutMs*/ 60000);
     }
 
-    // 2. Copy the package somewhere an unprivileged user cannot reach, so that
+    // 3. Copy the package somewhere an unprivileged user cannot reach, so that
     //    it cannot be swapped after we have verified it.
     const std::wstring staged = shared::stagedPackagePath(appId, packageType);
 
@@ -837,7 +1151,7 @@ int applyRun(const std::wstring& appId)
         return 1;
     }
 
-    // 3. Only now decide whether to trust it.
+    // 4. Only now decide whether to trust it.
     auto reject = [&](const std::wstring& reason) {
         logLine(L"apply-run: " + reason);
         ::DeleteFileW(staged.c_str());
@@ -864,7 +1178,7 @@ int applyRun(const std::wstring& appId)
         return 1;
     }
 
-    // 4. Install silently, the way the installer registered.
+    // 5. Install silently, the way the installer registered.
     //
     //    The extra arguments come from the registration rather than from here:
     //    an MSI needs its install directory passed as a property, an Inno Setup
@@ -872,27 +1186,40 @@ int applyRun(const std::wstring& appId)
     //    relocate an installation the user had put somewhere else.
     const std::wstring extraArgs = shared::expandInstallArgs(installArgs, trimTrailingSeparators(installDir));
 
-    std::wstring application;
-    std::wstring commandLine;
+    DWORD exitCode = 0;
 
     if (packageType == shared::PACKAGE_TYPE_MSI) {
-        application = systemDirPath() + L"\\msiexec.exe";
-        commandLine = quoted(application) + L" /i " + quoted(staged) + L" /qn /norestart";
+        //! NOTE: The engine is driven in-process rather than by starting
+        //! msiexec.exe, which is the same installation either way - but only
+        //! this way does it report what it is doing, which is what the progress
+        //! bar shows. `REBOOT=ReallySuppress` is what `/norestart` sets, and
+        //! the user interface level takes the place of `/qn`.
+        std::wstring properties = L"REBOOT=ReallySuppress";
+        if (!extraArgs.empty()) {
+            properties += L" " + extraArgs;
+        }
+
+        logLine(L"apply-run: installing " + staged + L" with " + properties);
+
+        //! NOTE: The window keeps its marquee until the engine has costed the
+        //! package and says something; an empty bar sitting at nothing for the
+        //! first few seconds would look stuck.
+        exitCode = installMsi(staged, properties, ui);
     } else {
-        application = staged;
-        commandLine = quoted(staged);
-    }
+        //! NOTE: A self-contained installer reports nothing we could read, so
+        //! the window keeps saying only that the installation is under way.
+        std::wstring commandLine = quoted(staged);
+        if (!extraArgs.empty()) {
+            commandLine += L" " + extraArgs;
+        }
 
-    if (!extraArgs.empty()) {
-        commandLine += L" " + extraArgs;
-    }
+        logLine(L"apply-run: running " + commandLine);
 
-    logLine(L"apply-run: running " + commandLine);
-
-    DWORD exitCode = 0;
-    if (!runProcessAndWait(application, commandLine, exitCode)) {
-        logLine(L"apply-run: failed to start the installer");
-        return 1;
+        if (!runProcessAndWait(staged, commandLine, exitCode)) {
+            logLine(L"apply-run: failed to start the installer");
+            ui.stop();
+            return 1;
+        }
     }
 
     // ERROR_SUCCESS_REBOOT_INITIATED (1641) and ERROR_SUCCESS_REBOOT_REQUIRED (3010)
@@ -901,19 +1228,26 @@ int applyRun(const std::wstring& appId)
     if (!installed) {
         logLine(L"apply-run: the installer failed with exit code " + std::to_wstring(exitCode));
         ::DeleteFileW(shared::requestFilePath(appId).c_str());
+        ui.stop();
         return 1;
     }
 
+    ui.setPercent(100);
+
     logLine(L"apply-run: installed successfully, exit code " + std::to_wstring(exitCode));
 
-    // 5. Clean up before relaunching; the request must not survive to be
+    // 6. Clean up before relaunching; the request must not survive to be
     //    replayed on the next run.
     ::DeleteFileW(shared::requestFilePath(appId).c_str());
     ::DeleteFileW(staged.c_str());
     ::DeleteFileW(request.packagePath.c_str());
 
-    // 6. Bring the application back, as the interactive user rather than as us.
-    if (!relaunchInUserSession(appPath)) {
+    // 7. Take the window down before the application it was standing in for
+    //    comes back up.
+    ui.stop();
+
+    // 8. Bring the application back, as the user rather than as us.
+    if (!startInUserSession(appPath, std::wstring(), sessionId)) {
         logLine(L"apply-run: failed to relaunch " + appPath);
         // The update itself succeeded; the user can start the application manually.
     }
@@ -964,6 +1298,13 @@ int runCommandLine()
     ::LocalFree(argv);
 
     const std::map<std::wstring, std::wstring> parsed = parseArguments(arguments);
+
+    //! NOTE: Handled before everything else: this is the one command that does
+    //! not run privileged, has no working directory to secure and no business
+    //! writing to a log only SYSTEM can open.
+    if (parsed.count(L"--ui") > 0) {
+        return updateui::run(valueOf(parsed, L"--pipe"));
+    }
 
     const bool isRegister = parsed.count(L"--register-task") > 0;
     const bool isUnregister = parsed.count(L"--unregister-task") > 0;

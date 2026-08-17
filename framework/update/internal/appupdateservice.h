@@ -31,6 +31,7 @@
 #include "global/isysteminfo.h"
 
 #include "network/inetworkmanagercreator.h"
+#include "ui/iuiconfiguration.h"
 #include "update/iupdateconfiguration.h"
 #include "update/iupdaterequestparamsprovider.h"
 #include "update/iupdateinstaller.h"
@@ -45,6 +46,7 @@ class AppUpdateService : public IAppUpdateService, public Contextable, public as
     GlobalInject<network::INetworkManagerCreator> networkManagerCreator;
     GlobalInject<IApplication> application;
     GlobalInject<IUpdateInstaller> updateInstaller;
+    GlobalInject<muse::ui::IUiConfiguration> uiConfiguration;
 
 public:
     AppUpdateService(const modularity::ContextPtr& iocCtx)
@@ -76,6 +78,8 @@ private:
     Ret writeUpdateRequestHistory(const io::path_t& path, const UpdateRequestHistory& updateRequestHistory);
 
     RetVal<ReleaseInfo> parseRelease(const QByteArray& json) const;
+
+    InstallProgressUi makeInstallProgressUi() const;
 
     //! Ordered list of acceptable asset suffixes for this platform, most
     //! preferred first (e.g. "zip" before "dmg" on macOS when auto-install is

@@ -215,9 +215,59 @@ inline std::wstring expandInstallArgs(const std::wstring& args, const std::wstri
     return result;
 }
 
+struct UpdateUi {
+    std::wstring title;
+    std::wstring message;
+    std::wstring backgroundColor;
+    std::wstring accentColor;
+    std::wstring foregroundColor;
+
+    bool isValid() const { return !message.empty(); }
+};
+
+//! Control characters would break the line-oriented formats this travels
+//! through; the length is bounded because the window shows a single line.
+inline std::wstring sanitizedUiText(const std::wstring& text)
+{
+    const size_t maxLength = 200;
+
+    std::wstring result;
+    result.reserve(text.size() < maxLength ? text.size() : maxLength);
+
+    for (const wchar_t c : text) {
+        if (result.size() >= maxLength) {
+            break;
+        }
+
+        if (c == L'\t' || (c >= L' ' && c != 0x7F)) {
+            result.push_back(c);
+        }
+    }
+
+    return result;
+}
+
+inline bool isUiColor(const std::wstring& color)
+{
+    if (color.size() != 7 || color[0] != L'#') {
+        return false;
+    }
+
+    for (size_t i = 1; i < color.size(); ++i) {
+        const wchar_t c = color[i];
+        const bool isHexDigit = (c >= L'0' && c <= L'9') || (c >= L'a' && c <= L'f') || (c >= L'A' && c <= L'F');
+        if (!isHexDigit) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 struct UpdateRequest {
     std::wstring packagePath;
     unsigned long long pid = 0;
+    UpdateUi ui;
 };
 
 inline bool writeFileContent(const std::wstring& path, const std::string& content)
@@ -268,6 +318,25 @@ inline bool writeRequest(const std::wstring& appId, const UpdateRequest& request
     content += "package=" + wideToUtf8(request.packagePath) + "\n";
     content += "pid=" + std::to_string(request.pid) + "\n";
 
+    auto appendUiValue = [&content](const char* key, const std::wstring& value) {
+        if (!value.empty()) {
+            content += std::string(key) + "=" + wideToUtf8(value) + "\n";
+        }
+    };
+
+    appendUiValue("ui.title", sanitizedUiText(request.ui.title));
+    appendUiValue("ui.message", sanitizedUiText(request.ui.message));
+
+    if (isUiColor(request.ui.backgroundColor)) {
+        appendUiValue("ui.background", request.ui.backgroundColor);
+    }
+    if (isUiColor(request.ui.accentColor)) {
+        appendUiValue("ui.accent", request.ui.accentColor);
+    }
+    if (isUiColor(request.ui.foregroundColor)) {
+        appendUiValue("ui.foreground", request.ui.foregroundColor);
+    }
+
     return writeFileContent(requestFilePath(appId), content);
 }
 
@@ -315,6 +384,19 @@ inline bool readRequest(const std::wstring& appId, UpdateRequest& request)
             } catch (...) {
                 request.pid = 0;
             }
+        } else if (key == "ui.title") {
+            request.ui.title = sanitizedUiText(utf8ToWide(value));
+        } else if (key == "ui.message") {
+            request.ui.message = sanitizedUiText(utf8ToWide(value));
+        } else if (key == "ui.background") {
+            const std::wstring color = utf8ToWide(value);
+            request.ui.backgroundColor = isUiColor(color) ? color : std::wstring();
+        } else if (key == "ui.accent") {
+            const std::wstring color = utf8ToWide(value);
+            request.ui.accentColor = isUiColor(color) ? color : std::wstring();
+        } else if (key == "ui.foreground") {
+            const std::wstring color = utf8ToWide(value);
+            request.ui.foregroundColor = isUiColor(color) ? color : std::wstring();
         }
     }
 

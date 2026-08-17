@@ -45,7 +45,7 @@ public:
         : Contextable(iocCtx) {}
 
     bool isInPlaceUpdateSupported() const override;
-    Ret applyUpdate(const muse::io::path_t& packagePath) override;
+    Ret applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui) override;
 
 private:
     //! Path to the running AppImage file (the install location to replace), or

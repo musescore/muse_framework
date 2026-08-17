@@ -23,6 +23,7 @@
 #include "appupdateservice.h"
 
 #include <QBuffer>
+#include <QColor>
 #include <QJsonParseError>
 #include <QJsonObject>
 #include <QJsonValue>
@@ -462,7 +463,33 @@ bool AppUpdateService::canAutoInstall() const
 
 Ret AppUpdateService::applyUpdate(const muse::io::path_t& packagePath)
 {
-    return updateInstaller()->applyUpdate(packagePath);
+    return updateInstaller()->applyUpdate(packagePath, makeInstallProgressUi());
+}
+
+InstallProgressUi AppUpdateService::makeInstallProgressUi() const
+{
+    const QString appName = application()->title().toQString();
+    const QString version = QString::fromStdString(m_lastCheckResult.val.version);
+
+    InstallProgressUi progressUi;
+    progressUi.title = appName.toStdString();
+
+    progressUi.message = version.isEmpty()
+                         ? muse::qtrc("update", "Installing %1").arg(appName).toStdString()
+                         : muse::qtrc("update", "Installing %1 %2").arg(appName, version).toStdString();
+
+    const muse::ui::ThemeInfo& theme = uiConfiguration()->currentTheme();
+
+    auto themeColor = [&theme](muse::ui::ThemeStyleKey key) {
+        const QColor color = theme.values.value(key).value<QColor>();
+        return color.isValid() ? color.name(QColor::HexRgb).toStdString() : std::string();
+    };
+
+    progressUi.backgroundColor = themeColor(muse::ui::BACKGROUND_PRIMARY_COLOR);
+    progressUi.accentColor = themeColor(muse::ui::ACCENT_COLOR);
+    progressUi.textColor = themeColor(muse::ui::FONT_PRIMARY_COLOR);
+
+    return progressUi;
 }
 
 void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished)

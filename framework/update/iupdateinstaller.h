@@ -27,6 +27,8 @@
 
 #include "modularity/imoduleinterface.h"
 
+#include "updatetypes.h"
+
 namespace muse::update {
 class IUpdateInstaller : MODULE_GLOBAL_INTERFACE
 {
@@ -45,7 +47,9 @@ public:
     //! current install location once this process exits, and relaunches the
     //! application. Returns OK if the helper was successfully spawned; the
     //! caller must then quit the application.
-    virtual Ret applyUpdate(const muse::io::path_t& packagePath) = 0;
+    //!
+    //! `ui` is what the helper should show while it installs.
+    virtual Ret applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui) = 0;
 };
 }
 

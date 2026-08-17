@@ -124,7 +124,7 @@ bool LinuxUpdateInstaller::isInPlaceUpdateSupported() const
     return true;
 }
 
-Ret LinuxUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath)
+Ret LinuxUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi&)
 {
     const QString package = packagePath.toQString();
     if (!QFileInfo::exists(package)) {

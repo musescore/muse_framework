@@ -74,7 +74,7 @@ bool MacUpdateInstaller::isInPlaceUpdateSupported() const
     return true;
 }
 
-Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath)
+Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi&)
 {
     const QString package = packagePath.toQString();
     if (!QFileInfo::exists(package)) {

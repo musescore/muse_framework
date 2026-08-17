@@ -30,6 +30,8 @@ if (OS_IS_WIN)
         platform_win.cpp
         updatetask_win.cpp
         updatetask_win.h
+        updateui_win.cpp
+        updateui_win.h
         ../internal/platform/win/winupdateshared.h
     )
 else()
@@ -74,6 +76,9 @@ if (OS_IS_WIN)
         crypt32   # CertGetNameStringW
         userenv   # CreateEnvironmentBlock
         wtsapi32  # WTSQueryUserToken
+        msi       # MsiInstallProductW and the external UI handler
+        user32    # the progress window
+        gdi32     # and what it is drawn with
     )
 endif()
 

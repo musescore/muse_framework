@@ -195,7 +195,7 @@ bool WinUpdateInstaller::isInPlaceUpdateSupported() const
     return enabled;
 }
 
-Ret WinUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath)
+Ret WinUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui)
 {
     if (!fileSystem()->exists(packagePath)) {
         LOGE() << "update package does not exist: " << packagePath;
@@ -234,6 +234,12 @@ Ret WinUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath)
     win::UpdateRequest request;
     request.packagePath = nativePath.toStdWString();
     request.pid = static_cast<unsigned long long>(QCoreApplication::applicationPid());
+
+    request.ui.title = QString::fromStdString(ui.title).toStdWString();
+    request.ui.message = QString::fromStdString(ui.message).toStdWString();
+    request.ui.backgroundColor = QString::fromStdString(ui.backgroundColor).toStdWString();
+    request.ui.accentColor = QString::fromStdString(ui.accentColor).toStdWString();
+    request.ui.foregroundColor = QString::fromStdString(ui.textColor).toStdWString();
 
     if (!win::writeRequest(id, request)) {
         LOGE() << "failed to write update request to " << QString::fromStdWString(win::requestFilePath(id));

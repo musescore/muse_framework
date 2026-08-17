@@ -25,14 +25,16 @@
 #include <windows.h>
 
 namespace platform {
-void waitForProcessExit(long long pid, int timeoutMs)
+bool waitForProcessExit(long long pid, int timeoutMs)
 {
     HANDLE hProc = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
     if (!hProc) {
         // Already gone, or no access.
-        return;
+        return true;
     }
-    WaitForSingleObject(hProc, static_cast<DWORD>(timeoutMs));
+    const DWORD result = WaitForSingleObject(hProc, static_cast<DWORD>(timeoutMs));
     CloseHandle(hProc);
+
+    return result == WAIT_OBJECT_0;
 }
 }
