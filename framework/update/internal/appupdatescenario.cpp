@@ -28,7 +28,6 @@
 
 #include "types/val.h"
 #include "translation.h"
-#include "defer.h"
 #include "log.h"
 
 using namespace muse;
@@ -48,7 +47,6 @@ void AppUpdateScenario::checkForUpdate(bool manual)
     }
 
     m_checkInProgress = true;
-    m_checkInProgressChanged.notify();
 
     service()->checkForUpdate().onResolve(this, [this, manual](const RetVal<ReleaseInfo>& res) {
         const bool noUpdate = res.ret.code() == static_cast<int>(Err::NoUpdate);
@@ -61,23 +59,16 @@ void AppUpdateScenario::checkForUpdate(bool manual)
             } else {
                 showReleaseInfo(res.val);
             }
-        } else if (!noUpdate) {
+        } else if (!res.ret && !noUpdate) {
             LOGE() << res.ret.toString();
         }
 
         m_checkInProgress = false;
-        m_checkInProgressChanged.notify();
+
+        if (!manual && res.ret) {
+            downloadUpdateInBackground();
+        }
     });
-}
-
-bool AppUpdateScenario::checkInProgress() const
-{
-    return m_checkInProgress;
-}
-
-async::Notification AppUpdateScenario::checkInProgressChanged() const
-{
-    return m_checkInProgressChanged;
 }
 
 bool AppUpdateScenario::hasUpdate() const
@@ -96,17 +87,6 @@ bool AppUpdateScenario::hasUpdate() const
     }
 
     return !shouldIgnoreUpdate(lastCheckResult.val);
-}
-
-Promise<Ret> AppUpdateScenario::showUpdate()
-{
-    const RetVal<ReleaseInfo>& lastCheckResult = service()->lastCheckResult();
-    if (lastCheckResult.ret) {
-        return showReleaseInfo(lastCheckResult.val);
-    }
-    return async::make_promise<Ret>([lastCheckResult](auto resolve, auto) {
-        return resolve(lastCheckResult.ret);
-    });
 }
 
 Promise<Ret> AppUpdateScenario::processUpdateError(int errorCode)
@@ -186,12 +166,15 @@ Promise<IInteractive::Result> AppUpdateScenario::showServerErrorMsg()
 
 Promise<Ret> AppUpdateScenario::downloadRelease()
 {
-    RetVal<Val> rv = interactive()->openSync("muse://update/app?mode=download");
-    if (!rv.ret) {
-        return processUpdateError(rv.ret.code());
-    }
+    io::path_t packagePath = service()->downloadedReleasePath();
 
-    const io::path_t packagePath = rv.val.toString();
+    if (packagePath.empty()) {
+        RetVal<Val> rv = interactive()->openSync("muse://update/app?mode=download");
+        if (!rv.ret) {
+            return processUpdateError(rv.ret.code());
+        }
+        packagePath = rv.val.toString();
+    }
 
     //! NOTE: In-place auto-install currently supports a single window only;
     //! otherwise fall back to handing the installer to the user.
@@ -237,7 +220,7 @@ Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& package
     });
 }
 
-Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall(const io::path_t& installerPath)
+Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall(const io::path_t& packagePath)
 {
     const std::string info = muse::qtrc("update", "%1 needs to close to complete the installation. "
                                                   "If you have any unsaved changes, you will be prompted to save them before %1 closes.")
@@ -249,16 +232,16 @@ Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall(const io::path_t
     };
 
     return interactive()->info("", info, buttons, closeBtn)
-           .then<Ret>(this, [this, installerPath](const IInteractive::Result& res, auto resolve) {
+           .then<Ret>(this, [this, packagePath](const IInteractive::Result& res, auto resolve) {
         if (res.isButton(IInteractive::Button::Cancel)) {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
         if (multiwindowsProvider()->windowCount() != 1) {
-            multiwindowsProvider()->quitAllAndRunInstallation(installerPath);
+            multiwindowsProvider()->quitAllAndRunInstallation(packagePath);
         }
 
-        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, installerPath.toStdString()));
+        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, packagePath.toStdString()));
         return resolve(muse::make_ok());
     });
 }
@@ -268,18 +251,13 @@ bool AppUpdateScenario::shouldIgnoreUpdate(const ReleaseInfo& info) const
     return info.version == configuration()->skippedReleaseVersion() && !configuration()->checkForUpdateTestMode();
 }
 
-bool AppUpdateScenario::canAutoInstall() const
-{
-    return service()->canAutoInstall();
-}
-
 void AppUpdateScenario::downloadUpdateInBackground()
 {
     if (m_bgDownloadInProgress || hasReadyUpdate()) {
         return;
     }
 
-    if (!hasUpdate() || !service()->canAutoInstall()) {
+    if (!hasUpdate() || !configuration()->autoInstallEnabled()) {
         return;
     }
 
@@ -300,7 +278,7 @@ void AppUpdateScenario::downloadUpdateInBackground()
 
     m_bgDownloadInProgress = true;
 
-    progress.val.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string& msg) {
+    progress.val.progressChanged().onReceive(this, [](int64_t current, int64_t total, const std::string& msg) {
         LOGE() << "progress: " << current << " / " << total << " " << msg;
     });
 
@@ -359,6 +337,11 @@ void AppUpdateScenario::installReadyUpdate()
         }
 
         if (actionCode != "install") {
+            return;
+        }
+
+        if (!service()->canAutoInstall() || multiwindowsProvider()->windowCount() != 1) {
+            askToCloseAppAndCompleteInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
             return;
         }
 

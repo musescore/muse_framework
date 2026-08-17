@@ -47,22 +47,6 @@ bool AppUpdateScenarioStub::hasUpdate() const
     return false;
 }
 
-muse::async::Promise<muse::Ret> AppUpdateScenarioStub::showUpdate()
-{
-    return muse::async::Promise<muse::Ret>([](auto /*resolve*/, auto reject) {
-        return reject(int(muse::Ret::Code::UnknownError), "stub");
-    });
-}
-
-bool AppUpdateScenarioStub::canAutoInstall() const
-{
-    return false;
-}
-
-void AppUpdateScenarioStub::downloadUpdateInBackground()
-{
-}
-
 bool AppUpdateScenarioStub::hasReadyUpdate() const
 {
     return false;

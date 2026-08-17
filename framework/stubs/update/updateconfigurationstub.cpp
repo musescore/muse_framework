@@ -57,6 +57,15 @@ std::string UpdateConfigurationStub::skippedReleaseVersion() const
     return "";
 }
 
+muse::io::path_t UpdateConfigurationStub::lastDownloadedPackagePath() const
+{
+    return "";
+}
+
+void UpdateConfigurationStub::setLastDownloadedPackagePath(const io::path_t&)
+{
+}
+
 void UpdateConfigurationStub::setSkippedReleaseVersion(const std::string&)
 {
 }
@@ -87,6 +96,11 @@ std::string UpdateConfigurationStub::appWebSiteUrl() const
 }
 
 std::string UpdateConfigurationStub::privacyPolicyUrl() const
+{
+    return "";
+}
+
+muse::io::path_t UpdateConfigurationStub::downloadsPath() const
 {
     return "";
 }

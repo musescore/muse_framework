@@ -50,14 +50,7 @@ public:
     bool needCheckForUpdate() const override;
     void checkForUpdate(bool manual) override;
 
-    bool checkInProgress() const override;
-    async::Notification checkInProgressChanged() const override;
-
     bool hasUpdate() const override;
-    muse::async::Promise<Ret> showUpdate() override;  // NOTE: Resolves to "OK" if the user wants to close and complete install of update...
-
-    bool canAutoInstall() const override;
-    void downloadUpdateInBackground() override;
 
     bool hasReadyUpdate() const override;
     async::Notification hasReadyUpdateChanged() const override;
@@ -72,6 +65,8 @@ private:
     muse::async::Promise<Ret> showReleaseInfo(const ReleaseInfo& info);
     async::Promise<IInteractive::Result> showServerErrorMsg();
 
+    void downloadUpdateInBackground();
+
     muse::async::Promise<Ret> downloadRelease();
     muse::async::Promise<Ret> askToCloseAppAndCompleteInstall(const io::path_t& installerPath);
     muse::async::Promise<Ret> askToRestartAndInstall(const io::path_t& packagePath);
@@ -79,7 +74,6 @@ private:
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
 
     bool m_checkInProgress = false;
-    async::Notification m_checkInProgressChanged;
 
     bool m_bgDownloadInProgress = false;
     io::path_t m_readyPackagePath;

@@ -84,6 +84,7 @@ private:
     QJsonObject resolveReleaseAsset(const QJsonObject& release) const;
 
     void cleanupStalePackages(const std::string& keepFileName);
+    muse::io::path_t packagesDir() const;
 
     using PrevReleaseNotesCallback = std::function<void (const PrevReleasesNotesList&)>;
     void downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished);
@@ -93,5 +94,6 @@ private:
     RetVal<ReleaseInfo> m_lastCheckResult;
     network::INetworkManagerPtr m_networkManager;
     Progress m_updateProgress;
+    bool m_downloadInProgress = false;
 };
 }

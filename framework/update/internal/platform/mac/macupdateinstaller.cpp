@@ -66,7 +66,8 @@ bool MacUpdateInstaller::isInPlaceUpdateSupported() const
 
     // In-place replacement only works if we can write the bundle without
     // privilege escalation.
-    if (::access(bundlePath.toUtf8().constData(), W_OK) != 0) {
+    if (::access(bundlePath.toUtf8().constData(), W_OK) != 0
+        && ::access(io::dirpath(bundlePath.toStdString()).toStdString().c_str(), W_OK) != 0) {
         return false;
     }
 

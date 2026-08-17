@@ -225,6 +225,10 @@ const RetVal<ReleaseInfo>& AppUpdateService::lastCheckResult() const
 
 RetVal<Progress> AppUpdateService::downloadRelease()
 {
+    if (m_downloadInProgress) {
+        return RetVal<Progress>::make_ok(m_updateProgress);
+    }
+
     if (!m_networkManager) {
         m_networkManager = networkManagerCreator()->makeNetworkManager();
     }
@@ -232,9 +236,11 @@ RetVal<Progress> AppUpdateService::downloadRelease()
     const ReleaseInfo info = m_lastCheckResult.val;
     const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
 
-    const path_t finalPath = configuration()->updateDataPath() + "/" + info.fileName;
+    const path_t finalPath = packagesDir() + "/" + info.fileName;
     const path_t partialPath = finalPath + PARTIAL_SUFFIX;
     fileSystem()->makePath(muse::io::absoluteDirpath(partialPath));
+
+    configuration()->setLastDownloadedPackagePath(finalPath);
 
     //! NOTE: Resume an interrupted download by appending to the partial file and
     //! requesting the remaining bytes via a Range header.
@@ -264,13 +270,15 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         Progress mutProgress = downloadProgress.val;
         mutProgress.cancel();
         m_updateProgress.canceled().disconnect(this);
-    });
+    }, Asyncable::Mode::SetReplace);
 
     downloadProgress.val.progressChanged().onReceive(this, [this, offset](int64_t current, int64_t total, const std::string& msg) {
         m_updateProgress.progress(static_cast<int64_t>(offset) + current, static_cast<int64_t>(offset) + total, msg);
-    });
+    }, Asyncable::Mode::SetReplace);
 
     downloadProgress.val.finished().onReceive(this, [this, finalPath, partialPath, offset](const ProgressResult& res) {
+        m_downloadInProgress = false;
+
         if (!res.ret) {
             //! NOTE: Keep the partial file so the next attempt can resume from it.
             m_updateProgress.finish(ProgressResult::make_ret(res.ret));
@@ -297,8 +305,9 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         }
 
         m_updateProgress.finish(ProgressResult::make_ok(Val(finalPath)));
-    });
+    }, Asyncable::Mode::SetReplace);
 
+    m_downloadInProgress = true;
     return RetVal<Progress>::make_ok(m_updateProgress);
 }
 
@@ -394,8 +403,8 @@ std::vector<std::string> AppUpdateService::platformFileSuffixes() const
     switch (systemInfo()->productType()) {
     case ISystemInfo::ProductType::Windows: return { "msi" };
     case ISystemInfo::ProductType::MacOS:
-        // Prefer the zip bundle for in-place auto-install, falling back to the
-        // dmg for the manual flow (and for releases that ship only a dmg).
+        // In-place auto-install works with the zip bundle only, the manual
+        // flow hands the user a dmg.
         if (canAutoInstall()) {
             return { "zip", "dmg" };
         }
@@ -523,14 +532,15 @@ void AppUpdateService::clear()
 
 void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
 {
-    const io::path_t dir = configuration()->updateDataPath();
-    if (!fileSystem()->exists(dir)) {
-        return;
+    const io::path_t recorded = configuration()->lastDownloadedPackagePath();
+    if (!recorded.empty() && io::filename(recorded).toStdString() != keepFileName) {
+        fileSystem()->remove(recorded);
+        fileSystem()->remove(recorded + PARTIAL_SUFFIX);
+        configuration()->setLastDownloadedPackagePath(io::path_t());
     }
 
-    //! NOTE: No relevant package to keep -> drop everything.
-    if (keepFileName.empty()) {
-        fileSystem()->remove(dir);
+    const io::path_t dir = configuration()->updateDataPath();
+    if (!fileSystem()->exists(dir)) {
         return;
     }
 
@@ -567,10 +577,15 @@ io::path_t AppUpdateService::downloadedReleasePath() const
         return {};
     }
 
-    const io::path_t path = configuration()->updateDataPath() + "/" + fileName;
+    const io::path_t path = packagesDir() + "/" + fileName;
     if (!fileSystem()->exists(path)) {
         return {};
     }
 
     return path;
+}
+
+io::path_t AppUpdateService::packagesDir() const
+{
+    return canAutoInstall() ? configuration()->updateDataPath() : configuration()->downloadsPath();
 }

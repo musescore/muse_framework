@@ -39,18 +39,7 @@ public:
     virtual bool needCheckForUpdate() const = 0;
     virtual void checkForUpdate(bool manual) = 0;
 
-    virtual bool checkInProgress() const = 0;
-    virtual async::Notification checkInProgressChanged() const = 0;
-
     virtual bool hasUpdate() const = 0;
-    virtual async::Promise<Ret> showUpdate() = 0;
-
-    //! Whether an available update can be installed in-place automatically.
-    virtual bool canAutoInstall() const = 0;
-
-    //! Silently download the available update; on completion a "ready" update
-    //! becomes available (see hasReadyUpdate()).
-    virtual void downloadUpdateInBackground() = 0;
 
     //! A downloaded update is ready to be installed in-place.
     virtual bool hasReadyUpdate() const = 0;

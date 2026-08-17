@@ -53,6 +53,9 @@ public:
     virtual std::string skippedReleaseVersion() const = 0;
     virtual void setSkippedReleaseVersion(const std::string& version) = 0;
 
+    virtual muse::io::path_t lastDownloadedPackagePath() const = 0;
+    virtual void setLastDownloadedPackagePath(const muse::io::path_t& path) = 0;
+
     virtual bool checkForUpdateTestMode() const = 0;
 
     virtual std::string checkForAppUpdateUrl() const = 0;
@@ -64,6 +67,7 @@ public:
     virtual std::string privacyPolicyUrl() const = 0;
 
     virtual muse::io::path_t updateDataPath() const = 0;
+    virtual muse::io::path_t downloadsPath() const = 0;
     virtual muse::io::path_t updateRequestHistoryJsonPath() const = 0;
 };
 }

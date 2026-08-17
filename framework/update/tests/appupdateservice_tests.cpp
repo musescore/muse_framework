@@ -93,6 +93,7 @@ public:
                                 "\"tag_name\": \"v1000.0\","
                                 "\"assets\": ["
                                 "{ \"name\": \"MuseScore.dmg\", \"browser_download_url\": \"blabla\" },"
+                                "{ \"name\": \"MuseScore.zip\", \"browser_download_url\": \"blabla\" },"
                                 "{ \"name\": \"MuseScore.msi\", \"browser_download_url\": \"blabla\" },"
                                 "{ \"name\": \"MuseScore.AppImage\", \"browser_download_url\": \"blabla\" }"
                                 "],"
@@ -151,6 +152,9 @@ public:
         m_service->m_lastCheckResult = RetVal<ReleaseInfo>::make_ok(info);
 
         ON_CALL(*m_configuration, updateDataPath())
+        .WillByDefault(Return(io::path_t(dataPath)));
+
+        ON_CALL(*m_configuration, downloadsPath())
         .WillByDefault(Return(io::path_t(dataPath)));
 
         ON_CALL(*m_fileSystem, makePath(_))
@@ -465,6 +469,40 @@ TEST_F(AppUpdateServiceTests, DownloadRelease_Success_PromotesPartialToFinal)
     ProgressResult res = ProgressResult::make_ok(Val());
     res.ret.setData("status", 200);
     m_downloadProgress.finish(res);
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_AlreadyInProgress_AttachesToIt)
+{
+    //! [GIVEN] A download is already running
+    givenAvailableRelease();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(false)));
+
+    //! [THEN] Only one network request is made
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .WillOnce(testing::Invoke([this](const QUrl&, IncomingDevicePtr, const RequestHeaders&) {
+        return RetVal<Progress>::make_ok(m_downloadProgress);
+    }));
+
+    RetVal<Progress> first = m_service->downloadRelease();
+    EXPECT_TRUE(first.ret);
+
+    //! [WHEN] A second download is requested while the first is in progress
+    RetVal<Progress> second = m_service->downloadRelease();
+
+    //! [THEN] The caller is attached to the running download instead
+    EXPECT_TRUE(second.ret);
+
+    //! [WHEN] The download finishes, a new one may be started again
+    m_downloadProgress.finish(ProgressResult::make_ret(muse::make_ret(muse::Ret::Code::Cancel)));
+
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .WillOnce(testing::Invoke([this](const QUrl&, IncomingDevicePtr, const RequestHeaders&) {
+        return RetVal<Progress>::make_ok(m_downloadProgress);
+    }));
+
+    RetVal<Progress> third = m_service->downloadRelease();
+    EXPECT_TRUE(third.ret);
 }
 
 TEST_F(AppUpdateServiceTests, DownloadRelease_RangeNotHonoured_DiscardsPartial)

@@ -34,6 +34,7 @@ static const Settings::Key CHECK_FOR_UPDATE_KEY(module_name, "application/checkF
 static const Settings::Key CHECK_FOR_UPDATE_TEST_MODE_KEY(module_name, "application/checkForUpdateTestMode");
 static const Settings::Key ALLOW_UPDATE_ON_PRERELEASE(module_name, "application/allowUpdateOnPreRelease");
 static const Settings::Key SKIPPED_VERSION_KEY(module_name, "application/skippedVersion");
+static const Settings::Key LAST_DOWNLOADED_PACKAGE_KEY(module_name, "application/lastDownloadedPackage");
 static const Settings::Key AUTO_INSTALL_KEY(module_name, "application/autoInstall");
 
 void UpdateConfiguration::init()
@@ -108,6 +109,16 @@ void UpdateConfiguration::setSkippedReleaseVersion(const std::string& version)
     settings()->setSharedValue(SKIPPED_VERSION_KEY, Val(version));
 }
 
+muse::io::path_t UpdateConfiguration::lastDownloadedPackagePath() const
+{
+    return settings()->value(LAST_DOWNLOADED_PACKAGE_KEY).toPath();
+}
+
+void UpdateConfiguration::setLastDownloadedPackagePath(const muse::io::path_t& path)
+{
+    settings()->setSharedValue(LAST_DOWNLOADED_PACKAGE_KEY, Val(path));
+}
+
 bool UpdateConfiguration::checkForUpdateTestMode() const
 {
     return settings()->value(CHECK_FOR_UPDATE_TEST_MODE_KEY).toBool();
@@ -145,6 +156,11 @@ std::string UpdateConfiguration::privacyPolicyUrl() const
 muse::io::path_t UpdateConfiguration::updateDataPath() const
 {
     return globalConfiguration()->userAppDataPath() + "/update";
+}
+
+muse::io::path_t UpdateConfiguration::downloadsPath() const
+{
+    return globalConfiguration()->downloadsPath();
 }
 
 muse::io::path_t UpdateConfiguration::updateRequestHistoryJsonPath() const
