@@ -109,3 +109,35 @@ TEST(MenuViewTests, OverflowingTopLevelMenuOpensLeftOfCursor)
     EXPECT_DOUBLE_EQ(contentRight, cursorX);
     EXPECT_NE(contentRight, availableGeometry.right());
 }
+
+TEST(MenuViewTests, TopLevelMenuUsesScreenBoundaryInsteadOfParentWindow)
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    ASSERT_NE(screen, nullptr);
+
+    const QRect availableGeometry = screen->availableGeometry();
+    ASSERT_GT(availableGeometry.width(), 400);
+
+    QQuickWindow parentWindow;
+    parentWindow.setGeometry(availableGeometry.x(), availableGeometry.y(), availableGeometry.width() / 2,
+                             availableGeometry.height());
+
+    QQuickItem anchor(parentWindow.contentItem());
+    anchor.setX(parentWindow.width() - 50);
+    anchor.setY(100);
+    anchor.setSize(QSizeF(1, 1));
+
+    QQuickItem content;
+    TestMenuView menu(&anchor);
+    menu.setMainWindowForTest(std::make_shared<MainWindowStub>());
+    menu.setContentItem(&content);
+    menu.setDesiredWidth(200);
+    menu.setDesiredHeight(100);
+
+    MenuViewTestAccess::updateGeometry(menu);
+
+    const qreal contentRight = menu.globalPosition().x() + menu.padding() + menu.desiredWidth();
+
+    EXPECT_GT(contentRight, parentWindow.geometry().right());
+    EXPECT_LE(contentRight, availableGeometry.right());
+}
