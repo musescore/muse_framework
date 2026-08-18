@@ -139,7 +139,7 @@ ToolConfig UiArrangement::toolConfig(const QString& toolName) const
         QJsonObject itemObj = v.toObject();
 
         ToolConfig::Item item;
-        item.action = itemObj.value("action").toString().toStdString();
+        item.intent = itemObj.value("action").toString().toStdString();
         item.show = itemObj.value("show").toInt(1);
 
         if (item.isSeparator() && lastWasSeparator) {
@@ -161,7 +161,7 @@ void UiArrangement::setToolConfig(const QString& toolName, const ToolConfig& con
 
     for (const ToolConfig::Item& item : config.items) {
         QJsonObject itemObj;
-        itemObj["action"] = QString::fromStdString(item.action);
+        itemObj["action"] = QString::fromStdString(item.intent);
         itemObj["show"] = item.show ? 1 : 0;
 
         itemsArr.append(itemObj);

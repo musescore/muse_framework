@@ -29,6 +29,7 @@
  #include "global/types/retval.h"
 
  #include "uiaction.h"
+ #include "toolconfig.h"
 
 namespace muse::ui {
 class IUiState : MODULE_CONTEXT_INTERFACE

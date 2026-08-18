@@ -152,34 +152,6 @@ struct UiActionState
         };
     }
 };
-
-struct ToolConfig
-{
-    struct Item
-    {
-        actions::ActionCode action;
-        bool show = true;
-
-        Item() = default;
-        Item(const actions::ActionCode& a, bool sh)
-            : action(a), show(sh) {}
-
-        bool isSeparator() const
-        {
-            return action.empty();
-        }
-
-        bool operator ==(const Item& other) const
-        {
-            return action == other.action
-                   && show == other.show;
-        }
-    };
-
-    QList<Item> items;
-
-    bool isValid() const { return !items.isEmpty(); }
-};
 }
 
 #endif // MUSE_UI_UIACTION_H

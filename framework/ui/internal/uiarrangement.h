@@ -32,7 +32,7 @@
 #include "global/async/asyncable.h"
 #include "modularity/ioc.h"
 #include "workspace/iworkspacesdataprovider.h"
-#include "uiaction.h"
+#include "toolconfig.h"
 
 namespace muse::ui {
 class UiArrangement : public Contextable, public async::Asyncable

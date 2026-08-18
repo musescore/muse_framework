@@ -37,13 +37,18 @@ constexpr std::string_view COMMAND_SCHEME = "command";
 using Command = Uri;
 using CommandQuery = UriQuery;
 
-inline CommandQuery make_query(const std::string& command, const std::vector<std::pair<std::string, Val> >& params)
+inline CommandQuery make_query(const Command& command, const std::vector<std::pair<std::string, Val> >& params)
 {
     CommandQuery query(command);
     for (const auto& param : params) {
         query.addParam(param.first, param.second);
     }
     return query;
+}
+
+inline CommandQuery make_query(const std::string& command, const std::vector<std::pair<std::string, Val> >& params)
+{
+    return make_query(Command(command), params);
 }
 
 // Info

@@ -22,7 +22,6 @@
 #include "abstractmenumodel.h"
 
 #include "rcommand/commandtypes.h"
-#include "thirdparty/kors_logger/src/log_base.h"
 #include "types/translatablestring.h"
 
 #include "log.h"
@@ -94,7 +93,11 @@ void AbstractMenuModel::dispatch(const std::string& command, const ActionData& a
         DO_ASSERT(args.empty());
         commandDispatcher()->dispatch(rcommand::Command(command));
     } else {
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
         dispatcher()->dispatch(command, args);
+#else
+        UNREACHABLE;
+#endif
     }
 }
 
@@ -103,7 +106,11 @@ void AbstractMenuModel::dispatch(const UriQuery& query)
     if (query.uri().scheme() == "command") {
         commandDispatcher()->dispatch(query);
     } else {
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
         dispatcher()->dispatch(query);
+#else
+        UNREACHABLE;
+#endif
     }
 }
 
@@ -188,6 +195,7 @@ MenuItem& AbstractMenuModel::findItem(const QString& itemId)
     return item(m_items, itemId);
 }
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 MenuItem& AbstractMenuModel::findItem(const ActionCode& actionCode)
 {
     MenuItemList list = items(m_items, actionCode);
@@ -207,6 +215,8 @@ MenuItemList AbstractMenuModel::findItems(const ActionCode& actionCode)
 {
     return items(m_items, actionCode);
 }
+
+#endif
 
 MenuItem& AbstractMenuModel::findItem(const muse::rcommand::Command& command)
 {
@@ -271,6 +281,7 @@ MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::CommandQuery& query, c
     return item;
 }
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 MenuItem* AbstractMenuModel::makeMenuItem(const ActionCode& actionCode, const TranslatableString& title)
 {
     if (muse::strings::startsWith(actionCode, "command://")) {
@@ -298,6 +309,8 @@ MenuItem* AbstractMenuModel::makeMenuItem(const ActionCode& actionCode, const Tr
     return item;
 }
 
+#endif
+
 MenuItem* AbstractMenuModel::makeSeparator()
 {
     MenuItem* item = new MenuItem(this);
@@ -315,9 +328,11 @@ void AbstractMenuModel::subscribeOnChanges()
         onCommandStateChanged(command, state);
     });
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     uiActionsRegister()->actionStateChanged().onReceive(this, [this](const ActionCodeList& codes) {
         onActionsStateChanges(codes);
     });
+#endif
 
     shortcutsRegister()->shortcutsChanged().onNotify(this, [this]() {
         updateShortcutsAll();
@@ -331,6 +346,7 @@ void AbstractMenuModel::onCommandStateChanged(const rcommand::Command& command, 
     updateState(m_items, command, state);
 }
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 void AbstractMenuModel::onActionsStateChanges(const muse::actions::ActionCodeList& codes)
 {
     TRACEFUNC;
@@ -342,6 +358,8 @@ void AbstractMenuModel::onActionsStateChanges(const muse::actions::ActionCodeLis
     std::map<actions::ActionCode, ui::UiActionState> states;
     updateState(m_items, codes, states);
 }
+
+#endif
 
 void AbstractMenuModel::setItem(int index, MenuItem* item)
 {
@@ -378,6 +396,7 @@ MenuItem& AbstractMenuModel::item(MenuItemList& items, const QString& itemId)
     return dummy;
 }
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 MenuItemList AbstractMenuModel::items(const MenuItemList& items, const ActionCode& actionCode) const
 {
     MenuItemList result;
@@ -402,6 +421,8 @@ MenuItemList AbstractMenuModel::items(const MenuItemList& items, const ActionCod
 
     return result;
 }
+
+#endif
 
 MenuItemList AbstractMenuModel::items(const MenuItemList& items, const muse::rcommand::Command& command) const
 {
@@ -468,6 +489,7 @@ void AbstractMenuModel::updateState(MenuItemList& items, const rcommand::Command
     }
 }
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 void AbstractMenuModel::updateState(MenuItemList& items, const actions::ActionCodeList& codes,
                                     std::map<actions::ActionCode, ui::UiActionState>& states)
 {
@@ -490,6 +512,8 @@ void AbstractMenuModel::updateState(MenuItemList& items, const actions::ActionCo
         }
     }
 }
+
+#endif
 
 void AbstractMenuModel::updateShortcutsAll()
 {

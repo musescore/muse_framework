@@ -30,7 +30,7 @@ using namespace muse::workspace;
 
 static const std::vector<CommandInfo> s_commandInfos = {
     CommandInfo{
-        SELECT_WORKSPACE_COMMAND,
+        WORKSPACE_SELECT_COMMAND,
         TranslatableString("workspace", "Select workspace"),
         TranslatableString("workspace", "Select workspace"),
         InputSchema({
@@ -39,14 +39,14 @@ static const std::vector<CommandInfo> s_commandInfos = {
         Decoration()
     },
     CommandInfo{
-        CONFIGURE_WORKSPACES_COMMAND,
+        WORKSPACES_CONFIGURE_COMMAND,
         TranslatableString("workspace", "Edit workspaces..."),
         TranslatableString("workspace", "Edit workspaces"),
         InputSchema(),
         Decoration(ui::IconCode::Code::EDIT)
     },
     CommandInfo{
-        CREATE_WORKSPACE_COMMAND,
+        WORKSPACE_CREATE_COMMAND,
         TranslatableString("workspace", "Create new workspace"),
         TranslatableString("workspace", "Create new workspace"),
         InputSchema(),

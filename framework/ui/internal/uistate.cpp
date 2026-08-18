@@ -102,7 +102,7 @@ void UiState::updateToolConfig(const QString& toolName, ToolConfig& userConfig, 
             }
 
             if (std::find_if(defaultConfig.items.cbegin(), defaultConfig.items.cend(), [item](const auto& defaultItem) {
-                return item.action == defaultItem.action;
+                return item.intent == defaultItem.intent;
             }) == defaultConfig.items.cend()) {
                 itemsToRemove << item;
             }
@@ -122,7 +122,7 @@ void UiState::updateToolConfig(const QString& toolName, ToolConfig& userConfig, 
             }
 
             if (std::find_if(userConfig.items.cbegin(), userConfig.items.cend(), [defaultItem](const auto& item) {
-                return defaultItem.action == item.action;
+                return defaultItem.intent == item.intent;
             }) == userConfig.items.cend()) {
                 hasChanged = true;
 
@@ -148,7 +148,7 @@ void UiState::updateToolConfig(const QString& toolName, ToolConfig& userConfig, 
                     const auto& itemBefore = defaultConfig.items[indexOfDefaultItem - 1];
                     if (!itemBefore.isSeparator()) {
                         auto it = std::find_if(userConfig.items.begin(), userConfig.items.end(), [itemBefore](const auto& item) {
-                            return item.action == itemBefore.action;
+                            return item.intent == itemBefore.intent;
                         });
 
                         if (it != userConfig.items.end()) {
@@ -163,7 +163,7 @@ void UiState::updateToolConfig(const QString& toolName, ToolConfig& userConfig, 
                     const auto& itemAfter  = defaultConfig.items[indexOfDefaultItem + 1];
                     if (!itemAfter.isSeparator()) {
                         auto it = std::find_if(userConfig.items.begin(), userConfig.items.end(), [itemAfter](const auto& item) {
-                            return item.action == itemAfter.action;
+                            return item.intent == itemAfter.intent;
                         });
 
                         userConfig.items.insert(it, defaultItem);

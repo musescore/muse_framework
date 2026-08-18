@@ -66,9 +66,9 @@ void WorkspaceCommandsState::updateCommandStates(const std::vector<Command>& com
 
 CommandState WorkspaceCommandsState::commandState(const Command& command) const
 {
-    if (command == SELECT_WORKSPACE_COMMAND
-        || command == CONFIGURE_WORKSPACES_COMMAND
-        || command == CREATE_WORKSPACE_COMMAND) {
+    if (command == WORKSPACE_SELECT_COMMAND
+        || command == WORKSPACES_CONFIGURE_COMMAND
+        || command == WORKSPACE_CREATE_COMMAND) {
         return CommandState(true, false);
     }
 

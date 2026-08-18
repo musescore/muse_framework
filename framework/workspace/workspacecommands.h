@@ -25,7 +25,7 @@
 #include "rcommand/commandtypes.h"
 
 namespace muse::workspace {
-inline static const muse::rcommand::Command SELECT_WORKSPACE_COMMAND("command://workspace/select");
-inline static const muse::rcommand::Command CONFIGURE_WORKSPACES_COMMAND("command://workspace/configure");
-inline static const muse::rcommand::Command CREATE_WORKSPACE_COMMAND("command://workspace/create");
+inline static const muse::rcommand::Command WORKSPACE_SELECT_COMMAND("command://workspace/select");
+inline static const muse::rcommand::Command WORKSPACES_CONFIGURE_COMMAND("command://workspace/configure");
+inline static const muse::rcommand::Command WORKSPACE_CREATE_COMMAND("command://workspace/create");
 }
