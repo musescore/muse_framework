@@ -222,6 +222,12 @@ void Mixer::setNonMutedTrackCount(size_t count)
 bool Mixer::useMultithreading() const
 {
 #ifdef MUSE_THREADS_SUPPORT
+    //! NOTE Offline the render runs on the engine thread while it holds its async queue lock,
+    //! and a pool worker needs that same lock to register a channel port, which deadlocks.
+    if (m_mode == ProcessMode::PlayingOffline) {
+        return false;
+    }
+
     if (m_nonMutedTrackCount < MIN_TRACK_COUNT_FOR_MULTITHREADING) {
         return false;
     }
