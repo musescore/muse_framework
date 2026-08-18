@@ -130,13 +130,7 @@ double FontsEngine::RequireFace::pixelScaleFor(const IFontFace* loadedFace) cons
 
 FontsEngine::~FontsEngine()
 {
-    for (RequireFace* f : m_requiredFaces) {
-        delete f;
-    }
-
-    for (IFontFace* f : m_loadedFaces) {
-        delete f;
-    }
+    clearLoadedFaces();
 }
 
 void FontsEngine::init()
@@ -147,6 +141,19 @@ void FontsEngine::init()
 void FontsEngine::setRenderCacheDirPath(const io::path_t& path, const std::string& revision)
 {
     m_renderCache.setCacheDirPath(path, revision);
+}
+
+void FontsEngine::clearLoadedFaces()
+{
+    for (RequireFace* f : m_requiredFaces) {
+        delete f;
+    }
+    m_requiredFaces.clear();
+
+    for (IFontFace* f : m_loadedFaces) {
+        delete f;
+    }
+    m_loadedFaces.clear();
 }
 
 double FontsEngine::lineSpacing(const Font& f) const
