@@ -400,7 +400,7 @@ void MenuItem::setState(const UiActionState& state)
 
 UiActionState MenuItem::state() const
 {
-    return UiActionState(m_enabled, m_checked);
+    return UiActionState { m_enabled, m_checked };
 }
 
 void MenuItem::setArgs(const muse::actions::ActionData& args)
