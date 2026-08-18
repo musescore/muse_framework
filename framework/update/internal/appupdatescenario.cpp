@@ -26,6 +26,9 @@
 
 #include <QUrl>
 
+#include "async/async.h"
+#include "global/concurrency/concurrent.h"
+#include "runtime.h"
 #include "types/val.h"
 #include "translation.h"
 #include "log.h"
@@ -203,20 +206,30 @@ Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& package
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
-        const Ret ret = service()->applyUpdate(packagePath);
-        if (!ret) {
-            LOGE() << "failed to apply update in-place, falling back to manual install: " << ret.toString();
-            askToCloseAppAndCompleteInstall(packagePath).onResolve(this, [resolve](const Ret& r) {
-                (void)resolve(r);
-            });
-            return Promise<Ret>::dummy_result();
-        }
+        applyUpdateAndQuit(packagePath);
 
-        //! NOTE: The helper has been spawned and will replace the app and
-        //! relaunch once we quit. Quit without an installer path so the legacy
-        //! "open installer" path is not taken.
-        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
         return resolve(muse::make_ok());
+    });
+}
+
+void AppUpdateScenario::applyUpdateAndQuit(const io::path_t& packagePath)
+{
+    //! NOTE: Unpacking and verifying the package takes seconds; run it off
+    //! the UI thread so the app stays responsive.
+    Concurrent::run([this, packagePath]() {
+        const Ret ret = service()->applyUpdate(packagePath);
+        async::Async::call(this, [this, packagePath, ret]() {
+            if (!ret) {
+                LOGE() << "failed to apply update in-place, falling back to manual install: " << ret.toString();
+                askToCloseAppAndCompleteInstall(packagePath).onResolve(this, [](const Ret&) {});
+                return;
+            }
+
+            //! NOTE: The helper has been spawned and will replace the app and
+            //! relaunch once we quit. Quit without an installer path so the
+            //! legacy "open installer" path is not taken.
+            dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
+        }, runtime::mainThreadId());
     });
 }
 
@@ -345,13 +358,6 @@ void AppUpdateScenario::installReadyUpdate()
             return;
         }
 
-        const Ret ret = service()->applyUpdate(m_readyPackagePath);
-        if (!ret) {
-            LOGE() << "failed to apply update in-place, falling back to manual install: " << ret.toString();
-            askToCloseAppAndCompleteInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
-            return;
-        }
-
-        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
+        applyUpdateAndQuit(m_readyPackagePath);
     });
 }

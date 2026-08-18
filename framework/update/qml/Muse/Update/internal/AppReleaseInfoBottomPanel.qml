@@ -70,6 +70,8 @@ RowLayout {
         text: qsTrc("update", "Remind me later")
         icon: IconCode.CLOCK
 
+        orientation: Qt.Horizontal
+
         navigation.name: "RemindMeLaterButton"
         navigation.panel: root.navigationPanel
         navigation.column: 3
@@ -88,6 +90,7 @@ RowLayout {
         icon: IconCode.IMPORT
 
         accentButton: true
+        orientation: Qt.Horizontal
 
         navigation.name: "InstallUpdateButton"
         navigation.panel: root.navigationPanel

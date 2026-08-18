@@ -82,8 +82,7 @@ private:
     InstallProgressUi makeInstallProgressUi() const;
 
     //! Ordered list of acceptable asset suffixes for this platform, most
-    //! preferred first (e.g. "zip" before "dmg" on macOS when auto-install is
-    //! available).
+    //! preferred first.
     std::vector<std::string> platformFileSuffixes() const;
     QJsonObject resolveReleaseAsset(const QJsonObject& release) const;
 

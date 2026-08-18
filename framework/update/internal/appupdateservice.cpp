@@ -403,13 +403,7 @@ std::vector<std::string> AppUpdateService::platformFileSuffixes() const
 {
     switch (systemInfo()->productType()) {
     case ISystemInfo::ProductType::Windows: return { "msi" };
-    case ISystemInfo::ProductType::MacOS:
-        // In-place auto-install works with the zip bundle only, the manual
-        // flow hands the user a dmg.
-        if (canAutoInstall()) {
-            return { "zip", "dmg" };
-        }
-        return { "dmg" };
+    case ISystemInfo::ProductType::MacOS: return { "dmg" };
     case ISystemInfo::ProductType::Linux: return { "appimage" };
     case ISystemInfo::ProductType::Unknown: break;
     }

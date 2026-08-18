@@ -47,6 +47,8 @@ private:
 
     //! Path to the bundled `museupdater` helper (Contents/MacOS/museupdater).
     muse::io::path_t helperPath() const;
+
+    Ret unpackDmg(const QString& package, const QString& stagingDir) const;
 };
 }
 

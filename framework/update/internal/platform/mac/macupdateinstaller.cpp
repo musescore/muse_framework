@@ -29,6 +29,7 @@
 #include <QFileInfo>
 #include <QProcess>
 #include <QStringList>
+#include <QUuid>
 
 #include "../../../updateerrors.h"
 
@@ -90,11 +91,10 @@ Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const I
     }
     QDir().mkpath(stagingDir);
 
-    // 1. Unpack the zip preserving extended attributes and code signatures.
-    int rc = QProcess::execute("/usr/bin/ditto", { "-xk", package, stagingDir });
-    if (rc != 0) {
-        LOGE() << "failed to unpack update package, ditto rc=" << rc;
-        return make_ret(Err::UnknownError);
+    // 1. Unpack the dmg preserving extended attributes and code signatures.
+    Ret unpackRet = unpackDmg(package, stagingDir);
+    if (!unpackRet) {
+        return unpackRet;
     }
 
     // 2. Locate the unpacked .app bundle.
@@ -112,7 +112,7 @@ Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const I
     QProcess::execute("/usr/bin/xattr", { "-dr", "com.apple.quarantine", stagingApp });
 
     // 4. Verify the unpacked bundle is correctly signed before trusting it.
-    rc = QProcess::execute("/usr/bin/codesign", { "--verify", "--deep", "--strict", stagingApp });
+    int rc = QProcess::execute("/usr/bin/codesign", { "--verify", "--deep", "--strict", stagingApp });
     if (rc != 0) {
         LOGE() << "code signature verification failed for unpacked update, rc=" << rc;
         return make_ret(Err::UnknownError);
@@ -148,4 +148,51 @@ Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const I
 
     LOGI() << "update helper started, will replace " << bundlePath << " after quit";
     return make_ok();
+}
+
+Ret MacUpdateInstaller::unpackDmg(const QString& package, const QString& stagingDir) const
+{
+    QString mountPoint;
+    do {
+        mountPoint = "/Volumes/" + QUuid::createUuid().toString(QUuid::WithoutBraces);
+    } while (QFileInfo::exists(mountPoint));
+
+    QProcess attach;
+    attach.setProgram("/usr/bin/hdiutil");
+    attach.setArguments({ "attach", package, "-mountpoint", mountPoint,
+                          "-noverify", "-nobrowse", "-noautoopen", "-stdinpass" });
+    attach.start();
+    if (!attach.waitForStarted()) {
+        LOGE() << "failed to start hdiutil";
+        return make_ret(Err::UnknownError);
+    }
+
+    // Empty null-terminated passphrase for -stdinpass, then a "yes" answer in
+    // case the image carries a license agreement, so hdiutil never blocks on
+    // an interactive prompt.
+    attach.write(QByteArray("\0yes\n", 5));
+    attach.closeWriteChannel();
+    attach.waitForFinished(-1);
+    if (attach.exitStatus() != QProcess::NormalExit || attach.exitCode() != 0) {
+        LOGE() << "failed to mount update dmg, hdiutil rc=" << attach.exitCode();
+        return make_ret(Err::UnknownError);
+    }
+
+    Ret ret = make_ok();
+
+    const QStringList apps = QDir(mountPoint).entryList({ "*.app" }, QDir::Dirs | QDir::NoDotAndDotDot);
+    if (apps.isEmpty()) {
+        LOGE() << "no .app bundle found in mounted dmg";
+        ret = make_ret(Err::UnknownError);
+    } else {
+        int rc = QProcess::execute("/usr/bin/ditto", { mountPoint + "/" + apps.first(), stagingDir + "/" + apps.first() });
+        if (rc != 0) {
+            LOGE() << "failed to copy app out of dmg, ditto rc=" << rc;
+            ret = make_ret(Err::UnknownError);
+        }
+    }
+
+    QProcess::execute("/usr/bin/hdiutil", { "detach", mountPoint, "-force" });
+
+    return ret;
 }
