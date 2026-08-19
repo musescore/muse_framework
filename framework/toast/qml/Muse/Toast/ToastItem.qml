@@ -54,15 +54,13 @@ Item {
     property int actionButtonMargins: 6
     property int actionButtonsSpacing: 8
 
-    property int shadowMargin: 8
-
     signal dismissed
     signal actionTriggered(string actionStr)
 
     width: 360
     height: implicitHeight
 
-    implicitHeight: mainContainer.childrenRect.height + 24 + shadowMargin * 2
+    implicitHeight: mainContainer.childrenRect.height + root.verticalMargin * 2
 
     StyledRectangularShadow {
         anchors.fill: backgroundRect
@@ -74,7 +72,6 @@ Item {
         id: backgroundRect
 
         anchors.fill: parent
-        anchors.margins: root.shadowMargin
 
         color: ui.theme.popupBackgroundColor
         radius: 8
