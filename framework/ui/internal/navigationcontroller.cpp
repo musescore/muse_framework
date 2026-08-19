@@ -357,6 +357,10 @@ void NavigationController::unreg(INavigationSection* section)
     TRACEFUNC;
     m_sections.erase(section);
     section->setOnActiveRequested(nullptr);
+
+    if (m_prioritySection == section) {
+        m_prioritySection = nullptr;
+    }
 }
 
 const std::set<INavigationSection*>& NavigationController::sections() const
@@ -510,6 +514,10 @@ void NavigationController::doActivateSection(INavigationSection* sect, bool isAc
 
     sect->setActive(true);
     MYLOG() << "activated section: " << sect->name() << ", order: " << sect->index().order();
+
+    if (m_prioritySection == sect) {
+        m_prioritySection = nullptr;
+    }
 
     INavigationPanel* toActivatePanel = nullptr;
     if (isActivateLastPanel) {
@@ -708,6 +716,33 @@ void NavigationController::setDefaultNavigationControl(INavigationControl* contr
     m_defaultNavigationControl = control;
 }
 
+void NavigationController::setPrioritySection(INavigationSection* section)
+{
+    if (!section) {
+        m_prioritySection = nullptr;
+        return;
+    }
+
+    if (m_sections.find(section) == m_sections.end()) {
+        LOGW() << "unable to set priority section, section is not registered, name: " << section->name();
+        return;
+    }
+
+    m_prioritySection = section;
+}
+
+INavigationSection* NavigationController::takePrioritySection(const INavigationSection* activeSec)
+{
+    INavigationSection* prioritySec = m_prioritySection;
+    m_prioritySection = nullptr;
+
+    if (!prioritySec || prioritySec == activeSec || !prioritySec->enabled()) {
+        return nullptr;
+    }
+
+    return prioritySec;
+}
+
 muse::async::Notification NavigationController::navigationChanged() const
 {
     return m_navigationChanged;
@@ -722,17 +757,26 @@ void NavigationController::goToNextSection()
     }
 
     INavigationSection* activeSec = findActive(m_sections);
-    if (!activeSec) { // no any active
-        doActivateFirst();
-        return;
-    }
-
-    if (activeSec->type() == INavigationSection::Type::Exclusive) {
+    if (activeSec && activeSec->type() == INavigationSection::Type::Exclusive) {
         INavigationPanel* first = firstEnabled(activeSec->panels());
         if (first) {
             doActivatePanel(first);
             m_navigationChanged.notify();
         }
+        return;
+    }
+
+    if (INavigationSection* prioritySec = takePrioritySection(activeSec)) {
+        if (activeSec) {
+            doDeactivateSection(activeSec);
+        }
+        doActivateSection(prioritySec);
+        m_navigationChanged.notify();
+        return;
+    }
+
+    if (!activeSec) { // no any active
+        doActivateFirst();
         return;
     }
 
@@ -763,17 +807,26 @@ void NavigationController::goToPrevSection(bool isActivateLastPanel)
     }
 
     INavigationSection* activeSec = findActive(m_sections);
-    if (!activeSec) { // no any active
-        doActivateLast();
-        return;
-    }
-
-    if (activeSec->type() == INavigationSection::Type::Exclusive) {
+    if (activeSec && activeSec->type() == INavigationSection::Type::Exclusive) {
         INavigationPanel* first = firstEnabled(activeSec->panels());
         if (first) {
             doActivatePanel(first);
             m_navigationChanged.notify();
         }
+        return;
+    }
+
+    if (INavigationSection* prioritySec = takePrioritySection(activeSec)) {
+        if (activeSec) {
+            doDeactivateSection(activeSec);
+        }
+        doActivateSection(prioritySec);
+        m_navigationChanged.notify();
+        return;
+    }
+
+    if (!activeSec) { // no any active
+        doActivateLast();
         return;
     }
 
@@ -1382,6 +1435,10 @@ void NavigationController::onActiveRequested(INavigationSection* sect, INavigati
         sect->setActive(true);
         isChanged = true;
         MYLOG() << "activated section: " << sect->name() << ", order: " << sect->index().order();
+    }
+
+    if (m_prioritySection == sect) {
+        m_prioritySection = nullptr;
     }
 
     if (!panel) {
