@@ -44,5 +44,8 @@ public:
 
     virtual void dismissToast(int id) = 0;
     virtual void executeAction(int id, ToastActionCode actionCode) = 0;
+
+    virtual void pauseToast(int id) = 0;
+    virtual void resumeToast(int id) = 0;
 };
 }

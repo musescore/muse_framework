@@ -77,6 +77,22 @@ void ToastProvider::executeAction(int id, ToastActionCode actionCode)
     dismissToast(id);
 }
 
+void ToastProvider::pauseToast(int id)
+{
+    auto timerIt = m_progressTimers.find(id);
+    if (timerIt != m_progressTimers.end()) {
+        timerIt->second->stop();
+    }
+}
+
+void ToastProvider::resumeToast(int id)
+{
+    auto timerIt = m_progressTimers.find(id);
+    if (timerIt != m_progressTimers.end() && !timerIt->second->isActive()) {
+        timerIt->second->start();
+    }
+}
+
 void ToastProvider::cleanup(int id)
 {
     auto timerIt = m_progressTimers.find(id);
