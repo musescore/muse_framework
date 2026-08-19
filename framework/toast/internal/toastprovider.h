@@ -49,6 +49,9 @@ public:
     void dismissToast(int id) override;
     void executeAction(int id, ToastActionCode actionCode) override;
 
+    void pauseToast(int id) override;
+    void resumeToast(int id) override;
+
 private:
     void cleanup(int id);
     void checkProgress(int id);
