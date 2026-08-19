@@ -109,7 +109,11 @@ void MuseSamplerWrapper::setMode(const muse::audio::ProcessMode mode)
 
     const bool isOffline = m_mode == ProcessMode::PlayingOffline;
 
-    if (!isOffline && m_offlineModeStarted) {
+    //! NOTE The export spec reaches the graph after offline mode has already been started at the
+    //! driver rate, so restart it to hand the new rate to startOfflineMode.
+    const bool offlineSampleRateChanged = m_offlineModeStarted && m_offlineSampleRate != m_outputSpec.sampleRate;
+
+    if (m_offlineModeStarted && (!isOffline || offlineSampleRateChanged)) {
         m_samplerLib->stopOfflineMode(m_sampler);
         m_offlineModeStarted = false;
     }
@@ -118,6 +122,7 @@ void MuseSamplerWrapper::setMode(const muse::audio::ProcessMode mode)
         LOGI() << "Start offline mode, sampleRate: " << m_outputSpec.sampleRate;
         m_samplerLib->startOfflineMode(m_sampler, m_outputSpec.sampleRate);
         m_offlineModeStarted = true;
+        m_offlineSampleRate = m_outputSpec.sampleRate;
     }
 
     setIsActive(isModePlaying(mode));

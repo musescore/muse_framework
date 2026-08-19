@@ -118,6 +118,7 @@ private:
     std::array<float*, 2> m_internalBuffer;
 
     bool m_offlineModeStarted = false;
+    audio::sample_rate_t m_offlineSampleRate = 0;
     bool m_allNotesOffRequested = false;
     bool m_pendingSetPosition = false;
 

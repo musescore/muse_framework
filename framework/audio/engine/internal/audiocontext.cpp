@@ -762,8 +762,17 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
         ONLY_AUDIO_ENGINE_THREAD;
 
 #ifdef MUSE_MODULE_AUDIO_EXPORT
-        m_player->stop();
-        m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+        //! NOTE These engine state changes must run inside execOperation so they are
+        // synchronized with the audio driver process (see doSaveSoundTrack).
+        Operation prepare = [this]() {
+            m_player->stop();
+            m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+        };
+        if (m_execOperation) {
+            m_execOperation->execOperation(OperationType::LongOperation, prepare);
+        } else {
+            prepare();
+        }
 
         const bool lazyProcessingWasEnabled = configuration()->isLazyProcessingOfOnlineSoundsEnabled();
         configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(false);
@@ -898,15 +907,17 @@ Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackForm
         }
     });
 
-    setMode(ProcessMode::PlayingOffline);
-    Ret ret = writer->write();
-
-    //! NOTE Restore source (mixer) state
-    // Changes to the source and audio engine state
-    // must be performed via execOperation - so that synchronization with the audio driver process works
-    Operation func = [this]() {
+    //! NOTE The offline render and the source/engine state changes around it must run
+    // inside execOperation so the audio driver process is muted for the whole export.
+    // Otherwise the real time driver renders the shared graph (mixer, FX) concurrently
+    // with the export, which is a data race on shared processors such as the reverb.
+    Ret ret;
+    Operation func = [this, writer, &ret]() {
+        setMode(ProcessMode::PlayingOffline);
+        ret = writer->write();
         m_mixer->setOutputSpec(outputSpec());
         setMode(ProcessMode::Idle);
+        m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
     };
 
     if (m_execOperation) {
@@ -914,8 +925,6 @@ Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackForm
     } else {
         func();
     }
-
-    m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
 
     m_saveSoundTracksProgress.aborted.disconnect(this);
 
