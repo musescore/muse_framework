@@ -25,7 +25,7 @@
 #include <qqmlintegration.h>
 
 #include "modularity/ioc.h"
-#include "ui/iuiactionsregister.h"
+#include "rcommand/icommandsregister.h"
 #include "workspace/iworkspacemanager.h"
 
 #include "uicomponents/qml/Muse/UiComponents/abstractmenumodel.h"
@@ -37,7 +37,7 @@ class WorkspacesMenuModel : public uicomponents::AbstractMenuModel
 
     QML_ELEMENT
 
-    ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };
+    GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     ContextInject<IWorkspaceManager> workspacesManager = { this };
 
 public:

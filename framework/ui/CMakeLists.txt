@@ -38,6 +38,7 @@ target_sources(muse_ui PRIVATE
     idragcontroller.h
     iwindowscontroller.h
     navigationcommands.h
+    toolconfig.h
 
     graphicsapiprovider.cpp
     graphicsapiprovider.h

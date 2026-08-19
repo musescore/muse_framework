@@ -24,6 +24,9 @@
 
 #include "internal/workspaceutils.h"
 
+#include "rcommand/commandtypes.h"
+#include "workspacecommands.h"
+
 #include "log.h"
 
 using namespace muse::workspace;
@@ -47,26 +50,23 @@ void WorkspacesMenuModel::load()
 
     std::sort(workspaces.begin(), workspaces.end(), WorkspaceUtils::workspaceLessThan);
 
-    int index = 0;
     for (const IWorkspacePtr& workspace : workspaces) {
-        MenuItem* item = new MenuItem(uiActionsRegister()->action("select-workspace"), this);
-        item->setId(QString::number(index++));
+        MenuItem* item = new MenuItem(commandsRegister()->commandInfo(WORKSPACE_SELECT_COMMAND), this);
         item->setTitle(TranslatableString::untranslatable(String::fromStdString(workspace->name())));
-        item->setArgs(ActionData::make_arg1<std::string>(workspace->name()));
         item->setSelectable(true);
         item->setSelected(workspace == currentWorkspace);
+        item->setChecked(item->selected());
 
-        UiActionState state;
-        state.enabled = true;
-        state.checked = item->selected();
-        item->setState(state);
+        rcommand::CommandQuery query(WORKSPACE_SELECT_COMMAND);
+        query.addParam("name", Val(workspace->name()));
+        item->setQuery(query);
 
         items << item;
     }
 
     items << makeSeparator()
-          << makeMenuItem("command://workspace/configure")
-          << makeMenuItem("command://workspace/create");
+          << makeMenuItem(WORKSPACES_CONFIGURE_COMMAND)
+          << makeMenuItem(WORKSPACE_CREATE_COMMAND);
 
     workspacesManager()->currentWorkspaceChanged().onNotify(this, [this]() {
         load();

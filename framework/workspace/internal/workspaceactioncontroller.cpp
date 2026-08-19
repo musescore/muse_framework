@@ -33,16 +33,16 @@ using namespace muse::rcommand;
 
 void WorkspaceActionController::init()
 {
-    commandDispatcher()->onRequest(this, SELECT_WORKSPACE_COMMAND, [this](const CommandQuery& query) { return selectWorkspace(query); });
-    commandDispatcher()->onRequest(this, CONFIGURE_WORKSPACES_COMMAND, [this]() { openWorkspacesConfigure(); return muse::make_ok(); });
-    commandDispatcher()->onRequest(this, CREATE_WORKSPACE_COMMAND, [this]() { createNewWorkspace(); return muse::make_ok(); });
+    commandDispatcher()->onRequest(this, WORKSPACE_SELECT_COMMAND, [this](const CommandQuery& query) { return selectWorkspace(query); });
+    commandDispatcher()->onRequest(this, WORKSPACES_CONFIGURE_COMMAND, [this]() { openWorkspacesConfigure(); return muse::make_ok(); });
+    commandDispatcher()->onRequest(this, WORKSPACE_CREATE_COMMAND, [this]() { createNewWorkspace(); return muse::make_ok(); });
 
     // compat
     {
         static const std::vector<ActionToCommand> actionToCommands = {
-            { "select-workspace", SELECT_WORKSPACE_COMMAND, make_conv({ { "name", param<std::string> } }) },
-            { "configure-workspaces", CONFIGURE_WORKSPACES_COMMAND, {} },
-            { "create-workspace", CREATE_WORKSPACE_COMMAND, {} }
+            { "select-workspace", WORKSPACE_SELECT_COMMAND, make_conv({ { "name", param<std::string> } }) },
+            { "configure-workspaces", WORKSPACES_CONFIGURE_COMMAND, {} },
+            { "create-workspace", WORKSPACE_CREATE_COMMAND, {} }
         };
 
         rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
