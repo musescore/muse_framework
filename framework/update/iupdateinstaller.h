@@ -23,6 +23,7 @@
 #define MUSE_UPDATE_IUPDATEINSTALLER_H
 
 #include "types/ret.h"
+#include "types/retval.h"
 #include "io/path.h"
 
 #include "modularity/imoduleinterface.h"
@@ -43,13 +44,19 @@ public:
     //! downloaded installer for the user to run manually.
     virtual bool isInPlaceUpdateSupported() const = 0;
 
-    //! Unpack `packagePath`, spawn the standalone helper that replaces the
-    //! current install location once this process exits, and relaunches the
-    //! application. Returns OK if the helper was successfully spawned; the
-    //! caller must then quit the application.
+    //! Heavy phase: validate the downloaded package and stage everything the
+    //! swap needs. Safe to run off the UI thread while the app keeps running,
+    //! so failures can still be surfaced to the user. Returns the prepared
+    //! payload to pass to finalizeUpdate().
+    virtual RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) = 0;
+
+    //! Fast phase, run on user confirmation: spawn the standalone helper that
+    //! replaces the current install location once this process exits and
+    //! relaunches the application. Returns OK if the helper was successfully
+    //! spawned; the caller must then quit the application.
     //!
     //! `ui` is what the helper should show while it installs.
-    virtual Ret applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui) = 0;
+    virtual Ret finalizeUpdate(const muse::io::path_t& preparedPath, const InstallProgressUi& ui) = 0;
 };
 }
 

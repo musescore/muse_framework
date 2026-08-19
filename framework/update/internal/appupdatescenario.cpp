@@ -182,13 +182,38 @@ Promise<Ret> AppUpdateScenario::downloadRelease()
     //! NOTE: In-place auto-install currently supports a single window only;
     //! otherwise fall back to handing the installer to the user.
     if (service()->canAutoInstall() && multiwindowsProvider()->windowCount() == 1) {
-        return askToRestartAndInstall(packagePath);
+        return prepareAndInstall(packagePath);
     }
 
     return askToCloseAppAndCompleteInstall(packagePath);
 }
 
-Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& packagePath)
+Promise<Ret> AppUpdateScenario::prepareAndInstall(const io::path_t& packagePath)
+{
+    //! NOTE: The heavy phase (unpacking and verification) runs in the
+    //! background while the app keeps running, so failures can still fall
+    //! back to the manual flow; the confirmation dialog is shown once
+    //! everything is staged, making the restart itself instant.
+    return make_promise<Ret>([this, packagePath](auto resolve, auto) {
+        Concurrent::run([this, packagePath, resolve]() {
+            const RetVal<io::path_t> prepared = service()->prepareUpdate(packagePath);
+            async::Async::call(this, [this, packagePath, prepared, resolve]() {
+                auto complete = [resolve](const Ret& ret) { (void)resolve(ret); };
+                if (!prepared.ret) {
+                    LOGE() << "failed to prepare update, falling back to manual install: " << prepared.ret.toString();
+                    askToCloseAppAndCompleteInstall(packagePath).onResolve(this, complete);
+                    return;
+                }
+
+                askToRestartAndInstall(packagePath, prepared.val).onResolve(this, complete);
+            }, runtime::mainThreadId());
+        });
+
+        return Promise<Ret>::dummy_result();
+    });
+}
+
+Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& packagePath, const io::path_t& preparedPath)
 {
     const std::string info = muse::qtrc("update", "%1 has downloaded an update and is ready to install it. "
                                                   "%1 will restart to complete the installation. "
@@ -201,35 +226,25 @@ Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& package
     };
 
     return interactive()->info("", info, buttons, restartBtn)
-           .then<Ret>(this, [this, packagePath](const IInteractive::Result& res, auto resolve) {
+           .then<Ret>(this, [this, packagePath, preparedPath](const IInteractive::Result& res, auto resolve) {
         if (res.isButton(IInteractive::Button::Cancel)) {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
-        applyUpdateAndQuit(packagePath);
+        const Ret ret = service()->finalizeUpdate(preparedPath);
+        if (!ret) {
+            LOGE() << "failed to finalize update, falling back to manual install: " << ret.toString();
+            askToCloseAppAndCompleteInstall(packagePath).onResolve(this, [resolve](const Ret& r) {
+                (void)resolve(r);
+            });
+            return Promise<Ret>::dummy_result();
+        }
 
+        //! NOTE: The helper has been spawned and will replace the app and
+        //! relaunch once we quit. Quit without an installer path so the
+        //! legacy "open installer" path is not taken.
+        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
         return resolve(muse::make_ok());
-    });
-}
-
-void AppUpdateScenario::applyUpdateAndQuit(const io::path_t& packagePath)
-{
-    //! NOTE: Unpacking and verifying the package takes seconds; run it off
-    //! the UI thread so the app stays responsive.
-    Concurrent::run([this, packagePath]() {
-        const Ret ret = service()->applyUpdate(packagePath);
-        async::Async::call(this, [this, packagePath, ret]() {
-            if (!ret) {
-                LOGE() << "failed to apply update in-place, falling back to manual install: " << ret.toString();
-                askToCloseAppAndCompleteInstall(packagePath).onResolve(this, [](const Ret&) {});
-                return;
-            }
-
-            //! NOTE: The helper has been spawned and will replace the app and
-            //! relaunch once we quit. Quit without an installer path so the
-            //! legacy "open installer" path is not taken.
-            dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
-        }, runtime::mainThreadId());
     });
 }
 
@@ -358,6 +373,6 @@ void AppUpdateScenario::installReadyUpdate()
             return;
         }
 
-        applyUpdateAndQuit(m_readyPackagePath);
+        prepareAndInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
     });
 }

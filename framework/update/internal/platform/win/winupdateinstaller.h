@@ -47,7 +47,8 @@ public:
         : Contextable(iocCtx) {}
 
     bool isInPlaceUpdateSupported() const override;
-    Ret applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui) override;
+    RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) override;
+    Ret finalizeUpdate(const muse::io::path_t& preparedPath, const InstallProgressUi& ui) override;
 
 private:
     //! Identifier shared with the installer-registered task and the HKLM key;

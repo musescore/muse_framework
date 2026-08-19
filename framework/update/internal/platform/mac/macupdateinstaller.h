@@ -39,7 +39,8 @@ public:
         : Contextable(iocCtx) {}
 
     bool isInPlaceUpdateSupported() const override;
-    Ret applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui) override;
+    RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) override;
+    Ret finalizeUpdate(const muse::io::path_t& preparedPath, const InstallProgressUi& ui) override;
 
 private:
     //! Path to the running `*.app` bundle (the install location to replace).
@@ -48,6 +49,7 @@ private:
     //! Path to the bundled `museupdater` helper (Contents/MacOS/museupdater).
     muse::io::path_t helperPath() const;
 
+    Ret verifyPackageSignature(const QString& package) const;
     Ret unpackDmg(const QString& package, const QString& stagingDir) const;
 };
 }

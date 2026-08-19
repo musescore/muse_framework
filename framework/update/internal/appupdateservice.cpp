@@ -455,9 +455,14 @@ bool AppUpdateService::canAutoInstall() const
     return updateInstaller()->isInPlaceUpdateSupported();
 }
 
-Ret AppUpdateService::applyUpdate(const muse::io::path_t& packagePath)
+RetVal<muse::io::path_t> AppUpdateService::prepareUpdate(const muse::io::path_t& packagePath)
 {
-    return updateInstaller()->applyUpdate(packagePath, makeInstallProgressUi());
+    return updateInstaller()->prepareUpdate(packagePath);
+}
+
+Ret AppUpdateService::finalizeUpdate(const muse::io::path_t& preparedPath)
+{
+    return updateInstaller()->finalizeUpdate(preparedPath, makeInstallProgressUi());
 }
 
 InstallProgressUi AppUpdateService::makeInstallProgressUi() const

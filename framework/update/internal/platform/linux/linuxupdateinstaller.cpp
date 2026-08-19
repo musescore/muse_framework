@@ -124,25 +124,19 @@ bool LinuxUpdateInstaller::isInPlaceUpdateSupported() const
     return true;
 }
 
-Ret LinuxUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi&)
+RetVal<muse::io::path_t> LinuxUpdateInstaller::prepareUpdate(const muse::io::path_t& packagePath)
 {
     const QString package = packagePath.toQString();
     if (!QFileInfo::exists(package)) {
         LOGE() << "update package does not exist: " << package;
-        return make_ret(Err::UnknownError);
-    }
-
-    const QString appImagePath = currentAppImagePath().toQString();
-    if (appImagePath.isEmpty()) {
-        LOGE() << "not running from an AppImage, cannot update in place";
-        return make_ret(Ret::Code::NotSupported);
+        return RetVal<muse::io::path_t>(make_ret(Err::UnknownError));
     }
 
     // 1. The downloaded package replaces the running file as-is, so make sure it
     //    really is an AppImage before letting the helper move it into place.
     if (!isAppImageFile(package)) {
         LOGE() << "update package is not a valid AppImage: " << package;
-        return make_ret(Err::UnknownError);
+        return RetVal<muse::io::path_t>(make_ret(Err::UnknownError));
     }
 
     // 2. The download has no executable bit; the swapped-in file must be
@@ -154,10 +148,32 @@ Ret LinuxUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const
 
     if (!QFile::setPermissions(package, permissions)) {
         LOGE() << "failed to make update package executable: " << package;
+        return RetVal<muse::io::path_t>(make_ret(Err::UnknownError));
+    }
+
+    return RetVal<muse::io::path_t>::make_ok(packagePath);
+}
+
+Ret LinuxUpdateInstaller::finalizeUpdate(const muse::io::path_t& preparedPath, const InstallProgressUi&)
+{
+    const QString package = preparedPath.toQString();
+    if (!QFileInfo::exists(package)) {
+        LOGE() << "prepared update does not exist: " << package;
         return make_ret(Err::UnknownError);
     }
 
-    // 3. Copy the helper out of the AppImage. Its mount point disappears as soon
+    const QString appImagePath = currentAppImagePath().toQString();
+    if (appImagePath.isEmpty()) {
+        LOGE() << "not running from an AppImage, cannot update in place";
+        return make_ret(Ret::Code::NotSupported);
+    }
+
+    const QFile::Permissions permissions
+        = QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
+          | QFile::ReadGroup | QFile::ExeGroup
+          | QFile::ReadOther | QFile::ExeOther;
+
+    // 1. Copy the helper out of the AppImage. Its mount point disappears as soon
     //    as this process exits, which is exactly when the helper starts working.
     fileSystem()->makePath(configuration()->updateDataPath());
 
@@ -169,7 +185,7 @@ Ret LinuxUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const
     }
     QFile::setPermissions(helperRun, permissions);
 
-    // 4. Spawn the detached helper. It waits for us to quit, replaces the
+    // 2. Spawn the detached helper. It waits for us to quit, replaces the
     //    AppImage and relaunches it.
     const QString logPath = configuration()->updateDataPath().toQString() + "/museupdater.log";
     const QStringList args = {

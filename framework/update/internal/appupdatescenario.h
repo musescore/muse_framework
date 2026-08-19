@@ -69,8 +69,8 @@ private:
 
     muse::async::Promise<Ret> downloadRelease();
     muse::async::Promise<Ret> askToCloseAppAndCompleteInstall(const io::path_t& installerPath);
-    muse::async::Promise<Ret> askToRestartAndInstall(const io::path_t& packagePath);
-    void applyUpdateAndQuit(const io::path_t& packagePath);
+    muse::async::Promise<Ret> prepareAndInstall(const io::path_t& packagePath);
+    muse::async::Promise<Ret> askToRestartAndInstall(const io::path_t& packagePath, const io::path_t& preparedPath);
 
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
 

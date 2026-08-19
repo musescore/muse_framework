@@ -195,7 +195,20 @@ bool WinUpdateInstaller::isInPlaceUpdateSupported() const
     return enabled;
 }
 
-Ret WinUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui)
+RetVal<muse::io::path_t> WinUpdateInstaller::prepareUpdate(const muse::io::path_t& packagePath)
+{
+    //! NOTE: The scheduled task treats the package as untrusted input and
+    //! verifies its signature after copying it out of reach, so there is
+    //! nothing to stage here.
+    if (!fileSystem()->exists(packagePath)) {
+        LOGE() << "update package does not exist: " << packagePath;
+        return RetVal<muse::io::path_t>(make_ret(Err::UnknownError));
+    }
+
+    return RetVal<muse::io::path_t>::make_ok(packagePath);
+}
+
+Ret WinUpdateInstaller::finalizeUpdate(const muse::io::path_t& packagePath, const InstallProgressUi& ui)
 {
     if (!fileSystem()->exists(packagePath)) {
         LOGE() << "update package does not exist: " << packagePath;

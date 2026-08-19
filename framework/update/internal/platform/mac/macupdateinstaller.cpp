@@ -75,29 +75,36 @@ bool MacUpdateInstaller::isInPlaceUpdateSupported() const
     return true;
 }
 
-Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const InstallProgressUi&)
+RetVal<muse::io::path_t> MacUpdateInstaller::prepareUpdate(const muse::io::path_t& packagePath)
 {
     const QString package = packagePath.toQString();
     if (!QFileInfo::exists(package)) {
         LOGE() << "update package does not exist: " << package;
-        return make_ret(Err::UnknownError);
+        return RetVal<muse::io::path_t>(make_ret(Err::UnknownError));
+    }
+
+    // 1. Verify the dmg signature before opening it. The unpacked bundle is
+    //    not deep-verified here: the helper re-verifies the staged bundle
+    //    right before the swap.
+    Ret ret = verifyPackageSignature(package);
+    if (!ret) {
+        return RetVal<muse::io::path_t>(ret);
     }
 
     const QString stagingDir = configuration()->updateDataPath().toQString() + "/staging";
-    QDir().rmpath(stagingDir);
     QDir staging(stagingDir);
     if (staging.exists()) {
         staging.removeRecursively();
     }
     QDir().mkpath(stagingDir);
 
-    // 1. Unpack the dmg preserving extended attributes and code signatures.
-    Ret unpackRet = unpackDmg(package, stagingDir);
-    if (!unpackRet) {
-        return unpackRet;
+    // 2. Unpack the dmg preserving extended attributes and code signatures.
+    ret = unpackDmg(package, stagingDir);
+    if (!ret) {
+        return RetVal<muse::io::path_t>(ret);
     }
 
-    // 2. Locate the unpacked .app bundle.
+    // 3. Locate the unpacked .app bundle.
     QString stagingApp;
     const QStringList apps = staging.entryList({ "*.app" }, QDir::Dirs | QDir::NoDotAndDotDot);
     if (!apps.isEmpty()) {
@@ -105,20 +112,24 @@ Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const I
     }
     if (stagingApp.isEmpty()) {
         LOGE() << "no .app bundle found in unpacked update";
-        return make_ret(Err::UnknownError);
+        return RetVal<muse::io::path_t>(make_ret(Err::UnknownError));
     }
 
-    // 3. Remove the quarantine attribute set by the download.
+    // 4. Remove the quarantine attribute set by the download.
     QProcess::execute("/usr/bin/xattr", { "-dr", "com.apple.quarantine", stagingApp });
 
-    // 4. Verify the unpacked bundle is correctly signed before trusting it.
-    int rc = QProcess::execute("/usr/bin/codesign", { "--verify", "--deep", "--strict", stagingApp });
-    if (rc != 0) {
-        LOGE() << "code signature verification failed for unpacked update, rc=" << rc;
+    return RetVal<muse::io::path_t>::make_ok(muse::io::path_t(stagingApp));
+}
+
+Ret MacUpdateInstaller::finalizeUpdate(const muse::io::path_t& preparedPath, const InstallProgressUi&)
+{
+    const QString stagingApp = preparedPath.toQString();
+    if (!QFileInfo::exists(stagingApp)) {
+        LOGE() << "prepared update does not exist: " << stagingApp;
         return make_ret(Err::UnknownError);
     }
 
-    // 5. Copy the helper out of the bundle so replacing the bundle never
+    // 1. Copy the helper out of the bundle so replacing the bundle never
     //    touches the running helper file.
     const QString helperRun = configuration()->updateDataPath().toQString() + "/" + HELPER_NAME;
     QFile::remove(helperRun);
@@ -129,8 +140,8 @@ Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const I
     QFile::setPermissions(helperRun, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
                           | QFile::ReadGroup | QFile::ExeGroup | QFile::ReadOther | QFile::ExeOther);
 
-    // 6. Spawn the detached helper. It waits for us to quit, swaps the bundle
-    //    and relaunches.
+    // 2. Spawn the detached helper. It waits for us to quit, verifies the
+    //    staged bundle, swaps it into place and relaunches.
     const QString bundlePath = currentBundlePath().toQString();
     const QString logPath = configuration()->updateDataPath().toQString() + "/museupdater.log";
     const QStringList args = {
@@ -147,6 +158,53 @@ Ret MacUpdateInstaller::applyUpdate(const muse::io::path_t& packagePath, const I
     }
 
     LOGI() << "update helper started, will replace " << bundlePath << " after quit";
+    return make_ok();
+}
+
+//! Team ID from the code signature of `path`, empty for ad-hoc or unsigned.
+static QString teamIdentifier(const QString& path)
+{
+    QProcess codesign;
+    codesign.start("/usr/bin/codesign", { "-dv", "--verbose=4", path });
+    codesign.waitForFinished(-1);
+    if (codesign.exitStatus() != QProcess::NormalExit || codesign.exitCode() != 0) {
+        return QString();
+    }
+
+    const QString details = QString::fromUtf8(codesign.readAllStandardError());
+    for (const QString& line : details.split('\n')) {
+        if (line.startsWith("TeamIdentifier=")) {
+            const QString team = line.mid(QString("TeamIdentifier=").length()).trimmed();
+            return team == "not set" ? QString() : team;
+        }
+    }
+
+    return QString();
+}
+
+Ret MacUpdateInstaller::verifyPackageSignature(const QString& package) const
+{
+    int rc = QProcess::execute("/usr/bin/codesign", { "--verify", package });
+    if (rc != 0) {
+        LOGE() << "update package signature verification failed, rc=" << rc;
+        return make_ret(Err::UnknownError);
+    }
+
+    //! NOTE: The package must be signed by the same team as the running
+    //! bundle, so that a validly signed package from someone else is not
+    //! accepted. Development builds are ad-hoc signed and have no team; for
+    //! them any validly signed package is accepted.
+    const QString ownTeam = teamIdentifier(currentBundlePath().toQString());
+    if (ownTeam.isEmpty()) {
+        return make_ok();
+    }
+
+    const QString packageTeam = teamIdentifier(package);
+    if (packageTeam != ownTeam) {
+        LOGE() << "update package team \"" << packageTeam << "\" does not match app team \"" << ownTeam << "\"";
+        return make_ret(Err::UnknownError);
+    }
+
     return make_ok();
 }
 

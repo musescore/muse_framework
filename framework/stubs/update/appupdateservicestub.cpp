@@ -48,7 +48,12 @@ bool AppUpdateServiceStub::canAutoInstall() const
     return false;
 }
 
-Ret AppUpdateServiceStub::applyUpdate(const muse::io::path_t&)
+RetVal<muse::io::path_t> AppUpdateServiceStub::prepareUpdate(const muse::io::path_t&)
+{
+    return RetVal<muse::io::path_t>(make_ret(Ret::Code::NotSupported));
+}
+
+Ret AppUpdateServiceStub::finalizeUpdate(const muse::io::path_t&)
 {
     return make_ret(Ret::Code::NotSupported);
 }

@@ -47,6 +47,7 @@ public:
 
     virtual bool canAutoInstall() const = 0;
 
-    virtual Ret applyUpdate(const muse::io::path_t& packagePath) = 0;
+    virtual RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) = 0;
+    virtual Ret finalizeUpdate(const muse::io::path_t& preparedPath) = 0;
 };
 }

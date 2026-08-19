@@ -29,7 +29,12 @@ bool UpdateInstallerStub::isInPlaceUpdateSupported() const
     return false;
 }
 
-Ret UpdateInstallerStub::applyUpdate(const muse::io::path_t&, const InstallProgressUi&)
+RetVal<muse::io::path_t> UpdateInstallerStub::prepareUpdate(const muse::io::path_t&)
+{
+    return RetVal<muse::io::path_t>(make_ret(Ret::Code::NotSupported));
+}
+
+Ret UpdateInstallerStub::finalizeUpdate(const muse::io::path_t&, const InstallProgressUi&)
 {
     return make_ret(Ret::Code::NotSupported);
 }
