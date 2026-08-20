@@ -59,7 +59,7 @@ void WorkspacesMenuModel::load()
 
         rcommand::CommandQuery query(WORKSPACE_SELECT_COMMAND);
         query.addParam("name", Val(workspace->name()));
-        item->setQuery(query);
+        item->setCommandQuery(query);
 
         items << item;
     }
