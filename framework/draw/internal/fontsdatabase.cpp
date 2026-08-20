@@ -29,6 +29,7 @@
 #endif
 
 #include "global/io/file.h"
+#include "global/io/fileinfo.h"
 
 #include "log.h"
 
@@ -111,28 +112,27 @@ FontData FontsDatabase::fontData(const FontDataKey& requireKey, Font::Type type)
         return FontData();
     }
 
-    io::File file(path);
-    if (!file.open()) {
-        LOGE() << "failed open font file: " << path;
+    std::string pathStr = path.toStdString();
+    auto it = m_fileDataCache.find(pathStr);
+    if (it != m_fileDataCache.end()) {
+        return FontData { key, it->second };
+    }
+
+    ByteArray data;
+    if (!io::File::readFile(path, data)) {
+        LOGE() << "failed read font file: " << path;
         return FontData();
     }
 
-    FontData fd;
-    fd.key = key;
-    fd.data = file.readAll();
-    return fd;
+    m_fileDataCache.insert({ pathStr, data });
+    return FontData { key, data };
 }
 
-io::path_t FontsDatabase::fontPath(const FontDataKey& requireKey, Font::Type type) const
+bool FontsDatabase::isFtxFont(const FontDataKey& requireKey, Font::Type type) const
 {
     FontDataKey key = actualFont(requireKey, type);
     io::path_t path = fontInfo(key).path;
-    if (!io::File::exists(path)) {
-        LOGE() << "not exists font: " << path;
-        DO_ASSERT(io::File::exists(path));
-        return io::path_t();
-    }
-    return path;
+    return io::FileInfo::suffix(path).toLower() == u"ftx";
 }
 
 const FontsDatabase::FontInfo& FontsDatabase::fontInfo(const FontDataKey& key) const

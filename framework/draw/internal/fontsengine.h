@@ -66,7 +66,7 @@ public:
     std::vector<GlyphImage> render(const Font& f, const std::u32string& text) const override;
 
     // For dev
-    using FontFaceFactory = std::function<IFontFace* (const io::path_t&)>;
+    using FontFaceFactory = std::function<IFontFace* (const FontDataKey& dataKey, Font::Type type)>;
     void setFontFaceFactory(const FontFaceFactory& f);
 
 private:
@@ -85,15 +85,16 @@ private:
         IFontFace* face = nullptr;   // real loaded face
         std::vector<IFontFace*> subtitutionFaces;
         FaceKey requireKey;          // require face
+        FontDataKey actualDataKey;   // resolved face
 
         bool isSymbolMode() const;
         double pixelScale() const;
         double pixelScaleFor(const IFontFace* loadedFace) const;
     };
 
-    IFontFace* createFontFace(const io::path_t& path) const;
+    IFontFace* createFontFace(const FontDataKey& dataKey, Font::Type type) const;
     RequireFace* fontFace(const Font& f, bool isSymbolMode = false) const;
-    IFontFace* fontFace(const FontDataKey& dataKey, Font::Type type, int pixelSize, bool isSymbolMode) const;
+    IFontFace* fontFaceByActualDataKey(const FontDataKey& actualDataKey, Font::Type type, int loadedPixelSize, bool isSymbolMode) const;
     IFontFace* sdfFontFaceFor(const IFontFace* layoutFace) const;
 
     std::vector<FontFaceTextBlock> splitTextByFontFaces(const RequireFace* rf, const TextBlock& text) const;
