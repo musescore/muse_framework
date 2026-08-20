@@ -149,7 +149,7 @@ HFONT createFont(UINT dpi)
 
 UINT windowDpi(HWND hwnd)
 {
-    using GetDpiForWindowFn = UINT (WINAPI*)(HWND);
+    using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
 
     if (const HMODULE user32 = ::GetModuleHandleW(L"user32.dll")) {
         const auto getDpiForWindow = reinterpret_cast<GetDpiForWindowFn>(
@@ -179,7 +179,7 @@ void makeProcessDpiAware()
     //! NOTE: The context is passed as a plain handle and the awareness level as
     //! its documented value, so that the helper builds against SDKs older than
     //! the one that introduced `DPI_AWARENESS_CONTEXT`.
-    using SetContextFn = BOOL (WINAPI*)(HANDLE);
+    using SetContextFn = BOOL(WINAPI*)(HANDLE);
     const HANDLE perMonitorAwareV2 = reinterpret_cast<HANDLE>(static_cast<intptr_t>(-4));
 
     const HMODULE user32 = ::GetModuleHandleW(L"user32.dll");

@@ -672,8 +672,39 @@ struct Registration {
     std::wstring installDir;
     std::wstring packageType;   // "msi" or "exe"
     std::wstring installArgs;
-    std::wstring certSubject;
+    std::wstring certSubject;   //!< expected signer(s), "|"-separated; usually derived from `certFrom`
+    std::wstring certFrom;      //!< signed file - the package being installed - to take the signer from
 };
+
+//! An explicit name wins - it is the only way to accept two while a certificate
+//! is being rotated; otherwise the signer of the package being installed, so
+//! that only whoever signed the application can update it.
+std::wstring expectedSigner(const Registration& registration)
+{
+    if (!registration.certSubject.empty()) {
+        return registration.certSubject;
+    }
+
+    if (!registration.certFrom.empty()) {
+        std::wstring signer;
+        if (verifySignature(registration.certFrom, signer) && !signer.empty()) {
+            logLine(L"register-task: expected signer taken from " + registration.certFrom + L": " + signer);
+            return signer;
+        }
+
+        logLine(L"register-task: could not read the signer of " + registration.certFrom);
+    }
+
+    //! NOTE: A repair installs from the cached copy of the package, which carries
+    //! no signature; keep what an earlier run worked out rather than refuse everything.
+    const std::wstring registered = regReadString(shared::registryKeyPath(registration.appId),
+                                                  shared::REG_VALUE_CERT_SUBJECT);
+    if (!registered.empty()) {
+        logLine(L"register-task: keeping the expected signer already registered: " + registered);
+    }
+
+    return registered;
+}
 
 int registerTask(const Registration& registration)
 {
@@ -725,10 +756,12 @@ int registerTask(const Registration& registration)
     }
 
     regWriteString(key, shared::REG_VALUE_INSTALL_ARGS, registration.installArgs);
-    regWriteString(key, shared::REG_VALUE_CERT_SUBJECT, registration.certSubject);
 
-    if (registration.certSubject.empty()) {
-        logLine(L"register-task: warning - no --cert-subject given, updates will be refused");
+    const std::wstring certSubject = expectedSigner(registration);
+    regWriteString(key, shared::REG_VALUE_CERT_SUBJECT, certSubject);
+
+    if (certSubject.empty()) {
+        logLine(L"register-task: warning - no expected signer could be established, updates will be refused");
     }
 
     ComScope com;
@@ -1336,6 +1369,7 @@ int runCommandLine()
                                    : std::wstring(shared::PACKAGE_TYPE_MSI);
         registration.installArgs = valueOf(parsed, L"--install-args");
         registration.certSubject = valueOf(parsed, L"--cert-subject");
+        registration.certFrom = valueOf(parsed, L"--cert-from");
 
         returnCode = registerTask(registration);
     } else if (isUnregister) {
