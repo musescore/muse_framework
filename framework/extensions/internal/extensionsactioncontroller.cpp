@@ -22,8 +22,9 @@
 #include "extensionsactioncontroller.h"
 
 #include "translation.h"
+#include "types/ret.h"
 
-#include "extensionsuiactions.h"
+#include "../extensionscommands.h"
 
 #include "log.h"
 
@@ -33,8 +34,6 @@ static const muse::UriQuery SHOW_APIDUMP_URI("muse://extensions/apidump?modal=fa
 
 void ExtensionsActionController::init()
 {
-    m_uiActions = std::make_shared<ExtensionsUiActions>(iocContext());
-
     provider()->manifestListChanged().onNotify(this, [this](){
         registerExtensions();
     });
@@ -44,35 +43,29 @@ void ExtensionsActionController::init()
 
 void ExtensionsActionController::registerExtensions()
 {
-    dispatcher()->unReg(this);
+    commandDispatcher()->unreg(this);
 
     for (const Manifest& m : provider()->manifestList()) {
-        for (const Action& a : m.actions) {
-            actions::ActionQuery q = makeActionQuery(m.uri, a.code);
-            dispatcher()->reg(this, q, [this](const actions::ActionQuery& q) {
-                onExtensionTriggered(q);
-            });
-        }
+        commandDispatcher()->onRequest(this, makeCommand(m.uri), [this](const rcommand::CommandQuery& q) {
+            return onExtensionTriggered(q);
+        });
     }
 
-    dispatcher()->reg(this, "extensions-show-apidump", [this]() { openUri(SHOW_APIDUMP_URI); });
-
-    uiActionsRegister()->unreg(m_uiActions);
-    uiActionsRegister()->reg(m_uiActions);
+    commandDispatcher()->onRequest(this, OPEN_APIDUMP_COMMAND, [this]() { openUri(SHOW_APIDUMP_URI); return muse::make_ok(); });
 }
 
-void ExtensionsActionController::onExtensionTriggered(const actions::ActionQuery& actionQuery)
+muse::Ret ExtensionsActionController::onExtensionTriggered(const rcommand::CommandQuery& cq)
 {
-    UriQuery q = uriQueryFromActionQuery(actionQuery);
+    ExtensionQuery q = queryFromCommandQuery(cq);
     const Manifest& m = provider()->manifest(q.uri());
     if (!m.isValid()) {
         LOGE() << "Not found extension, uri: " << q.uri().toString();
-        return;
+        return muse::make_ret(Ret::Code::BadArgs);
     }
 
-    if (m.enabled()) {
+    if (provider()->isEnabled(m.uri)) {
         provider()->perform(q);
-        return;
+        return muse::make_ok();
     }
 
     auto promise = interactive()->warning(
@@ -82,10 +75,12 @@ void ExtensionsActionController::onExtensionTriggered(const actions::ActionQuery
 
     promise.onResolve(this, [this, q](const IInteractive::Result& res) {
         if (res.isButton(IInteractive::Button::Yes)) {
-            provider()->setExecPoint(q.uri(), EXEC_MANUALLY);
+            provider()->setEnabled(q.uri(), true);
             provider()->perform(q);
         }
     });
+
+    return muse::make_ok();
 }
 
 void ExtensionsActionController::openUri(const UriQuery& uri, bool isSingle)

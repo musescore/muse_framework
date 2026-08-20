@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include <string_view>
 #include <vector>
 #include <map>
 
@@ -29,9 +30,8 @@
 #include "global/types/val.h"
 #include "global/io/path.h"
 #include "global/types/translatablestring.h"
-#include "ui/uiaction.h"
 #include "ui/view/iconcodes.h"
-#include "shortcuts/shortcutcontext.h"
+#include "rcommand/commandtypes.h"
 
 #include "log.h"
 
@@ -46,43 +46,45 @@ constexpr bool DEFAULT_MODAL = false;
 
 constexpr const char* SINGLE_FILE_EXT = "mext";
 
-//! NOTE Should a project be open...
-//!
-//! Must match contexts in `context/uicontext.h`
-//! Slightly different values ​​were intentionally made
-//! so that it would look neater in the manifest and there would be a conversion function,
-//! i.e. we had the ability to change the internal names.
-//! And the external names (specified in the manifest) remained unchanged.
-//! And there was a list of contexts that we specifically provide for extensions.
-//!
-//! If contexts appear outside the muse framework,
-//! then we need to add an interface for conversion, and require the application to implement it.
-//!
-constexpr const char16_t* DEFAULT_UI_CONTEXT = u"ProjectOpened";
-static inline ui::UiContext toUiContext(const String& ctx)
+// Contexts
+constexpr const std::string_view ANY_CONTEXT = "Any";
+constexpr const std::string_view PROJECT_OPENED_CONTEXT = "ProjectOpened";
+constexpr const std::string_view DEFAULT_CONTEXT = PROJECT_OPENED_CONTEXT;
+
+// Uri
+constexpr std::string_view EXTENSION_SCHEME = "extension";
+
+//! NOTE URI is used as an identifier
+using ExtensionUri = Uri;
+//! NOTE Query is used to perform actions on the extension
+using ExtensionQuery = UriQuery;
+
+inline rcommand::Command makeCommand(const ExtensionUri& extensionUri)
 {
-    if (ctx == u"ProjectOpened") {
-        return ui::UiCtxProjectOpened;
-    } else if (ctx == u"Any") {
-        return ui::UiCtxAny;
-    }
-    LOGE() << "unknown ui context: " << ctx << ", will be using default: " << DEFAULT_UI_CONTEXT;
-    return ui::UiCtxProjectOpened;
+    rcommand::Command c(extensionUri);
+    c.setScheme(std::string(rcommand::COMMAND_SCHEME));
+    return c;
 }
 
-//! NOTE There is currently no separate context shortcut in the manifest properties.
-//! But if needed, it needs to be added.
-//! Also see the comments above for the UiContext
-
-static inline std::string toScContext(const String& uiCtx)
+inline rcommand::CommandQuery makeCommandQuery(const ExtensionUri& extensionUri, const std::string& actionCode)
 {
-    if (uiCtx == u"ProjectOpened") {
-        return shortcuts::CTX_PROJECT_OPENED;
-    } else if (uiCtx == u"Any") {
-        return shortcuts::CTX_ANY;
-    }
-    LOGE() << "unknown ui context: " << uiCtx << ", will be using default: " << DEFAULT_UI_CONTEXT;
-    return shortcuts::CTX_PROJECT_OPENED;
+    rcommand::CommandQuery q(makeCommand(extensionUri));
+    q.addParam("action", Val(actionCode));
+    return q;
+}
+
+inline ExtensionUri uriFromCommand(const rcommand::Command& c)
+{
+    ExtensionUri uri(c);
+    uri.setScheme(std::string(EXTENSION_SCHEME));
+    return uri;
+}
+
+inline ExtensionQuery queryFromCommandQuery(const rcommand::CommandQuery& c)
+{
+    ExtensionQuery q(c);
+    q.setScheme(std::string(EXTENSION_SCHEME));
+    return q;
 }
 
 enum class Type {
@@ -120,78 +122,28 @@ enum Filter {
     All
 };
 
-//! NOTE Exec points
-using ExecPointName = std::string;
-struct ExecPoint {
-    ExecPointName name;
-    TranslatableString title;
-
-    inline bool operator==(const ExecPoint& p) const { return p.name == name; }
-    inline bool operator!=(const ExecPoint& p) const { return !this->operator==(p); }
-
-    inline bool isNull() const { return name.empty(); }
-};
-
-static inline const ExecPointName EXEC_DISABLED = "disabled";
-static inline const ExecPointName EXEC_MANUALLY = "manually";
-
 struct Action {
     std::string code;
     Type type = Type::Undefined;
     bool modal = DEFAULT_MODAL;
     String title;
     ui::IconCode::Code icon = ui::IconCode::Code::NONE;
-    String uiCtx = DEFAULT_UI_CONTEXT;
     bool showOnToolbar = false;
     bool showOnAppmenu = true;
     io::path_t path;
-    String func = u"main";
+    std::string func = "main";
+    std::string context = std::string(DEFAULT_CONTEXT);
     int apiversion = DEFAULT_API_VERSION;
     bool legacyPlugin = false;
 
-    struct Config {
-        ExecPointName execPoint = EXEC_DISABLED;
-    };
-
     bool isValid() const { return type != Type::Undefined && !code.empty(); }
 };
-
-inline actions::ActionQuery makeActionQueryBase(const Uri& uri)
-{
-    UriQuery q(uri);
-    q.setScheme("action");
-    return q;
-}
-
-inline actions::ActionQuery makeActionQuery(const Uri& uri, const std::string& actionCode)
-{
-    UriQuery q = makeActionQueryBase(uri);
-    q.addParam("action", Val(actionCode));
-    return q;
-}
-
-inline UriQuery uriQueryFromActionQuery(const actions::ActionQuery& a)
-{
-    UriQuery q(a);
-    q.setScheme("musescore");
-    return q;
-}
-
-inline actions::ActionCode makeActionCodeBase(const Uri& uri)
-{
-    return makeActionQueryBase(uri).toString();
-}
-
-inline actions::ActionCode makeActionCode(const Uri& uri, const std::string& extActionCode)
-{
-    return makeActionQuery(uri, extActionCode).toString();
-}
 
 /*
 manifest.json
 {
 
-"uri": String,                    // Example: muse://module/target/name
+"uri": String,                    // Example: extension://module/target/name
 "type": String,                   // Values: form, macros
 "title": String,                  //
 "description": String,            //
@@ -208,28 +160,15 @@ manifest.json
 }*/
 
 struct Manifest {
-    struct Config {
-        std::map<std::string /*action*/, Action::Config> actions;
-
-        const Action::Config& aconfig(const std::string& code) const
-        {
-            auto it = actions.find(code);
-            if (it != actions.end()) {
-                return it->second;
-            }
-            static Action::Config _dummy;
-            return _dummy;
-        }
-    };
-
-    Uri uri;
+    ExtensionUri uri;
     io::path_t path;
     Type type = Type::Undefined;
     String title;
     String description;
     String category;
     io::path_t thumbnail;
-    String version;
+    std::string version;
+    std::string context = std::string(DEFAULT_CONTEXT);
     int apiversion = DEFAULT_API_VERSION;
     bool legacyPlugin = false;
     bool isRemovable = false;
@@ -238,25 +177,7 @@ struct Manifest {
 
     std::vector<Action> actions;
 
-    Config config;
-
     bool isValid() const { return type != Type::Undefined && uri.isValid(); }
-
-    bool enabled() const
-    {
-        //! NOTE If at least one is enabled, then it's enabled.
-        for (const Action& a : actions) {
-            auto it = config.actions.find(a.code);
-            if (it == config.actions.end()) {
-                continue;
-            }
-            const Action::Config& ac = it->second;
-            if (!ac.execPoint.empty() && ac.execPoint != EXEC_DISABLED) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     Action action(const std::string& code) const
     {
@@ -272,4 +193,8 @@ struct Manifest {
 using ManifestList = std::vector<Manifest>;
 
 using KnownCategories = std::map<std::string /*name*/, TranslatableString /*title*/>;
+
+struct ExtensionConfig {
+    bool enabled = false;
+};
 }

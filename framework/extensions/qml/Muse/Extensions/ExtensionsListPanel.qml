@@ -167,8 +167,6 @@ Item {
 
     function openInfoPanel(plugin, navigationControl) {
         prv.selectedPlugin = Object.assign({}, plugin)
-        panel.currentExecPointIndex = extensionsModel.currentExecPointIndex(prv.selectedPlugin.uri)
-        panel.execPointsModel = extensionsModel.execPointsModel(prv.selectedPlugin.uri)
         panel.open()
         prv.lastNavigatedExtension = navigationControl
     }
@@ -191,8 +189,8 @@ Item {
             {"title": qsTrc("extensions", "Shortcut:"), "value": Boolean(selectedPlugin) ? selectedPlugin.shortcuts : ""}
         ]
 
-        onExecPointSelected: function(index) {
-            extensionsModel.selectExecPoint(selectedPlugin.uri, index)
+        onEnableChanged: function(enabled) {
+            extensionsModel.setEnabled(selectedPlugin.uri, enabled)
         }
 
         onRemoveRequest: function() {

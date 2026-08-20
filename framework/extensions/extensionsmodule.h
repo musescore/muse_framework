@@ -24,12 +24,15 @@
 #include <memory>
 #include <string>
 
+#include "global/async/asyncable.h"
+
 #include "modularity/imodulesetup.h"
 
 namespace muse::extensions {
 class ExtensionsConfiguration;
-class ExtensionsExecPointsRegister;
-class ExtensionsModule : public modularity::IModuleSetup
+class ExtensionsRegister;
+class ExtensionsCommandsRegister;
+class ExtensionsModule : public modularity::IModuleSetup, public async::Asyncable
 {
 public:
 
@@ -44,7 +47,8 @@ public:
 private:
 
     std::shared_ptr<ExtensionsConfiguration> m_configuration;
-    std::shared_ptr<ExtensionsExecPointsRegister> m_execPointsRegister;
+    std::shared_ptr<ExtensionsRegister> m_extensionsRegister;
+    std::shared_ptr<ExtensionsCommandsRegister> m_extensionsCommandsRegister;
 };
 
 class ExtensionsProvider;
@@ -56,6 +60,7 @@ public:
         : modularity::IContextSetup(ctx) {}
 
     void registerExports() override;
+    void resolveImports() override;
     void onInit(const IApplication::RunMode& mode) override;
 
 private:

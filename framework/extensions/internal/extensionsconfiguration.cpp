@@ -81,22 +81,15 @@ async::Channel<io::path_t> ExtensionsConfiguration::pluginsUserPathChanged() con
     return m_pluginsUserPathChanged;
 }
 
-Ret ExtensionsConfiguration::setManifestConfigs(const std::map<Uri, Manifest::Config>& configs)
+Ret ExtensionsConfiguration::setExtensionConfigs(const std::map<Uri, ExtensionConfig>& configs)
 {
     JsonArray arr;
     for (const auto& p : configs) {
         JsonObject obj;
         obj["uri"] = p.first.toString();
 
-        const Manifest::Config& c = p.second;
-        JsonArray acts;
-        for (const auto& a : c.actions) {
-            JsonObject act;
-            act["code"] = a.first;
-            act["exec_point"] = a.second.execPoint;
-            acts.append(act);
-        }
-        obj["actions"] = acts;
+        const ExtensionConfig& c = p.second;
+        obj["enabled"] = c.enabled;
 
         arr.append(obj);
     }
@@ -115,7 +108,7 @@ Ret ExtensionsConfiguration::setManifestConfigs(const std::map<Uri, Manifest::Co
     return ret;
 }
 
-std::map<muse::Uri, Manifest::Config> ExtensionsConfiguration::manifestConfigs() const
+std::map<muse::Uri, ExtensionConfig> ExtensionsConfiguration::extensionConfigs() const
 {
     const io::path_t configPath = userPath() + "/config.json";
     const io::path_t oldPluginsConfigPath = globalConfiguration()->userAppDataPath() + "/plugins/plugins.json";
@@ -144,29 +137,15 @@ std::map<muse::Uri, Manifest::Config> ExtensionsConfiguration::manifestConfigs()
             return {};
         }
 
-        std::map<Uri, Manifest::Config> result;
+        std::map<Uri, ExtensionConfig> result;
         JsonArray arr = doc.rootArray();
         for (size_t i = 0; i < arr.size(); ++i) {
             JsonObject obj = arr.at(i).toObject();
 
-            Manifest::Config c;
             Uri uri = Uri(obj.value("uri").toStdString());
 
-            JsonValue actsVal = obj.value("actions");
-            if (!actsVal.isArray()) {
-                LOGE() << "bad format, field `actions` does not exist or is not an array";
-                continue;
-            }
-            JsonArray acts = actsVal.toArray();
-            for (size_t ai = 0; ai < acts.size(); ++ai) {
-                JsonObject ao = acts.at(ai).toObject();
-
-                std::string code = ao.value("code").toStdString();
-                Action::Config ac;
-                ac.execPoint = ao.value("exec_point").toStdString();
-
-                c.actions[code] = ac;
-            }
+            ExtensionConfig c;
+            c.enabled = obj.value("enabled").toBool();
 
             result.insert({ uri, c });
         }
@@ -204,12 +183,11 @@ std::map<muse::Uri, Manifest::Config> ExtensionsConfiguration::manifestConfigs()
             uris = pluginsLoader.loadCodekeyUriMap(pluginsDefaultPath(), pluginsUserPath());
         }
 
-        std::map<Uri, Manifest::Config> result;
+        std::map<Uri, ExtensionConfig> result;
         JsonArray arr = doc.rootArray();
         for (size_t i = 0; i < arr.size(); ++i) {
             JsonObject obj = arr.at(i).toObject();
 
-            Manifest::Config c;
             std::string codeKey = obj.value("codeKey").toStdString();
             Uri uri = muse::value(uris, codeKey);
             if (!uri.isValid()) {
@@ -217,16 +195,8 @@ std::map<muse::Uri, Manifest::Config> ExtensionsConfiguration::manifestConfigs()
                 continue;
             }
 
-            bool enabled = obj.value("enabled").toBool();
-            Action::Config ac;
-            ac.execPoint = enabled ? EXEC_MANUALLY : EXEC_DISABLED;
-
-            //! NOTE Special case
-            if (codeKey == "addCourtesyAccidentals") {
-                c.actions["add"] = ac;
-            } else {
-                c.actions["main"] = ac;
-            }
+            ExtensionConfig c;
+            c.enabled = obj.value("enabled").toBool();
 
             result.insert({ uri, c });
         }

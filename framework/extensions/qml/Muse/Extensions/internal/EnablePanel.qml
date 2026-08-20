@@ -32,45 +32,16 @@ InfoPanel {
     id: root
 
     property bool isEnabled: false
-
-    property var execPointsModel: null
-    property int currentExecPointIndex: 0
     property bool isRemovable: false
 
     signal editShortcutRequested()
-    signal execPointSelected(int index)
+    signal enableChanged(bool enabled)
     signal removeRequest()
 
     buttonsPanel: RowLayout {
         id: buttons
 
         spacing: 12
-
-        // StyledDropdown {
-        //     id: execPoints
-
-        //     property string text: currentText
-
-        //     Component.onCompleted: {
-        //         root.mainButton = execPoints
-        //     }
-
-        //     Layout.alignment: Qt.AlignLeft
-
-        //     width: 280
-
-        //     navigation.name: "ExecPointSelector"
-        //     navigation.panel: root.contentNavigation
-        //     navigation.column: 3
-
-        //     currentIndex: root.currentExecPointIndex
-        //     model: root.execPointsModel
-
-        //     onActivated: function(index, value) {
-        //         currentIndex = index
-        //         root.execPointSelected(index)
-        //     }
-        // }
 
         FlatButton {
             Layout.alignment: Qt.AlignLeft
@@ -132,14 +103,7 @@ InfoPanel {
                 }
 
                 onClicked: {
-                    //! NOTE temporary
-                    // The function with the choice of the call point is not ready yet.
-                    // Therefore, here is the previous solution with the button,
-                    // but in fact the choice is made from the list
-                    // 0 - disabled
-                    // 1 - enabled (manual call)
-                    // (here we switch to the opposite state)
-                    root.execPointSelected(root.isEnabled ? 0 : 1)
+                    root.enableChanged(!root.isEnabled)
                 }
             }
         }

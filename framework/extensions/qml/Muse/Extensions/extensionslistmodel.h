@@ -33,7 +33,7 @@
 #include "interactive/iinteractive.h"
 #include "extensions/iextensioninstaller.h"
 #include "extensions/iextensionsconfiguration.h"
-#include "extensions/iextensionsprovider.h"
+#include "extensions/iextensionsregister.h"
 #include "shortcuts/ishortcutsregister.h"
 
 namespace muse::extensions {
@@ -45,8 +45,8 @@ class ExtensionsListModel : public QAbstractListModel, public QQmlParserStatus, 
     QML_ELEMENT
 
     GlobalInject<IExtensionsConfiguration> configuration;
+    GlobalInject<IExtensionsRegister> extensionsRegister;
     ContextInject<IExtensionInstaller> installer = { this };
-    ContextInject<IExtensionsProvider> provider = { this };
     ContextInject<IInteractive> interactive = { this };
     ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
 
@@ -57,10 +57,7 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    Q_INVOKABLE int currentExecPointIndex(const QString& uri) const;
-    Q_INVOKABLE QVariantList execPointsModel(const QString& uri) const;
-    Q_INVOKABLE void selectExecPoint(const QString& uri, int index);
-
+    Q_INVOKABLE void setEnabled(const QString& uri, bool enabled);
     Q_INVOKABLE void editShortcut(const QString& uri);
     Q_INVOKABLE void reloadPlugins();
     Q_INVOKABLE void removeExtension(const QString& uri);
@@ -83,23 +80,15 @@ private:
         rIsRemovable
     };
 
-    struct ExecPoints {
-        QString uri;
-        std::vector<ExecPoint> points;
-    };
-
     void classBegin() override;
     void componentComplete() override {}
     void init();
     void load();
 
-    void updatePlugin(const Manifest& plugin);
+    void updateExtension(const Uri& uri);
     int itemIndexByUri(const QString& uri) const;
 
-    const std::vector<ExecPoint>& execPoints(const QString& uri) const;
-
     QHash<int, QByteArray> m_roles;
-    ManifestList m_plugins;
-    mutable ExecPoints m_execPointsCache;
+    ManifestList m_extensions;
 };
 }
