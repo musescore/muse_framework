@@ -19,8 +19,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+pragma ComponentBehavior: Bound
+
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Controls
 
 import Muse.Ui
@@ -87,6 +89,11 @@ FocusScope {
         }
 
         delegate: Item {
+            id: cellWrap
+
+            required property var model
+            required property int index
+
             height: view.cellHeight
             width: view.cellWidth
 
@@ -98,21 +105,21 @@ FocusScope {
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 navigation.panel: navPanel
-                navigation.row: view.columns === 0 ? 0 : Math.floor(model.index / view.columns)
-                navigation.column: model.index - (navigation.row * view.columns)
+                navigation.row: view.columns === 0 ? 0 : Math.floor(cellWrap.index / view.columns)
+                navigation.column: cellWrap.index - (navigation.row * view.columns)
                 navigation.onActiveChanged: {
                     if (navigation.active) {
-                        view.positionViewAtIndex(index, ListView.Contain)
+                        view.positionViewAtIndex(cellWrap.index, ListView.Contain)
                     }
                 }
 
-                title: modelData.title
-                author: modelData.author
-                duration: modelData.duration
-                thumbnail: modelData.thumbnailUrl
+                title: cellWrap.model.title
+                author: cellWrap.model.author
+                duration: cellWrap.model.duration
+                thumbnail: cellWrap.model.thumbnailUrl
 
                 onClicked: {
-                    api.launcher.openUrl(modelData.url)
+                    api.launcher.openUrl(cellWrap.model.url)
                 }
             }
         }

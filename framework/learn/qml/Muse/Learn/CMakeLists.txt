@@ -26,6 +26,8 @@ qt_add_qml_module(muse_learn_qml
     SOURCES
         learnpagemodel.cpp
         learnpagemodel.h
+        internal/playlistmodel.cpp
+        internal/playlistmodel.h
     QML_FILES
         LearnPage.qml
         internal/ClassesPage.qml
