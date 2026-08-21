@@ -1165,7 +1165,10 @@ int applyRun(const std::wstring& appId)
 
     // 2. Let the application finish quitting before touching its files.
     if (request.pid > 0) {
-        platform::waitForProcessExit(static_cast<long long>(request.pid), /*timeoutMs*/ 60000);
+        if (!platform::waitForProcessExit(static_cast<long long>(request.pid), /*timeoutMs*/ 60000)) {
+            logLine(L"apply-run: the application is still running");
+            return 1;
+        }
     }
 
     // 3. Copy the package somewhere an unprivileged user cannot reach, so that

@@ -31,6 +31,10 @@
 #include <map>
 #include <string>
 
+#ifdef __APPLE__
+#include <copyfile.h>
+#endif
+
 #ifdef __linux__
 #include <fcntl.h>
 #include <sys/syscall.h>
@@ -70,7 +74,11 @@ Args parseArgs(int argc, char** argv)
 
     Args a;
     if (kv.count("--wait-pid")) {
-        a.waitPid = std::stoll(kv["--wait-pid"]);
+        try {
+            a.waitPid = std::stoll(kv["--wait-pid"]);
+        } catch (const std::exception&) {
+            a.waitPid = 0;
+        }
     }
     a.src = kv.count("--src") ? kv["--src"] : std::string();
     a.dst = kv.count("--dst") ? kv["--dst"] : std::string();
@@ -91,10 +99,18 @@ bool movePath(const fs::path& from, const fs::path& to, std::error_code& ec)
     }
 
     ec.clear();
+#ifdef __APPLE__
+    // fs::copy would drop the xattrs and resource forks the bundle signature seals
+    if (::copyfile(from.c_str(), to.c_str(), nullptr, COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW) != 0) {
+        ec = std::error_code(errno, std::generic_category());
+        return false;
+    }
+#else
     fs::copy(from, to, fs::copy_options::recursive | fs::copy_options::copy_symlinks, ec);
     if (ec) {
         return false;
     }
+#endif
 
     std::error_code rmEc;
     fs::remove_all(from, rmEc);
@@ -126,6 +142,16 @@ int swapper::run(int argc, char** argv)
     if (!args.logPath.empty()) {
         g_log = std::fopen(args.logPath.c_str(), "w");
     }
+
+    struct LogCloser {
+        ~LogCloser()
+        {
+            if (g_log) {
+                std::fclose(g_log);
+                g_log = nullptr;
+            }
+        }
+    } logCloser;
 
     logLine("museupdater started");
     logLine("  src=" + args.src);
@@ -208,8 +234,15 @@ int swapper::run(int argc, char** argv)
         if (ec) {
             logLine("error: failed to move staged install into place: " + ec.message());
 
-            std::error_code rbEc;
-            fs::rename(backup, dst, rbEc);
+            if (dstExists) {
+                std::error_code rbEc;
+                fs::rename(backup, dst, rbEc);
+                if (rbEc) {
+                    logLine("error: could not restore the previous install from backup: " + rbEc.message());
+                } else {
+                    logLine("previous install restored from backup");
+                }
+            }
             return 1;
         }
         std::error_code rmEc;
@@ -224,11 +257,6 @@ int swapper::run(int argc, char** argv)
     }
 
     logLine("museupdater finished");
-
-    if (g_log) {
-        std::fclose(g_log);
-        g_log = nullptr;
-    }
 
     return 0;
 }

@@ -22,8 +22,8 @@
 
 #include "platform.h"
 
+#include <cerrno>
 #include <csignal>
-#include <cstdlib>
 #include <ctime>
 
 #include <spawn.h>
@@ -60,19 +60,26 @@ bool waitForProcessExit(long long pid, int timeoutMs)
     int waited = 0;
     while (waited < timeoutMs) {
         if (::kill(static_cast<pid_t>(pid), 0) != 0) {
-            // No such process -> it has exited.
-            return true;
+            // EPERM means the process still exists
+            return errno == ESRCH;
         }
         sleepMs(step);
         waited += step;
     }
-    return ::kill(static_cast<pid_t>(pid), 0) != 0;
+    return ::kill(static_cast<pid_t>(pid), 0) != 0 && errno == ESRCH;
 }
 
 bool verifyInstall(const std::string& path)
 {
-    std::string cmd = "/usr/bin/codesign --verify --deep --strict \"" + path + "\"";
-    return std::system(cmd.c_str()) == 0;
+    char* const argv[] = {
+        const_cast<char*>("codesign"),
+        const_cast<char*>("--verify"),
+        const_cast<char*>("--deep"),
+        const_cast<char*>("--strict"),
+        const_cast<char*>(path.c_str()),
+        nullptr
+    };
+    return runDetachedAndWait("/usr/bin/codesign", argv) == 0;
 }
 
 bool relaunch(const std::string& path)

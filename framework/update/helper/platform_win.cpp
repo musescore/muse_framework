@@ -29,8 +29,8 @@ bool waitForProcessExit(long long pid, int timeoutMs)
 {
     HANDLE hProc = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
     if (!hProc) {
-        // Already gone, or no access.
-        return true;
+        // access denied etc. means the process still exists
+        return GetLastError() == ERROR_INVALID_PARAMETER;
     }
     const DWORD result = WaitForSingleObject(hProc, static_cast<DWORD>(timeoutMs));
     CloseHandle(hProc);

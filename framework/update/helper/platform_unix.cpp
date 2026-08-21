@@ -22,6 +22,7 @@
 
 #include "platform.h"
 
+#include <cerrno>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
@@ -75,12 +76,13 @@ bool waitForProcessExit(long long pid, int timeoutMs)
     int waited = 0;
     while (waited < timeoutMs) {
         if (::kill(static_cast<pid_t>(pid), 0) != 0) {
-            return true;
+            // EPERM means the process still exists
+            return errno == ESRCH;
         }
         sleepMs(step);
         waited += step;
     }
-    return ::kill(static_cast<pid_t>(pid), 0) != 0;
+    return ::kill(static_cast<pid_t>(pid), 0) != 0 && errno == ESRCH;
 }
 
 bool verifyInstall(const std::string& path)
