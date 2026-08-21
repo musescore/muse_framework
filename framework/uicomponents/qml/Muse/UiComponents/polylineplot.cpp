@@ -24,6 +24,7 @@
 #include "realfn.h"
 
 #include <QPainter>
+#include <QPainterPath>
 #include <QPen>
 #include <QBrush>
 #include <QHoverEvent>
@@ -345,12 +346,25 @@ void PolylinePlot::setPoints(const QVector<QPointF>& pts)
     if (m_points == pts) {
         if (m_points.isEmpty()) {
             updateBaselineFromDefaultValue();
+
+            // invalidate colors under line
+            if (!m_colorsUnderLine.empty()) {
+                m_colorsUnderLine.clear();
+                emit colorsUnderLineChanged();
+            }
+
             update();
         }
         return;
     }
     m_points = pts;
     emit pointsChanged();
+
+    // invalidate colors under line
+    if (!m_colorsUnderLine.empty()) {
+        m_colorsUnderLine.clear();
+        emit colorsUnderLineChanged();
+    }
 
     if (m_points.isEmpty()) {
         updateBaselineFromDefaultValue();
@@ -389,6 +403,23 @@ void PolylinePlot::setPoints(const QVector<QPointF>& pts)
     }
 
     rebuildVisiblePoints();
+}
+
+QVector<QColor> PolylinePlot::colorsUnderLine() const
+{
+    return m_colorsUnderLine;
+}
+
+void PolylinePlot::setColorsUnderLine(const QVector<QColor>& c)
+{
+    if (m_colorsUnderLine == c) {
+        return;
+    }
+
+    m_colorsUnderLine = c;
+    emit colorsUnderLineChanged();
+
+    update();
 }
 
 qreal PolylinePlot::defaultValue() const
@@ -920,6 +951,10 @@ QVector<QPointF> PolylinePlot::polylinePx() const
 
     // actual points
     for (const auto& pN : sorted) {
+        if (pN.x() < 0.0 || pN.x() > 1.0) {
+            // ignore synthetic boundary points
+            continue;
+        }
         pts.push_back(QPointF(toPxX(this, clamp01(pN.x())),
                               toPxY(this, pN.y())));
     }
@@ -1070,6 +1105,39 @@ void PolylinePlot::geometryChange(const QRectF& newG, const QRectF& oldG)
     }
 }
 
+void PolylinePlot::drawLinesAndFillUnder(QPainter* painter) const
+{
+    const auto pts = polylinePx();
+    if (pts.size() < 2) {
+        return;
+    }
+
+    QPen pen(m_lineColor);
+    pen.setWidthF(m_lineWidth);
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+
+    const qreal baselinePxY = toPxY(this, m_baselineN);
+
+    for (int i = 0; i < pts.size() - 1; ++i) {
+        if (i < m_colorsUnderLine.size()) {
+            // fill area under line
+            const QVector<QPointF> areaUnderLine {
+                QPointF(pts[i].x(), baselinePxY), // bottom left
+                pts[i], // top left
+                pts[i + 1], // top right
+                QPointF(pts[i + 1].x(), baselinePxY), // bottom right
+            };
+            QPainterPath path;
+            path.addPolygon(QPolygonF(areaUnderLine));
+            painter->fillPath(path, m_colorsUnderLine.at(i));
+        }
+        // draw line
+        painter->drawLine(pts[i], pts[i + 1]);
+    }
+}
+
 void PolylinePlot::paintPoint(QPainter* painter, const PolylinePointStyle* style, const QPointF& centre, bool useHoveredStyle) const
 {
     IF_ASSERT_FAILED(painter && style) {
@@ -1133,21 +1201,8 @@ void PolylinePlot::paint(QPainter* painter)
         painter->drawRect(boundingRect());
     }
 
-    // draw polyline
-    {
-        QPen pen(m_lineColor);
-        pen.setWidthF(m_lineWidth);
-        pen.setJoinStyle(Qt::MiterJoin);
-        painter->setPen(pen);
-        painter->setBrush(Qt::NoBrush);
-
-        const auto pts = polylinePx();
-        if (pts.size() >= 2) {
-            for (int i = 0; i < pts.size() - 1; ++i) {
-                painter->drawLine(pts[i], pts[i + 1]);
-            }
-        }
-    }
+    // draw lines and fill area underneath
+    drawLinesAndFillUnder(painter);
 
     // draw points
     IF_ASSERT_FAILED(m_standardPointStyle && m_ghostPointStyle && m_selectedPointStyle) {
