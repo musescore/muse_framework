@@ -30,6 +30,6 @@ namespace swapper {
 //!   --wait-pid <pid> --src <dir> --dst <dir> [--relaunch <path>] [--log <path>]
 //!
 //! Used where the install location is writable by the user running the
-//! application, which on Windows it is not - see command_win.h for that.
+//! application, which on Windows it is not - see updatetask_win.h for that.
 int run(int argc, char** argv);
 }

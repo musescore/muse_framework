@@ -45,7 +45,7 @@
 namespace shared = muse::update::win;
 
 namespace {
-const wchar_t* WINDOW_CLASS_NAME = L"MuseUpdateProgressWindow";
+constexpr const wchar_t* WINDOW_CLASS_NAME = L"MuseUpdateProgressWindow";
 
 const UINT WM_UI_COMMAND = WM_APP + 1;
 
@@ -106,33 +106,7 @@ COLORREF blend(COLORREF from, COLORREF to, int percentOfTo)
 
 bool parseColor(const std::string& text, COLORREF& color)
 {
-    if (text.size() != 7 || text[0] != '#') {
-        return false;
-    }
-
-    int components[3] = { 0, 0, 0 };
-
-    for (int i = 0; i < 3; ++i) {
-        int value = 0;
-        for (int j = 0; j < 2; ++j) {
-            const char c = text[1 + i * 2 + j];
-            int digit = 0;
-            if (c >= '0' && c <= '9') {
-                digit = c - '0';
-            } else if (c >= 'a' && c <= 'f') {
-                digit = c - 'a' + 10;
-            } else if (c >= 'A' && c <= 'F') {
-                digit = c - 'A' + 10;
-            } else {
-                return false;
-            }
-            value = value * 16 + digit;
-        }
-        components[i] = value;
-    }
-
-    color = RGB(components[0], components[1], components[2]);
-    return true;
+    return shared::parseUiColor(shared::utf8ToWide(text), color);
 }
 
 HFONT createFont(UINT dpi)
@@ -476,14 +450,17 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     return ::DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
-void postCommand(HWND hwnd, Command command, LPARAM payload)
+bool postCommand(HWND hwnd, Command command, LPARAM payload)
 {
-    ::PostMessageW(hwnd, WM_UI_COMMAND, static_cast<WPARAM>(command), payload);
+    return ::PostMessageW(hwnd, WM_UI_COMMAND, static_cast<WPARAM>(command), payload) != FALSE;
 }
 
 void postText(HWND hwnd, Command command, const std::string& value)
 {
-    postCommand(hwnd, command, reinterpret_cast<LPARAM>(new std::wstring(shared::utf8ToWide(value))));
+    std::wstring* text = new std::wstring(shared::utf8ToWide(value));
+    if (!postCommand(hwnd, command, reinterpret_cast<LPARAM>(text))) {
+        delete text;
+    }
 }
 
 void postColor(HWND hwnd, Command command, const std::string& value)

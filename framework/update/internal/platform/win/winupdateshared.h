@@ -70,10 +70,23 @@ inline std::wstring programDataPath()
     return L"C:\\ProgramData";
 }
 
+//! `C:\ProgramData\Muse` and `C:\ProgramData\Muse\Update`.
+//! Named because the levels above the working area have to be secured too,
+//! not only the leaf.
+inline std::wstring vendorRootPath()
+{
+    return programDataPath() + L"\\Muse";
+}
+
+inline std::wstring updatesRootPath()
+{
+    return vendorRootPath() + L"\\Update";
+}
+
 //! Root of the update working area, e.g. `C:\ProgramData\Muse\Update\MuseScore4`.
 inline std::wstring updateRootPath(const std::wstring& appId)
 {
-    return programDataPath() + L"\\Muse\\Update\\" + appId;
+    return updatesRootPath() + L"\\" + appId;
 }
 
 inline std::wstring requestsDirPath(const std::wstring& appId)
@@ -137,20 +150,20 @@ inline std::wstring registryKeyPath(const std::wstring& appId)
 }
 
 //! Root of the installation.
-inline const wchar_t* REG_VALUE_INSTALL_DIR = L"InstallDir";
+inline constexpr const wchar_t* REG_VALUE_INSTALL_DIR = L"InstallDir";
 
 //! Absolute path of the application executable, used both to relaunch it and to
 //! tell whether a running application belongs to this installation.
-inline const wchar_t* REG_VALUE_APP_PATH = L"AppPath";
+inline constexpr const wchar_t* REG_VALUE_APP_PATH = L"AppPath";
 
 //! "msi" (installed with msiexec) or "exe" (a self-contained installer, run
 //! directly). Also the extension the staged package is given.
-inline const wchar_t* REG_VALUE_PACKAGE_TYPE = L"PackageType";
+inline constexpr const wchar_t* REG_VALUE_PACKAGE_TYPE = L"PackageType";
 
 //! Extra arguments for the silent installation, e.g. `INSTALL_ROOT={install-dir}`
 //! for an MSI or `/VERYSILENT /NORESTART /DIR={install-dir}` for Inno Setup. The
 //! `{install-dir}` token expands to the install location, already quoted.
-inline const wchar_t* REG_VALUE_INSTALL_ARGS = L"InstallArgs";
+inline constexpr const wchar_t* REG_VALUE_INSTALL_ARGS = L"InstallArgs";
 
 //! Expected common name of the signing certificate; several may be given,
 //! separated by "|".
@@ -160,7 +173,7 @@ inline const wchar_t* REG_VALUE_INSTALL_ARGS = L"InstallArgs";
 //! Accepting more than one name is what makes it possible to rotate the
 //! certificate: ship the new name alongside the old one first, and only start
 //! signing with it once that release is out.
-inline const wchar_t* REG_VALUE_CERT_SUBJECT = L"CertSubject";
+inline constexpr const wchar_t* REG_VALUE_CERT_SUBJECT = L"CertSubject";
 
 //! Whether `signer` is among the "|"-separated names in `expected`. Empty
 //! `expected` matches nothing - there is then nothing to verify against.
@@ -198,8 +211,8 @@ inline bool isExpectedSigner(const std::wstring& signer, const std::wstring& exp
     return false;
 }
 
-inline const wchar_t* PACKAGE_TYPE_MSI = L"msi";
-inline const wchar_t* PACKAGE_TYPE_EXE = L"exe";
+inline constexpr const wchar_t* PACKAGE_TYPE_MSI = L"msi";
+inline constexpr const wchar_t* PACKAGE_TYPE_EXE = L"exe";
 
 //! Replaces `{install-dir}` in `args` with `installDir` in quotes.
 inline std::wstring expandInstallArgs(const std::wstring& args, const std::wstring& installDir)
@@ -247,21 +260,41 @@ inline std::wstring sanitizedUiText(const std::wstring& text)
     return result;
 }
 
-inline bool isUiColor(const std::wstring& color)
+//! `#rrggbb`
+inline bool parseUiColor(const std::wstring& color, COLORREF& parsed)
 {
     if (color.size() != 7 || color[0] != L'#') {
         return false;
     }
 
-    for (size_t i = 1; i < color.size(); ++i) {
-        const wchar_t c = color[i];
-        const bool isHexDigit = (c >= L'0' && c <= L'9') || (c >= L'a' && c <= L'f') || (c >= L'A' && c <= L'F');
-        if (!isHexDigit) {
-            return false;
+    int component[3] = { 0, 0, 0 };
+
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            const wchar_t c = color[1 + i * 2 + j];
+            int digit = 0;
+            if (c >= L'0' && c <= L'9') {
+                digit = c - L'0';
+            } else if (c >= L'a' && c <= L'f') {
+                digit = c - L'a' + 10;
+            } else if (c >= L'A' && c <= L'F') {
+                digit = c - L'A' + 10;
+            } else {
+                return false;
+            }
+
+            component[i] = component[i] * 16 + digit;
         }
     }
 
+    parsed = RGB(component[0], component[1], component[2]);
     return true;
+}
+
+inline bool isUiColor(const std::wstring& color)
+{
+    COLORREF ignored = 0;
+    return parseUiColor(color, ignored);
 }
 
 struct UpdateRequest {

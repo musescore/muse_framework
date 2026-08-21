@@ -33,17 +33,17 @@
 //! privileges of its own, and is driven over a pipe.
 namespace updateui {
 namespace command {
-inline const char* TITLE = "title";
-inline const char* MESSAGE = "message";
-inline const char* BACKGROUND = "background";
-inline const char* ACCENT = "accent";
-inline const char* FOREGROUND = "foreground";
+inline constexpr const char* TITLE = "title";
+inline constexpr const char* MESSAGE = "message";
+inline constexpr const char* BACKGROUND = "background";
+inline constexpr const char* ACCENT = "accent";
+inline constexpr const char* FOREGROUND = "foreground";
 
-inline const char* SHOW = "show";
+inline constexpr const char* SHOW = "show";
 
-inline const char* PROGRESS = "progress";
+inline constexpr const char* PROGRESS = "progress";
 
-inline const char* CLOSE = "close";
+inline constexpr const char* CLOSE = "close";
 }
 
 int run(const std::wstring& pipeHandleValue);

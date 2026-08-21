@@ -46,25 +46,25 @@
 namespace shared = muse::update::win;
 
 namespace {
-const wchar_t* TASK_AUTHOR = L"Muse";
+constexpr const wchar_t* TASK_AUTHOR = L"Muse";
 
 //! Users (BU) get read + execute so that an unprivileged application can start
 //! the task on demand; only administrators and SYSTEM may change it.
-const wchar_t* TASK_SDDL = L"D:P(A;;GA;;;BA)(A;;GA;;;SY)(A;;GRGX;;;BU)";
+constexpr const wchar_t* TASK_SDDL = L"D:P(A;;GA;;;BA)(A;;GA;;;SY)(A;;GRGX;;;BU)";
 
 //! Users may traverse and read the working area but write nothing into it: the
 //! helper copies itself here before running the installer, and an unprivileged
 //! user must not be able to plant anything we then execute as SYSTEM.
-const wchar_t* ROOT_SDDL = L"O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)";
+constexpr const wchar_t* ROOT_SDDL = L"O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)";
 
 //! SYSTEM and administrators only - the package is verified and installed from
 //! here, so an unprivileged user must not be able to touch it.
-const wchar_t* STAGING_SDDL = L"O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)";
+constexpr const wchar_t* STAGING_SDDL = L"O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)";
 
 //! Users (BU) may read, write and delete requests. Whoever writes one does not
 //! own it exclusively, so a request left behind by one user cannot keep another
 //! from placing theirs. The contents are untrusted either way.
-const wchar_t* REQUESTS_SDDL = L"O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGWGXSD;;;BU)";
+constexpr const wchar_t* REQUESTS_SDDL = L"O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGWGXSD;;;BU)";
 
 HANDLE g_logFile = INVALID_HANDLE_VALUE;
 
@@ -213,7 +213,13 @@ bool secureDirectory(const std::wstring& path, const wchar_t* sddl)
 bool ensureSecureRoot(const std::wstring& appId)
 {
     const std::wstring root = shared::updateRootPath(appId);
-    return makeDirectories(root) && secureDirectory(root, ROOT_SDDL);
+    if (!makeDirectories(root)) {
+        return false;
+    }
+
+    return secureDirectory(shared::vendorRootPath(), ROOT_SDDL)
+           && secureDirectory(shared::updatesRootPath(), ROOT_SDDL)
+           && secureDirectory(root, ROOT_SDDL);
 }
 
 //! Copying can transiently fail while an antivirus or the shell holds the file.
@@ -872,6 +878,8 @@ int registerTask(const Registration& registration)
     //! registered for - no need to guess where it was put.
     const std::wstring helperPath = modulePath();
     if (helperPath.empty()) {
+        definition->Release();
+        service->Release();
         logLine(L"register-task: failed to determine own path");
         return 1;
     }
@@ -1184,6 +1192,10 @@ int applyRun(const std::wstring& appId)
 
     logLine(L"apply-run: request package=" + request.packagePath + L" pid=" + std::to_wstring(request.pid));
 
+    //! NOTE: Consumed the moment it is read, whatever happens below: one left
+    //! behind would be replayed the next time the task is run.
+    ::DeleteFileW(shared::requestFilePath(appId).c_str());
+
     //! NOTE: Asked while the application is still running, and so still has a
     //! session to be asked about.
     const DWORD sessionId = userSessionId(request.pid);
@@ -1224,7 +1236,6 @@ int applyRun(const std::wstring& appId)
     auto reject = [&](const std::wstring& reason) {
         logLine(L"apply-run: " + reason);
         ::DeleteFileW(staged.c_str());
-        ::DeleteFileW(shared::requestFilePath(appId).c_str());
     };
 
     //! NOTE: A valid Authenticode signature alone is not enough - the package
@@ -1296,7 +1307,6 @@ int applyRun(const std::wstring& appId)
     const bool installed = exitCode == 0 || exitCode == 1641 || exitCode == 3010;
     if (!installed) {
         logLine(L"apply-run: the installer failed with exit code " + std::to_wstring(exitCode));
-        ::DeleteFileW(shared::requestFilePath(appId).c_str());
         ui.stop();
         return 1;
     }
@@ -1305,11 +1315,8 @@ int applyRun(const std::wstring& appId)
 
     logLine(L"apply-run: installed successfully, exit code " + std::to_wstring(exitCode));
 
-    // 6. Clean up before relaunching; the request must not survive to be
-    //    replayed on the next run.
-    ::DeleteFileW(shared::requestFilePath(appId).c_str());
+    // 6. Clean up before relaunching.
     ::DeleteFileW(staged.c_str());
-    ::DeleteFileW(request.packagePath.c_str());
 
     // 7. Take the window down before the application it was standing in for
     //    comes back up.
