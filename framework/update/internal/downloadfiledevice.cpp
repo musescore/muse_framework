@@ -69,5 +69,10 @@ qint64 DownloadFileDevice::readData(char*, qint64)
 qint64 DownloadFileDevice::writeData(const char* data, qint64 len)
 {
     const size_t written = m_stream.write(reinterpret_cast<const uint8_t*>(data), static_cast<size_t>(len));
+    if (static_cast<qint64>(written) != len) {
+        setErrorString(QString::fromStdString(m_stream.errorString()));
+        return -1;
+    }
+
     return static_cast<qint64>(written);
 }

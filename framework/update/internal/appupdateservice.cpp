@@ -234,7 +234,15 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         m_networkManager = networkManagerCreator()->makeNetworkManager();
     }
 
+    if (!m_lastCheckResult.ret) {
+        return RetVal<Progress>::make_ret(m_lastCheckResult.ret);
+    }
+
     const ReleaseInfo info = m_lastCheckResult.val;
+    if (info.fileName.empty()) {
+        return RetVal<Progress>::make_ret(make_ret(Err::NoUpdate));
+    }
+
     const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
 
     const path_t finalPath = packagesDir() + "/" + info.fileName;
@@ -260,8 +268,11 @@ RetVal<Progress> AppUpdateService::downloadRelease()
 
     auto device = std::make_shared<DownloadFileDevice>(partialPath, mode);
 
+    m_downloadInProgress = true;
+
     RetVal<Progress> downloadProgress = m_networkManager->get(fileUrl, device, headers);
     if (!downloadProgress.ret) {
+        m_downloadInProgress = false;
         return RetVal<Progress>::make_ret(downloadProgress.ret);
     }
 
@@ -308,7 +319,6 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         m_updateProgress.finish(ProgressResult::make_ok(Val(finalPath)));
     }, Asyncable::Mode::SetReplace);
 
-    m_downloadInProgress = true;
     return RetVal<Progress>::make_ok(m_updateProgress);
 }
 

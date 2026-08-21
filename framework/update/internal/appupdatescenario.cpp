@@ -195,8 +195,10 @@ Promise<Ret> AppUpdateScenario::prepareAndInstall(const io::path_t& packagePath)
     //! back to the manual flow; the confirmation dialog is shown once
     //! everything is staged, making the restart itself instant.
     return make_promise<Ret>([this, packagePath](auto resolve, auto) {
-        Concurrent::run([this, packagePath, resolve]() {
-            const RetVal<io::path_t> prepared = service()->prepareUpdate(packagePath);
+        auto service = this->service();
+
+        Concurrent::run([this, service, packagePath, resolve]() {
+            const RetVal<io::path_t> prepared = service->prepareUpdate(packagePath);
             async::Async::call(this, [this, packagePath, prepared, resolve]() {
                 auto complete = [resolve](const Ret& ret) { (void)resolve(ret); };
                 if (!prepared.ret) {
@@ -306,10 +308,6 @@ void AppUpdateScenario::downloadUpdateInBackground()
 
     m_bgDownloadInProgress = true;
 
-    progress.val.progressChanged().onReceive(this, [](int64_t current, int64_t total, const std::string& msg) {
-        LOGE() << "progress: " << current << " / " << total << " " << msg;
-    });
-
     progress.val.finished().onReceive(this, [this](const ProgressResult& res) {
         m_bgDownloadInProgress = false;
 
@@ -321,7 +319,7 @@ void AppUpdateScenario::downloadUpdateInBackground()
         m_readyPackagePath = res.val.toString();
         m_readyUpdateVersion = service()->lastCheckResult().val.version;
         m_hasReadyUpdateChanged.notify();
-    });
+    }, Asyncable::Mode::SetReplace);
 }
 
 bool AppUpdateScenario::hasReadyUpdate() const
