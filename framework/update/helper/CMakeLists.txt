@@ -34,6 +34,13 @@ if (OS_IS_WIN)
         updateui_win.h
         ../internal/platform/win/winupdateshared.h
     )
+
+    if (MUSE_APP_ICON_WIN)
+        file(TO_NATIVE_PATH "${MUSE_APP_ICON_WIN}" UPDATE_HELPER_ICON)
+        string(REPLACE "\\" "\\\\" UPDATE_HELPER_ICON "${UPDATE_HELPER_ICON}")
+        configure_file(appicon.rc.in ${CMAKE_CURRENT_BINARY_DIR}/appicon.rc @ONLY)
+        list(APPEND UPDATE_HELPER_SRC ${CMAKE_CURRENT_BINARY_DIR}/appicon.rc)
+    endif()
 else()
     list(APPEND UPDATE_HELPER_SRC
         swap.cpp

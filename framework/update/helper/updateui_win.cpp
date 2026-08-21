@@ -580,6 +580,9 @@ int run(const std::wstring& pipeHandleValue)
 
     makeProcessDpiAware();
 
+    //! Matches the id in appicon.rc.in.
+    constexpr WORD APP_ICON_ID = 1;
+
     const HINSTANCE instance = ::GetModuleHandleW(nullptr);
 
     WNDCLASSEXW windowClass = { };
@@ -587,6 +590,9 @@ int run(const std::wstring& pipeHandleValue)
     windowClass.lpfnWndProc = windowProc;
     windowClass.hInstance = instance;
     windowClass.hCursor = ::LoadCursorW(nullptr, IDC_ARROW);
+    //! NOTE: Null unless the build embedded one; the default is used then.
+    windowClass.hIcon = ::LoadIconW(instance, MAKEINTRESOURCEW(APP_ICON_ID));
+    windowClass.hIconSm = windowClass.hIcon;
     windowClass.lpszClassName = WINDOW_CLASS_NAME;
 
     if (::RegisterClassExW(&windowClass) == 0) {

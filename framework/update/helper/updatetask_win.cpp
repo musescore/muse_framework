@@ -355,8 +355,17 @@ bool startProcessDetached(const std::wstring& application, const std::wstring& c
 
     PROCESS_INFORMATION processInfo = { };
 
-    if (!::CreateProcessW(application.c_str(), mutableCommandLine.data(), nullptr, nullptr, FALSE,
-                          DETACHED_PROCESS, nullptr, nullptr, &startupInfo, &processInfo)) {
+    //! NOTE: Leave the Task Scheduler's job object - this copy has to outlive
+    //! the task. Not every job permits it, hence the retry.
+    BOOL created = ::CreateProcessW(application.c_str(), mutableCommandLine.data(), nullptr, nullptr, FALSE,
+                                    DETACHED_PROCESS | CREATE_BREAKAWAY_FROM_JOB, nullptr, nullptr,
+                                    &startupInfo, &processInfo);
+    if (!created) {
+        created = ::CreateProcessW(application.c_str(), mutableCommandLine.data(), nullptr, nullptr, FALSE,
+                                   DETACHED_PROCESS, nullptr, nullptr, &startupInfo, &processInfo);
+    }
+
+    if (!created) {
         return false;
     }
 
@@ -391,16 +400,20 @@ bool startInUserSession(const std::wstring& application, const std::wstring& arg
                         bool inheritHandles = false, HANDLE* process = nullptr)
 {
     if (sessionId == 0xFFFFFFFF) {
+        logLine(L"start-in-session: no session to start " + application + L" in");
         return false;
     }
 
     HANDLE userToken = nullptr;
     if (!::WTSQueryUserToken(sessionId, &userToken)) {
+        logLine(L"start-in-session: WTSQueryUserToken failed for session " + std::to_wstring(sessionId)
+                + L", err=" + std::to_wstring(::GetLastError()));
         return false;
     }
 
     HANDLE primaryToken = nullptr;
     if (!::DuplicateTokenEx(userToken, MAXIMUM_ALLOWED, nullptr, SecurityImpersonation, TokenPrimary, &primaryToken)) {
+        logLine(L"start-in-session: DuplicateTokenEx failed, err=" + std::to_wstring(::GetLastError()));
         ::CloseHandle(userToken);
         return false;
     }
@@ -424,12 +437,28 @@ bool startInUserSession(const std::wstring& application, const std::wstring& arg
 
     PROCESS_INFORMATION processInfo = { };
 
-    const BOOL ok = ::CreateProcessAsUserW(primaryToken, application.c_str(), mutableCommandLine.data(),
-                                           nullptr, nullptr, inheritHandles ? TRUE : FALSE,
-                                           CREATE_UNICODE_ENVIRONMENT | NORMAL_PRIORITY_CLASS,
-                                           hasEnvironment ? environment : nullptr,
-                                           workingDir.empty() ? nullptr : workingDir.c_str(),
-                                           &startupInfo, &processInfo);
+    //! NOTE: CREATE_NO_WINDOW - the helper is a console program, and this is
+    //! the only place it is started on the user's desktop.
+    //! CREATE_BREAKAWAY_FROM_JOB - the in-process MSI engine leaves us in a job
+    //! object no process can be created from, which fails the relaunch with
+    //! ERROR_ACCESS_DENIED.
+    const DWORD flags = CREATE_UNICODE_ENVIRONMENT | NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW;
+
+    auto create = [&](DWORD extraFlags) {
+        return ::CreateProcessAsUserW(primaryToken, application.c_str(), mutableCommandLine.data(),
+                                      nullptr, nullptr, inheritHandles ? TRUE : FALSE, flags | extraFlags,
+                                      hasEnvironment ? environment : nullptr,
+                                      workingDir.empty() ? nullptr : workingDir.c_str(),
+                                      &startupInfo, &processInfo);
+    };
+
+    BOOL ok = create(CREATE_BREAKAWAY_FROM_JOB);
+    if (!ok) {
+        ok = create(0);
+    }
+
+    const DWORD createError = ok ? 0 : ::GetLastError();
+
     if (ok) {
         ::CloseHandle(processInfo.hThread);
 
@@ -438,6 +467,9 @@ bool startInUserSession(const std::wstring& application, const std::wstring& arg
         } else {
             ::CloseHandle(processInfo.hProcess);
         }
+    } else {
+        logLine(L"start-in-session: CreateProcessAsUser failed for " + application
+                + L" in session " + std::to_wstring(sessionId) + L", err=" + std::to_wstring(createError));
     }
 
     if (hasEnvironment) {
@@ -1155,6 +1187,7 @@ int applyRun(const std::wstring& appId)
     //! NOTE: Asked while the application is still running, and so still has a
     //! session to be asked about.
     const DWORD sessionId = userSessionId(request.pid);
+    logLine(L"apply-run: user session " + std::to_wstring(sessionId));
 
     // 1. Tell the user what is going on. Everything up to the point where the
     //    engine starts costing the package takes an unknown amount of time, so
