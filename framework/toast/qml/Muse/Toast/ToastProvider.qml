@@ -37,6 +37,8 @@ StyledListView {
 
     spacing: 20
 
+    clip: false
+
     x: parent.width - width - 20
     y: parent.height - height - 50
 
