@@ -350,7 +350,7 @@ bool ReverbProcessor::shouldProcessDuringSilence() const
 
 void ReverbProcessor::process(float* buffer, samples_t sampleCount, samples_t)
 {
-    if (m_processor._blockSize != static_cast<int>(sampleCount)) {
+    if (static_cast<int>(sampleCount) > m_processor._blockSize) {
         setFormat(m_processor._audioChannelsCount, m_processor._sampleRate, sampleCount);
     }
 
