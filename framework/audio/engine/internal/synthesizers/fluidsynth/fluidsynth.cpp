@@ -448,13 +448,15 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
 {
     if (!sequence.empty()) {
         m_tuning.reset();
-    }
 
-    for (const FluidSequencer::EventType& event : sequence) {
-        handleEvent(std::get<midi::Event>(event));
-    }
+        for (const FluidSequencer::EventType& event : sequence) {
+            handleEvent(std::get<midi::Event>(event));
+        }
 
-    fluid_synth_tune_notes(m_fluid->synth, 0, 0, m_tuning.size(), m_tuning.keys.data(), m_tuning.pitches.data(), true);
+        if (!m_tuning.isEmpty()) {
+            fluid_synth_tune_notes(m_fluid->synth, 0, 0, m_tuning.size(), m_tuning.keys.data(), m_tuning.pitches.data(), true);
+        }
+    }
 
     if (samples == 0) {
         return true;
