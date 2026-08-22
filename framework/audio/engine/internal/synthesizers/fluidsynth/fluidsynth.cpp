@@ -418,7 +418,7 @@ samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
     }
 
     const msecs_t nextMsecs = samplesToMsecs(samplesPerChannel, m_outputSpec.sampleRate);
-    const FluidSequencer::EventSequenceMap sequences = m_sequencer.movePlaybackForward(nextMsecs);
+    const FluidSequencer::EventSequenceMap& sequences = m_sequencer.movePlaybackForward(nextMsecs);
     samples_t sampleOffset = 0;
 
     for (auto it = sequences.cbegin(); it != sequences.cend(); ++it) {
