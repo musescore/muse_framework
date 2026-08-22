@@ -31,11 +31,14 @@ using namespace muse::audio::engine;
 using namespace muse::audioplugins;
 using namespace muse::midiremote;
 
-static size_t noteEventKey(int pitch, int channel)
+static int notePitchIndex(int pitch, int channel)
 {
-    std::size_t h1 = std::hash<int> {}(pitch);
-    std::size_t h2 = std::hash<int> {}(channel);
-    return h1 ^ (h2 << 1);
+    // pitch doubles as the key into m_pitchToActiveNoteIndex; channel is always 0 today
+    IF_ASSERT_FAILED(channel == 0 && pitch >= 0 && pitch < 128) {
+        return -1;
+    }
+
+    return pitch;
 }
 
 static std::optional<TransportEvent> mmcToTransportEvent(const IMMCDecoderPtr& decoder, const MMCMessage& msg)
@@ -172,16 +175,35 @@ void VstAudioClient::setVolumeGain(const muse::audio::gain_t newVolumeGain)
     m_volumeGain = newVolumeGain;
 }
 
+bool VstAudioClient::isNotePlaying(int pitch) const
+{
+    int index = m_pitchToActiveNoteIndex[pitch];
+    return index < static_cast<int>(m_playingNotesCount) && m_activeNotes[index].noteOn.pitch == pitch;
+}
+
 bool VstAudioClient::handleEvent(const VstEvent& event)
 {
     ensureActivity();
 
     if (event.type == VstEvent::kNoteOnEvent) {
-        size_t key = noteEventKey(event.noteOn.pitch, event.noteOn.channel);
-        m_playingNotes.insert_or_assign(key, event);
+        int pitch = notePitchIndex(event.noteOn.pitch, event.noteOn.channel);
+        if (pitch >= 0) {
+            if (isNotePlaying(pitch)) {
+                m_activeNotes[m_pitchToActiveNoteIndex[pitch]] = { event.noteOn, event.busIndex, event.flags };
+            } else {
+                int index = static_cast<int>(m_playingNotesCount++);
+                m_activeNotes[index] = { event.noteOn, event.busIndex, event.flags };
+                m_pitchToActiveNoteIndex[pitch] = index;
+            }
+        }
     } else if (event.type == VstEvent::kNoteOffEvent) {
-        size_t key = noteEventKey(event.noteOff.pitch, event.noteOff.channel);
-        m_playingNotes.erase(key);
+        int pitch = notePitchIndex(event.noteOff.pitch, event.noteOff.channel);
+        if (pitch >= 0 && isNotePlaying(pitch)) {
+            int index = m_pitchToActiveNoteIndex[pitch];
+            int last = static_cast<int>(--m_playingNotesCount);
+            m_activeNotes[index] = m_activeNotes[last];
+            m_pitchToActiveNoteIndex[m_activeNotes[index].noteOn.pitch] = index;
+        }
     }
 
     if (m_inputEvents.addEvent(const_cast<VstEvent&>(event)) == Steinberg::kResultTrue) {
@@ -203,7 +225,7 @@ bool VstAudioClient::handleParamChange(const ParamChangeEvent& param)
 
 void VstAudioClient::flushSound()
 {
-    if (m_playingNotes.empty() && m_playingParams.empty()) {
+    if (m_playingNotesCount == 0 && m_playingParams.empty()) {
         return;
     }
 
@@ -212,23 +234,24 @@ void VstAudioClient::flushSound()
     m_inputEvents.clear();
     m_inputParamChanges.clearQueue();
 
-    for (const auto& pair : m_playingNotes) {
-        const VstEvent& noteOn = pair.second;
+    for (size_t i = 0; i < m_playingNotesCount; ++i) {
+        const ActiveNote& active = m_activeNotes[i];
 
         VstEvent noteOff;
         noteOff.type = VstEvent::kNoteOffEvent;
         noteOff.ppqPosition = 0;
         noteOff.sampleOffset = 0;
-        noteOff.busIndex = noteOn.busIndex;
-        noteOff.flags = noteOn.flags;
-        noteOff.noteOff.noteId = noteOn.noteOn.noteId;
-        noteOff.noteOff.channel = noteOn.noteOn.channel;
-        noteOff.noteOff.pitch = noteOn.noteOn.pitch;
-        noteOff.noteOff.tuning = noteOn.noteOn.tuning;
-        noteOff.noteOff.velocity = noteOn.noteOn.velocity;
+        noteOff.busIndex = active.busIndex;
+        noteOff.flags = active.flags;
+        noteOff.noteOff.noteId = active.noteOn.noteId;
+        noteOff.noteOff.channel = active.noteOn.channel;
+        noteOff.noteOff.pitch = active.noteOn.pitch;
+        noteOff.noteOff.tuning = active.noteOn.tuning;
+        noteOff.noteOff.velocity = active.noteOn.velocity;
 
         m_inputEvents.addEvent(noteOff);
     }
+    m_playingNotesCount = 0;
 
     for (PluginParamId id : m_playingParams) {
         auto infoIt = m_pluginParamInfoMap.find(id);
@@ -243,7 +266,6 @@ void VstAudioClient::flushSound()
         addParamChange(paramOff);
     }
 
-    m_playingNotes.clear();
     m_playingParams.clear();
 }
 
