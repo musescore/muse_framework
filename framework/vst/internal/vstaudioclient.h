@@ -88,6 +88,7 @@ private:
     VstEventList m_inputEvents;
     VstParameterChanges m_inputParamChanges;
     VstEventList m_outputEvents;
+    audio::TransportEvents m_outputTransportEvents;
     VstProcessData m_processData;
     VstProcessContext m_processContext;
     VstProcessMode m_processMode = VstProcessMode::kRealtime;

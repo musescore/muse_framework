@@ -83,6 +83,7 @@ void VstAudioClient::init(PluginType type, IVstPluginInstancePtr instance)
 
     if (mmcDecoderFactory()) {
         m_mmcDecoder = mmcDecoderFactory()->makeDecoder();
+        m_outputTransportEvents.reserve(10); // avoid growing on the audio thread
     }
 
     transportEventsDispatcher(); // Force resolution outside audio callback
@@ -514,7 +515,7 @@ void VstAudioClient::processOutputEvents()
         return;
     }
 
-    TransportEvents events;
+    m_outputTransportEvents.clear();
 
     for (int32_t i = 0; i < count; ++i) {
         VstEvent vstEvent;
@@ -534,14 +535,14 @@ void VstAudioClient::processOutputEvents()
 
         std::optional<TransportEvent> event = mmcToTransportEvent(m_mmcDecoder, msg.value());
         if (event.has_value()) {
-            events.push_back(event.value());
+            m_outputTransportEvents.push_back(event.value());
         }
     }
 
     m_outputEvents.clear();
 
-    if (!events.empty()) {
-        transportEventsDispatcher()->dispatch(events);
+    if (!m_outputTransportEvents.empty()) {
+        transportEventsDispatcher()->dispatch(m_outputTransportEvents);
     }
 }
 
