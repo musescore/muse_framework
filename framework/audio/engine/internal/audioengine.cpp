@@ -68,6 +68,10 @@ Ret AudioEngine::init(const OutputSpec& outputSpec)
     m_mixer = std::make_shared<MixerNode>();
     m_mixer->setOutputSpec(outputSpec);
 
+    m_outputNode = std::make_shared<SanitizerNode>();
+    m_mixer->connect(m_outputNode);
+    m_outputNode->setOutputSpec(outputSpec);
+
     m_inited = true;
 
     return make_ret(Ret::Code::Ok);
@@ -154,6 +158,10 @@ void AudioEngine::setOutputSpec(const OutputSpec& outputSpec)
         m_mixer->setOutputSpec(outputSpec);
     }
 
+    if (m_outputNode) {
+        m_outputNode->setOutputSpec(outputSpec);
+    }
+
     m_outputSpecChanged.send(outputSpec);
 }
 
@@ -222,14 +230,14 @@ samples_t AudioEngine::process(float* buffer, samples_t samplesPerChannel)
     }
     case OperationType::NoOperation: {
         // normal playing
-        m_mixer->process(buffer, samplesPerChannel);
+        m_outputNode->process(buffer, samplesPerChannel);
         return samplesPerChannel;
     }
     case OperationType::QuickOperation: {
         // wait
         LOGD() << "wait end of quick operation";
         std::scoped_lock<std::mutex> lock(m_quickOperationWaitMutex);
-        m_mixer->process(buffer, samplesPerChannel);
+        m_outputNode->process(buffer, samplesPerChannel);
         return samplesPerChannel;
     }
     case OperationType::LongOperation: {
