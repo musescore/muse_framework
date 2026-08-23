@@ -26,6 +26,7 @@
 #include "audio/common/audioutils.h"
 
 #include "nodes/trackchain.h"
+#include "nodes/sanitizernode.h"
 
 #include "contextplayer.h"
 
@@ -76,7 +77,11 @@ Ret AudioContext::init()
 
     m_masterTrack.chain->connect(m_playheadNode);
 
-    LOGD() << "Master track chain: " << m_playheadNode->dump();
+    auto sanitizer = std::make_shared<SanitizerNode>();
+    m_playheadNode->connect(sanitizer);
+    m_outputNode = sanitizer;
+
+    LOGD() << "Master track chain: " << m_outputNode->dump();
 
     m_player->isActiveChanged().onReceive(this, [this](bool isActive) {
         setMode(isActive ? ProcessMode::Playing : ProcessMode::Idle);
@@ -116,7 +121,7 @@ void AudioContext::onModeChanged(const ProcessMode mode)
     }
 
     //! NOTE will be set on all nodes in the chain
-    m_playheadNode->setMode(mode);
+    m_outputNode->setMode(mode);
 }
 
 void AudioContext::onOutputSpecChanged(const OutputSpec& outputSpec)
@@ -124,7 +129,7 @@ void AudioContext::onOutputSpecChanged(const OutputSpec& outputSpec)
     ONLY_AUDIO_ENGINE_THREAD;
 
     //! NOTE will be set on all nodes in the chain
-    m_playheadNode->setOutputSpec(outputSpec);
+    m_outputNode->setOutputSpec(outputSpec);
 
     TimePosition currentPosition = m_player->currentPosition();
     if (currentPosition.isValid()) {
@@ -683,7 +688,7 @@ async::Promise<Ret> AudioContext::prepareToPlay()
 
 void AudioContext::play(const secs_t delay)
 {
-    LOGD() << "\nAudioContext chain: " << m_playheadNode->dump();
+    LOGD() << "\nAudioContext chain: " << m_outputNode->dump();
 
     ONLY_AUDIO_ENGINE_THREAD;
     m_player->play(delay);
@@ -951,5 +956,5 @@ SaveSoundTrackProgress AudioContext::saveSoundTrackProgressChanged() const
 void AudioContext::doSelfProcess(float* buffer, samples_t samplesPerChannel)
 {
     ONLY_AUDIO_PROC_THREAD;
-    m_playheadNode->process(buffer, samplesPerChannel);
+    m_outputNode->process(buffer, samplesPerChannel);
 }

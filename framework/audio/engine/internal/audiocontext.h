@@ -179,6 +179,7 @@ private:
 
     std::shared_ptr<ContextPlayer> m_player;
     PlayheadNodePtr m_playheadNode;
+    IAudioNodePtr m_outputNode;
     std::shared_ptr<Mixer> m_mixer;
 
     Track m_masterTrack;

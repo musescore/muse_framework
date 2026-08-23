@@ -103,6 +103,8 @@ else()
         internal/nodes/chainnode.h
         internal/nodes/trackchain.cpp
         internal/nodes/trackchain.h
+        internal/nodes/sanitizernode.cpp
+        internal/nodes/sanitizernode.h
 
         # DSP
         internal/dsp/envelopefilterconfig.h
