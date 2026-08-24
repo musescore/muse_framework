@@ -124,6 +124,8 @@ void GuiApplication::startupScenario(const muse::modularity::ContextPtr& ctxId)
             QMetaObject::invokeMethod(qApp, [this, ctxId]() {
                 doStartupScenario(ctxId);
             }, Qt::QueuedConnection);
+        } else {
+            closeSplash();
         }
     }, Qt::QueuedConnection);
 }
