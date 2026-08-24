@@ -47,6 +47,10 @@ public:
     virtual double ascent(const Font& f) const = 0;
     virtual double descent(const Font& f) const = 0;
 
+    virtual double underlinePos(const Font& f) const = 0;
+    virtual double lineWidth(const Font& f) const = 0;
+    virtual double strikeOutPos(const Font& f) const = 0;
+
     virtual bool inFont(const Font& f, char32_t ucs4) const = 0;
 
     // Text
