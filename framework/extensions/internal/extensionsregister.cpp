@@ -116,7 +116,6 @@ void ExtensionsRegister::setEnabled(const ExtensionUri& uri, bool enabled)
     m_configs[uri].enabled = enabled;
     configuration()->setExtensionConfigs(m_configs);
 
-    LOGDA() << "enabled changed: " << uri.toString() << " to " << enabled;
     m_enabledChanged.send(uri);
 }
 

@@ -22,6 +22,8 @@
 
 #include "extensionscommandsstate.h"
 
+#include "global/async/async.h"
+
 #include "../extensionscommands.h"
 
 #include "log.h"
@@ -47,6 +49,12 @@ void ExtensionsCommandsState::init()
             updateCommandStates();
         });
     }
+
+    extensionsRegister()->manifestListChanged().onNotify(this, [this]() {
+        async::Async::call(this, [this]() {
+            updateCommandStates();
+        });
+    });
 
     updateCommandStates();
 }
