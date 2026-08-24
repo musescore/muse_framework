@@ -65,6 +65,7 @@ public:
     virtual bool noGui() const = 0;
 
     virtual void showSplash() {}
+    virtual void closeSplash() {}
     virtual void setup() = 0;
     virtual void finish() = 0;
     virtual void restart() = 0;
