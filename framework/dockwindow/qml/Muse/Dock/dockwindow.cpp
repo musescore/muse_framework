@@ -323,6 +323,11 @@ DockPageView* DockWindow::currentPage() const
     return m_currentPage;
 }
 
+Notification DockWindow::currentPageChanged() const
+{
+    return m_currentPageChanged;
+}
+
 QQuickItem& DockWindow::asItem() const
 {
     return *m_mainWindow;
@@ -579,6 +584,8 @@ bool DockWindow::doLoadPage(const QString& uri, const QVariantMap& params)
     newPage->setParams(params);
 
     m_currentPage = newPage;
+
+    m_currentPageChanged.notify();
 
     connect(m_currentPage, &DockPageView::layoutRequested,
             this, &DockWindow::forceLayout, Qt::UniqueConnection);
