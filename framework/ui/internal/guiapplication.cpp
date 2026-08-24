@@ -132,6 +132,8 @@ void GuiApplication::startupScenario(const muse::modularity::ContextPtr& ctxId)
                     contextDelayedInit(ctxId);
                 });
             }, Qt::QueuedConnection);
+        } else {
+            closeSplash();
         }
     }, Qt::QueuedConnection);
 }
