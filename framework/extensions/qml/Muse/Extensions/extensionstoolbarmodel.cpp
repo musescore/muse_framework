@@ -21,6 +21,7 @@
  */
 #include "extensionstoolbarmodel.h"
 
+#include "extensionstypes.h"
 #include "uicomponents/qml/Muse/UiComponents/toolbaritem.h"
 
 using namespace muse::extensions;
@@ -28,23 +29,32 @@ using namespace muse::uicomponents;
 
 void ExtensionsToolBarModel::load()
 {
-    extensionsProvider()->manifestListChanged().onNotify(this, [this]() {
+    extensionsRegister()->manifestListChanged().onNotify(this, [this]() {
         load();
     }, async::Asyncable::Mode::SetReplace);
 
-    extensionsProvider()->manifestChanged().onReceive(this, [this](const Manifest&) {
+    extensionsRegister()->enabledChanged().onReceive(this, [this](const Uri&) {
         load();
     }, async::Asyncable::Mode::SetReplace);
 
     ToolBarItemList items;
-    ManifestList enabledExtensions = extensionsProvider()->manifestList(Filter::Enabled);
-    for (const Manifest& m : enabledExtensions) {
+    ManifestList manifests = extensionsRegister()->manifestList(Filter::Enabled);
+    for (const Manifest& m : manifests) {
         for (const muse::extensions::Action& a : m.actions) {
             if (!a.showOnToolbar) {
                 continue;
             }
 
-            items << makeItem(makeActionCode(m.uri, a.code));
+            ToolBarItem* item = new ToolBarItem(this);
+            item->setTitle(!a.title.empty()
+                           ? TranslatableString::untranslatable(a.title)
+                           : TranslatableString::untranslatable(m.title));
+
+            ui::UiAction uiaction;
+            uiaction.code = makeCommandQuery(m.uri, a.code).toString();
+            item->setAction(uiaction);
+
+            items << item;
         }
     }
 

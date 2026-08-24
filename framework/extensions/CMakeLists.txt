@@ -28,17 +28,21 @@ target_sources(muse_extensions PRIVATE
     extensionbundle.h
     extensionstypes.h
     extensionserrors.h
+    extensionscommands.h
     iextensionsprovider.h
     iextensionsession.h
     iextensionsconfiguration.h
     iextensionsuiengine.h
     iextensioninstaller.h
-    iextensionsexecpointsregister.h
+    iextensionsregister.h
+    iextensioncontextresolver.h
 
     api/extapi.cpp
     api/extapi.h
     ${API_V1_SRC}
 
+    internal/extensionsregister.cpp
+    internal/extensionsregister.h
     internal/extensionsprovider.cpp
     internal/extensionsprovider.h
     internal/extensionbundle.cpp
@@ -58,10 +62,12 @@ target_sources(muse_extensions PRIVATE
     internal/extensionsuiactions.h
     internal/extensionsactioncontroller.cpp
     internal/extensionsactioncontroller.h
+    internal/extensionscommandsregister.cpp
+    internal/extensionscommandsregister.h
+    internal/extensionscommandsstate.cpp
+    internal/extensionscommandsstate.h
     internal/extensioninstaller.cpp
     internal/extensioninstaller.h
-    internal/extensionsexecpointsregister.cpp
-    internal/extensionsexecpointsregister.h
 
     internal/legacy/extpluginsloader.cpp
     internal/legacy/extpluginsloader.h

@@ -21,12 +21,7 @@
  */
 #include "extensionsprovider.h"
 
-#include "global/containers.h"
-#include "global/async/async.h"
 #include "global/io/path.h"
-
-#include "extensionsloader.h"
-#include "legacy/extpluginsloader.h"
 
 #include "extensionsession.h"
 #include "../extensionbundle.h"
@@ -36,95 +31,52 @@
 
 #include "log.h"
 
+using namespace muse;
 using namespace muse::extensions;
-
-KnownCategories ExtensionsProvider::knownCategories() const
-{
-    static KnownCategories categories {
-        { "composing-arranging-tools", TranslatableString("extensions", "Composing/arranging tools") },
-        { "color-notes", TranslatableString("extensions", "Color notes") },
-        { "playback", TranslatableString("extensions", "Playback") },
-        { "lyrics", TranslatableString("extensions", "Lyrics") }
-    };
-
-    return categories;
-}
 
 void ExtensionsProvider::reloadExtensions()
 {
-    ExtensionsLoader loader;
-    m_manifests = loader.loadManifestList(configuration()->defaultPath(),
-                                          configuration()->userPath());
-
-    legacy::ExtPluginsLoader pluginsLoader;
-    ManifestList plugins = pluginsLoader.loadManifestList(configuration()->pluginsDefaultPath(),
-                                                          configuration()->pluginsUserPath());
-
-    muse::join(m_manifests, plugins);
-
-    std::map<Uri, Manifest::Config> configs = configuration()->manifestConfigs();
-    for (Manifest& m : m_manifests) {
-        m.config = muse::value(configs, m.uri);
-    }
-
-    m_manifestListChanged.notify();
+    extensionsRegister()->reload();
 }
 
 ManifestList ExtensionsProvider::manifestList(Filter filter) const
 {
-    if (filter == Filter::Enabled) {
-        ManifestList list;
-        for (const Manifest& m : m_manifests) {
-            if (m.enabled()) {
-                list.push_back(m);
-            }
-        }
-        return list;
-    }
-
-    return m_manifests;
+    return extensionsRegister()->manifestList(filter);
 }
 
 muse::async::Notification ExtensionsProvider::manifestListChanged() const
 {
-    return m_manifestListChanged;
+    return extensionsRegister()->manifestListChanged();
 }
 
-bool ExtensionsProvider::exists(const Uri& uri) const
+bool ExtensionsProvider::exists(const ExtensionUri& uri) const
 {
-    auto it = std::find_if(m_manifests.begin(), m_manifests.end(), [uri](const Manifest& m) {
-        return m.uri == uri;
-    });
-
-    if (it != m_manifests.end()) {
-        return true;
-    }
-
-    return false;
+    return extensionsRegister()->exists(uri);
 }
 
-const Manifest& ExtensionsProvider::manifest(const Uri& uri) const
+const Manifest& ExtensionsProvider::manifest(const ExtensionUri& uri) const
 {
-    auto it = std::find_if(m_manifests.begin(), m_manifests.end(), [uri](const Manifest& m) {
-        return m.uri == uri;
-    });
-
-    if (it != m_manifests.end()) {
-        return *it;
-    }
-
-    static Manifest _dummy;
-    return _dummy;
+    return extensionsRegister()->manifest(uri);
 }
 
-muse::async::Channel<Manifest> ExtensionsProvider::manifestChanged() const
+void ExtensionsProvider::setEnabled(const ExtensionUri& uri, bool enabled)
 {
-    return m_manifestChanged;
+    extensionsRegister()->setEnabled(uri, enabled);
 }
 
-Action ExtensionsProvider::action(const UriQuery& q) const
+bool ExtensionsProvider::isEnabled(const ExtensionUri& uri) const
 {
-    const Manifest& m = manifest(q.uri());
+    return extensionsRegister()->isEnabled(uri);
+}
+
+async::Channel<ExtensionUri> ExtensionsProvider::enabledChanged() const
+{
+    return extensionsRegister()->enabledChanged();
+}
+
+Action ExtensionsProvider::action(const ExtensionQuery& query) const
+{
+    const Manifest& m = manifest(query.uri());
     IF_ASSERT_FAILED(m.actions.size() > 0) {
         return Action();
     }
@@ -133,30 +85,30 @@ Action ExtensionsProvider::action(const UriQuery& q) const
         return m.actions.at(0);
     }
 
-    std::string code = q.param("action").toString();
+    std::string code = query.param("action").toString();
     for (const Action& a : m.actions) {
         if (a.code == code) {
             return a;
         }
     }
 
-    LOGE() << "not found action: " << code << ", uri: " << q.toString();
+    LOGE() << "not found action: " << code << ", query: " << query;
     return Action();
 }
 
-muse::Ret ExtensionsProvider::perform(const UriQuery& uri)
+muse::Ret ExtensionsProvider::perform(const ExtensionQuery& query)
 {
-    Action a = action(uri);
+    Action a = action(query);
     switch (a.type) {
     case Type::Form: {
-        UriQuery q = uri;
+        ExtensionQuery q = query;
         if (!q.contains("modal")) {
             q.addParam("modal", Val(a.modal));
         }
         return interactive()->openSync(q).ret;
     } break;
     case Type::Macros:
-        return run(uri);
+        return run(query);
     default:
         break;
     }
@@ -164,27 +116,27 @@ muse::Ret ExtensionsProvider::perform(const UriQuery& uri)
     return make_ret(Ret::Code::UnknownError);
 }
 
-muse::Ret ExtensionsProvider::run(const UriQuery& uri)
+muse::Ret ExtensionsProvider::run(const ExtensionQuery& query)
 {
-    const Action extensionAction = action(uri);
-    const Manifest& extensionManifest = manifest(uri.uri());
+    const Action extensionAction = action(query);
+    const Manifest& extensionManifest = manifest(query.uri());
     return run(extensionAction, extensionManifest);
 }
 
-std::unique_ptr<IExtensionSession> ExtensionsProvider::newSession(const Uri& uri, const io::path_t& relativeScriptPath) const
+std::unique_ptr<IExtensionSession> ExtensionsProvider::newSession(const ExtensionUri& uri, const io::path_t& relativeScriptPath) const
 {
-    const Manifest& extensionManifest = manifest(uri);
-    if (!extensionManifest.isValid()) {
-        LOGE() << "extension manifest not found: " << uri;
+    const Manifest& manifest = this->manifest(uri);
+    if (!manifest.isValid()) {
+        LOGE() << "manifest not found: " << uri;
         return {};
     }
-    const auto scriptPath = resolveBundleFile(io::dirpath(extensionManifest.path), relativeScriptPath);
+    const auto scriptPath = resolveBundleFile(io::dirpath(manifest.path), relativeScriptPath);
     if (!scriptPath) {
-        LOGE() << "extension script not found in bundle: " << relativeScriptPath << ", manifest: " << extensionManifest.path;
+        LOGE() << "extension script not found in bundle: " << relativeScriptPath << ", manifest: " << manifest.path;
         return {};
     }
 
-    return newSession(extensionManifest, *scriptPath);
+    return newSession(manifest, *scriptPath);
 }
 
 muse::Ret ExtensionsProvider::run(const Action& a, const Manifest& manifest)
@@ -209,7 +161,7 @@ muse::Ret ExtensionsProvider::run(const Action& a, const Manifest& manifest)
             LOGE() << "failed evaluate extension script: " << a.path << ", err: " << ret.toString();
             return make_ret(Err::ExtLoadError);
         }
-        ret = session->call(a.func);
+        ret = session->call(QString::fromStdString(a.func));
         if (!ret) {
             LOGE() << "failed call extension function: " << a.func << ", script: " << a.path << ", err: " << ret.toString();
             return make_ret(Err::ExtBadFormat);
@@ -222,64 +174,4 @@ muse::Ret ExtensionsProvider::run(const Action& a, const Manifest& manifest)
 std::unique_ptr<IExtensionSession> ExtensionsProvider::newSession(const Manifest& extensionManifest, const io::path_t& scriptPath) const
 {
     return std::make_unique<ExtensionSession>(iocContext(), extensionManifest, scriptPath);
-}
-
-muse::Ret ExtensionsProvider::setExecPoint(const Uri& uri, const ExecPointName& name)
-{
-    bool ok = false;
-    std::map<Uri, Manifest::Config> allconfigs;
-    for (Manifest& m : m_manifests) {
-        if (m.uri == uri) {
-            for (const Action& a : m.actions) {
-                Action::Config& ac = m.config.actions[a.code];
-                ac.execPoint = name;
-            }
-
-            m_manifestChanged.send(m);
-            ok = true;
-        }
-
-        allconfigs[m.uri] = m.config;
-    }
-
-    Ret ret;
-    if (ok) {
-        ret = configuration()->setManifestConfigs(allconfigs);
-    } else {
-        ret = make_ret(Ret::Code::UnknownError);
-    }
-
-    return ret;
-}
-
-std::vector<ExecPoint> ExtensionsProvider::execPoints(const Uri& uri) const
-{
-    UNUSED(uri);
-    return execPointsRegister()->allPoints();
-}
-
-muse::Ret ExtensionsProvider::performPoint(const ExecPointName& name)
-{
-    Ret ret = make_ok();
-    for (const Manifest& m : m_manifests) {
-        for (const Action& a : m.actions) {
-            if (m.config.aconfig(a.code).execPoint != name) {
-                continue;
-            }
-
-            Ret r = perform(makeActionQuery(m.uri, a.code));
-            if (ret) {
-                ret = r;
-            }
-        }
-    }
-
-    return ret;
-}
-
-void ExtensionsProvider::performPointAsync(const ExecPointName& name)
-{
-    async::Async::call(this, [this, name]() {
-        performPoint(name);
-    });
 }

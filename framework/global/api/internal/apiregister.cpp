@@ -125,6 +125,7 @@ JsApiEngine* ApiRegister::makeApiEngine(QJSEngine* jsengine)
 
 void ApiRegister::regApiSingltone(const std::string& module, const std::string& api, ApiObject* o)
 {
+    QJSEngine::setObjectOwnership(o, QJSEngine::CppOwnership);
     regApiCreator(module, api, new SingletonApiCreator(o));
 }
 

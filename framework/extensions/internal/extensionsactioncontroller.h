@@ -23,22 +23,23 @@
 #pragma once
 
 #include "async/asyncable.h"
-#include "actions/actionable.h"
+#include "rcommand/commandable.h"
 
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommanddispatcher.h"
 #include "extensions/iextensionsprovider.h"
 #include "interactive/iinteractive.h"
-#include "ui/iuiactionsregister.h"
+#include "extensionscommandsregister.h"
 
 namespace muse::extensions {
 class ExtensionsUiActions;
-class ExtensionsActionController : public Contextable, public actions::Actionable, public async::Asyncable
+class ExtensionsActionController : public Contextable, public rcommand::Commandable, public async::Asyncable
 {
+    GlobalInject<muse::rcommand::ICommandsRegister> commandsRegister;
     ContextInject<extensions::IExtensionsProvider> provider = { this };
     ContextInject<IInteractive> interactive = { this };
-    ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
-    ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };
+    ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
 
 public:
     ExtensionsActionController(const modularity::ContextPtr& iocCtx)
@@ -49,9 +50,9 @@ public:
 private:
     void registerExtensions();
 
-    void onExtensionTriggered(const actions::ActionQuery& actionQuery);
+    muse::Ret onExtensionTriggered(const rcommand::CommandQuery& q);
     void openUri(const UriQuery& uri, bool isSingle = true);
 
-    std::shared_ptr<ExtensionsUiActions> m_uiActions;
+    std::shared_ptr<ExtensionsCommandsRegister> m_commandsRegister;
 };
 }

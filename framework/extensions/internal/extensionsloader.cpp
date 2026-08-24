@@ -185,6 +185,10 @@ RetVal<Manifest> ExtensionsLoader::parseManifest(const ByteArray& data) const
         return RetVal<Manifest>::make_ret(ret);
     }
     m.uri = Uri(obj.value("uri").toStdString());
+    if (m.uri.scheme() != EXTENSION_SCHEME) {
+        LOGW() << "extension uri must have the scheme - " << EXTENSION_SCHEME << "://, uri: " << m.uri;
+        m.uri.setScheme(std::string(EXTENSION_SCHEME));
+    }
 
     ret = check_required(obj, "type");
     if (!ret) {
@@ -202,7 +206,7 @@ RetVal<Manifest> ExtensionsLoader::parseManifest(const ByteArray& data) const
     m.description = obj.value("description").toString();
     m.category = obj.value("category").toString();
     m.thumbnail = obj.value("thumbnail").toStdString();
-    m.version = obj.value("version").toString();
+    m.version = obj.value("version").toStdString();
     m.apiversion = obj.value("apiversion", DEFAULT_API_VERSION).toInt();
     const JsonValue contributes = obj.value("contributes");
     if (contributes.isObject()) {
@@ -226,7 +230,7 @@ RetVal<Manifest> ExtensionsLoader::parseManifest(const ByteArray& data) const
     }
 
     //! NOTE Default for actions
-    const String uiCtx = obj.value("ui_context", String(DEFAULT_UI_CONTEXT)).toString();
+    m.context = obj.value("ui_context", std::string(DEFAULT_CONTEXT)).toStdString();
     const bool modal = obj.value("modal", DEFAULT_MODAL).toBool();
 
     // actions (required)
@@ -254,10 +258,10 @@ RetVal<Manifest> ExtensionsLoader::parseManifest(const ByteArray& data) const
         a.title = ao.value("title").toString();
         std::string icon = ao.value("icon").toStdString();
         a.icon = ui::IconCode::fromString(icon.c_str());
-        a.uiCtx = ao.value("ui_context", uiCtx).toString();
+        a.context = ao.value("ui_context", m.context).toStdString();
         a.showOnAppmenu = ao.value("show_on_appmenu", true).toBool();
         a.showOnToolbar = ao.value("show_on_toolbar", false).toBool();
-        a.func = ao.value("func", "main").toString();
+        a.func = ao.value("func", "main").toStdString();
         a.apiversion = m.apiversion;
         m.actions.push_back(std::move(a));
     }

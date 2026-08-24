@@ -20,9 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
- #pragma once
+#pragma once
 
- #include "rcommand/commandtypes.h"
+#include "rcommand/commandtypes.h"
 
 namespace muse::musesampler {
 inline static const muse::rcommand::Command MUSESAMPLER_CHECK_COMMAND("command://musesampler/check");

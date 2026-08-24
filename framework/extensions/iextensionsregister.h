@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2024 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -23,30 +23,32 @@
 
 #include "modularity/imoduleinterface.h"
 
-#include "global/io/path.h"
-#include "global/types/ret.h"
+#include "global/async/notification.h"
 #include "global/async/channel.h"
+
+#include "rcommand/commandtypes.h"
 
 #include "extensionstypes.h"
 
 namespace muse::extensions {
-class IExtensionsConfiguration : MODULE_GLOBAL_INTERFACE
+class IExtensionsRegister : MODULE_GLOBAL_INTERFACE
 {
-    INTERFACE_ID(IExtensionsConfiguration)
+    INTERFACE_ID(IExtensionsRegister)
 public:
+    virtual ~IExtensionsRegister() = default;
 
-    virtual ~IExtensionsConfiguration() = default;
+    virtual void reload() = 0;
 
-    virtual io::path_t defaultPath() const = 0;
-    virtual io::path_t userPath() const = 0;
+    virtual ManifestList manifestList(Filter filter = Filter::All) const = 0;
+    virtual async::Notification manifestListChanged() const = 0;
 
-    virtual Ret setExtensionConfigs(const std::map<Uri, ExtensionConfig>& configs) = 0;
-    virtual std::map<Uri, ExtensionConfig> extensionConfigs() const = 0;
+    virtual KnownCategories knownCategories() const = 0;
 
-    // legacy plugins
-    virtual io::path_t pluginsDefaultPath() const = 0;
-    virtual io::path_t pluginsUserPath() const = 0;
-    virtual void setUserPluginsPath(const io::path_t& path) = 0;
-    virtual async::Channel<io::path_t> pluginsUserPathChanged() const = 0;
+    virtual bool exists(const ExtensionUri& uri) const = 0;
+    virtual const Manifest& manifest(const ExtensionUri& uri) const = 0;
+
+    virtual void setEnabled(const ExtensionUri& uri, bool enabled) = 0;
+    virtual bool isEnabled(const ExtensionUri& uri) const = 0;
+    virtual async::Channel<ExtensionUri> enabledChanged() const = 0;
 };
 }

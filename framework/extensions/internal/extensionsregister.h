@@ -1,11 +1,11 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * MuseScore-CLA-applies
+ * MuseScore-Studio-CLA-applies
  *
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2024 MuseScore Limited and others
+ * Copyright (C) MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -22,31 +22,23 @@
 
 #pragma once
 
-#include "global/async/asyncable.h"
+#include "../iextensionsregister.h"
 
 #include "modularity/ioc.h"
 #include "../iextensionsconfiguration.h"
-#include "../iextensionsregister.h"
-#include "../iextensionsprovider.h"
-#include "interactive/iinteractive.h"
-#include "io/ifilesystem.h"
 
 namespace muse::extensions {
-class ExtensionsProvider : public IExtensionsProvider, public Contextable, public async::Asyncable
+class ExtensionsRegister : public IExtensionsRegister
 {
     GlobalInject<IExtensionsConfiguration> configuration;
-    GlobalInject<IExtensionsRegister> extensionsRegister;
-    GlobalInject<io::IFileSystem> fileSystem;
-    ContextInject<IInteractive> interactive = { this };
-
 public:
-    ExtensionsProvider(const modularity::ContextPtr& iocCtx)
-        : Contextable(iocCtx) {}
 
-    void reloadExtensions() override;
+    void reload() override;
 
     ManifestList manifestList(Filter filter = Filter::All) const override;
     async::Notification manifestListChanged() const override;
+
+    KnownCategories knownCategories() const override;
 
     bool exists(const ExtensionUri& uri) const override;
     const Manifest& manifest(const ExtensionUri& uri) const override;
@@ -55,14 +47,12 @@ public:
     bool isEnabled(const ExtensionUri& uri) const override;
     async::Channel<ExtensionUri> enabledChanged() const override;
 
-    Action action(const ExtensionQuery& query) const override;
-    Ret perform(const ExtensionQuery& query) override;
-    Ret run(const ExtensionQuery& query) override;
-
-    std::unique_ptr<IExtensionSession> newSession(const ExtensionUri& uri, const io::path_t& relativeScriptPath) const override;
-
 private:
-    Ret run(const Action& action, const Manifest& manifest);
-    std::unique_ptr<IExtensionSession> newSession(const Manifest& manifest, const io::path_t& scriptPath) const;
+
+    ManifestList m_manifests;
+    async::Notification m_manifestListChanged;
+
+    std::map<ExtensionUri, ExtensionConfig> m_configs;
+    async::Channel<ExtensionUri> m_enabledChanged;
 };
 }

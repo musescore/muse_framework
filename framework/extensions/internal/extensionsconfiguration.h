@@ -45,8 +45,8 @@ public:
     io::path_t defaultPath() const override;
     io::path_t userPath() const override;
 
-    Ret setManifestConfigs(const std::map<Uri, Manifest::Config>& configs) override;
-    std::map<Uri, Manifest::Config> manifestConfigs() const override;
+    Ret setExtensionConfigs(const std::map<Uri, ExtensionConfig>& configs) override;
+    std::map<Uri, ExtensionConfig> extensionConfigs() const override;
 
     // legacy plugins
     io::path_t pluginsDefaultPath() const override;

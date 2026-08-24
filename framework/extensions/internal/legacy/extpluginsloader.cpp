@@ -36,7 +36,7 @@ using namespace muse::extensions::legacy;
 
 static Uri makeUri(const io::path_t& rootPath, const io::path_t& path)
 {
-    return Uri("musescore://extensions/v1" + path.toQString().sliced(rootPath.size()).toLower().toStdString());
+    return Uri("extension://plugin/v1" + path.toQString().sliced(rootPath.size()).toLower().toStdString());
 }
 
 std::map<std::string /*codeKey*/, Uri> ExtPluginsLoader::loadCodekeyUriMap(const io::path_t& defPath, const io::path_t& extPath) const
@@ -56,8 +56,8 @@ std::map<std::string /*codeKey*/, Uri> ExtPluginsLoader::loadCodekeyUriMap(const
     loadUris(data, extPath);
 
     //! NOTE These plugins have been ported to extensions
-    data["colornotes"] = Uri("musescore://extensions/colornotes");
-    data["addCourtesyAccidentals"] = Uri("musescore://extensions/courtesy_accidentals");
+    data["colornotes"] = Uri("extension://notation/colornotes");
+    data["addCourtesyAccidentals"] = Uri("extension://notation/courtesy_accidentals");
 
     return data;
 }
@@ -181,7 +181,7 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
         return str;
     };
 
-    String uiCtx = DEFAULT_UI_CONTEXT;
+    m.context = std::string(DEFAULT_CONTEXT);
     int needProperties = 7; // title, description, pluginType, category, thumbnail, requiresScore, version
     int propertiesFound = 0;
     bool insideMuseScoreItem = false;
@@ -249,11 +249,11 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
         } else if (line.startsWith(u"requiresScore:")) {
             String requiresScore = dropQuotes(line.mid(14).trimmed());
             if (requiresScore == u"false") {
-                uiCtx = "Any";
+                m.context = "Any";
             }
             ++propertiesFound;
         } else if (line.startsWith(u"version:")) {
-            m.version = dropQuotes(line.mid(8).trimmed());
+            m.version = dropQuotes(line.mid(8).trimmed()).toStdString();
             ++propertiesFound;
         }
 
@@ -273,7 +273,7 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
     a.code = "main";
     a.type = m.type;
     a.title = m.title;
-    a.uiCtx = uiCtx;
+    a.context = m.context;
     a.apiversion = m.apiversion;
     a.legacyPlugin = m.legacyPlugin;
     a.path = fi.fileName();

@@ -22,6 +22,7 @@
 
 #include "extensionslistmodel.h"
 
+#include "extensionstypes.h"
 #include "translation.h"
 #include "shortcuts/shortcutstypes.h"
 
@@ -55,12 +56,12 @@ void ExtensionsListModel::classBegin()
 
 void ExtensionsListModel::init()
 {
-    provider()->manifestListChanged().onNotify(this, [this]() {
+    extensionsRegister()->manifestListChanged().onNotify(this, [this]() {
         load();
     });
 
-    provider()->manifestChanged().onReceive(this, [this](const Manifest& plugin) {
-        updatePlugin(plugin);
+    extensionsRegister()->enabledChanged().onReceive(this, [this](const Uri& uri) {
+        updateExtension(uri);
     });
 
     load();
@@ -70,14 +71,14 @@ void ExtensionsListModel::load()
 {
     beginResetModel();
 
-    m_plugins = provider()->manifestList();
-    if (m_plugins.empty()) {
+    m_extensions = extensionsRegister()->manifestList();
+    if (m_extensions.empty()) {
         LOGE() << "Not found plugins";
         endResetModel();
         return;
     }
 
-    std::sort(m_plugins.begin(), m_plugins.end(), [](const Manifest& l, const Manifest& r) {
+    std::sort(m_extensions.begin(), m_extensions.end(), [](const Manifest& l, const Manifest& r) {
         return l.title < r.title;
     });
 
@@ -90,35 +91,35 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
         return QVariant();
     }
 
-    Manifest plugin = m_plugins.at(index.row());
+    Manifest manifest = m_extensions.at(index.row());
 
     switch (role) {
     case rUri:
-        return QString::fromStdString(plugin.uri.toString());
+        return QString::fromStdString(manifest.uri.toString());
     case rName:
-        return plugin.title.toQString();
+        return manifest.title.toQString();
     case rDescription:
-        return plugin.description.toQString();
+        return manifest.description.toQString();
     case rThumbnailUrl:
-        if (plugin.thumbnail.empty()) {
+        if (manifest.thumbnail.empty()) {
             return "qrc:/qt/qml/Muse/Extensions/internal/resources/placeholder.png";
         }
 
-        return QUrl::fromLocalFile(plugin.thumbnail.toQString());
+        return QUrl::fromLocalFile(manifest.thumbnail.toQString());
     case rEnabled:
-        return plugin.enabled();
+        return extensionsRegister()->isEnabled(manifest.uri);
     case rCategory:
-        return plugin.category.toQString();
+        return manifest.category.toQString();
     case rVersion:
-        if (plugin.version.empty()) {
+        if (manifest.version.empty()) {
             //: No version is specified for this plugin.
             return muse::qtrc("extensions", "Not specified");
         }
-        return plugin.version.toQString();
+        return QString::fromStdString(manifest.version);
     case rShortcuts: {
         std::vector<std::string> shortcuts;
-        for (const auto& action : plugin.actions) {
-            actions::ActionCode code = makeActionCode(plugin.uri, action.code);
+        for (const auto& action : manifest.actions) {
+            actions::ActionCode code = makeCommandQuery(manifest.uri, action.code).toString();
             shortcuts::Shortcut shortcut = shortcutsRegister()->shortcut(code);
             shortcuts.insert(shortcuts.end(), shortcut.sequences.cbegin(), shortcut.sequences.cend());
         }
@@ -131,7 +132,7 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
         return muse::qtrc("extensions", "Not defined");
     }
     case rIsRemovable: {
-        return plugin.isRemovable;
+        return manifest.isRemovable;
     }
     }
 
@@ -140,7 +141,7 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
 
 int ExtensionsListModel::rowCount(const QModelIndex&) const
 {
-    return static_cast<int>(m_plugins.size());
+    return static_cast<int>(m_extensions.size());
 }
 
 QHash<int, QByteArray> ExtensionsListModel::roleNames() const
@@ -148,59 +149,9 @@ QHash<int, QByteArray> ExtensionsListModel::roleNames() const
     return m_roles;
 }
 
-const std::vector<ExecPoint>& ExtensionsListModel::execPoints(const QString& uri) const
+void ExtensionsListModel::setEnabled(const QString& uri, bool enabled)
 {
-    if (m_execPointsCache.uri != uri) {
-        m_execPointsCache.uri = uri;
-        m_execPointsCache.points = provider()->execPoints(Uri(uri.toStdString()));
-    }
-    return m_execPointsCache.points;
-}
-
-int ExtensionsListModel::currentExecPointIndex(const QString& uri) const
-{
-    ExecPointName currentName;
-    Manifest m = provider()->manifest(Uri(uri.toStdString()));
-    IF_ASSERT_FAILED(m.actions.size() > 0) {
-        return 0;
-    }
-
-    //! NOTE For complex extensions, execution point selection is not currently supported.
-    if (m.actions.size() > 1) {
-        currentName = m.enabled() ? EXEC_MANUALLY : EXEC_DISABLED;
-    } else {
-        currentName = m.config.aconfig(m.actions.at(0).code).execPoint;
-    }
-
-    const std::vector<ExecPoint>& points = execPoints(uri);
-    for (size_t i = 0; i < points.size(); ++i) {
-        if (points.at(i).name == currentName) {
-            return int(i);
-        }
-    }
-    return 0;
-}
-
-QVariantList ExtensionsListModel::execPointsModel(const QString& uri) const
-{
-    QVariantList model;
-    const std::vector<ExecPoint>& points = execPoints(uri);
-    for (const ExecPoint& p : points) {
-        QVariantMap item;
-        item["text"] = p.title.qTranslated();
-        item["value"] = QString::fromStdString(p.name);
-        model << item;
-    }
-    return model;
-}
-
-void ExtensionsListModel::selectExecPoint(const QString& uri, int index)
-{
-    const std::vector<ExecPoint>& points = execPoints(uri);
-
-    provider()->setExecPoint(Uri(uri.toStdString()), points.at(index).name);
-
-    emit finished();
+    extensionsRegister()->setEnabled(Uri(uri.toStdString()), enabled);
 }
 
 void ExtensionsListModel::editShortcut(const QString& extensionUri)
@@ -210,14 +161,13 @@ void ExtensionsListModel::editShortcut(const QString& extensionUri)
         return;
     }
 
-    QString actionCodeBase
-        = QString::fromStdString(makeActionCodeBase(Uri(extensionUri.toStdString())));
+    QString commandCode = QString::fromStdString(makeCommand(Uri(extensionUri.toStdString())).toString());
 
     UriQuery preferencesUri("muse://preferences");
     preferencesUri.addParam("currentPageId", Val("shortcuts"));
 
     QVariantMap params;
-    params["shortcutCodeKey"] = actionCodeBase;
+    params["shortcutCodeKey"] = commandCode;
     preferencesUri.addParam("params", Val::fromQVariant(params));
 
     RetVal<Val> retVal = interactive()->openSync(preferencesUri);
@@ -229,7 +179,7 @@ void ExtensionsListModel::editShortcut(const QString& extensionUri)
 
 void ExtensionsListModel::reloadPlugins()
 {
-    provider()->reloadExtensions();
+    extensionsRegister()->reload();
 }
 
 void ExtensionsListModel::removeExtension(const QString& uri)
@@ -241,7 +191,7 @@ QVariantList ExtensionsListModel::categories() const
 {
     QVariantList result;
 
-    for (const auto& category : provider()->knownCategories()) {
+    for (const auto& category : extensionsRegister()->knownCategories()) {
         QVariantMap obj;
         obj["code"] = QString::fromStdString(category.first);
         obj["title"] = category.second.qTranslated();
@@ -252,14 +202,10 @@ QVariantList ExtensionsListModel::categories() const
     return result;
 }
 
-void ExtensionsListModel::updatePlugin(const Manifest& plugin)
+void ExtensionsListModel::updateExtension(const Uri& uri)
 {
-    for (size_t i = 0; i < m_plugins.size(); ++i) {
-        if (m_plugins.at(i).uri == plugin.uri) {
-            Manifest tmp = m_plugins.at(i);
-            m_plugins[i] = plugin;
-            m_plugins[i].thumbnail = tmp.thumbnail;
-            m_plugins[i].category = tmp.category;
+    for (size_t i = 0; i < m_extensions.size(); ++i) {
+        if (m_extensions.at(i).uri == uri) {
             QModelIndex index = createIndex(int(i), 0);
             emit dataChanged(index, index);
             return;
@@ -270,8 +216,8 @@ void ExtensionsListModel::updatePlugin(const Manifest& plugin)
 int ExtensionsListModel::itemIndexByUri(const QString& uri_) const
 {
     Uri uri(uri_.toStdString());
-    for (size_t i = 0; i < m_plugins.size(); ++i) {
-        if (m_plugins[i].uri == uri) {
+    for (size_t i = 0; i < m_extensions.size(); ++i) {
+        if (m_extensions[i].uri == uri) {
             return static_cast<int>(i);
         }
     }

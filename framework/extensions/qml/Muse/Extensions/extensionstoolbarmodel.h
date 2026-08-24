@@ -22,7 +22,7 @@
 #pragma once
 
 #include "modularity/ioc.h"
-#include "iextensionsprovider.h"
+#include "iextensionsregister.h"
 
 #include "uicomponents/qml/Muse/UiComponents/abstracttoolbarmodel.h"
 
@@ -33,7 +33,7 @@ class ExtensionsToolBarModel : public muse::uicomponents::AbstractToolBarModel
 
     QML_ELEMENT
 
-    ContextInject<IExtensionsProvider> extensionsProvider = { this };
+    GlobalInject<IExtensionsRegister> extensionsRegister;
 
 public:
     Q_INVOKABLE void load() override;

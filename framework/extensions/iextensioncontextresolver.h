@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2024 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -21,22 +21,20 @@
  */
 #pragma once
 
-#include <vector>
-
 #include "modularity/imoduleinterface.h"
 
-#include "extensionstypes.h"
+#include "global/async/notification.h"
 
 namespace muse::extensions {
-class IExtensionsExecPointsRegister : MODULE_GLOBAL_INTERFACE
+//! NOTE Must be implemented externally
+class IExtensionContextResolver : MODULE_CONTEXT_INTERFACE
 {
-    INTERFACE_ID(IExtensionsExecPointsRegister)
+    INTERFACE_ID(IExtensionContextResolver)
 public:
+    virtual ~IExtensionContextResolver() = default;
 
-    virtual ~IExtensionsExecPointsRegister() = default;
+    virtual bool isContextAllowed(const std::string& context) const = 0;
 
-    virtual void reg(const std::string& module, const ExecPoint& p) = 0;
-    virtual ExecPoint point(const std::string& name) const = 0;
-    virtual std::vector<ExecPoint> allPoints() const = 0;
+    virtual muse::async::Notification contextChanged() const = 0;
 };
 }

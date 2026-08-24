@@ -52,6 +52,7 @@ const muse::ui::UiActionList& ExtensionsUiActions::actionsList() const
     ManifestList manifests = provider()->manifestList();
     result.reserve(manifests.size() + STATIC_ACTIONS.size());
 
+    /*
     for (const Manifest& m : manifests) {
         for (const Action& a : m.actions) {
             UiAction action;
@@ -69,6 +70,7 @@ const muse::ui::UiActionList& ExtensionsUiActions::actionsList() const
             result.push_back(std::move(action));
         }
     }
+    */
 
     result.insert(result.end(), STATIC_ACTIONS.begin(), STATIC_ACTIONS.end());
 
