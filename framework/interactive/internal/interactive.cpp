@@ -43,6 +43,7 @@
 
 #include "muse_framework_config.h"
 
+#include "defer.h"
 #include "log.h"
 
 using namespace muse;
@@ -359,7 +360,10 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
         dlg->setFileMode(QFileDialog::ExistingFile);
 
         QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
-            dlg->deleteLater();
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
 
             QStringList files = dlg->selectedFiles();
 
@@ -549,7 +553,10 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
         dlg->setOption(QColorDialog::ShowAlphaChannel, allowAlpha);
 
         QObject::connect(dlg, &QColorDialog::finished, [this, dlg, resolve, reject](int result) {
-            dlg->deleteLater();
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
 
             uiConfiguration()->setColorDialogCustomColors(getCustomColors());
 
