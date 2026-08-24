@@ -34,20 +34,16 @@ public:
     ManifestList manifestList(Filter filter = Filter::All) const override;
     async::Notification manifestListChanged() const override;
 
-    bool exists(const Uri& uri) const override;
-    const Manifest& manifest(const Uri& uri) const override;
-    async::Channel<Manifest> manifestChanged() const override;
-    Action action(const UriQuery& q) const override;
+    bool exists(const ExtensionUri& uri) const override;
+    const Manifest& manifest(const ExtensionUri& uri) const override;
 
-    KnownCategories knownCategories() const override;
+    void setEnabled(const ExtensionUri& uri, bool enabled) override;
+    bool isEnabled(const ExtensionUri& uri) const override;
+    async::Channel<ExtensionUri> enabledChanged() const override;
 
+    Action action(const ExtensionQuery& query) const override;
     Ret perform(const UriQuery& uri) override;
     Ret run(const UriQuery& uri) override;
     std::unique_ptr<IExtensionSession> newSession(const Uri& uri, const io::path_t& relativeScriptPath) const override;
-
-    Ret setExecPoint(const Uri& uri, const ExecPointName& name) override;
-    std::vector<ExecPoint> execPoints(const Uri& uri) const override;
-    Ret performPoint(const ExecPointName& name) override;
-    void performPointAsync(const ExecPointName& name) override;
 };
 }
