@@ -175,6 +175,77 @@ inline constexpr const wchar_t* REG_VALUE_INSTALL_ARGS = L"InstallArgs";
 //! signing with it once that release is out.
 inline constexpr const wchar_t* REG_VALUE_CERT_SUBJECT = L"CertSubject";
 
+//! SHA-256 of the signing certificate's SubjectPublicKeyInfo, in lower-case hex;
+//! several may be given, separated by "|".
+//!
+//! The key rather than the certificate around it, so that a renewal which keeps
+//! the key keeps working. A name is not an anchor on its own - a certificate
+//! with the same common name can be had from any of the roots Windows trusts -
+//! so one of this and `REG_VALUE_CERT_ROOTS` has to be registered for an update
+//! to be accepted at all.
+//!
+//! Rotating a key works like rotating a name: the release that is *currently*
+//! installed decides what the next one may be signed with, so ship a release
+//! that lists the new hash alongside the old one, wait for it to reach people,
+//! and only then start signing with the new key.
+inline constexpr const wchar_t* REG_VALUE_CERT_KEYS = L"CertPublicKeys";
+
+//! SHA-256 of the root the signing chain ends at, in lower-case hex; several may
+//! be given, separated by "|". Rotates the same way as the key above.
+inline constexpr const wchar_t* REG_VALUE_CERT_ROOTS = L"CertRoots";
+
+//! Upgrade code of the installed product, and the version of it that is
+//! installed. Together they say what the task is allowed to install: the same
+//! product, and only a later version of it. Without them a valid signature
+//! would be the only thing standing between an unprivileged caller and having
+//! anything else the same publisher ever signed installed as SYSTEM.
+inline constexpr const wchar_t* REG_VALUE_UPGRADE_CODE = L"UpgradeCode";
+inline constexpr const wchar_t* REG_VALUE_PRODUCT_VERSION = L"ProductVersion";
+
+//! Compares dotted numeric versions field by field; a missing field counts as
+//! zero. Returns a value below, at or above zero the way `wcscmp` does.
+//!
+//! Unlike the Windows Installer, which stops after three fields, the fourth is
+//! significant here: releases within one x.y.z differ only by build number, so
+//! ignoring it would let any of them replace any other.
+inline int compareVersions(const std::wstring& a, const std::wstring& b)
+{
+    auto field = [](const std::wstring& version, size_t& pos) -> unsigned long long {
+        unsigned long long value = 0;
+        while (pos < version.size() && version[pos] >= L'0' && version[pos] <= L'9') {
+            value = value * 10 + static_cast<unsigned long long>(version[pos] - L'0');
+            if (value > 0xFFFFFFFFull) {
+                value = 0xFFFFFFFFull;
+            }
+            ++pos;
+        }
+
+        // Anything that is not a digit belongs to this field and is ignored.
+        while (pos < version.size() && version[pos] != L'.') {
+            ++pos;
+        }
+
+        if (pos < version.size()) {
+            ++pos;
+        }
+
+        return value;
+    };
+
+    size_t posA = 0;
+    size_t posB = 0;
+
+    for (int i = 0; i < 4; ++i) {
+        const unsigned long long fieldA = field(a, posA);
+        const unsigned long long fieldB = field(b, posB);
+        if (fieldA != fieldB) {
+            return fieldA < fieldB ? -1 : 1;
+        }
+    }
+
+    return 0;
+}
+
 //! Whether `signer` is among the "|"-separated names in `expected`. Empty
 //! `expected` matches nothing - there is then nothing to verify against.
 inline bool isExpectedSigner(const std::wstring& signer, const std::wstring& expected)

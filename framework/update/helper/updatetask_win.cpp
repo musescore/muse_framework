@@ -27,6 +27,8 @@
 #include <wintrust.h>
 #include <softpub.h>
 #include <wincrypt.h>
+#include <bcrypt.h>
+#include <winver.h>
 #include <userenv.h>
 #include <wtsapi32.h>
 #include <msi.h>
@@ -271,19 +273,97 @@ std::wstring regReadString(const std::wstring& subKey, const wchar_t* name)
     return std::wstring(buffer);
 }
 
+//! What a valid signature says about who produced the file. An empty field is
+//! an answer the signature did not carry, and never matches anything.
+struct SignatureAnchors {
+    std::wstring subject;   //!< common name of the signing certificate
+    std::wstring keyHash;   //!< SHA-256 of its SubjectPublicKeyInfo
+    std::wstring rootHash;  //!< SHA-256 of the root the chain ends at
+};
+
+std::wstring toHex(const BYTE* data, DWORD size)
+{
+    static const wchar_t* digits = L"0123456789abcdef";
+
+    std::wstring result;
+    result.reserve(static_cast<size_t>(size) * 2);
+
+    for (DWORD i = 0; i < size; ++i) {
+        result.push_back(digits[data[i] >> 4]);
+        result.push_back(digits[data[i] & 0x0F]);
+    }
+
+    return result;
+}
+
+//! SHA-256 over the DER-encoded SubjectPublicKeyInfo - the key itself rather
+//! than the certificate wrapped around it, so that a renewal keeping the key
+//! keeps working.
+std::wstring publicKeyHash(PCCERT_CONTEXT cert)
+{
+    DWORD encodedSize = 0;
+    if (!::CryptEncodeObjectEx(X509_ASN_ENCODING, X509_PUBLIC_KEY_INFO, &cert->pCertInfo->SubjectPublicKeyInfo,
+                               0, nullptr, nullptr, &encodedSize) || encodedSize == 0) {
+        return std::wstring();
+    }
+
+    std::vector<BYTE> encoded(encodedSize);
+    if (!::CryptEncodeObjectEx(X509_ASN_ENCODING, X509_PUBLIC_KEY_INFO, &cert->pCertInfo->SubjectPublicKeyInfo,
+                               0, nullptr, encoded.data(), &encodedSize)) {
+        return std::wstring();
+    }
+
+    BYTE hash[32] = { };
+    DWORD hashSize = sizeof(hash);
+    if (!::CryptHashCertificate2(BCRYPT_SHA256_ALGORITHM, 0, nullptr, encoded.data(), encodedSize, hash, &hashSize)) {
+        return std::wstring();
+    }
+
+    return toHex(hash, hashSize);
+}
+
+std::wstring certificateHash(PCCERT_CONTEXT cert)
+{
+    BYTE hash[32] = { };
+    DWORD size = sizeof(hash);
+    if (!::CertGetCertificateContextProperty(cert, CERT_SHA256_HASH_PROP_ID, hash, &size)) {
+        return std::wstring();
+    }
+
+    return toHex(hash, size);
+}
+
+//! Strictly the common name. `CERT_NAME_SIMPLE_DISPLAY_TYPE` falls back to the
+//! organisation, the organisational unit or an e-mail address when there is
+//! none, which would compare a name we never meant to pin.
+std::wstring commonName(PCCERT_CONTEXT cert)
+{
+    const DWORD size = ::CertGetNameStringW(cert, CERT_NAME_ATTR_TYPE, 0,
+                                            const_cast<char*>(szOID_COMMON_NAME), nullptr, 0);
+    if (size <= 1) {
+        return std::wstring();
+    }
+
+    std::vector<wchar_t> name(size);
+    ::CertGetNameStringW(cert, CERT_NAME_ATTR_TYPE, 0, const_cast<char*>(szOID_COMMON_NAME), name.data(), size);
+
+    return std::wstring(name.data());
+}
+
 //! Verifies the Authenticode signature of the package and, in the same pass,
-//! reports the display name of the signing certificate.
+//! reports what the signing certificate was.
 //!
 //! Signer and validity have to be established together: `WinVerifyTrust` is the
 //! only thing that understands every subject type (an MSI keeps its signature in
 //! a stream rather than embedded the way a PE does, so parsing the file for a
 //! PKCS#7 blob would find nothing).
 //!
-//! Revocation is not checked: the helper runs unattended and may well have no
-//! network by then.
-bool verifySignature(const std::wstring& path, std::wstring& signer)
+//! Revocation is checked separately, by `isRevoked`, and only against what is
+//! already cached: the helper runs unattended and may well have no network by
+//! then, so an answer we could not obtain must not fail an update.
+bool verifySignature(const std::wstring& path, SignatureAnchors& anchors)
 {
-    signer.clear();
+    anchors = SignatureAnchors();
 
     WINTRUST_FILE_INFO fileInfo = { };
     fileInfo.cbStruct = sizeof(WINTRUST_FILE_INFO);
@@ -306,18 +386,23 @@ bool verifySignature(const std::wstring& path, std::wstring& signer)
         CRYPT_PROVIDER_SGNR* providerSigner = providerData
                                               ? ::WTHelperGetProvSignerFromChain(providerData, 0, FALSE, 0)
                                               : nullptr;
-        CRYPT_PROVIDER_CERT* providerCert = providerSigner
-                                            ? ::WTHelperGetProvCertFromChain(providerSigner, 0)
-                                            : nullptr;
+        CRYPT_PROVIDER_CERT* leaf = providerSigner
+                                    ? ::WTHelperGetProvCertFromChain(providerSigner, 0)
+                                    : nullptr;
 
-        if (providerCert && providerCert->pCert) {
-            const DWORD size = ::CertGetNameStringW(providerCert->pCert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0,
-                                                    nullptr, nullptr, 0);
-            if (size > 1) {
-                std::vector<wchar_t> name(size);
-                ::CertGetNameStringW(providerCert->pCert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, name.data(), size);
-                signer.assign(name.data());
-            }
+        //! NOTE: The chain ends at the root it was trusted through - there is
+        //! one, or the verification above would not have succeeded.
+        CRYPT_PROVIDER_CERT* root = providerSigner && providerSigner->csCertChain > 0
+                                    ? ::WTHelperGetProvCertFromChain(providerSigner, providerSigner->csCertChain - 1)
+                                    : nullptr;
+
+        if (leaf && leaf->pCert) {
+            anchors.subject = commonName(leaf->pCert);
+            anchors.keyHash = publicKeyHash(leaf->pCert);
+        }
+
+        if (root && root->pCert) {
+            anchors.rootHash = certificateHash(root->pCert);
         }
     }
 
@@ -325,6 +410,107 @@ bool verifySignature(const std::wstring& path, std::wstring& signer)
     ::WinVerifyTrust(static_cast<HWND>(INVALID_HANDLE_VALUE), &action, &data);
 
     return status == ERROR_SUCCESS;
+}
+
+//! Whether the signing certificate is known to have been revoked.
+//!
+//! A second pass, because this one is allowed to come back with no answer: the
+//! helper runs unattended and may have no network, so only a reply that says
+//! "revoked" counts. Nothing is fetched - `WTD_CACHE_ONLY_URL_RETRIEVAL` limits
+//! this to what Windows has already cached - which is what makes it safe to run
+//! here at all.
+bool isRevoked(const std::wstring& path)
+{
+    WINTRUST_FILE_INFO fileInfo = { };
+    fileInfo.cbStruct = sizeof(WINTRUST_FILE_INFO);
+    fileInfo.pcwszFilePath = path.c_str();
+
+    WINTRUST_DATA data = { };
+    data.cbStruct = sizeof(WINTRUST_DATA);
+    data.dwUIChoice = WTD_UI_NONE;
+    data.fdwRevocationChecks = WTD_REVOKE_WHOLECHAIN;
+    data.dwUnionChoice = WTD_CHOICE_FILE;
+    data.pFile = &fileInfo;
+    data.dwStateAction = WTD_STATEACTION_VERIFY;
+    data.dwProvFlags = WTD_SAFER_FLAG | WTD_REVOCATION_CHECK_CHAIN | WTD_CACHE_ONLY_URL_RETRIEVAL;
+
+    GUID action = WINTRUST_ACTION_GENERIC_VERIFY_V2;
+    const LONG status = ::WinVerifyTrust(static_cast<HWND>(INVALID_HANDLE_VALUE), &action, &data);
+
+    data.dwStateAction = WTD_STATEACTION_CLOSE;
+    ::WinVerifyTrust(static_cast<HWND>(INVALID_HANDLE_VALUE), &action, &data);
+
+    return status == static_cast<LONG>(CERT_E_REVOKED) || status == static_cast<LONG>(CRYPT_E_REVOKED);
+}
+
+//! One row of the `Property` table of an MSI, read as a database: no sequence
+//! runs and no custom action executes. The package has earned nothing beyond
+//! its signature at the point this is asked, so it must not be opened as a
+//! product.
+std::wstring msiProperty(const std::wstring& package, const wchar_t* name)
+{
+    //! NOTE: The persist mode is not a string but one of a handful of small
+    //! values cast to a pointer, and the constant is declared as `LPCTSTR` -
+    //! which is the ANSI type unless UNICODE happens to be defined. Spell out
+    //! the wide one rather than depend on that.
+    MSIHANDLE database = 0;
+    if (::MsiOpenDatabaseW(package.c_str(), reinterpret_cast<LPCWSTR>(MSIDBOPEN_READONLY), &database) != ERROR_SUCCESS) {
+        return std::wstring();
+    }
+
+    std::wstring result;
+
+    MSIHANDLE view = 0;
+    if (::MsiDatabaseOpenViewW(database, L"SELECT `Value` FROM `Property` WHERE `Property` = ?", &view)
+        == ERROR_SUCCESS) {
+        const MSIHANDLE parameters = ::MsiCreateRecord(1);
+        ::MsiRecordSetStringW(parameters, 1, name);
+
+        if (::MsiViewExecute(view, parameters) == ERROR_SUCCESS) {
+            MSIHANDLE row = 0;
+            if (::MsiViewFetch(view, &row) == ERROR_SUCCESS) {
+                wchar_t buffer[512] = { 0 };
+                DWORD size = sizeof(buffer) / sizeof(buffer[0]);
+                if (::MsiRecordGetStringW(row, 1, buffer, &size) == ERROR_SUCCESS) {
+                    result.assign(buffer, size);
+                }
+                ::MsiCloseHandle(row);
+            }
+        }
+
+        ::MsiCloseHandle(parameters);
+        ::MsiViewClose(view);
+        ::MsiCloseHandle(view);
+    }
+
+    ::MsiCloseHandle(database);
+
+    return result;
+}
+
+//! What a self-contained installer says its version is. It has no property
+//! table; the version resource is the nearest equivalent statement.
+std::wstring fileProductVersion(const std::wstring& path)
+{
+    DWORD ignored = 0;
+    const DWORD size = ::GetFileVersionInfoSizeW(path.c_str(), &ignored);
+    if (size == 0) {
+        return std::wstring();
+    }
+
+    std::vector<BYTE> buffer(size);
+    if (!::GetFileVersionInfoW(path.c_str(), 0, size, buffer.data())) {
+        return std::wstring();
+    }
+
+    VS_FIXEDFILEINFO* info = nullptr;
+    UINT infoSize = 0;
+    if (!::VerQueryValueW(buffer.data(), L"\\", reinterpret_cast<void**>(&info), &infoSize) || !info) {
+        return std::wstring();
+    }
+
+    return std::to_wstring(HIWORD(info->dwFileVersionMS)) + L"." + std::to_wstring(LOWORD(info->dwFileVersionMS))
+           + L"." + std::to_wstring(HIWORD(info->dwFileVersionLS)) + L"." + std::to_wstring(LOWORD(info->dwFileVersionLS));
 }
 
 bool runProcessAndWait(const std::wstring& application, const std::wstring& commandLine, DWORD& exitCode)
@@ -711,37 +897,84 @@ struct Registration {
     std::wstring packageType;   // "msi" or "exe"
     std::wstring installArgs;
     std::wstring certSubject;   //!< expected signer(s), "|"-separated; usually derived from `certFrom`
+    std::wstring certKeys;      //!< expected signing key hash(es), "|"-separated; usually derived from `certFrom`
+    std::wstring certRoots;     //!< expected chain root hash(es), "|"-separated; usually derived from `certFrom`
     std::wstring certFrom;      //!< signed file - the package being installed - to take the signer from
+    std::wstring upgradeCode;   //!< upgrade code of the product being installed
+    std::wstring productVersion;//!< version of it being installed
 };
 
-//! An explicit name wins - it is the only way to accept two while a certificate
-//! is being rotated; otherwise the signer of the package being installed, so
-//! that only whoever signed the application can update it.
-std::wstring expectedSigner(const Registration& registration)
+//! Writes what the next update will be judged against.
+//!
+//! An explicit value wins - it is the only way to accept two while a certificate
+//! is being rotated; otherwise whatever signed the package doing the
+//! registering, so that only whoever signed this release can sign the next one.
+void registerCertAnchors(const Registration& registration, const std::wstring& key)
 {
-    if (!registration.certSubject.empty()) {
-        return registration.certSubject;
-    }
-
+    SignatureAnchors fromPackage;
     if (!registration.certFrom.empty()) {
-        std::wstring signer;
-        if (verifySignature(registration.certFrom, signer) && !signer.empty()) {
-            logLine(L"register-task: expected signer taken from " + registration.certFrom + L": " + signer);
-            return signer;
+        if (verifySignature(registration.certFrom, fromPackage)) {
+            logLine(L"register-task: anchors taken from " + registration.certFrom + L": cn=" + fromPackage.subject
+                    + L" key=" + fromPackage.keyHash + L" root=" + fromPackage.rootHash);
+        } else {
+            //! NOTE: A repair installs from the cached copy of the package, which
+            //! carries no signature; keep what an earlier run worked out rather
+            //! than refuse everything from then on.
+            logLine(L"register-task: could not read the signature of " + registration.certFrom);
         }
-
-        logLine(L"register-task: could not read the signer of " + registration.certFrom);
     }
 
-    //! NOTE: A repair installs from the cached copy of the package, which carries
-    //! no signature; keep what an earlier run worked out rather than refuse everything.
-    const std::wstring registered = regReadString(shared::registryKeyPath(registration.appId),
-                                                  shared::REG_VALUE_CERT_SUBJECT);
-    if (!registered.empty()) {
-        logLine(L"register-task: keeping the expected signer already registered: " + registered);
+    auto pick = [&key](const std::wstring& explicitValue, const std::wstring& derived, const wchar_t* name) {
+        const std::wstring value = !explicitValue.empty()
+                                   ? explicitValue
+                                   : (!derived.empty() ? derived : regReadString(key, name));
+        regWriteString(key, name, value);
+        return value;
+    };
+
+    pick(registration.certSubject, fromPackage.subject, shared::REG_VALUE_CERT_SUBJECT);
+    const std::wstring keys = pick(registration.certKeys, fromPackage.keyHash, shared::REG_VALUE_CERT_KEYS);
+    const std::wstring roots = pick(registration.certRoots, fromPackage.rootHash, shared::REG_VALUE_CERT_ROOTS);
+
+    if (keys.empty() && roots.empty()) {
+        logLine(L"register-task: warning - neither a key nor a root could be pinned, updates will be refused");
+    }
+}
+
+//! Writes what the task is allowed to install: the same product, and only a
+//! version above the one being installed now.
+//!
+//! Unlike the certificate anchors there is no falling back to what is already
+//! registered when the version is missing: a stale version left in place would
+//! quietly permit a downgrade to it.
+void registerProductIdentity(const Registration& registration, const std::wstring& key)
+{
+    std::wstring upgradeCode = registration.upgradeCode;
+    std::wstring productVersion = registration.productVersion;
+
+    //! NOTE: A repair passes the cached copy of the package, which has lost its
+    //! signature but not its property table.
+    if (!registration.certFrom.empty() && registration.packageType == shared::PACKAGE_TYPE_MSI) {
+        if (upgradeCode.empty()) {
+            upgradeCode = msiProperty(registration.certFrom, L"UpgradeCode");
+        }
+        if (productVersion.empty()) {
+            productVersion = msiProperty(registration.certFrom, L"ProductVersion");
+        }
     }
 
-    return registered;
+    if (upgradeCode.empty()) {
+        upgradeCode = regReadString(key, shared::REG_VALUE_UPGRADE_CODE);
+    }
+
+    regWriteString(key, shared::REG_VALUE_UPGRADE_CODE, upgradeCode);
+    regWriteString(key, shared::REG_VALUE_PRODUCT_VERSION, productVersion);
+
+    if (productVersion.empty()) {
+        logLine(L"register-task: warning - no installed version could be established, updates will be refused");
+    } else {
+        logLine(L"register-task: installed " + upgradeCode + L" version " + productVersion);
+    }
 }
 
 int registerTask(const Registration& registration)
@@ -795,12 +1028,8 @@ int registerTask(const Registration& registration)
 
     regWriteString(key, shared::REG_VALUE_INSTALL_ARGS, registration.installArgs);
 
-    const std::wstring certSubject = expectedSigner(registration);
-    regWriteString(key, shared::REG_VALUE_CERT_SUBJECT, certSubject);
-
-    if (certSubject.empty()) {
-        logLine(L"register-task: warning - no expected signer could be established, updates will be refused");
-    }
+    registerCertAnchors(registration, key);
+    registerProductIdentity(registration, key);
 
     ComScope com;
     if (!com.isOk()) {
@@ -1171,6 +1400,10 @@ int applyRun(const std::wstring& appId)
     const std::wstring installDir = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_INSTALL_DIR);
     const std::wstring appPath = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_APP_PATH);
     const std::wstring certSubject = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_CERT_SUBJECT);
+    const std::wstring certKeys = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_CERT_KEYS);
+    const std::wstring certRoots = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_CERT_ROOTS);
+    const std::wstring upgradeCode = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_UPGRADE_CODE);
+    const std::wstring installedVersion = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_PRODUCT_VERSION);
     const std::wstring packageType = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_PACKAGE_TYPE);
     const std::wstring installArgs = regReadString(shared::registryKeyPath(appId), shared::REG_VALUE_INSTALL_ARGS);
 
@@ -1240,23 +1473,83 @@ int applyRun(const std::wstring& appId)
 
     //! NOTE: A valid Authenticode signature alone is not enough - the package
     //! path comes from an unprivileged caller, who could otherwise have us
-    //! install any signed installer at all. Without a configured signer we have
-    //! nothing to compare against, so refuse rather than guess.
-    if (certSubject.empty()) {
-        reject(L"no expected signer configured, refusing to install");
+    //! install any signed installer at all.
+    //!
+    //! Neither is a name: a certificate carrying the same common name can be had
+    //! from any of the roots Windows trusts, so at least one of the two hashes
+    //! has to be registered, or there is nothing here that only we can satisfy.
+    if (certKeys.empty() && certRoots.empty()) {
+        reject(L"neither a signing key nor a chain root is pinned, refusing to install");
         return 1;
     }
 
-    std::wstring signer;
-    if (!verifySignature(staged, signer)) {
+    SignatureAnchors anchors;
+    if (!verifySignature(staged, anchors)) {
         reject(L"the package is not validly signed, refusing to install it");
         return 1;
     }
 
-    if (!shared::isExpectedSigner(signer, certSubject)) {
-        reject(L"unexpected signer \"" + signer + L"\", expected \"" + certSubject + L"\"");
+    if (!certSubject.empty() && !shared::isExpectedSigner(anchors.subject, certSubject)) {
+        reject(L"unexpected signer \"" + anchors.subject + L"\", expected \"" + certSubject + L"\"");
         return 1;
     }
+
+    if (!certKeys.empty() && !shared::isExpectedSigner(anchors.keyHash, certKeys)) {
+        reject(L"unexpected signing key " + anchors.keyHash + L", expected " + certKeys);
+        return 1;
+    }
+
+    if (!certRoots.empty() && !shared::isExpectedSigner(anchors.rootHash, certRoots)) {
+        reject(L"unexpected chain root " + anchors.rootHash + L", expected " + certRoots);
+        return 1;
+    }
+
+    if (isRevoked(staged)) {
+        reject(L"the signing certificate has been revoked, refusing to install");
+        return 1;
+    }
+
+    // 4b. And whether this is an update at all. The signature says who made the
+    //     package, not that it is this product, nor that it is a step forward -
+    //     the Windows Installer only compares the first three fields of a
+    //     version, so releases within one x.y.z can replace one another freely.
+    if (installedVersion.empty()) {
+        reject(L"no installed version registered, refusing to install");
+        return 1;
+    }
+
+    std::wstring packageVersion;
+
+    if (packageType == shared::PACKAGE_TYPE_MSI) {
+        if (upgradeCode.empty()) {
+            reject(L"no upgrade code registered, refusing to install");
+            return 1;
+        }
+
+        const std::wstring packageUpgradeCode = msiProperty(staged, L"UpgradeCode");
+        if (::CompareStringOrdinal(packageUpgradeCode.c_str(), -1, upgradeCode.c_str(), -1, TRUE) != CSTR_EQUAL) {
+            reject(L"the package belongs to another product (" + packageUpgradeCode + L"), expected " + upgradeCode);
+            return 1;
+        }
+
+        packageVersion = msiProperty(staged, L"ProductVersion");
+    } else {
+        //! NOTE: A self-contained installer states no product of its own, so the
+        //! version is all there is to go on.
+        packageVersion = fileProductVersion(staged);
+    }
+
+    if (packageVersion.empty()) {
+        reject(L"the package states no version, refusing to install it");
+        return 1;
+    }
+
+    if (shared::compareVersions(packageVersion, installedVersion) <= 0) {
+        reject(L"the package is version " + packageVersion + L", not newer than the installed " + installedVersion);
+        return 1;
+    }
+
+    logLine(L"apply-run: accepted version " + packageVersion + L" over " + installedVersion);
 
     // 5. Install silently, the way the installer registered.
     //
@@ -1412,7 +1705,11 @@ int runCommandLine()
                                    : std::wstring(shared::PACKAGE_TYPE_MSI);
         registration.installArgs = valueOf(parsed, L"--install-args");
         registration.certSubject = valueOf(parsed, L"--cert-subject");
+        registration.certKeys = valueOf(parsed, L"--cert-keys");
+        registration.certRoots = valueOf(parsed, L"--cert-roots");
         registration.certFrom = valueOf(parsed, L"--cert-from");
+        registration.upgradeCode = valueOf(parsed, L"--upgrade-code");
+        registration.productVersion = valueOf(parsed, L"--product-version");
 
         returnCode = registerTask(registration);
     } else if (isUnregister) {

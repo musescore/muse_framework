@@ -30,7 +30,18 @@ namespace updatetask {
 //!
 //!   --register-task   --app-id <id> --app-exe <path relative to the install dir>
 //!                     --install-dir <dir> [--package-type msi|exe]
-//!                     [--install-args <args>] [--cert-subject <subject>]
+//!                     [--install-args <args>]
+//!                     [--upgrade-code <guid>] [--product-version <version>]
+//!                     [--cert-from <signed file>] [--cert-subject <subject>]
+//!                     [--cert-keys <sha256...>] [--cert-roots <sha256...>]
+//!
+//! What an update is judged against is registered here: the product it has to
+//! be (`--upgrade-code`), the version it has to beat (`--product-version`) and
+//! who has to have signed it. The certificate anchors are read out of
+//! `--cert-from` - the package doing the registering - unless given explicitly,
+//! which is what makes it possible to rotate a key: list the new hash alongside
+//! the old one in a release, and only sign with it once that release is out.
+//! Several values are separated by "|".
 //!   --unregister-task --app-id <id>
 //!   --apply           --app-id <id>   (the action of the scheduled task)
 //!   --apply-run       --app-id <id>   (internal: the detached copy doing the work)

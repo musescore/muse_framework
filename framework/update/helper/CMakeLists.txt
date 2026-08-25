@@ -80,7 +80,8 @@ if (OS_IS_WIN)
         advapi32  # registry, security descriptors, DuplicateTokenEx, CreateProcessAsUserW
         shell32   # CommandLineToArgvW
         wintrust  # WinVerifyTrust and the WTHelper* signer accessors
-        crypt32   # CertGetNameStringW
+        crypt32   # CertGetNameStringW, CryptEncodeObjectEx, CryptHashCertificate2
+        version   # GetFileVersionInfoW, for the version of an "exe" package
         userenv   # CreateEnvironmentBlock
         wtsapi32  # WTSQueryUserToken
         msi       # MsiInstallProductW and the external UI handler
