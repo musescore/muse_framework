@@ -67,17 +67,12 @@ async::Channel<ExtensionUri> ExtensionsProviderStub::enabledChanged() const
     return c;
 }
 
-Action ExtensionsProviderStub::action(const UriQuery&) const
-{
-    return Action();
-}
-
-Ret ExtensionsProviderStub::perform(const UriQuery&)
+Ret ExtensionsProviderStub::perform(const ExtensionUri&, const ExtensionActionCode&)
 {
     return muse::make_ret(Ret::Code::NotSupported);
 }
 
-Ret ExtensionsProviderStub::run(const UriQuery&)
+Ret ExtensionsProviderStub::run(const ExtensionUri&, const ExtensionActionCode&)
 {
     return muse::make_ret(Ret::Code::NotSupported);
 }

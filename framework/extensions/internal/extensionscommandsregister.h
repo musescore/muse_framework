@@ -26,7 +26,7 @@
 
 #include "global/async/asyncable.h"
 
-#include "global/async/notification.h"
+#include "global/modularity/ioc.h"
 #include "../iextensionsregister.h"
 
 namespace muse::extensions {
@@ -37,13 +37,13 @@ class ExtensionsCommandsRegister : public rcommand::IModuleCommandsRegister, pub
 public:
     ExtensionsCommandsRegister() = default;
 
+    void init();
+
     std::string moduleName() const override;
 
     const std::vector<muse::rcommand::Command>& commandList() const override;
     const std::vector<muse::rcommand::CommandInfo>& commandInfoList() const override;
-
-    void init();
-    async::Notification commandListChanged() const;
+    async::Notification commandListChanged() const override;
 
 private:
 

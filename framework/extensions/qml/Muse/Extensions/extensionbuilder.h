@@ -52,7 +52,7 @@ public:
     QString title() const;
     QQuickItem* contentItem() const;
 
-    Q_INVOKABLE void load(const QString& uriQuery, QObject* itemParent);
+    Q_INVOKABLE void load(const QString& extension, const QString& action, QObject* itemParent);
 
 signals:
     void titleChanged();

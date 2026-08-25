@@ -50,10 +50,8 @@ void ExtensionsCommandsState::init()
         });
     }
 
-    extensionsRegister()->manifestListChanged().onNotify(this, [this]() {
-        async::Async::call(this, [this]() {
-            updateCommandStates();
-        });
+    m_moduleRegister->commandListChanged().onNotify(this, [this]() {
+        updateCommandStates();
     });
 
     updateCommandStates();
@@ -90,7 +88,7 @@ CommandState ExtensionsCommandsState::commandState(const Command& command) const
         return CommandState(true, false);
     }
 
-    ExtensionUri extensionUri = uriFromCommand(command);
+    ExtensionUri extensionUri = extensionUriByCommand(command);
     const Manifest& manifest = extensionsRegister()->manifest(extensionUri);
     IF_ASSERT_FAILED(manifest.isValid()) {
         return CommandState(false, false);

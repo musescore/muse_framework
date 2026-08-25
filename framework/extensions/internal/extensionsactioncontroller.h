@@ -50,7 +50,7 @@ public:
 private:
     void registerExtensions();
 
-    muse::Ret onExtensionTriggered(const rcommand::CommandQuery& q);
+    muse::Ret onExtensionTriggered(const ExtensionUri& uri, const ExtensionActionCode& actionCode);
     void openUri(const UriQuery& uri, bool isSingle = true);
 
     std::shared_ptr<ExtensionsCommandsRegister> m_commandsRegister;

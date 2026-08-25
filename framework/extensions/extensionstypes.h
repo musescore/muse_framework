@@ -56,36 +56,8 @@ constexpr std::string_view EXTENSION_SCHEME = "extension";
 
 //! NOTE URI is used as an identifier
 using ExtensionUri = Uri;
-//! NOTE Query is used to perform actions on the extension
-using ExtensionQuery = UriQuery;
-
-inline rcommand::Command makeCommand(const ExtensionUri& extensionUri)
-{
-    rcommand::Command c(extensionUri);
-    c.setScheme(std::string(rcommand::COMMAND_SCHEME));
-    return c;
-}
-
-inline rcommand::CommandQuery makeCommandQuery(const ExtensionUri& extensionUri, const std::string& actionCode)
-{
-    rcommand::CommandQuery q(makeCommand(extensionUri));
-    q.addParam("action", Val(actionCode));
-    return q;
-}
-
-inline ExtensionUri uriFromCommand(const rcommand::Command& c)
-{
-    ExtensionUri uri(c);
-    uri.setScheme(std::string(EXTENSION_SCHEME));
-    return uri;
-}
-
-inline ExtensionQuery queryFromCommandQuery(const rcommand::CommandQuery& c)
-{
-    ExtensionQuery q(c);
-    q.setScheme(std::string(EXTENSION_SCHEME));
-    return q;
-}
+//! NOTE Action code is used to perform actions on the extension
+using ExtensionActionCode = std::string;
 
 enum class Type {
     Undefined = 0,
@@ -123,7 +95,7 @@ enum Filter {
 };
 
 struct Action {
-    std::string code;
+    ExtensionActionCode code;
     Type type = Type::Undefined;
     bool modal = DEFAULT_MODAL;
     String title;
@@ -179,14 +151,14 @@ struct Manifest {
 
     bool isValid() const { return type != Type::Undefined && uri.isValid(); }
 
-    Action action(const std::string& code) const
+    Action action(const ExtensionActionCode& code) const
     {
         for (const Action& a : actions) {
             if (a.code == code) {
                 return a;
             }
         }
-        return Action();
+        return {};
     }
 };
 

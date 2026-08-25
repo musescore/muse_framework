@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "devextensionslistmodel.h"
+#include "extensionstypes.h"
 
 using namespace muse::extensions;
 
@@ -45,6 +46,7 @@ QVariantList DevExtensionsListModel::extensionsList()
 
 void DevExtensionsListModel::clicked(const QString& uri_)
 {
-    UriQuery q(uri_.toStdString());
-    provider()->perform(q);
+    ExtensionUri uri = ExtensionUri(uri_.toStdString());
+    const Manifest& manifest = provider()->manifest(uri);
+    provider()->perform(manifest.uri, manifest.actions.at(0).code); //! TODO add actions support
 }

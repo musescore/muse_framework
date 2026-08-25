@@ -46,26 +46,28 @@ void ExtensionsActionController::registerExtensions()
     commandDispatcher()->unreg(this);
 
     for (const Manifest& m : provider()->manifestList()) {
-        commandDispatcher()->onRequest(this, makeCommand(m.uri), [this](const rcommand::CommandQuery& q) {
-            return onExtensionTriggered(q);
-        });
+        for (const Action& a : m.actions) {
+            ExtensionUri uri = m.uri;
+            ExtensionActionCode actionCode = a.code;
+            commandDispatcher()->onRequest(this, makeCommand(uri, actionCode), [this, uri, actionCode]() {
+                return onExtensionTriggered(uri, actionCode);
+            });
+        }
     }
 
     commandDispatcher()->onRequest(this, OPEN_APIDUMP_COMMAND, [this]() { openUri(SHOW_APIDUMP_URI); return muse::make_ok(); });
 }
 
-muse::Ret ExtensionsActionController::onExtensionTriggered(const rcommand::CommandQuery& cq)
+muse::Ret ExtensionsActionController::onExtensionTriggered(const ExtensionUri& uri, const ExtensionActionCode& actionCode)
 {
-    ExtensionQuery q = queryFromCommandQuery(cq);
-    const Manifest& m = provider()->manifest(q.uri());
-    if (!m.isValid()) {
-        LOGE() << "Not found extension, uri: " << q.uri().toString();
-        return muse::make_ret(Ret::Code::BadArgs);
+    if (provider()->isEnabled(uri)) {
+        return provider()->perform(uri, actionCode);
     }
 
-    if (provider()->isEnabled(m.uri)) {
-        provider()->perform(q);
-        return muse::make_ok();
+    const Manifest& m = provider()->manifest(uri);
+    IF_ASSERT_FAILED(m.isValid()) {
+        LOGE() << "Not found extension, uri: " << uri.toString();
+        return muse::make_ret(Ret::Code::BadArgs);
     }
 
     auto promise = interactive()->warning(
@@ -73,10 +75,10 @@ muse::Ret ExtensionsActionController::onExtensionTriggered(const rcommand::Comma
         muse::trc("extensions", "Alternatively, you can enable it at any time from Home > Plugins."),
         { IInteractive::Button::No, IInteractive::Button::Yes });
 
-    promise.onResolve(this, [this, q](const IInteractive::Result& res) {
+    promise.onResolve(this, [this, uri, actionCode](const IInteractive::Result& res) {
         if (res.isButton(IInteractive::Button::Yes)) {
-            provider()->setEnabled(q.uri(), true);
-            provider()->perform(q);
+            provider()->setEnabled(uri, true);
+            provider()->perform(uri, actionCode);
         }
     });
 

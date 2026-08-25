@@ -22,9 +22,11 @@
 
 #include "extensionslistmodel.h"
 
-#include "extensionstypes.h"
-#include "translation.h"
+#include "global/translation.h"
+
 #include "shortcuts/shortcutstypes.h"
+
+#include "extensionscommands.h"
 
 #include "log.h"
 
@@ -118,15 +120,14 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
         return QString::fromStdString(manifest.version);
     case rShortcuts: {
         std::vector<std::string> shortcuts;
-        for (const auto& action : manifest.actions) {
-            actions::ActionCode code = makeCommandQuery(manifest.uri, action.code).toString();
-            shortcuts::Shortcut shortcut = shortcutsRegister()->shortcut(code);
-            shortcuts.insert(shortcuts.end(), shortcut.sequences.cbegin(), shortcut.sequences.cend());
+        IF_ASSERT_FAILED(!manifest.actions.empty()) {
+            return muse::qtrc("extensions", "Not defined");
         }
 
-        if (!shortcuts.empty()) {
-            return shortcuts::sequencesToNativeText(shortcuts);
-        }
+        //! TODO add actions support
+        std::string code = makeCommand(manifest.uri, manifest.actions.at(0).code).toString();
+        shortcuts::Shortcut shortcut = shortcutsRegister()->shortcut(code);
+        return shortcuts::sequencesToNativeText(shortcut.sequences);
 
         //: No keyboard shortcut is assigned to this plugin.
         return muse::qtrc("extensions", "Not defined");
@@ -161,7 +162,13 @@ void ExtensionsListModel::editShortcut(const QString& extensionUri)
         return;
     }
 
-    QString commandCode = QString::fromStdString(makeCommand(Uri(extensionUri.toStdString())).toString());
+    const Manifest& manifest = m_extensions.at(index);
+    IF_ASSERT_FAILED(!manifest.actions.empty()) {
+        return;
+    }
+
+    //! TODO add actions support
+    QString commandCode = QString::fromStdString(makeCommand(manifest.uri, manifest.actions.at(0).code).toString());
 
     UriQuery preferencesUri("muse://preferences");
     preferencesUri.addParam("currentPageId", Val("shortcuts"));

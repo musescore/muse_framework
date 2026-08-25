@@ -21,6 +21,8 @@
 
 #include "modularity/imoduleinterface.h"
 
+#include "global/async/notification.h"
+
 #include "imodulecommandsregister.h"
 #include "commandtypes.h"
 
@@ -37,6 +39,7 @@ public:
 
     virtual std::vector<CommandInfo> commandInfoList() const = 0;
     virtual const CommandInfo& commandInfo(const Command& command) const = 0;
+    virtual async::Notification commandInfoListChanged() const = 0;
 
     virtual const std::string& commandModuleName(const Command& command) const = 0;
 };

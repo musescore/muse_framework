@@ -98,6 +98,35 @@ void Uri::setPath(const std::string& path)
     m_path = path;
 }
 
+void Uri::addPath(const std::string& path)
+{
+    if (path.empty()) {
+        return;
+    }
+
+    if (m_path.empty()) {
+        m_path = path;
+        return;
+    }
+
+    if (m_path.back() != '/') {
+        m_path += '/';
+    }
+
+    if (path.front() == '/') {
+        m_path += path.substr(1);
+    } else {
+        m_path += path;
+    }
+}
+
+std::vector<std::string> Uri::pathSegments() const
+{
+    std::vector<std::string> segments;
+    strings::split(m_path, segments, "/");
+    return segments;
+}
+
 std::string Uri::toString() const
 {
     return m_scheme + "://" + m_path;
