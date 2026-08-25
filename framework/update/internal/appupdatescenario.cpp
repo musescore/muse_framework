@@ -300,6 +300,11 @@ void AppUpdateScenario::downloadUpdateInBackground()
         return;
     }
 
+    if (networkInformation()->isMetered()) {
+        LOGI() << "background update download skipped: metered network connection";
+        return;
+    }
+
     RetVal<Progress> progress = service()->downloadRelease();
     if (!progress.ret) {
         LOGE() << progress.ret.toString();

@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,25 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "networkstubmodule.h"
 
-#include "modularity/ioc.h"
+#pragma once
 
-#include "networkmanagercreatorstub.h"
-#include "networkconfigurationstub.h"
-#include "networkinformationstub.h"
+#include <gmock/gmock.h>
 
-using namespace muse::network;
-using namespace muse::modularity;
+#include "network/inetworkinformation.h"
 
-std::string NetworkModule::moduleName() const
+namespace muse::network {
+class NetworkInformationMock : public INetworkInformation
 {
-    return "network_stub";
-}
-
-void NetworkModule::registerExports()
-{
-    globalIoc()->registerExport<INetworkManagerCreator>(moduleName(), new NetworkManagerCreatorStub());
-    globalIoc()->registerExport<INetworkConfiguration>(moduleName(), new NetworkConfigurationStub());
-    globalIoc()->registerExport<INetworkInformation>(moduleName(), new NetworkInformationStub());
+public:
+    MOCK_METHOD(bool, isMetered, (), (const, override));
+};
 }

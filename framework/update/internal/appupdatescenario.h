@@ -29,6 +29,7 @@
 #include "interactive/iinteractive.h"
 #include "actions/iactionsdispatcher.h"
 #include "multiwindows/imultiwindowsprovider.h"
+#include "network/inetworkinformation.h"
 #include "update/iupdateconfiguration.h"
 #include "update/iappupdateservice.h"
 #include "global/iapplication.h"
@@ -39,6 +40,7 @@ class AppUpdateScenario : public IAppUpdateScenario, public Contextable, public 
     GlobalInject<IApplication> application;
     GlobalInject<mi::IMultiWindowsProvider> multiwindowsProvider;
     GlobalInject<IUpdateConfiguration> configuration;
+    GlobalInject<network::INetworkInformation> networkInformation;
     ContextInject<IInteractive> interactive = { this };
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<IAppUpdateService> service = { this };
@@ -59,6 +61,8 @@ public:
     void installReadyUpdate() override;
 
 private:
+    friend class AppUpdateScenarioTests;
+
     muse::async::Promise<Ret> processUpdateError(int errorCode);
 
     async::Promise<IInteractive::Result> showNoUpdateMsg();

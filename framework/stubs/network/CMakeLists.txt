@@ -29,4 +29,6 @@ target_sources(muse_network PRIVATE
     networkmanagerstub.h
     networkconfigurationstub.cpp
     networkconfigurationstub.h
+    networkinformationstub.cpp
+    networkinformationstub.h
 )

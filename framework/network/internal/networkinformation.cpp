@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,25 +19,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "networkstubmodule.h"
+#include "networkinformation.h"
 
-#include "modularity/ioc.h"
-
-#include "networkmanagercreatorstub.h"
-#include "networkconfigurationstub.h"
-#include "networkinformationstub.h"
+#include <QNetworkInformation>
 
 using namespace muse::network;
-using namespace muse::modularity;
 
-std::string NetworkModule::moduleName() const
+bool NetworkInformation::isMetered() const
 {
-    return "network_stub";
-}
+    QNetworkInformation* info = QNetworkInformation::instance();
+    if (!info) {
+        if (!QNetworkInformation::loadBackendByFeatures(QNetworkInformation::Features(QNetworkInformation::Feature::Metered))) {
+            //! NOTE: No backend able to report metering on this platform - assume unmetered
+            return false;
+        }
 
-void NetworkModule::registerExports()
-{
-    globalIoc()->registerExport<INetworkManagerCreator>(moduleName(), new NetworkManagerCreatorStub());
-    globalIoc()->registerExport<INetworkConfiguration>(moduleName(), new NetworkConfigurationStub());
-    globalIoc()->registerExport<INetworkInformation>(moduleName(), new NetworkInformationStub());
+        info = QNetworkInformation::instance();
+    }
+
+    return info && info->isMetered();
 }
