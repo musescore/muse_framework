@@ -147,6 +147,10 @@ private:
 
     INavigationSection* takePrioritySection(const INavigationSection* activeSec);
 
+    void saveLastActiveControl(INavigationSection* prioritySec);
+    void restoreLastActiveControl(INavigationSection* prioritySec);
+    INavigationControl* takeLastActiveControl();
+
     void resetIfNeed(QObject* watched);
 
     std::set<INavigationSection*> m_sections;
@@ -155,6 +159,7 @@ private:
 
     INavigationControl* m_defaultNavigationControl = nullptr;
     INavigationSection* m_prioritySection = nullptr;
+    INavigationControl* m_lastActiveControl = nullptr;
 
     bool m_isHighlight = false;
 
