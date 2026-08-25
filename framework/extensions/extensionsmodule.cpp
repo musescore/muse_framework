@@ -58,7 +58,6 @@ void ExtensionsModule::registerExports()
 {
     m_configuration = std::make_shared<ExtensionsConfiguration>(globalCtx());
     m_extensionsRegister = std::make_shared<ExtensionsRegister>();
-    m_extensionsCommandsRegister = std::make_shared<ExtensionsCommandsRegister>();
 
     globalIoc()->registerExport<IExtensionsConfiguration>(mname, m_configuration);
     globalIoc()->registerExport<IExtensionsRegister>(mname, m_extensionsRegister);
@@ -74,13 +73,9 @@ void ExtensionsModule::resolveImports()
 
     auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
     if (cr) {
-        cr->reg(m_extensionsCommandsRegister);
-
-        m_extensionsCommandsRegister->init();
-        m_extensionsCommandsRegister->commandListChanged().onNotify(this, [this, cr]() {
-            cr->unreg(m_extensionsCommandsRegister);
-            cr->reg(m_extensionsCommandsRegister);
-        });
+        auto ecr = std::make_shared<ExtensionsCommandsRegister>();
+        ecr->init();
+        cr->reg(ecr);
     }
 }
 

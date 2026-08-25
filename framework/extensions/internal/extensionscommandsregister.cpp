@@ -63,14 +63,16 @@ void ExtensionsCommandsRegister::reload()
     m_commandInfos.insert(m_commandInfos.end(), s_commandInfos.begin(), s_commandInfos.end());
 
     for (const auto& manifest : manifests) {
-        CommandInfo info = {
-            makeCommand(manifest.uri),
-            TranslatableString::untranslatable(manifest.title),
-            TranslatableString::untranslatable(manifest.description),
-            InputSchema(),
-            Decoration()
-        };
-        m_commandInfos.push_back(std::move(info));
+        for (const auto& action : manifest.actions) {
+            CommandInfo info = {
+                makeCommand(manifest.uri, action.code),
+                TranslatableString::untranslatable(action.title.empty() ? manifest.title : action.title),
+                TranslatableString::untranslatable(manifest.description),
+                InputSchema(),
+                Decoration()
+            };
+            m_commandInfos.push_back(std::move(info));
+        }
     }
 
     m_commandListChanged.notify();

@@ -27,7 +27,8 @@ import Muse.Extensions
 Rectangle {
     id: root
 
-    property string uri: ""
+    property string extension: ""   // extension://some/path
+    property string action: "main"  // action code
 
     property alias title: builder.title
 
@@ -38,7 +39,7 @@ Rectangle {
     height: builder.contentItem ? builder.contentItem.implicitHeight : 600
 
     Component.onCompleted: {
-        builder.load(root.uri, root);
+        builder.load(root.extension, root.action, root);
     }
 
     ExtensionBuilder {

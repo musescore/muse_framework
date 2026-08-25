@@ -21,10 +21,12 @@
  #include <map>
  #include <string>
 
+ #include "global/async/asyncable.h"
+
  #include "../icommandsregister.h"
 
 namespace muse::rcommand {
-class CommandsRegister : public ICommandsRegister
+class CommandsRegister : public ICommandsRegister, public async::Asyncable
 {
 public:
     CommandsRegister() = default;
@@ -35,6 +37,7 @@ public:
 
     std::vector<CommandInfo> commandInfoList() const override;
     const CommandInfo& commandInfo(const Command& command) const override;
+    async::Notification commandInfoListChanged() const override;
 
     const std::string& commandModuleName(const Command& command) const override;
 
@@ -42,5 +45,6 @@ private:
     std::map<std::string, IModuleCommandsRegisterPtr> m_modules;
 
     std::map<Command, std::string> m_commandModuleNames;
+    async::Notification m_commandInfoListChanged;
 };
 }

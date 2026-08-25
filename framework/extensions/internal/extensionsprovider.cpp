@@ -34,6 +34,8 @@
 using namespace muse;
 using namespace muse::extensions;
 
+static Uri VIEWER_URI = Uri("muse://extensions/viewer");
+
 void ExtensionsProvider::reloadExtensions()
 {
     extensionsRegister()->reload();
@@ -74,41 +76,28 @@ async::Channel<ExtensionUri> ExtensionsProvider::enabledChanged() const
     return extensionsRegister()->enabledChanged();
 }
 
-Action ExtensionsProvider::action(const ExtensionQuery& query) const
+muse::Ret ExtensionsProvider::perform(const ExtensionUri& uri, const ExtensionActionCode& actionCode)
 {
-    const Manifest& m = manifest(query.uri());
+    const Manifest& m = manifest(uri);
     IF_ASSERT_FAILED(m.actions.size() > 0) {
-        return Action();
+        return make_ret(Ret::Code::UnknownError);
     }
 
-    if (m.actions.size() == 1) {
-        return m.actions.at(0);
+    Action a = m.action(actionCode);
+    IF_ASSERT_FAILED(a.isValid()) {
+        return make_ret(Ret::Code::UnknownError);
     }
 
-    std::string code = query.param("action").toString();
-    for (const Action& a : m.actions) {
-        if (a.code == code) {
-            return a;
-        }
-    }
-
-    LOGE() << "not found action: " << code << ", query: " << query;
-    return Action();
-}
-
-muse::Ret ExtensionsProvider::perform(const ExtensionQuery& query)
-{
-    Action a = action(query);
     switch (a.type) {
     case Type::Form: {
-        ExtensionQuery q = query;
-        if (!q.contains("modal")) {
-            q.addParam("modal", Val(a.modal));
-        }
+        UriQuery q = UriQuery(VIEWER_URI);
+        q.addParam("extension", Val(uri.toString()));
+        q.addParam("action", Val(actionCode));
+        q.addParam("modal", Val(a.modal));
         return interactive()->openSync(q).ret;
     } break;
     case Type::Macros:
-        return run(query);
+        return run(a, m);
     default:
         break;
     }
@@ -116,11 +105,19 @@ muse::Ret ExtensionsProvider::perform(const ExtensionQuery& query)
     return make_ret(Ret::Code::UnknownError);
 }
 
-muse::Ret ExtensionsProvider::run(const ExtensionQuery& query)
+muse::Ret ExtensionsProvider::run(const ExtensionUri& uri, const ExtensionActionCode& actionCode)
 {
-    const Action extensionAction = action(query);
-    const Manifest& extensionManifest = manifest(query.uri());
-    return run(extensionAction, extensionManifest);
+    const Manifest& m = manifest(uri);
+    IF_ASSERT_FAILED(m.actions.size() > 0) {
+        return make_ret(Ret::Code::UnknownError);
+    }
+
+    Action a = m.action(actionCode);
+    IF_ASSERT_FAILED(a.isValid()) {
+        return make_ret(Ret::Code::UnknownError);
+    }
+
+    return run(a, m);
 }
 
 std::unique_ptr<IExtensionSession> ExtensionsProvider::newSession(const ExtensionUri& uri, const io::path_t& relativeScriptPath) const

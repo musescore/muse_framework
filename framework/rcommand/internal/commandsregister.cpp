@@ -42,9 +42,18 @@ void CommandsRegister::reg(const IModuleCommandsRegisterPtr& module)
 
     m_modules[moduleName] = module;
 
-    for (const auto& info : module->commandInfoList()) {
-        m_commandModuleNames[info.command] = moduleName;
-    }
+    auto updateModuleNames = [this, module, moduleName]() {
+        for (const auto& info : module->commandInfoList()) {
+            m_commandModuleNames[info.command] = moduleName;
+        }
+    };
+
+    module->commandListChanged().onNotify(this, [this, updateModuleNames]() {
+        updateModuleNames();
+        m_commandInfoListChanged.notify();
+    });
+
+    updateModuleNames();
 }
 
 void CommandsRegister::unreg(const IModuleCommandsRegisterPtr& module)
@@ -98,6 +107,11 @@ const CommandInfo& CommandsRegister::commandInfo(const Command& command) const
 
     static CommandInfo null;
     return null;
+}
+
+async::Notification CommandsRegister::commandInfoListChanged() const
+{
+    return m_commandInfoListChanged;
 }
 
 const std::string& CommandsRegister::commandModuleName(const Command& command) const
