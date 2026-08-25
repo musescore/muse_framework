@@ -1102,3 +1102,135 @@ TEST_F(Ui_NavigationControllerTests, UnregClearsPrioritySection)
     delete sect1;
     delete sect2;
 }
+
+TEST_F(Ui_NavigationControllerTests, DisablingActiveSectionRestoresLastActiveControl)
+{
+    //! CASE The priority-activated section is disabled while active (e.g. the last toast is dismissed)
+
+    //! [GIVEN] Two sections, the first one is active on its second panel
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    NavigationControl* prevControl = sect1->panels[1]->controls[0]->control;
+    EXPECT_TRUE(prevControl->active());
+
+    //! [GIVEN] The second section is priority-activated (usually F6)
+    m_controller->setPrioritySection(sect2->section);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    EXPECT_TRUE(sect2->section->active());
+
+    //! [WHEN] The active section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation goes back to the control that was active before
+    EXPECT_FALSE(sect2->section->active());
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(prevControl->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, DisablingSectionEnteredByPanelNavigationRestoresLastActiveControl)
+{
+    //! CASE The section is entered by panel navigation (usually Tab) after its priority request was consumed
+
+    //! [GIVEN] Two sections, the first one is active, the second one once requested priority
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+    m_controller->setPrioritySection(sect2->section);
+
+    //! [GIVEN] The priority jump was consumed and the navigation is back on the first section
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    EXPECT_TRUE(sect1->section->active());
+
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    NavigationControl* prevControl = sect1->panels[1]->controls[0]->control;
+    EXPECT_TRUE(prevControl->active());
+
+    //! [GIVEN] Tab past the last panel enters the second section
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+    EXPECT_TRUE(sect2->section->active());
+
+    //! [WHEN] The active section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation goes back to the control that was active before
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(prevControl->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, RestoreFallsBackToDefaultControlWhenLastControlIsGone)
+{
+    //! CASE The control that was active before was destroyed in the meantime
+
+    //! [GIVEN] Two sections, the first one is active, and a default control
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+
+    NavigationControl* defaultControl = sect1->panels[1]->controls[1]->control;
+    m_controller->setDefaultNavigationControl(defaultControl);
+
+    //! [GIVEN] The second section is priority-activated, then the remembered control is destroyed
+    m_controller->setPrioritySection(sect2->section);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    delete sect1->panels[0]->controls[0]->control;
+    sect1->panels[0]->controls[0]->control = nullptr;
+
+    //! [WHEN] The active section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation falls back to the default control
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(defaultControl->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, DisablingInactiveSectionDoesNotMoveNavigation)
+{
+    //! CASE A section that requested priority is disabled while another one holds the navigation
+
+    //! [GIVEN] Two sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+    m_controller->setPrioritySection(sect2->section);
+
+    //! [WHEN] The inactive section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation stays where it is
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(sect1->panels[0]->controls[0]->control->active());
+
+    delete sect1;
+    delete sect2;
+}
