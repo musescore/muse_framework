@@ -40,6 +40,8 @@ using namespace muse::update;
 
 static const QString HELPER_NAME("museupdater");
 
+static QString teamIdentifier(const QString& path);
+
 io::path_t MacUpdateInstaller::currentBundlePath() const
 {
     // applicationDirPath() == <bundle>.app/Contents/MacOS
@@ -54,6 +56,13 @@ io::path_t MacUpdateInstaller::helperPath() const
     return io::path_t(QCoreApplication::applicationDirPath() + "/" + HELPER_NAME);
 }
 
+QString MacUpdateInstaller::ownTeamIdentifier() const
+{
+    //! NOTE: The running bundle's signature cannot change, so look it up once.
+    static const QString team = teamIdentifier(currentBundlePath().toQString());
+    return team;
+}
+
 bool MacUpdateInstaller::isInPlaceUpdateSupported() const
 {
     const QString bundlePath = currentBundlePath().toQString();
@@ -62,6 +71,13 @@ bool MacUpdateInstaller::isInPlaceUpdateSupported() const
     }
 
     if (!QFileInfo::exists(helperPath().toQString())) {
+        return false;
+    }
+
+    //! NOTE: Without a team identifier on the running bundle there is nothing
+    //! to pin the update's signature to; fall back to the manual install flow,
+    //! where Gatekeeper assesses the package instead.
+    if (ownTeamIdentifier().isEmpty()) {
         return false;
     }
 
@@ -140,8 +156,9 @@ Ret MacUpdateInstaller::finalizeUpdate(const muse::io::path_t& preparedPath, con
     QFile::setPermissions(helperRun, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
                           | QFile::ReadGroup | QFile::ExeGroup | QFile::ReadOther | QFile::ExeOther);
 
-    // 2. Spawn the detached helper. It waits for us to quit, verifies the
-    //    staged bundle, swaps it into place and relaunches.
+    // 2. Spawn the detached helper. It waits for us to quit, verifies that
+    //    the staged bundle is signed by our team, swaps it into place and
+    //    relaunches.
     const QString bundlePath = currentBundlePath().toQString();
     const QString logPath = configuration()->updateDataPath().toQString() + "/museupdater.log";
     const QStringList args = {
@@ -149,6 +166,7 @@ Ret MacUpdateInstaller::finalizeUpdate(const muse::io::path_t& preparedPath, con
         "--src", stagingApp,
         "--dst", bundlePath,
         "--relaunch", bundlePath,
+        "--team", ownTeamIdentifier(),
         "--log", logPath
     };
 
@@ -192,11 +210,14 @@ Ret MacUpdateInstaller::verifyPackageSignature(const QString& package) const
 
     //! NOTE: The package must be signed by the same team as the running
     //! bundle, so that a validly signed package from someone else is not
-    //! accepted. Development builds are ad-hoc signed and have no team; for
-    //! them any validly signed package is accepted.
-    const QString ownTeam = teamIdentifier(currentBundlePath().toQString());
+    //! accepted. Without an own team (ad-hoc signed development builds) there
+    //! is nothing to pin the package to, so refuse instead of accepting
+    //! anything; such builds never offer auto-install anyway
+    //! (see isInPlaceUpdateSupported).
+    const QString ownTeam = ownTeamIdentifier();
     if (ownTeam.isEmpty()) {
-        return make_ok();
+        LOGE() << "refusing update: the running bundle has no team identifier";
+        return make_ret(Err::UnknownError);
     }
 
     const QString packageTeam = teamIdentifier(package);

@@ -31,8 +31,9 @@ bool waitForProcessExit(long long pid, int timeoutMs);
 
 #ifndef _WIN32
 //! Verify that the swapped-in install at `path` is launchable.
-//! On macOS this checks the code signature; elsewhere it just checks existence.
-bool verifyInstall(const std::string& path);
+//! On macOS this checks the code signature and requires it to be made by
+//! `team`; elsewhere `team` is unused and this just checks existence.
+bool verifyInstall(const std::string& path, const std::string& team);
 
 //! Launch the updated application. `path` is an .app bundle on macOS,
 //! an executable on Linux.

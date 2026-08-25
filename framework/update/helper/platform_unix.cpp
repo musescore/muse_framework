@@ -85,7 +85,7 @@ bool waitForProcessExit(long long pid, int timeoutMs)
     return ::kill(static_cast<pid_t>(pid), 0) != 0 && errno == ESRCH;
 }
 
-bool verifyInstall(const std::string& path)
+bool verifyInstall(const std::string& path, const std::string& /*team*/)
 {
     //! NOTE: There is no signature to check against on Linux, so this only
     //! establishes that what was swapped in is a launchable AppImage - enough to

@@ -52,6 +52,7 @@ struct Args {
     std::string src;      // freshly unpacked new install (dir or bundle)
     std::string dst;      // current install location to be replaced
     std::string relaunch; // path to launch after a successful swap
+    std::string team;     // signing team the staged install must match (macOS)
     std::string logPath;
 };
 
@@ -83,6 +84,7 @@ Args parseArgs(int argc, char** argv)
     a.src = kv.count("--src") ? kv["--src"] : std::string();
     a.dst = kv.count("--dst") ? kv["--dst"] : std::string();
     a.relaunch = kv.count("--relaunch") ? kv["--relaunch"] : std::string();
+    a.team = kv.count("--team") ? kv["--team"] : std::string();
     a.logPath = kv.count("--log") ? kv["--log"] : std::string();
     return a;
 }
@@ -157,6 +159,7 @@ int swapper::run(int argc, char** argv)
     logLine("  src=" + args.src);
     logLine("  dst=" + args.dst);
     logLine("  relaunch=" + args.relaunch);
+    logLine("  team=" + args.team);
     logLine("  wait-pid=" + std::to_string(args.waitPid));
 
     if (args.src.empty() || args.dst.empty()) {
@@ -202,7 +205,7 @@ int swapper::run(int argc, char** argv)
     //    check, e.g. code signature validity on macOS), instead of verifying
     //    after the swap and rolling back: this way a bad update never replaces
     //    a working install even for a moment.
-    if (!platform::verifyInstall(staging.string())) {
+    if (!platform::verifyInstall(staging.string(), args.team)) {
         logLine("error: staged install failed verification");
         std::error_code rmEc;
         fs::remove_all(staging, rmEc);

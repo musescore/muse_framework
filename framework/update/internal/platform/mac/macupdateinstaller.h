@@ -49,6 +49,9 @@ private:
     //! Path to the bundled `museupdater` helper (Contents/MacOS/museupdater).
     muse::io::path_t helperPath() const;
 
+    //! Team ID from the running bundle's code signature, empty for ad-hoc.
+    QString ownTeamIdentifier() const;
+
     Ret verifyPackageSignature(const QString& package) const;
     Ret unpackDmg(const QString& package, const QString& stagingDir) const;
 };

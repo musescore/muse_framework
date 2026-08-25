@@ -22,6 +22,7 @@
 
 #include "platform.h"
 
+#include <cctype>
 #include <cerrno>
 #include <csignal>
 #include <ctime>
@@ -69,13 +70,31 @@ bool waitForProcessExit(long long pid, int timeoutMs)
     return ::kill(static_cast<pid_t>(pid), 0) != 0 && errno == ESRCH;
 }
 
-bool verifyInstall(const std::string& path)
+bool verifyInstall(const std::string& path, const std::string& team)
 {
+    //! NOTE: A plain codesign verify accepts any validly signed bundle,
+    //! including ad-hoc signed ones anyone can produce. The requirement pins
+    //! the signer to the host application's team, so a bundle planted into
+    //! the staging directory by someone else never passes.
+    if (team.empty()) {
+        return false;
+    }
+
+    for (const char c : team) {
+        if (!std::isalnum(static_cast<unsigned char>(c))) {
+            return false;
+        }
+    }
+
+    const std::string requirement = "=anchor apple generic and certificate leaf[subject.OU] = \"" + team + "\"";
+
     char* const argv[] = {
         const_cast<char*>("codesign"),
         const_cast<char*>("--verify"),
         const_cast<char*>("--deep"),
         const_cast<char*>("--strict"),
+        const_cast<char*>("-R"),
+        const_cast<char*>(requirement.c_str()),
         const_cast<char*>(path.c_str()),
         nullptr
     };
