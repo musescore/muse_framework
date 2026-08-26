@@ -25,6 +25,7 @@
 
 #include "../diagnosticscommands.h"
 
+#include "rcommand/commandtypes.h"
 #include "types/uri.h"
 
 #include "qml/Muse/Diagnostics/diagnosticaccessiblemodel.h"
@@ -70,9 +71,6 @@ void DiagnosticsActionsController::init()
     });
     cd->onRequest(this, DIAGNOSTICS_SHOW_ACTIONS_COMMAND, [this]() { openUri(ACTIONS_LIST_URI); return muse::make_ok(); });
     cd->onRequest(this, DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, [this]() { openUri(RCOMMAND_LIST_URI); return muse::make_ok(); });
-    cd->onRequest(this, DIAGNOSTICS_ACTIONS_QUERY_COMMAND, [this](const CommandQuery& q) { return onCommandQuery(q); });
-    cd->onRequest(this, DIAGNOSTICS_ACTIONS_QUERY_PARAMS1_COMMAND, [this](const CommandQuery& q) { return onCommandQuery(q); });
-    cd->onRequest(this, DIAGNOSTICS_ACTIONS_QUERY_PARAMS2_COMMAND, [this](const CommandQuery& q) { return onCommandQuery(q); });
 
     // compat
     {
@@ -92,20 +90,6 @@ void DiagnosticsActionsController::init()
         };
 
         rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
-
-        static const std::vector<std::pair<actions::ActionQuery, Command> > actionQueryToCommands = {
-            { actions::ActionQuery("action://diagnostic/actions/query"), DIAGNOSTICS_ACTIONS_QUERY_COMMAND },
-            { actions::ActionQuery("action://diagnostic/actions/query_params1"), DIAGNOSTICS_ACTIONS_QUERY_PARAMS1_COMMAND },
-            { actions::ActionQuery("action://diagnostic/actions/query_params2"), DIAGNOSTICS_ACTIONS_QUERY_PARAMS2_COMMAND },
-        };
-
-        for (const auto& [actionQuery, command] : actionQueryToCommands) {
-            dispatcher()->reg(this, actionQuery, [this, command](const actions::ActionQuery& aquery) {
-                CommandQuery query(command);
-                query.setParams(aquery.params());
-                commandDispatcher()->dispatch(query);
-            });
-        }
     }
 }
 
@@ -124,10 +108,4 @@ void DiagnosticsActionsController::saveDiagnosticFiles()
     if (!ret) {
         LOGE() << ret.toString();
     }
-}
-
-muse::Ret DiagnosticsActionsController::onCommandQuery(const muse::rcommand::CommandQuery& query)
-{
-    interactive()->info("Test query action", query.toString());
-    return muse::make_ok();
 }

@@ -43,34 +43,34 @@ CommandDispatcher::~CommandDispatcher()
 async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
 {
     return async::make_promise<Response>([this, request](auto resolve) {
-        auto it = m_clients.find(Command(request.query.uri()));
+        auto it = m_clients.find(request.command);
         if (it != m_clients.end()) {
-            LOGI() << "try call command query: " << request.query.toString();
+            LOGI() << "try call command: " << request.command;
             Response response = it->second.callback(request);
             return resolve(response);
         } else {
-            LOGW() << "command not registered: " << request.query.toString();
+            LOGW() << "command not registered: " << request.command;
             return resolve(make_response(request, make_ret(Ret::Code::UnknownError)));
         }
     });
 }
 
-Response CommandDispatcher::dispatch(const Command& command)
+Response CommandDispatcher::dispatch(const Command& command, const Params& params)
 {
-    return dispatch(CommandQuery(command));
-}
-
-Response CommandDispatcher::dispatch(const CommandQuery& query)
-{
-    Request request = make_request(query);
-    auto it = m_clients.find(Command(query.uri()));
+    Request request = make_request(command, params);
+    auto it = m_clients.find(command);
     if (it != m_clients.end()) {
-        LOGI() << "try call command query: " << query.toString();
-        Response response = it->second.callback(make_request(query));
+        LOGI() << "try call command: " << command;
+        Response response = it->second.callback(request);
         return response;
     } else {
         return make_response(request, make_ret(Ret::Code::UnknownError));
     }
+}
+
+Response CommandDispatcher::dispatch(const CommandQuery& query)
+{
+    return dispatch(query.uri(), query.params());
 }
 
 void CommandDispatcher::onRequest(Commandable* client, const Command& command, const CallBack& callback)

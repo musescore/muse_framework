@@ -46,9 +46,9 @@ public:
     void init();
 
 private:
-    muse::Ret setDockOpen(const rcommand::CommandQuery& query);
-    muse::Ret toggleOpened(const rcommand::CommandQuery& query);
-    muse::Ret toggleFloating(const rcommand::CommandQuery& query);
+    muse::Ret setDockOpen(const rcommand::Params& params);
+    muse::Ret toggleOpened(const rcommand::Params& params);
+    muse::Ret toggleFloating(const rcommand::Params& params);
 
     muse::Ret restoreDefaultLayout();
 

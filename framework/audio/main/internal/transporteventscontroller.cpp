@@ -69,7 +69,7 @@ void TransportEventsController::onEventReceived(const TransportEvent& event)
     case TransportEvent::Type::Seek:
         if (std::holds_alternative<TransportEvent::SeekData>(event.data)) {
             const secs_t pos = std::get<TransportEvent::SeekData>(event.data).position;
-            commandDispatcher()->dispatch(rcommand::make_query("command://playback/rewind", { { "position", Val(pos) } }));
+            commandDispatcher()->dispatch(rcommand::Command("command://playback/rewind"), { { "position", Val(pos) } });
         }
         break;
     case TransportEvent::Type::Unknown:
