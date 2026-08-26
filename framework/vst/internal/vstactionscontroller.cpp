@@ -41,8 +41,8 @@ void VstActionsController::init()
     auto cd = commandDispatcher();
     cd->onRequest(this, VST_USE_OLDVIEW_COMMAND, [this]() { useView(false); return muse::make_ok(); });
     cd->onRequest(this, VST_USE_NEWVIEW_COMMAND, [this]() { useView(true); return muse::make_ok(); });
-    cd->onRequest(this, VST_OPEN_FX_EDITOR_COMMAND, [this](const rcommand::CommandQuery& q) { return fxEditor(q); });
-    cd->onRequest(this, VST_OPEN_INSTRUMENT_EDITOR_COMMAND, [this](const rcommand::CommandQuery& q) { return instEditor(q); });
+    cd->onRequest(this, VST_OPEN_FX_EDITOR_COMMAND, [this](const rcommand::Params& params) { return fxEditor(params); });
+    cd->onRequest(this, VST_OPEN_INSTRUMENT_EDITOR_COMMAND, [this](const rcommand::Params& params) { return instEditor(params); });
 
     // compat
     {
@@ -69,10 +69,8 @@ void VstActionsController::init()
     }
 }
 
-muse::Ret VstActionsController::fxEditor(const rcommand::CommandQuery& query)
+muse::Ret VstActionsController::fxEditor(const rcommand::Params& params)
 {
-    LOGD() << query.toString();
-
 #ifdef Q_OS_LINUX
     if (!isUsedNewView()) {
         LOGW() << "Old (QWidget) VST View not support Linux";
@@ -80,16 +78,16 @@ muse::Ret VstActionsController::fxEditor(const rcommand::CommandQuery& query)
     }
 #endif
 
-    std::string resourceId = query.param("resourceId").toString();
+    std::string resourceId = params.at("resourceId").toString();
     IF_ASSERT_FAILED(!resourceId.empty()) {
         LOGE() << "not set resourceId";
         return make_ret(Ret::Code::BadArgs);
     }
 
-    int trackId = query.param("trackId", Val(-1)).toInt();
-    int chainOrder = query.param("chainOrder", Val(0)).toInt();
-    std::string operation = query.param("operation", Val("open")).toString();
-    bool sync = query.param("sync", Val(false)).toBool();
+    int trackId = params.at("trackId", Val(-1)).toInt();
+    int chainOrder = params.at("chainOrder", Val(0)).toInt();
+    std::string operation = params.at("operation", Val("open")).toString();
+    bool sync = params.at("sync", Val(false)).toBool();
 
     auto instance = instancesRegister()->fxPlugin(resourceId, trackId, chainOrder);
 
@@ -107,10 +105,8 @@ muse::Ret VstActionsController::fxEditor(const rcommand::CommandQuery& query)
     return make_ok();
 }
 
-muse::Ret VstActionsController::instEditor(const rcommand::CommandQuery& query)
+muse::Ret VstActionsController::instEditor(const rcommand::Params& params)
 {
-    LOGD() << query.toString();
-
 #ifdef Q_OS_LINUX
     if (!isUsedNewView()) {
         LOGW() << "Old (QWidget) VST View not support Linux";
@@ -118,18 +114,18 @@ muse::Ret VstActionsController::instEditor(const rcommand::CommandQuery& query)
     }
 #endif
 
-    std::string resourceId = query.param("resourceId").toString();
+    std::string resourceId = params.at("resourceId").toString();
     IF_ASSERT_FAILED(!resourceId.empty()) {
         LOGE() << "not set resourceId";
         return make_ret(Ret::Code::BadArgs);
     }
 
-    int trackId = query.param("trackId", Val(-1)).toInt();
+    int trackId = params.at("trackId", Val(-1)).toInt();
 
     auto instance = instancesRegister()->instrumentPlugin(resourceId, trackId);
 
-    std::string operation = query.param("operation", Val("open")).toString();
-    bool sync = query.param("sync", Val(false)).toBool();
+    std::string operation = params.at("operation", Val("open")).toString();
+    bool sync = params.at("sync", Val(false)).toBool();
 
     if (operation == "close" && !instance) {
         return make_ret(Ret::Code::BadArgs);
