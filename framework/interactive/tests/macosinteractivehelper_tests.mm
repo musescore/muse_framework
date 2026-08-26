@@ -51,6 +51,9 @@ protected:
 
         m_mainMenu = [[NSMenu alloc] initWithTitle:@"MainMenu"];
         [NSApp setMainMenu:m_mainMenu];
+        if (![NSApp mainMenu]) {
+            GTEST_SKIP() << "No macOS mainMenu available in current test environment";
+        }
 
         // File Menu (non-edit menu)
         NSMenuItem* fileTop = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
@@ -545,7 +548,7 @@ TEST_F(MacOSInteractiveHelperTest, NativeDialogScope_MaintainsTargetWhenEditMenu
 
         // Simulate user clicking the Edit menu -> AppKit posts NSMenuDidEndTrackingNotification when menu interaction completes
         [[NSNotificationCenter defaultCenter] postNotificationName:NSMenuDidEndTrackingNotification object:editSub];
-        [[NSOperationQueue mainQueue] waitUntilAllOperationsAreFinished];
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 
         // Verify observer automatically restored target = nil and autoenablesItems = NO
         EXPECT_EQ([undo target], nil);
@@ -593,7 +596,7 @@ TEST_F(MacOSInteractiveHelperTest, NativeDialogScope_HandlesMenuRecreationDuring
 
         // End tracking notification fires when user closes menu
         [[NSNotificationCenter defaultCenter] postNotificationName:NSMenuDidEndTrackingNotification object:editSub];
-        [[NSOperationQueue mainQueue] waitUntilAllOperationsAreFinished];
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 
         // Observer must dynamically match undo2 and recreate missing fallbacks (Redo, Cut, Copy, Paste, Select All)
         EXPECT_EQ([undo2 target], nil);
@@ -650,7 +653,7 @@ TEST_F(MacOSInteractiveHelperTest, NativeDialogScope_HandlesSubmenuReplacementDu
 
         // Tracking notification fires -> applyScopeTransformations re-resolves the live submenu
         [[NSNotificationCenter defaultCenter] postNotificationName:NSMenuDidEndTrackingNotification object:newEditSub];
-        [[NSOperationQueue mainQueue] waitUntilAllOperationsAreFinished];
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 
         EXPECT_EQ([undo2 target], nil);
         EXPECT_FALSE([newEditSub autoenablesItems]);

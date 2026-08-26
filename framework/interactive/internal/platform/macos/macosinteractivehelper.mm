@@ -187,7 +187,13 @@ static NSMenuItem* matchByStructure(const ActionSpec& spec)
     if (index >= 0) {
         NSArray<NSMenuItem*>* items = [s_editMenu itemArray];
         if (index < (int)[items count]) {
-            return items[index];
+            NSMenuItem* candidate = items[index];
+            for (const auto& s : s_savedStates) {
+                if (s.wasCreated && s.item == candidate) {
+                    return nil;
+                }
+            }
+            return candidate;
         }
     }
     return nil;
@@ -248,6 +254,7 @@ static void applyScopeTransformations()
         NSMenu* liveEditMenu = [[mainMenu itemArray][s_customEditMenuIndex] submenu];
         if (liveEditMenu != s_editMenu) {
             if (s_editMenu) {
+                [s_editMenu setAutoenablesItems:s_savedAutoenables];
                 [s_editMenu release];
             }
             s_editMenu = [liveEditMenu retain];
