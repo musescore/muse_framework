@@ -37,7 +37,4 @@ inline static const muse::rcommand::Command DIAGNOSTICS_SHOW_ENGRAVING_UNDOSTACK
 inline static const muse::rcommand::Command DIAGNOSTICS_SHOW_ENGRAVING_STYLE_COMMAND("command://diagnostics/show-engraving-style");
 inline static const muse::rcommand::Command DIAGNOSTICS_SHOW_ACTIONS_COMMAND("command://diagnostics/show-actions");
 inline static const muse::rcommand::Command DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND("command://diagnostics/show-rcommands");
-inline static const muse::rcommand::Command DIAGNOSTICS_ACTIONS_QUERY_COMMAND("command://diagnostics/actions/query");
-inline static const muse::rcommand::Command DIAGNOSTICS_ACTIONS_QUERY_PARAMS1_COMMAND("command://diagnostics/actions/query-params1");
-inline static const muse::rcommand::Command DIAGNOSTICS_ACTIONS_QUERY_PARAMS2_COMMAND("command://diagnostics/actions/query-params2");
 }

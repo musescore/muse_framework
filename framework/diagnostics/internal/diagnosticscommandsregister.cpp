@@ -113,31 +113,6 @@ static const std::vector<CommandInfo> s_commandInfos = {
         InputSchema(),
         Decoration()
     },
-    CommandInfo{
-        DIAGNOSTICS_ACTIONS_QUERY_COMMAND,
-        TranslatableString("diagnostics", "Test query action"),
-        TranslatableString("diagnostics", "Test query action"),
-        InputSchema(),
-        Decoration()
-    },
-    CommandInfo{
-        DIAGNOSTICS_ACTIONS_QUERY_PARAMS1_COMMAND,
-        TranslatableString("diagnostics", "Test query action with params 1"),
-        TranslatableString("diagnostics", "Test query action with params 1"),
-        InputSchema({
-            { "param1", Arg(DataType::String, u"Test parameter 1 (optional)") }
-        }),
-        Decoration()
-    },
-    CommandInfo{
-        DIAGNOSTICS_ACTIONS_QUERY_PARAMS2_COMMAND,
-        TranslatableString("diagnostics", "Test query action with params 2"),
-        TranslatableString("diagnostics", "Test query action with params 2"),
-        InputSchema({
-            { "param1", Arg(DataType::String, u"Test parameter 1 (optional)") }
-        }),
-        Decoration()
-    },
 };
 
 std::string DiagnosticsCommandsRegister::moduleName() const

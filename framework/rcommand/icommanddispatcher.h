@@ -36,22 +36,26 @@ public:
 
     using CallBack = std::function<Response (const Request& request)>;
     using CallBackRet = std::function<Ret ()>;
-    using CallBackQueryRet = std::function<Ret (const CommandQuery& query)>;
+    using CallBackParamsRet = std::function<Ret (const Params& params)>;
 
     virtual async::Promise<Response> dispatch(const Request& request) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
     virtual void unreg(Commandable* client) = 0;
 
     // Helpers for convenience
+    async::Promise<Response> dispatch(const Command& command)
+    {
+        return dispatch(make_request(command, {}));
+    }
+
+    async::Promise<Response> dispatch(const Command& command, const Params& params)
+    {
+        return dispatch(make_request(command, params));
+    }
 
     async::Promise<Response> dispatch(const CommandQuery& query)
     {
-        return dispatch(make_request(query));
-    }
-
-    async::Promise<Response> dispatch(const Command& query)
-    {
-        return dispatch(CommandQuery(query));
+        return dispatch(make_request(query.uri(), query.params()));
     }
 
     void onRequest(Commandable* client, const Command& command, const CallBackRet& callback)
@@ -61,10 +65,10 @@ public:
         });
     }
 
-    void onRequest(Commandable* client, const Command& command, const CallBackQueryRet& callback)
+    void onRequest(Commandable* client, const Command& command, const CallBackParamsRet& callback)
     {
         onRequest(client, command, [callback](const Request& request) {
-            return make_response(request, callback(request.query));
+            return make_response(request, callback(request.params));
         });
     }
 };

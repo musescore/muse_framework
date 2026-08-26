@@ -48,7 +48,7 @@ public:
     void init();
 
 private:
-    muse::Ret selectWorkspace(const muse::rcommand::CommandQuery& query);
+    muse::Ret selectWorkspace(const muse::rcommand::Params& params);
     void openWorkspacesConfigure();
     void createNewWorkspace();
 };

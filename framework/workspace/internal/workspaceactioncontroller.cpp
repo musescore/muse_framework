@@ -33,7 +33,9 @@ using namespace muse::rcommand;
 
 void WorkspaceActionController::init()
 {
-    commandDispatcher()->onRequest(this, WORKSPACE_SELECT_COMMAND, [this](const CommandQuery& query) { return selectWorkspace(query); });
+    commandDispatcher()->onRequest(this, WORKSPACE_SELECT_COMMAND, [this](const rcommand::Params& params) {
+        return selectWorkspace(params);
+    });
     commandDispatcher()->onRequest(this, WORKSPACES_CONFIGURE_COMMAND, [this]() { openWorkspacesConfigure(); return muse::make_ok(); });
     commandDispatcher()->onRequest(this, WORKSPACE_CREATE_COMMAND, [this]() { createNewWorkspace(); return muse::make_ok(); });
 
@@ -49,9 +51,9 @@ void WorkspaceActionController::init()
     }
 }
 
-muse::Ret WorkspaceActionController::selectWorkspace(const muse::rcommand::CommandQuery& query)
+muse::Ret WorkspaceActionController::selectWorkspace(const muse::rcommand::Params& params)
 {
-    std::string selectedWorkspace = query.param("name").toString();
+    std::string selectedWorkspace = params.at("name").toString();
     manager()->changeCurrentWorkspace(selectedWorkspace);
     return muse::make_ok();
 }
