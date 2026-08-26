@@ -69,7 +69,7 @@ void ExtensionsCommandsRegister::reload()
                 TranslatableString::untranslatable(action.title.empty() ? manifest.title : action.title),
                 TranslatableString::untranslatable(manifest.description),
                 InputSchema(),
-                Decoration()
+                Decoration(action.icon)
             };
             m_commandInfos.push_back(std::move(info));
         }
