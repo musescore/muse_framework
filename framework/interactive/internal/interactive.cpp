@@ -43,6 +43,7 @@
 
 #include "muse_framework_config.h"
 
+#include "defer.h"
 #ifdef Q_OS_MAC
 #include "platform/macos/macosinteractivehelper.h"
 #endif
@@ -370,10 +371,13 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
                                                        , scope
 #endif
                          ](int result) mutable {
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
 #ifdef Q_OS_MAC
             scope.reset();
 #endif
-            dlg->deleteLater();
 
             QStringList files = dlg->selectedFiles();
 
@@ -574,7 +578,10 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
         dlg->setOption(QColorDialog::ShowAlphaChannel, allowAlpha);
 
         QObject::connect(dlg, &QColorDialog::finished, [this, dlg, resolve, reject](int result) {
-            dlg->deleteLater();
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
 
             uiConfiguration()->setColorDialogCustomColors(getCustomColors());
 
