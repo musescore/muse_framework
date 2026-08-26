@@ -664,3 +664,37 @@ TEST_F(MacOSInteractiveHelperTest, NativeDialogScope_HandlesSubmenuReplacementDu
     EXPECT_EQ([[newEditSub itemArray] count], 1);
     EXPECT_EQ([undo2 target], m_mockTarget);
 }
+
+TEST_F(MacOSInteractiveHelperTest, NativeDialogScope_HandlesMainMenuRemovalOrIndexOutOfBoundsDuringTracking)
+{
+    [m_mainMenu removeAllItems];
+
+    NSMenuItem* appItem = [[NSMenuItem alloc] initWithTitle:@"MuseScore Studio" action:nil keyEquivalent:@""];
+    [appItem setSubmenu:[[NSMenu alloc] initWithTitle:@"MuseScore Studio"]];
+    [m_mainMenu addItem:appItem];
+
+    NSMenuItem* editItem = [[NSMenuItem alloc] initWithTitle:@"Edit" action:nil keyEquivalent:@""];
+    NSMenu* editSub = [[NSMenu alloc] initWithTitle:@"Edit"];
+    muse::MacOSInteractiveHelper::setEditMenuIndex(1);
+
+    NSMenuItem* undo = [[NSMenuItem alloc] initWithTitle:@"Undo" action:@selector(triggerAction:) keyEquivalent:@"z"];
+    [undo setTarget:m_mockTarget];
+    [editSub addItem:undo];
+
+    [editItem setSubmenu:editSub];
+    [m_mainMenu addItem:editItem];
+
+    {
+        muse::MacOSInteractiveHelper::NativeDialogScope scope;
+        EXPECT_EQ([undo target], nil);
+
+        // Simulate main menu items being stripped away (e.g. during a full UI / window teardown)
+        [m_mainMenu removeAllItems];
+
+        // Tracking notification fires while index 1 is now completely out of bounds
+        [[NSNotificationCenter defaultCenter] postNotificationName:NSMenuDidEndTrackingNotification object:nil];
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+
+        // Must safely release the stale s_editMenu, restore its autoenablesItems, and not crash
+    }
+}

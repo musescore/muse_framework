@@ -250,17 +250,18 @@ static void applyScopeTransformations()
     }
 
     NSMenu* mainMenu = [NSApp mainMenu];
+    NSMenu* liveEditMenu = nil;
     if (mainMenu && s_customEditMenuIndex >= 0 && s_customEditMenuIndex < (int)[[mainMenu itemArray] count]) {
-        NSMenu* liveEditMenu = [[mainMenu itemArray][s_customEditMenuIndex] submenu];
-        if (liveEditMenu != s_editMenu) {
-            if (s_editMenu) {
-                [s_editMenu setAutoenablesItems:s_savedAutoenables];
-                [s_editMenu release];
-            }
-            s_editMenu = [liveEditMenu retain];
-            if (s_editMenu) {
-                s_savedAutoenables = [s_editMenu autoenablesItems];
-            }
+        liveEditMenu = [[mainMenu itemArray][s_customEditMenuIndex] submenu];
+    }
+    if (liveEditMenu != s_editMenu) {
+        if (s_editMenu) {
+            [s_editMenu setAutoenablesItems:s_savedAutoenables];
+            [s_editMenu release];
+        }
+        s_editMenu = [liveEditMenu retain];
+        if (s_editMenu) {
+            s_savedAutoenables = [s_editMenu autoenablesItems];
         }
     }
 
