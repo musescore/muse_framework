@@ -43,7 +43,10 @@
 
 #include "muse_framework_config.h"
 
-#include "defer.h"
+#ifdef Q_OS_MAC
+#include "platform/macos/macosinteractivehelper.h"
+#endif
+
 #include "log.h"
 
 using namespace muse;
@@ -355,15 +358,22 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
 {
 #ifndef Q_OS_LINUX
     return async::make_promise<io::path_t>([title, dir, filter](auto resolve, auto reject) {
+#ifdef Q_OS_MAC
+        auto scope = std::make_shared<MacOSInteractiveHelper::NativeDialogScope>();
+#endif
         QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
         dlg->setFileMode(QFileDialog::ExistingFile);
 
-        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
-            DEFER {
-                //! Must be called AFTER resolve/reject, as they may process posted events
-                dlg->deleteLater();
-            };
+        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject
+#ifdef Q_OS_MAC
+                                                       , scope
+#endif
+                         ](int result) mutable {
+#ifdef Q_OS_MAC
+            scope.reset();
+#endif
+            dlg->deleteLater();
 
             QStringList files = dlg->selectedFiles();
 
@@ -404,6 +414,9 @@ io::path_t Interactive::selectOpeningFileSync(const std::string& title, const io
                                               const int options)
 {
 #ifndef Q_OS_LINUX
+#ifdef Q_OS_MAC
+    MacOSInteractiveHelper::NativeDialogScope scope;
+#endif
     const QFileDialog::Options qoptions = QFileDialog::Options::fromInt(options);
     QString result = QFileDialog::getOpenFileName(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
                                                       filter), nullptr, qoptions);
@@ -424,6 +437,9 @@ io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const 
                                                 const int options)
 {
 #ifndef Q_OS_LINUX
+#ifdef Q_OS_MAC
+    MacOSInteractiveHelper::NativeDialogScope scope;
+#endif
     const QFileDialog::Options qoptions = QFileDialog::Options::fromInt(options);
     const QStringList result = QFileDialog::getOpenFileNames(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
                                                                  filter), nullptr, qoptions);
@@ -445,6 +461,9 @@ io::path_t Interactive::selectSavingFileSync(const std::string& title, const io:
                                              bool confirmOverwrite)
 {
 #ifndef Q_OS_LINUX
+#ifdef Q_OS_MAC
+    MacOSInteractiveHelper::NativeDialogScope scope;
+#endif
     QFileDialog::Options options;
     options.setFlag(QFileDialog::DontConfirmOverwrite, !confirmOverwrite);
     QString result = QFileDialog::getSaveFileName(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
@@ -467,10 +486,12 @@ io::path_t Interactive::selectSavingFileSync(const std::string& title, const io:
 io::path_t Interactive::selectDirectory(const std::string& title, const io::path_t& dir)
 {
 #ifndef Q_OS_LINUX
+#ifdef Q_OS_MAC
+    MacOSInteractiveHelper::NativeDialogScope scope;
+#endif
     QString result = QFileDialog::getExistingDirectory(nullptr, QString::fromStdString(title), dir.toQString());
     return result;
 #else
-
     UriQuery q("muse://interactive/selectdir");
     q.set("title", title);
     q.set("folder", QUrl::fromLocalFile(dir.toQString()).toLocalFile().toStdString());
@@ -553,10 +574,7 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
         dlg->setOption(QColorDialog::ShowAlphaChannel, allowAlpha);
 
         QObject::connect(dlg, &QColorDialog::finished, [this, dlg, resolve, reject](int result) {
-            DEFER {
-                //! Must be called AFTER resolve/reject, as they may process posted events
-                dlg->deleteLater();
-            };
+            dlg->deleteLater();
 
             uiConfiguration()->setColorDialogCustomColors(getCustomColors());
 

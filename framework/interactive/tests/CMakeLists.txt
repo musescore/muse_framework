@@ -24,4 +24,12 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/interactivemock.h
 )
 
+if (OS_IS_MAC)
+    list(APPEND MODULE_TEST_SRC
+        ${CMAKE_CURRENT_LIST_DIR}/macosinteractivehelper_tests.mm
+    )
+endif()
+
+set(MODULE_TEST_LINK muse_interactive)
+
 include(SetupGTest)
