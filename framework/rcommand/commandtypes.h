@@ -46,6 +46,11 @@ struct Params : public std::map<std::string, Val>
     Params(std::initializer_list<value_type> params)
         : std::map<std::string, Val>(params) {}
 
+    bool contains(const std::string& key) const
+    {
+        return find(key) != end();
+    }
+
     // hides the std::map implementation of at()
     Val at(const std::string& key, const Val& def = Val()) const
     {
