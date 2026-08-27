@@ -54,7 +54,7 @@ Text {
 
             onPressed: function(mouse) {
                 ui.tooltip.hide(root, true)
-                mouse.accepted = false
+                mouse.accepted = Boolean(root.hoveredLink)
             }
 
             onClicked: {
