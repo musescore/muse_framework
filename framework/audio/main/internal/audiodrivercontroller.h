@@ -54,6 +54,8 @@ public:
     void close() override;
     bool isOpened() const override;
 
+    void setLivePlaybackOngoing(bool ongoing) override;
+
     const IAudioDriver::Spec& activeSpec() const override;
     async::Channel<IAudioDriver::Spec> activeSpecChanged() const override;
 
@@ -91,5 +93,6 @@ private:
     async::Notification m_outputDeviceSampleRateChanged;
 
     bool m_retryOpenDevice = false;
+    bool m_livePlaybackOngoing = false;
 };
 }
