@@ -30,12 +30,18 @@ using namespace muse::ui;
 class Ui_QmlDataFormatterTests : public ::testing::Test
 {
 protected:
+    void SetUp() override
+    {
+        m_previousLocale = QLocale();
+    }
+
     void TearDown() override
     {
-        QLocale::setDefault(QLocale::c());
+        QLocale::setDefault(m_previousLocale);
     }
 
     QmlDataFormatter m_formatter;
+    QLocale m_previousLocale;
 };
 
 TEST_F(Ui_QmlDataFormatterTests, FormatReal_KeepsGroupSeparator)

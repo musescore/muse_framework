@@ -55,6 +55,10 @@ void DoubleInputValidator::fixup(QString& string) const
     locale.setNumberOptions(locale.numberOptions() | QLocale::OmitGroupSeparator);
     QString decimalSep = locale.decimalPoint();
 
+    if (!locale.groupSeparator().isEmpty()) {
+        string.remove(locale.groupSeparator());
+    }
+
     auto removeTrailingZeros = [decimalSep](QString& str) {
         if (str.isEmpty()) {
             return;

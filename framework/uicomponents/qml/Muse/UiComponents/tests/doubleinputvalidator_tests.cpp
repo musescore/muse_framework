@@ -80,7 +80,7 @@ TEST_F(DoubleInputValidatorTests, ValidateDotLocale) {
         { "2.", QValidator::Intermediate, "2" },
         { "-1000.1", QValidator::Intermediate, "-1000" },
         { "1000.1", QValidator::Intermediate, "1000" },
-        { "1,000", QValidator::Acceptable }, // pasted separators are stripped
+        { "1,000", QValidator::Acceptable, "1000" }, // pasted separators are stripped
         { "1.123", QValidator::Invalid }, // more than 2 decimal places
         { "1000", QValidator::Acceptable },
         { "10000", QValidator::Invalid }, // more than top
@@ -90,7 +90,10 @@ TEST_F(DoubleInputValidatorTests, ValidateDotLocale) {
 
     int pos = 0;
     for (Input& input : inputs) {
-        EXPECT_EQ(m_validator->validate(input.str, pos), input.expectedState);
+        // validate() may normalize its input (e.g. strip pasted group
+        // separators); keep the original for the expectations below
+        QString validateInput = input.str;
+        EXPECT_EQ(m_validator->validate(validateInput, pos), input.expectedState);
 
         if (QValidator::Invalid == input.expectedState) {
             continue;
@@ -99,7 +102,7 @@ TEST_F(DoubleInputValidatorTests, ValidateDotLocale) {
         QString fixInput = input.str;
         m_validator->fixup(fixInput);
 
-        QString expectedStr = QValidator::Acceptable == input.expectedState ? input.str : input.fixedStr;
+        QString expectedStr = input.fixedStr.isEmpty() ? input.str : input.fixedStr;
         EXPECT_EQ(expectedStr, fixInput);
     }
 
@@ -136,7 +139,7 @@ TEST_F(DoubleInputValidatorTests, ValidateCommaLocale) {
         { "2,", QValidator::Intermediate, "2" },
         { "-1000,1", QValidator::Intermediate, "-1000" },
         { "1000,1", QValidator::Intermediate, "1000" },
-        { "1.000", QValidator::Acceptable }, // pasted separators are stripped
+        { "1.000", QValidator::Acceptable, "1000" }, // pasted separators are stripped
         { "1,123", QValidator::Invalid }, // more than 2 decimal places
         { "abc", QValidator::Invalid },
         { "", QValidator::Intermediate, "0" }
@@ -144,7 +147,10 @@ TEST_F(DoubleInputValidatorTests, ValidateCommaLocale) {
 
     int pos = 0;
     for (Input& input : inputs) {
-        EXPECT_EQ(m_validator->validate(input.str, pos), input.expectedState);
+        // validate() may normalize its input (e.g. strip pasted group
+        // separators); keep the original for the expectations below
+        QString validateInput = input.str;
+        EXPECT_EQ(m_validator->validate(validateInput, pos), input.expectedState);
 
         if (QValidator::Invalid == input.expectedState) {
             continue;
@@ -153,7 +159,7 @@ TEST_F(DoubleInputValidatorTests, ValidateCommaLocale) {
         QString fixInput = input.str;
         m_validator->fixup(fixInput);
 
-        QString expectedStr = QValidator::Acceptable == input.expectedState ? input.str : input.fixedStr;
+        QString expectedStr = input.fixedStr.isEmpty() ? input.str : input.fixedStr;
         EXPECT_EQ(expectedStr, fixInput);
     }
 
@@ -193,7 +199,10 @@ TEST_F(DoubleInputValidatorTests, ValidateSmallRange) {
 
     int pos = 0;
     for (Input& input : inputs) {
-        EXPECT_EQ(m_validator->validate(input.str, pos), input.expectedState);
+        // validate() may normalize its input (e.g. strip pasted group
+        // separators); keep the original for the expectations below
+        QString validateInput = input.str;
+        EXPECT_EQ(m_validator->validate(validateInput, pos), input.expectedState);
 
         if (QValidator::Invalid == input.expectedState) {
             continue;
@@ -202,7 +211,7 @@ TEST_F(DoubleInputValidatorTests, ValidateSmallRange) {
         QString fixInput = input.str;
         m_validator->fixup(fixInput);
 
-        QString expectedStr = QValidator::Acceptable == input.expectedState ? input.str : input.fixedStr;
+        QString expectedStr = input.fixedStr.isEmpty() ? input.str : input.fixedStr;
         EXPECT_EQ(expectedStr, fixInput);
     }
 
