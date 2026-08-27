@@ -81,7 +81,12 @@ Item {
             } else {
                 newValue = value + step
             }
-            newValue = ui.df.roundReal(newValue, root.decimals)
+            // Drop float dust, but never let rounding swallow a step finer
+            // than the decimals quantum
+            var rounded = ui.df.roundReal(newValue, root.decimals)
+            if (rounded !== value) {
+                newValue = rounded
+            }
 
             if (newValue === value) {
                 return
@@ -104,7 +109,12 @@ Item {
             } else {
                 newValue = value - step
             }
-            newValue = ui.df.roundReal(newValue, root.decimals)
+            // Drop float dust, but never let rounding swallow a step finer
+            // than the decimals quantum
+            var rounded = ui.df.roundReal(newValue, root.decimals)
+            if (rounded !== value) {
+                newValue = rounded
+            }
 
             if (newValue === value) {
                 return
@@ -158,7 +168,8 @@ Item {
         currentText: ui.df.formatRealForEdit(root.currentValue ? root.currentValue : 0.0, decimals)
 
         navigation.accessible.role: MUAccessible.SpinBox
-        navigation.accessible.value: currentValue + (measureUnitsSymbol !== "" ? " " + measureUnitsSymbol : "")
+        navigation.accessible.value: ui.df.formatRealForEdit(root.currentValue ? root.currentValue : 0.0, decimals)
+                                     + (measureUnitsSymbol !== "" ? " " + measureUnitsSymbol : "")
         navigation.onNavigationEvent: function(event) {
             if (!textInputField.activeFocus) {
                 return
