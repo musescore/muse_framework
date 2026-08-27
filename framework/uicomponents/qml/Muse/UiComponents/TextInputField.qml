@@ -72,6 +72,7 @@ FocusScope {
     }
 
     function clear() {
+        prv.userIsEditing = false
         valueInput.text = ""
         currentText = ""
         textCleared()
@@ -275,6 +276,11 @@ FocusScope {
                     selectAll()
                 } else {
                     deselect()
+                    // Safety net: editingFinished is not emitted when the text
+                    // is not acceptable; typing must not block syncs forever.
+                    // (Only the flag: editingFinished still follows and must
+                    // see the user's text.)
+                    prv.userIsEditing = false
                 }
             }
 
