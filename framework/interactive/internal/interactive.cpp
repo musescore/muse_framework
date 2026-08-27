@@ -330,6 +330,19 @@ static UriQuery makeSelectFileQuery(FileDialogMode mode, const std::string& titl
         q.set("folder", QUrl::fromLocalFile(current.toQString()).toString().toStdString());
     } else if (mode == FileDialogMode::SaveFile) {
         q.set("currentFile", QUrl::fromLocalFile(current.toQString()).toString().toStdString());
+
+        // Some Linux native/portal dialogs don't auto-append the extension when the user
+        // doesn't type one, which then leaves the caller without a way to pick the right
+        // writer. Only do this when there is a single filter on offer: some callers (e.g.
+        // "Save As" with the experimental uncompressed-folder option) present more than one
+        // filter, where a global default suffix would be applied regardless of the filter
+        // the user actually selected, defeating the alternate option.
+        if (filter.size() == 1) {
+            std::string suffix = io::suffix(current);
+            if (!suffix.empty()) {
+                q.set("defaultSuffix", suffix);
+            }
+        }
     }
 
     return q;
