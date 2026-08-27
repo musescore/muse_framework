@@ -21,10 +21,28 @@
  */
 #include "dataformatter.h"
 
+#include <QLocale>
+
 #include "translation.h"
 #include "types/datetime.h"
 
 using namespace muse;
+
+namespace {
+//! File sizes are display-only: use the locale's decimal separator
+String localizedReal(double val, int prec)
+{
+    QString str = QLocale().toString(val, 'f', prec);
+    const QString decSep = QLocale().decimalPoint();
+    while (prec > 0 && str.endsWith(u'0')) {
+        str.chop(1);
+    }
+    if (str.endsWith(decSep)) {
+        str.chop(decSep.length());
+    }
+    return String::fromQString(str);
+}
+}
 
 double DataFormatter::roundDouble(const double& val, const int decimals)
 {
@@ -85,19 +103,19 @@ String DataFormatter::formatFileSize(size_t size)
     if (size >= 1024 * 1024 * 1024) {
         double gb = double(size) / (1024 * 1024 * 1024);
         //: Abbreviation of "gigabyte", used to indicate file size
-        return mtrc("global", "%1 GB", "gigabyte").arg(formatReal(gb, 2));
+        return mtrc("global", "%1 GB", "gigabyte").arg(localizedReal(gb, 2));
     }
 
     if (size >= 1024 * 1024) {
         double mb = double(size) / (1024 * 1024);
         //: Abbreviation of "megabyte", used to indicate file size
-        return mtrc("global", "%1 MB", "megabyte").arg(formatReal(mb, 1));
+        return mtrc("global", "%1 MB", "megabyte").arg(localizedReal(mb, 1));
     }
 
     if (size >= 1024) {
         double kb = double(size) / 1024;
         //: Abbreviation of "kilobyte", used to indicate file size
-        return mtrc("global", "%1 KB", "kilobyte").arg(formatReal(kb, 0));
+        return mtrc("global", "%1 KB", "kilobyte").arg(localizedReal(kb, 0));
     }
 
     //: Used to indicate file size. Ideally, keep the translation short; feel free to use an abbreviation.
