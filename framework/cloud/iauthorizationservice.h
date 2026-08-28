@@ -25,7 +25,6 @@
 #include "modularity/imoduleinterface.h"
 #include "cloudtypes.h"
 
-#include "types/val.h"
 #include "types/retval.h"
 
 namespace muse::cloud {
@@ -39,8 +38,6 @@ public:
     virtual void signUp() = 0;
     virtual void signIn() = 0;
     virtual void signOut() = 0;
-
-    virtual RetVal<Val> ensureAuthorization(bool publishingScore, const std::string& text = {}) = 0;
 
     virtual ValCh<bool> userAuthorized() const = 0;
     virtual const AccountInfo& accountInfo() const = 0;

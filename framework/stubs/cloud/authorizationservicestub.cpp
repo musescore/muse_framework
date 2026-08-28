@@ -37,11 +37,6 @@ void AuthorizationServiceStub::signOut()
 {
 }
 
-RetVal<Val> AuthorizationServiceStub::ensureAuthorization(bool, const std::string&)
-{
-    return muse::make_ret(Ret::Code::NotSupported);
-}
-
 ValCh<bool> AuthorizationServiceStub::userAuthorized() const
 {
     return ValCh<bool>();

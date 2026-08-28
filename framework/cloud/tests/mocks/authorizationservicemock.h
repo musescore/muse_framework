@@ -33,7 +33,6 @@ public:
     MOCK_METHOD(void, signUp, (), (override));
     MOCK_METHOD(void, signIn, (), (override));
     MOCK_METHOD(void, signOut, (), (override));
-    MOCK_METHOD(RetVal<Val>, ensureAuthorization, (bool publishingScore, const std::string& text), (override));
     MOCK_METHOD(ValCh<bool>, userAuthorized, (), (const, override));
     MOCK_METHOD(const AccountInfo&, accountInfo, (), (const, override));
     MOCK_METHOD(CloudInfo, cloudInfo, (), (const, override));
