@@ -21,6 +21,7 @@
  */
 
 #include "initialletternavigation.h"
+#include <QRegularExpression>
 
 #include "global/log.h"
 

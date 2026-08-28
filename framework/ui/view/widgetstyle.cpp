@@ -34,6 +34,7 @@
 #include <QTextEdit>
 #include <QToolBar>
 #include <QVariant>
+#include <QPainter>
 
 #include "api/themeapi.h"
 #include "iconcodes.h"

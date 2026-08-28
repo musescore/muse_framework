@@ -29,6 +29,7 @@
 #include "internal/multiprocess/imultiprocessprovider.h"
 
 #include "async/asyncable.h"
+#include <QVariant>
 
 namespace muse::mi {
 class MultiInstancesDevModel : public QObject, public Contextable, public async::Asyncable

@@ -23,6 +23,7 @@
 #include "polylineplot.h"
 #include "realfn.h"
 
+#include <QCursor>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>

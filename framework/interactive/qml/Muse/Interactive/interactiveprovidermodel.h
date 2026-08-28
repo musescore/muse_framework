@@ -24,6 +24,7 @@
 
 #include <QObject>
 #include <QQmlParserStatus>
+#include <QWindow>
 #include <qqmlintegration.h>
 
 #include "global/async/asyncable.h"

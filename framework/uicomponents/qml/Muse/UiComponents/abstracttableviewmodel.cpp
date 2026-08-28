@@ -22,6 +22,7 @@
 #include "abstracttableviewmodel.h"
 
 #include <QSet>
+#include <QTimer>
 
 #include "internal/tableviewlistcell.h"
 

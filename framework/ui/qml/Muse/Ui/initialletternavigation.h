@@ -24,6 +24,7 @@
 
 #include <QObject>
 #include <qqmlintegration.h>
+#include <QTimer>
 
 #include "abstractnavigation.h"
 

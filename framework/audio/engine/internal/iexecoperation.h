@@ -22,6 +22,8 @@
 
  #pragma once
 
+#include <functional>
+
 namespace muse::audio::engine {
 //! NOTE When commands arrive at the engine, it exec them.
 //! These can be quick commands like changing the volume,
