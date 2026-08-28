@@ -26,9 +26,9 @@
 #include <memory>
 #include <mutex>
 
-#include "../ifilesystem.h"
+#include <QFile>
 
-class QFile;
+#include "../ifilesystem.h"
 
 namespace muse::io {
 class FileSystem : public IFileSystem
