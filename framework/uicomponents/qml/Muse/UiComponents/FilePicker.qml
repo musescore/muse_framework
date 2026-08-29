@@ -46,6 +46,7 @@ Item {
     property string buttonText: qsTrc("ui", "Browse")
     property int buttonOrientation: Qt.Vertical
     property alias buttonWidth: button.implicitWidth
+    property alias toolTipTitle: button.toolTipTitle
 
     property NavigationPanel navigation: null
     property int navigationRowOrderStart: 0
