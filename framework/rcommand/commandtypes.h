@@ -37,16 +37,31 @@ constexpr std::string_view COMMAND_SCHEME = "command";
 using Command = Uri;
 using CommandQuery = UriQuery;
 
-inline CommandQuery make_query(const Command& command, const std::vector<std::pair<std::string, Val> >& params)
+struct Params : public std::map<std::string, Val>
+{
+    Params() = default;
+    Params(const std::map<std::string, Val>& params)
+        : std::map<std::string, Val>(params) {}
+
+    Params(std::initializer_list<value_type> params)
+        : std::map<std::string, Val>(params) {}
+
+    // hides the std::map implementation of at()
+    Val at(const std::string& key, const Val& def = Val()) const
+    {
+        auto it = find(key);
+        return it != end() ? it->second : def;
+    }
+};
+
+inline CommandQuery make_query(const Command& command, const Params& params)
 {
     CommandQuery query(command);
-    for (const auto& param : params) {
-        query.addParam(param.first, param.second);
-    }
+    query.setParams(params);
     return query;
 }
 
-inline CommandQuery make_query(const std::string& command, const std::vector<std::pair<std::string, Val> >& params)
+inline CommandQuery make_query(const std::string& command, const Params& params)
 {
     return make_query(Command(command), params);
 }
@@ -145,7 +160,8 @@ using CallId = uint64_t;
 struct Request
 {
     CallId callId = 0;
-    CommandQuery query;
+    Command command;
+    Params params;
 };
 
 struct Response
@@ -168,11 +184,12 @@ inline CallId new_call_id()
     return lastId;
 }
 
-inline Request make_request(const CommandQuery& query)
+inline Request make_request(const Command& command, const Params& params)
 {
     Request request;
     request.callId = new_call_id();
-    request.query = query;
+    request.command = command;
+    request.params = params;
     return request;
 }
 

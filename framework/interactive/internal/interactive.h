@@ -30,7 +30,6 @@
 #include "async/asyncable.h"
 
 #include "modularity/ioc.h"
-#include "extensions/iextensionsprovider.h"
 #include "shortcuts/ishortcutsregister.h"
 #include "ui/imainwindow.h"
 #include "ui/iuiconfiguration.h"
@@ -46,7 +45,6 @@ class Interactive : public QObject, public IInteractive, public IInteractiveProv
 
     GlobalInject<ui::IUiConfiguration> uiConfiguration;
     GlobalInject<interactive::IInteractiveUriRegister> uriRegister;
-    ContextInject<extensions::IExtensionsProvider> extensionsProvider = { this };
     ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
     ContextInject<ui::IMainWindow> mainWindow = { this };
 
@@ -162,7 +160,6 @@ private:
 
     void raiseWindowInStack(QObject* newActiveWindow);
 
-    void fillExtData(QmlLaunchData* data, const UriQuery& q, const QVariantMap& params) const;
     void fillData(QmlLaunchData* data, const Uri& uri, const QVariantMap& params) const;
     void fillData(QObject* object, const QVariantMap& params) const;
 
@@ -171,7 +168,6 @@ private:
 
     RetVal<bool> isOpened(const QString& objectId) const;
 
-    RetVal<OpenData> openExtensionDialog(const UriQuery& q, const QVariantMap& params);
     RetVal<OpenData> openWidgetDialog(const Uri& uri, const QVariantMap& params);
     RetVal<OpenData> openQml(const Uri& uri, const QVariantMap& params);
 

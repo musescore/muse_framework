@@ -260,6 +260,51 @@ TEST_F(Draw_FontsProviderQtTests, descent)
     }
 }
 
+TEST_F(Draw_FontsProviderQtTests, underlinePos)
+{
+    Env env;
+    Font f(u"Edwin", Font::Type::Text);
+
+    for (double pointSize : TEST_POINTSIZES) {
+        f.setPointSizeF(pointSize);
+
+        double qVal = env.qProvider.underlinePos(f);
+        double xVal = env.xProvider.underlinePos(f);
+
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
+    }
+}
+
+TEST_F(Draw_FontsProviderQtTests, lineWidth)
+{
+    Env env;
+    Font f(u"Edwin", Font::Type::Text);
+
+    for (double pointSize : TEST_POINTSIZES) {
+        f.setPointSizeF(pointSize);
+
+        double qVal = env.qProvider.lineWidth(f);
+        double xVal = env.xProvider.lineWidth(f);
+
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
+    }
+}
+
+TEST_F(Draw_FontsProviderQtTests, strikeOutPos)
+{
+    Env env;
+    Font f(u"Edwin", Font::Type::Text);
+
+    for (double pointSize : TEST_POINTSIZES) {
+        f.setPointSizeF(pointSize);
+
+        double qVal = env.qProvider.strikeOutPos(f);
+        double xVal = env.xProvider.strikeOutPos(f);
+
+        EXPECT_TRUE(ValuesMatch(f.pointSizeF(), qVal, xVal, 0.0));
+    }
+}
+
 TEST_F(Draw_FontsProviderQtTests, horizontalAdvance_Char)
 {
     Env env;

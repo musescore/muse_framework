@@ -51,8 +51,8 @@ public:
 
     void init();
 
-    muse::Ret fxEditor(const rcommand::CommandQuery& query);
-    muse::Ret instEditor(const rcommand::CommandQuery& query);
+    muse::Ret fxEditor(const rcommand::Params& params);
+    muse::Ret instEditor(const rcommand::Params& params);
 
     void editorOperation(const std::string& operation, int instanceId, bool sync);
 

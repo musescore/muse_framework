@@ -55,9 +55,8 @@ public:
     bool isEnabled(const ExtensionUri& uri) const override;
     async::Channel<ExtensionUri> enabledChanged() const override;
 
-    Action action(const ExtensionQuery& query) const override;
-    Ret perform(const ExtensionQuery& query) override;
-    Ret run(const ExtensionQuery& query) override;
+    Ret perform(const ExtensionUri& uri, const ExtensionActionCode& action) override;
+    Ret run(const ExtensionUri& uri, const ExtensionActionCode& action) override;
 
     std::unique_ptr<IExtensionSession> newSession(const ExtensionUri& uri, const io::path_t& relativeScriptPath) const override;
 

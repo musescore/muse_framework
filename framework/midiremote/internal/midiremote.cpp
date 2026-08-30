@@ -304,7 +304,7 @@ void MidiRemote::processMMC(const MMCMessage& msg)
     case MMCCommand::Locate: {
         const std::optional<double> pos = m_mmcDecoder->locateToSeconds(msg);
         if (pos.has_value()) {
-            commandDispatcher()->dispatch(rcommand::make_query("command://playback/rewind", { { "position", Val(pos.value()) } }));
+            commandDispatcher()->dispatch(rcommand::Command("command://playback/rewind"), { { "position", Val(pos.value()) } });
         }
     } break;
     default: break;

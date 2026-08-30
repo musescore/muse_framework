@@ -21,7 +21,7 @@
  */
 #include "extensionstoolbarmodel.h"
 
-#include "extensionstypes.h"
+#include "extensionscommands.h"
 #include "uicomponents/qml/Muse/UiComponents/toolbaritem.h"
 
 using namespace muse::extensions;
@@ -51,7 +51,7 @@ void ExtensionsToolBarModel::load()
                            : TranslatableString::untranslatable(m.title));
 
             ui::UiAction uiaction;
-            uiaction.code = makeCommandQuery(m.uri, a.code).toString();
+            uiaction.code = makeCommand(m.uri, a.code).toString();
             item->setAction(uiaction);
 
             items << item;

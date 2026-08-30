@@ -31,7 +31,6 @@
 namespace muse::extensions {
 class ExtensionsConfiguration;
 class ExtensionsRegister;
-class ExtensionsCommandsRegister;
 class ExtensionsModule : public modularity::IModuleSetup, public async::Asyncable
 {
 public:
@@ -48,7 +47,6 @@ private:
 
     std::shared_ptr<ExtensionsConfiguration> m_configuration;
     std::shared_ptr<ExtensionsRegister> m_extensionsRegister;
-    std::shared_ptr<ExtensionsCommandsRegister> m_extensionsCommandsRegister;
 };
 
 class ExtensionsProvider;

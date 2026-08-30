@@ -45,6 +45,10 @@ public:
     double ascent() const;
     double descent() const;
 
+    double underlinePos() const;
+    double lineWidth() const;
+    double strikeOutPos() const;
+
     double width(const String& string) const;
     double width(const Char& ch) const;
 

@@ -59,11 +59,17 @@ QString ExtensionBuilder::validateImports(const io::path_t& qmlFilePath) const
     return QString();
 }
 
-void ExtensionBuilder::load(const QString& uri, QObject* itemParent)
+void ExtensionBuilder::load(const QString& extension, const QString& action, QObject* itemParent)
 {
-    const UriQuery q = UriQuery(uri.toStdString());
-    const Action a = provider()->action(q);
-    if (!a.isValid()) {
+    const ExtensionUri uri = ExtensionUri(extension.toStdString());
+    const Manifest& manifest = provider()->manifest(uri);
+    IF_ASSERT_FAILED(manifest.isValid()) {
+        LOGE() << "Not found manifest, uri: " << uri;
+        return;
+    }
+
+    const Action a = manifest.action(action.toStdString());
+    IF_ASSERT_FAILED(a.isValid()) {
         LOGE() << "Not found action, uri: " << uri;
         return;
     }
@@ -77,7 +83,6 @@ void ExtensionBuilder::load(const QString& uri, QObject* itemParent)
         engin = engine()->qmlEngine();
     }
 
-    const Manifest& manifest = provider()->manifest(q.uri());
     QObject* qmlObj = nullptr;
 
     QString errorString;

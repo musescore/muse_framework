@@ -743,14 +743,8 @@ Promise<Val>::BodyResolveReject Interactive::openFunc(const UriQuery& q, const Q
             openedRet = openQml(q.uri(), params);
             break;
         case ContainerMeta::Undefined: {
-            //! NOTE Not found default, try extension
-            extensions::Manifest ext = extensionsProvider()->manifest(q.uri());
-            if (ext.isValid()) {
-                openedRet = openExtensionDialog(q, params);
-            } else {
-                openedRet.ret = make_ret(Ret::Code::UnknownError);
-            }
-        }
+            openedRet.ret = make_ret(Ret::Code::UnknownError);
+        } break;
         }
 
         if (!openedRet.ret) {
@@ -945,30 +939,6 @@ Ret Interactive::closeObjectsSync(const std::vector<ObjectInfo>& objs)
     return ret;
 }
 
-void Interactive::fillExtData(QmlLaunchData* data, const UriQuery& q, const QVariantMap& params_) const
-{
-    static Uri VIEWER_URI = Uri("muse://extensions/viewer");
-
-    ContainerMeta meta = uriRegister()->meta(VIEWER_URI);
-    data->setValue("module", meta.qmlModule);
-    data->setValue("path", meta.qmlPath);
-    data->setValue("type", meta.type);
-
-    QVariantMap params = params_;
-    params["uri"] = QString::fromStdString(q.toString());
-
-    //! NOTE Extension dialogs open as non-modal by default
-    //! The modal parameter must be present in the uri
-    //! But here, just in case, `true` is indicated by default,
-    //! since this value is set in the base class of the dialog by default
-    if (!params.contains("modal")) {
-        params["modal"] = q.param("modal", Val(true)).toBool();
-    }
-
-    data->setValue("uri", QString::fromStdString(VIEWER_URI.toString()));
-    data->setValue("params", params);
-}
-
 void Interactive::fillData(QmlLaunchData* data, const Uri& uri, const QVariantMap& params) const
 {
     ContainerMeta meta = uriRegister()->meta(uri);
@@ -1135,20 +1105,6 @@ RetVal<Val> Interactive::toRetVal(const QVariant& jsrv) const
     rv.val = Val::fromQVariant(val);
 
     return rv;
-}
-
-RetVal<Interactive::OpenData> Interactive::openExtensionDialog(const UriQuery& q, const QVariantMap& params)
-{
-    QmlLaunchData data;
-    fillExtData(&data, q, params);
-
-    m_openRequested.send(&data);
-
-    RetVal<OpenData> result;
-    result.ret = toRet(data.value("ret"));
-    result.val.objectId = data.value("objectId").toString();
-
-    return result;
 }
 
 RetVal<Interactive::OpenData> Interactive::openWidgetDialog(const Uri& uri, const QVariantMap& params)

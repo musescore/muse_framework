@@ -23,6 +23,8 @@
 #include <vector>
 #include <memory>
 
+#include "global/async/notification.h"
+
 #include "commandtypes.h"
 
 namespace muse::rcommand {
@@ -36,6 +38,7 @@ public:
 
     virtual const std::vector<Command>& commandList() const = 0;
     virtual const std::vector<CommandInfo>& commandInfoList() const = 0;
+    virtual async::Notification commandListChanged() const { return {}; }
 };
 
 using IModuleCommandsRegisterPtr = std::shared_ptr<IModuleCommandsRegister>;

@@ -187,6 +187,8 @@ TEST_F(Draw_FontFaceXTTests, TextMetrics)
     if (faces->xt.capHeight() >= 0) {
         EXPECT_TRUE(valueIsNear(faces->ft.capHeight(), faces->xt.capHeight(), ONE_PIXEL));
     }
+    EXPECT_TRUE(valueIsNear(faces->ft.underlinePos(), faces->xt.underlinePos(), ONE_PIXEL));
+    EXPECT_TRUE(valueIsNear(faces->ft.lineWidth(), faces->xt.lineWidth(), ONE_PIXEL));
 }
 
 TEST_F(Draw_FontFaceXTTests, GlyphMetrics)

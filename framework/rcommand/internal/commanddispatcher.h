@@ -32,7 +32,7 @@ public:
     void unreg(Commandable* client) override;
 
     // for utests
-    Response dispatch(const Command& command);
+    Response dispatch(const Command& command, const Params& params = {});
     Response dispatch(const CommandQuery& query);
 
 private:

@@ -27,7 +27,8 @@ import Muse.UiComponents
 StyledDialogView {
     id: dialog
 
-    property alias uri: viewer.uri
+    property alias extension: viewer.extension
+    property alias action: viewer.action
 
     title: viewer.title
 
