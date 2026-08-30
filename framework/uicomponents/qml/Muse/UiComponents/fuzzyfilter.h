@@ -60,7 +60,7 @@ public:
     Qt::CaseSensitivity caseSensitivity() const;
     void setCaseSensitivity(Qt::CaseSensitivity);
 
-    std::optional<double> getScore(const QPersistentModelIndex& sourceIndex, const SortFilterProxyModel&);
+    std::optional<double> getScore(const QModelIndex& sourceIndex) const;
 
 signals:
     void fuzzyPatternChanged();
@@ -70,6 +70,7 @@ signals:
 private:
     void compilePattern();
 
+    std::optional<double> getOrCalcScore(const QModelIndex& sourceIndex, const SortFilterProxyModel&);
     std::optional<double> calcScore(const QModelIndex& sourceIndex, const SortFilterProxyModel&);
     void clearScoreCache();
 

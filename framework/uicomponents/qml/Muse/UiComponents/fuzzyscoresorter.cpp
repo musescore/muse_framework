@@ -30,14 +30,14 @@ FuzzyScoreSorter::FuzzyScoreSorter(QObject* parent)
 }
 
 bool FuzzyScoreSorter::lessThan(const QModelIndex& sourceLeft, const QModelIndex& sourceRight,
-                                const SortFilterProxyModel& proxyModel)
+                                const SortFilterProxyModel& /*proxyModel*/)
 {
     if (!m_fuzzyFilter) {
         return sourceLeft < sourceRight;
     }
 
-    const std::optional<double> leftScore = m_fuzzyFilter->getScore(sourceLeft, proxyModel);
-    const std::optional<double> rightScore = m_fuzzyFilter->getScore(sourceRight, proxyModel);
+    const std::optional<double> leftScore = m_fuzzyFilter->getScore(sourceLeft);
+    const std::optional<double> rightScore = m_fuzzyFilter->getScore(sourceRight);
 
     return leftScore < rightScore;
 }

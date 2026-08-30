@@ -22,9 +22,6 @@
 
 #include "fuzzyfilter.h"
 
-#include <algorithm>
-#include <iterator>
-
 #include "sortfilterproxymodel.h"
 
 namespace muse::uicomponents {
@@ -36,7 +33,7 @@ FuzzyFilter::FuzzyFilter(QObject* parent)
 bool FuzzyFilter::acceptsRow(int sourceRow, const QModelIndex& sourceParent, const SortFilterProxyModel& proxyModel)
 {
     const QModelIndex sourceIndex = proxyModel.sourceModel()->index(sourceRow, 0, sourceParent);
-    const std::optional<double> score = getScore(sourceIndex, proxyModel);
+    const std::optional<double> score = getOrCalcScore(sourceIndex, proxyModel);
 
     return score.has_value();
 }
@@ -100,14 +97,39 @@ void FuzzyFilter::setCaseSensitivity(const Qt::CaseSensitivity caseSensitivity)
     emit dataChanged();
 }
 
-std::optional<double> FuzzyFilter::getScore(const QPersistentModelIndex& sourceIndex, const SortFilterProxyModel& proxyModel)
+std::optional<double> FuzzyFilter::getScore(const QModelIndex& sourceIndex) const
 {
-    auto scoreIt = m_scoreCache.find(sourceIndex);
+    const auto scoreIt = m_scoreCache.find(sourceIndex);
     if (scoreIt != m_scoreCache.end()) {
         return scoreIt.value();
     }
 
-    std::optional<double> score = calcScore(sourceIndex, proxyModel);
+    return std::nullopt;
+}
+
+void FuzzyFilter::compilePattern()
+{
+    clearScoreCache();
+
+    const QString caseAdjustedPattern = caseSensitivity() == Qt::CaseInsensitive
+                                        ? m_fuzzyPattern.toLower()
+                                        : m_fuzzyPattern;
+    const QStringList tokens = caseAdjustedPattern.split(u' ');
+
+    m_patternTokens.clear();
+    m_patternTokens.reserve(tokens.size());
+    for (const auto& token : tokens) {
+        m_patternTokens.push_back(token.toStdU32String());
+    }
+}
+
+std::optional<double> FuzzyFilter::getOrCalcScore(const QModelIndex& sourceIndex, const SortFilterProxyModel& proxyModel)
+{
+    if (const std::optional<double> score = getScore(sourceIndex)) {
+        return score;
+    }
+
+    const std::optional<double> score = calcScore(sourceIndex, proxyModel);
     // don't cache score of filtered out items because the cache
     // is always reset before filtering and therefore only used for sorting
     // already filtered items
@@ -118,22 +140,6 @@ std::optional<double> FuzzyFilter::getScore(const QPersistentModelIndex& sourceI
     m_scoreCache.try_emplace(sourceIndex, *score);
 
     return score;
-}
-
-void FuzzyFilter::compilePattern()
-{
-    clearScoreCache();
-
-    m_patternTokens.clear();
-
-    const QString caseAdjustedPattern = caseSensitivity() == Qt::CaseInsensitive
-                                        ? m_fuzzyPattern.toLower()
-                                        : m_fuzzyPattern;
-
-    const QStringList tokens = caseAdjustedPattern.split(u' ');
-    std::transform(tokens.begin(), tokens.end(), std::back_inserter(m_patternTokens), [](const QString& token) {
-        return token.toStdU32String();
-    });
 }
 
 std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, const SortFilterProxyModel& proxyModel)
@@ -162,11 +168,10 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
                                         ? 1 + (tokenSize / CHARS_PER_ERROR)
                                         : 0;
 
-        const double inverseTokenSize = 1.0 / tokenSize;
-        std::optional<double> bestTokenScore;
-
+        const double perCharScore = 1.0 / tokenSize;
+        std::optional<double> tokenScore;
         for (const auto& match : m_matcher(text, patternToken, maxDistance)) {
-            const double matchSimilarity = 1.0 - (match.editDistance * inverseTokenSize);
+            const double matchSimilarity = 1.0 - (match.editDistance * perCharScore);
             double matchScore = 5.0 * matchSimilarity;
 
             const bool isMatchStartAtStartOfWord = match.beginPos == 0
@@ -175,23 +180,23 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
                 const bool isMatchEndAtEndOfWord = match.endPos == text.size()
                                                    || text[match.endPos] == U' ';
                 if (isMatchEndAtEndOfWord) {
-                    matchScore += 2.0 * inverseTokenSize;
+                    matchScore += 2.0 * perCharScore;
                 } else {
-                    matchScore += inverseTokenSize;
+                    matchScore += perCharScore;
                 }
             }
 
-            if (bestTokenScore < matchScore) {
-                bestTokenScore = matchScore;
+            if (tokenScore < matchScore) {
+                tokenScore = matchScore;
             }
         }
 
         // no match for token found -> no score for entire pattern
-        if (!bestTokenScore) {
-            return bestTokenScore;
+        if (!tokenScore) {
+            return std::nullopt;
         }
 
-        score += *bestTokenScore;
+        score += *tokenScore;
     }
 
     return score;
