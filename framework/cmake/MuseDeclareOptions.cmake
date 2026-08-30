@@ -42,7 +42,7 @@ option(MUSE_MODULE_AUDIOPLUGINS_SCAN_TRACE "Enable audio plugin scan logging" OF
 declare_muse_module_opt(AUTOMATION ON)
 
 declare_muse_module_opt(CLOUD ON)
-option(MUSE_MODULE_CLOUD_MUSESCORECOM "Enable MuseScore.com account" ON)
+option(MUSE_MODULE_CLOUD_MUSESCORECOM "Enable MuseScore.com account" OFF)
 
 declare_muse_module_opt(DIAGNOSTICS ON)
 option(MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT "Enable crashpad client" OFF) # enable on CI
