@@ -22,7 +22,30 @@
 
 #include "fuzzyscoresorter.h"
 
+#include "sortfilterproxymodel.h"
+
+#include <algorithm>
+
 namespace muse::uicomponents {
+namespace {
+std::optional<double> getMaxScoreFromChildren(const FuzzyFilter& fuzzyFilter, const QAbstractItemModel& model,
+                                              const QModelIndex& parentIndex)
+{
+    const int childRowCount = model.rowCount(parentIndex);
+
+    std::optional<double> maxChildScore;
+    for (int i = 0; i < childRowCount; ++i) {
+        const QModelIndex childIndex = model.index(i, 0, parentIndex);
+        const std::optional<double> maxGrandChildrenScore = getMaxScoreFromChildren(fuzzyFilter, model, childIndex);
+        const std::optional<double> childScore = std::max(maxGrandChildrenScore, fuzzyFilter.getScore(childIndex));
+
+        maxChildScore = std::max(maxChildScore, childScore);
+    }
+
+    return maxChildScore;
+}
+}
+
 FuzzyScoreSorter::FuzzyScoreSorter(QObject* parent)
     : Sorter(parent)
 {
@@ -30,7 +53,7 @@ FuzzyScoreSorter::FuzzyScoreSorter(QObject* parent)
 }
 
 bool FuzzyScoreSorter::lessThan(const QModelIndex& sourceLeft, const QModelIndex& sourceRight,
-                                const SortFilterProxyModel& /*proxyModel*/)
+                                const SortFilterProxyModel& proxyModel)
 {
     if (!m_fuzzyFilter) {
         return sourceLeft < sourceRight;
@@ -39,7 +62,18 @@ bool FuzzyScoreSorter::lessThan(const QModelIndex& sourceLeft, const QModelIndex
     const std::optional<double> leftScore = m_fuzzyFilter->getScore(sourceLeft);
     const std::optional<double> rightScore = m_fuzzyFilter->getScore(sourceRight);
 
-    return leftScore < rightScore;
+    if (!proxyModel.isRecursiveFilteringEnabled()) {
+        return leftScore < rightScore;
+    }
+
+    // rank parent items according to the highest child score
+
+    const QAbstractItemModel& srcModel = *proxyModel.sourceModel();
+
+    const std::optional<double> maxLeftChildScore = getMaxScoreFromChildren(*m_fuzzyFilter, srcModel, sourceLeft);
+    const std::optional<double> maxRightChildScore = getMaxScoreFromChildren(*m_fuzzyFilter, srcModel, sourceRight);
+
+    return std::max(leftScore, maxLeftChildScore) < std::max(rightScore, maxRightChildScore);
 }
 
 FuzzyFilter* FuzzyScoreSorter::fuzzyFilter() const
