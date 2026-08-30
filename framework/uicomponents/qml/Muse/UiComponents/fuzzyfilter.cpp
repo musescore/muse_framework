@@ -80,23 +80,6 @@ void FuzzyFilter::setRoleName(const QString& roleName)
     emit dataChanged();
 }
 
-Qt::CaseSensitivity FuzzyFilter::caseSensitivity() const
-{
-    return m_caseSensitivity;
-}
-
-void FuzzyFilter::setCaseSensitivity(const Qt::CaseSensitivity caseSensitivity)
-{
-    if (m_caseSensitivity == caseSensitivity) {
-        return;
-    }
-
-    m_caseSensitivity = caseSensitivity;
-    compilePattern();
-    emit caseSensitivityChanged();
-    emit dataChanged();
-}
-
 std::optional<double> FuzzyFilter::getScore(const QModelIndex& sourceIndex) const
 {
     const auto scoreIt = m_scoreCache.find(sourceIndex);
@@ -111,10 +94,7 @@ void FuzzyFilter::compilePattern()
 {
     clearScoreCache();
 
-    const QString caseAdjustedPattern = caseSensitivity() == Qt::CaseInsensitive
-                                        ? m_fuzzyPattern.toLower()
-                                        : m_fuzzyPattern;
-    const QStringList tokens = caseAdjustedPattern.split(u' ');
+    const QStringList tokens = m_fuzzyPattern.toLower().split(u' ');
 
     m_patternTokens.clear();
     m_patternTokens.reserve(tokens.size());
@@ -151,9 +131,7 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
 
     const QString rawText = proxyModel.sourceModel()->data(sourceIndex, role)
                             .toString();
-    const std::u32string text = caseSensitivity() == Qt::CaseInsensitive
-                                ? rawText.toLower().toStdU32String()
-                                : rawText.toStdU32String();
+    const std::u32string text = rawText.toLower().toStdU32String();
 
     double score = 0.0;
     for (const auto& patternToken : m_patternTokens) {

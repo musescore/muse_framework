@@ -43,7 +43,6 @@ class FuzzyFilter : public Filter
 
     Q_PROPERTY(QString fuzzyPattern READ fuzzyPattern WRITE setFuzzyPattern NOTIFY fuzzyPatternChanged)
     Q_PROPERTY(QString roleName READ roleName WRITE setRoleName NOTIFY roleNameChanged)
-    Q_PROPERTY(Qt::CaseSensitivity caseSensitivity READ caseSensitivity WRITE setCaseSensitivity NOTIFY caseSensitivityChanged)
 
 public:
     explicit FuzzyFilter(QObject* parent = nullptr);
@@ -57,15 +56,11 @@ public:
     QString roleName() const;
     void setRoleName(const QString&);
 
-    Qt::CaseSensitivity caseSensitivity() const;
-    void setCaseSensitivity(Qt::CaseSensitivity);
-
     std::optional<double> getScore(const QModelIndex& sourceIndex) const;
 
 signals:
     void fuzzyPatternChanged();
     void roleNameChanged();
-    void caseSensitivityChanged();
 
 private:
     void compilePattern();
@@ -76,7 +71,6 @@ private:
 
     QString m_fuzzyPattern;
     QString m_roleName;
-    Qt::CaseSensitivity m_caseSensitivity = Qt::CaseSensitive;
 
     std::vector<std::u32string> m_patternTokens;
     FuzzyMatcher m_matcher;
