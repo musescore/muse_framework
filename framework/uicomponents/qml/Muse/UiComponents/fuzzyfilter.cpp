@@ -22,6 +22,8 @@
 
 #include "fuzzyfilter.h"
 
+#include <QChar>
+
 #include "sortfilterproxymodel.h"
 
 namespace muse::uicomponents {
@@ -153,10 +155,10 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
             double matchScore = 5.0 * matchSimilarity;
 
             const bool isMatchStartAtStartOfWord = match.beginPos == 0
-                                                   || text[match.beginPos - 1] == U' ';
+                                                   || !QChar::isLetter(text[match.beginPos - 1]);
             if (isMatchStartAtStartOfWord) {
                 const bool isMatchEndAtEndOfWord = match.endPos == text.size()
-                                                   || text[match.endPos] == U' ';
+                                                   || !QChar::isLetter(text[match.endPos]);
                 if (isMatchEndAtEndOfWord) {
                     matchScore += 2.0 * perCharScore;
                 } else {
