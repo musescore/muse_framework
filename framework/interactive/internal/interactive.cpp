@@ -530,19 +530,30 @@ static void ensureStandardColorsAreSortedByHue()
     }
     initialized = true;
 
-    constexpr int GRID_SIZE = 48;
-    constexpr int GRAYSCALE_COUNT = 8;
+    constexpr int GRID_ROWS = 6;
+    constexpr int GRID_COLS = 8;
+    constexpr int GRID_SIZE = GRID_ROWS * GRID_COLS;
+    constexpr int GRAYSCALE_COUNT = GRID_COLS;
 
-    int index = 0;
+    //! NOTE Qt's standard color grid is indexed column-major (index = row + col * GRID_ROWS),
+    //! so a plain sequential index would run down the first column instead of across the first
+    //! row. Map our row-major fill order onto Qt's column-major index instead.
+    auto setColorAt = [](int pos, const QColor& c) {
+        const int row = pos / GRID_COLS;
+        const int col = pos % GRID_COLS;
+        QColorDialog::setStandardColor(row + col * GRID_ROWS, c);
+    };
+
+    int pos = 0;
     for (int i = 0; i < GRAYSCALE_COUNT; ++i) {
         const int v = static_cast<int>(255.0 * i / (GRAYSCALE_COUNT - 1));
-        QColorDialog::setStandardColor(index++, QColor(v, v, v));
+        setColorAt(pos++, QColor(v, v, v));
     }
 
     const int hueSteps = GRID_SIZE - GRAYSCALE_COUNT;
     for (int i = 0; i < hueSteps; ++i) {
         const qreal hue = qreal(i) / hueSteps;
-        QColorDialog::setStandardColor(index++, QColor::fromHsvF(hue, 0.65, 0.95));
+        setColorAt(pos++, QColor::fromHsvF(hue, 0.65, 0.95));
     }
 }
 
@@ -614,7 +625,11 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
             (void)resolve(Color::fromQColor(selectedColor));
         });
 
-        dlg->open();
+        //! NOTE Not open(): QDialog::open() unconditionally forces Qt::WindowModal before showing,
+        //! which would undo the Qt::ApplicationModal set above. show() displays the dialog without
+        //! touching its modality, and the finished signal still fires the same way once the dialog
+        //! is accepted/rejected.
+        dlg->show();
 
         return async::Promise<Color>::dummy_result();
     }, async::PromiseType::AsyncByBody);
