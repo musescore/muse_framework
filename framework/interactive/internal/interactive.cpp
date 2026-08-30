@@ -519,6 +519,33 @@ static void setCustomColors(const std::vector<QColor>& customColors)
     }
 }
 
+//! NOTE Qt's default "Basic colors" grid is an unsorted historical palette (a patchwork of
+//! seemingly random hues). Replace it once with a grayscale ramp followed by a hue sweep, so it
+//! reads as an ordered gradient instead.
+static void ensureStandardColorsAreSortedByHue()
+{
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
+    initialized = true;
+
+    constexpr int GRID_SIZE = 48;
+    constexpr int GRAYSCALE_COUNT = 8;
+
+    int index = 0;
+    for (int i = 0; i < GRAYSCALE_COUNT; ++i) {
+        const int v = static_cast<int>(255.0 * i / (GRAYSCALE_COUNT - 1));
+        QColorDialog::setStandardColor(index++, QColor(v, v, v));
+    }
+
+    const int hueSteps = GRID_SIZE - GRAYSCALE_COUNT;
+    for (int i = 0; i < hueSteps; ++i) {
+        const qreal hue = qreal(i) / hueSteps;
+        QColorDialog::setStandardColor(index++, QColor::fromHsvF(hue, 0.65, 0.95));
+    }
+}
+
 async::Promise<Color> Interactive::selectColor(const Color& color, const std::string& title, bool allowAlpha)
 {
     if (m_isSelectColorOpened) {
@@ -531,6 +558,7 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
 
     m_isSelectColorOpened = true;
 
+    ensureStandardColorsAreSortedByHue();
     setCustomColors(uiConfiguration()->colorDialogCustomColors());
 
     return async::make_promise<Color>([this, color, title, allowAlpha](auto resolve, auto reject) {
@@ -551,6 +579,19 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
 
         dlg->setCurrentColor(currentColor);
         dlg->setOption(QColorDialog::ShowAlphaChannel, allowAlpha);
+        //! NOTE Force Qt's own cross-platform dialog instead of the OS-native one (e.g. NSColorPanel on
+        //! macOS), so it picks up the app's theme palette applied globally by WidgetStyle.
+        dlg->setOption(QColorDialog::DontUseNativeDialog, true);
+        //! NOTE The app's windows (main window, Preferences, etc.) are QQuickWindows, not QWidgets, so
+        //! Qt::ApplicationModal alone doesn't block or stack above them: Qt only enforces widget modality
+        //! within the QWidget world. Force native window creation and set an explicit transient parent
+        //! so the platform's own window manager (which operates below the Widget/Quick split) keeps this
+        //! dialog on top of, and modal to, whichever window is actually active.
+        dlg->setWindowModality(Qt::ApplicationModal);
+        dlg->winId();
+        if (QWindow* dlgWindow = dlg->windowHandle()) {
+            dlgWindow->setTransientParent(topWindow());
+        }
 
         QObject::connect(dlg, &QColorDialog::finished, [this, dlg, resolve, reject](int result) {
             DEFER {
