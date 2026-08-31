@@ -89,7 +89,7 @@ StyledDialogView {
             value: model.value
             to: model.to
 
-            progressStatus: model.to != 0 ? Math.round(model.value * 100 / model.to) + "%" : "0%"
+            progressStatus: (model.to != 0 ? Math.round(model.value * 100 / model.to) : 0).toLocaleString(Qt.locale(), 'f', 0) + "%"
         }
 
         FlatButton {

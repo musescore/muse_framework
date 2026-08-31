@@ -122,7 +122,7 @@ Item {
 
                 font.pixelSize: root.messagePixelSize
 
-                text: Math.min(Math.max(root.progress, 0), 100) + "%"
+                text: Math.min(Math.max(root.progress, 0), 100).toLocaleString(Qt.locale(), 'f', 0) + "%"
             }
         }
     }
