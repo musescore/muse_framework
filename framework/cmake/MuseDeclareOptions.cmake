@@ -1,5 +1,25 @@
 include(CMakeDependentOption)
 
+# === Enviropment ===
+option(MUSE_QT_SUPPORT "Build with Qt support" ON)
+option(MUSE_THREADS_SUPPORT "Build with threads support" ON)
+option(MUSE_CONFIGURATION_IS_WEB "Configuration is web" OFF)
+
+# === Build options ===
+option(MUSE_COMPILE_ASAN "Enable Address Sanitizer" OFF)
+option(MUSE_COMPILE_USE_PCH "Use precompiled headers." ON)
+
+# === Debug options ===
+option(MUSE_COMPILE_STRING_DEBUG_HACK "Enable string debug hack (only clang)" ON)
+option(MUSE_LOAD_QML_FROM_SOURCE "Load QML from source files instead of compiled resources (for development and debugging)" OFF)
+
+# === Tests ===
+option(MUSE_ENABLE_UNIT_TESTS_CODE_COVERAGE "Enable code coverage for unit tests" OFF)
+option(MUSE_ENABLE_UNIT_TESTS "Build framework unit tests" ON)
+
+# === Tools ===
+option(MUSE_ENABLE_CUSTOM_ALLOCATOR "Enable custom allocator" OFF)
+
 macro(declare_muse_module_opt name def)
     option(MUSE_MODULE_${name} "Build ${name} module" ${def})
 
@@ -8,7 +28,7 @@ macro(declare_muse_module_opt name def)
     # 3. we can disable some submodules manually
     option(MUSE_MODULE_${name}_API "Build ${name} api" ON)
     option(MUSE_MODULE_${name}_QML "Build ${name} QML" ON)
-    option(MUSE_MODULE_${name}_TESTS "Build ${name} tests" ON)
+    option(MUSE_MODULE_${name}_TESTS "Build ${name} tests" ${MUSE_ENABLE_UNIT_TESTS})
 endmacro()
 
 # Modules framework (alphabetical order please)
@@ -105,23 +125,3 @@ declare_muse_module_opt(UPDATE ON)
 declare_muse_module_opt(VST OFF)
 
 declare_muse_module_opt(WORKSPACE ON)
-
-# === Enviropment ===
-option(MUSE_QT_SUPPORT "Build with Qt support" ON)
-option(MUSE_THREADS_SUPPORT "Build with threads support" ON)
-option(MUSE_CONFIGURATION_IS_WEB "Configuration is web" OFF)
-
-# === Build options ===
-option(MUSE_COMPILE_ASAN "Enable Address Sanitizer" OFF)
-option(MUSE_COMPILE_USE_PCH "Use precompiled headers." ON)
-
-# === Debug options ===
-option(MUSE_COMPILE_STRING_DEBUG_HACK "Enable string debug hack (only clang)" ON)
-option(MUSE_LOAD_QML_FROM_SOURCE "Load QML from source files instead of compiled resources (for development and debugging)" OFF)
-
-# === Tests ===
-option(MUSE_ENABLE_UNIT_TESTS "Build framework unit tests" ON)
-option(MUSE_ENABLE_UNIT_TESTS_CODE_COVERAGE "Enable code coverage for unit tests" OFF)
-
-# === Tools ===
-option(MUSE_ENABLE_CUSTOM_ALLOCATOR "Enable custom allocator" OFF)
