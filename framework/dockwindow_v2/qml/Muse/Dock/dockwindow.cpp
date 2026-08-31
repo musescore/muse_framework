@@ -244,7 +244,7 @@ void DockWindow::loadPage(const QString& uri, const QVariantMap& params)
                 || (m_mainWindow->window()->isFullScreen())) {
                 //! NOTE: show window as maximized if no geometry has been restored
                 //! or if the user had closed app in FullScreen mode
-                // m_mainWindow->window()->->showMaximized(); // todo kddock
+                m_mainWindow->window()->setWindowState(KDDockWidgets::WindowState::Maximized);
             }
 
             notifyAboutPageLoaded();
