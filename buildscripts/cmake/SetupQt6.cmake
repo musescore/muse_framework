@@ -55,8 +55,10 @@ set(QT_LIBRARIES
 
 if(NOT OS_IS_WASM)
 
-    list(APPEND qt_components NetworkAuth)
-    list(APPEND QT_LIBRARIES Qt::NetworkAuth)
+    if (MUSE_MODULE_CLOUD)
+        list(APPEND qt_components NetworkAuth)
+        list(APPEND QT_LIBRARIES Qt::NetworkAuth)
+    endif()
 
     list(APPEND qt_components PrintSupport)
     list(APPEND QT_LIBRARIES Qt::PrintSupport)
