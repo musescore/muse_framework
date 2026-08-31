@@ -612,10 +612,10 @@ bool DockWindow::restoreLayout(const QByteArray& layout, bool restoreRelativeToM
 
     TRACEFUNC;
 
-    auto option = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOption_RelativeToMainWindow
-                  : KDDockWidgets::RestoreOption_None;
+    auto options = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_RelativeToMainWindow)
+                   : KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_SkipMainWindowVisibility);
 
-    KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, option);
+    KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, options);
     return layoutSaver.restoreLayout(layout);
 }
 

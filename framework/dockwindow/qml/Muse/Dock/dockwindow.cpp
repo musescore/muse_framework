@@ -265,7 +265,7 @@ void DockWindow::loadPage(const QString& uri, const QVariantMap& params)
                 || (m_mainWindow->windowHandle()->windowStates() & Qt::WindowFullScreen)) {
                 //! NOTE: show window as maximized if no geometry has been restored
                 //! or if the user had closed app in FullScreen mode
-                m_mainWindow->windowHandle()->showMaximized();
+                m_mainWindow->windowHandle()->setWindowStates(Qt::WindowMaximized);
             }
 
             notifyAboutPageLoaded();
@@ -683,10 +683,10 @@ bool DockWindow::restoreLayout(const QByteArray& layout, bool restoreRelativeToM
 
     TRACEFUNC;
 
-    auto option = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOption_RelativeToMainWindow
-                  : KDDockWidgets::RestoreOption_None;
+    auto options = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_RelativeToMainWindow)
+                   : KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_SkipMainWindowVisibility);
 
-    KDDockWidgets::LayoutSaver layoutSaver(m_ctx, option);
+    KDDockWidgets::LayoutSaver layoutSaver(m_ctx, options);
     return layoutSaver.restoreLayout(layout);
 }
 
