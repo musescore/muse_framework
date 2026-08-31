@@ -29,6 +29,7 @@
 #include "interactive/iinteractive.h"
 #include "actions/iactionsdispatcher.h"
 #include "multiwindows/imultiwindowsprovider.h"
+#include "network/inetworkinformation.h"
 #include "update/iupdateconfiguration.h"
 #include "update/iappupdateservice.h"
 #include "global/iapplication.h"
@@ -39,6 +40,7 @@ class AppUpdateScenario : public IAppUpdateScenario, public Contextable, public 
     GlobalInject<IApplication> application;
     GlobalInject<mi::IMultiWindowsProvider> multiwindowsProvider;
     GlobalInject<IUpdateConfiguration> configuration;
+    GlobalInject<network::INetworkInformation> networkInformation;
     ContextInject<IInteractive> interactive = { this };
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<IAppUpdateService> service = { this };
@@ -50,25 +52,37 @@ public:
     bool needCheckForUpdate() const override;
     void checkForUpdate(bool manual) override;
 
-    bool checkInProgress() const override;
-    async::Notification checkInProgressChanged() const override;
-
     bool hasUpdate() const override;
-    muse::async::Promise<Ret> showUpdate() override;  // NOTE: Resolves to "OK" if the user wants to close and complete install of update...
+
+    bool hasReadyUpdate() const override;
+    async::Notification hasReadyUpdateChanged() const override;
+    std::string readyUpdateVersion() const override;
+
+    void installReadyUpdate() override;
 
 private:
+    friend class AppUpdateScenarioTests;
+
     muse::async::Promise<Ret> processUpdateError(int errorCode);
 
     async::Promise<IInteractive::Result> showNoUpdateMsg();
     muse::async::Promise<Ret> showReleaseInfo(const ReleaseInfo& info);
     async::Promise<IInteractive::Result> showServerErrorMsg();
 
+    void downloadUpdateInBackground();
+
     muse::async::Promise<Ret> downloadRelease();
     muse::async::Promise<Ret> askToCloseAppAndCompleteInstall(const io::path_t& installerPath);
+    muse::async::Promise<Ret> prepareAndInstall(const io::path_t& packagePath);
+    muse::async::Promise<Ret> askToRestartAndInstall(const io::path_t& packagePath, const io::path_t& preparedPath);
 
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
 
     bool m_checkInProgress = false;
-    async::Notification m_checkInProgressChanged;
+
+    bool m_bgDownloadInProgress = false;
+    io::path_t m_readyPackagePath;
+    std::string m_readyUpdateVersion;
+    async::Notification m_hasReadyUpdateChanged;
 };
 }

@@ -31,6 +31,8 @@ StyledDialogView {
     id: root
 
     property string appName: ""
+    property string version: ""
+    property bool readyToInstall: false
     property alias notes: view.notes
     property alias previousReleasesNotes: view.previousReleasesNotes
 
@@ -79,12 +81,31 @@ StyledDialogView {
             StyledTextLabel {
                 id: releaseTitleLabel
 
-                text: qsTrc("update", "A new version of %1 is available!").arg(root.appName)
+                text: root.readyToInstall
+                      ? qsTrc("update", "A new update is ready to install")
+                      : qsTrc("update", "A new version of %1 is available!").arg(root.appName)
                 font: ui.theme.headerBoldFont
             }
 
             StyledTextLabel {
+                id: releaseDescriptionLabel
+
+                width: content.width
+
+                visible: root.readyToInstall
+
+                text: qsTrc("update", "%1 has downloaded an update and is ready to install. "
+                                      + "A restart will be required to complete the installation. "
+                                      + "If you have any unsaved changes, you will be prompted to save them first.")
+                      .arg(root.appName)
+                horizontalAlignment: Qt.AlignLeft
+                wrapMode: Text.WordWrap
+            }
+
+            StyledTextLabel {
                 id: releaseNotesLabel
+
+                visible: !root.readyToInstall
 
                 text: qsTrc("update", "Release notes")
                 font: ui.theme.largeBodyBoldFont
@@ -97,11 +118,28 @@ StyledDialogView {
             Layout.rightMargin: -root.margins
         }
 
-        ReleaseNotesView {
-            id: view
-
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            spacing: 12
+
+            StyledTextLabel {
+                visible: root.readyToInstall
+
+                text: root.version.length > 0
+                      ? qsTrc("update", "%1 Release notes").arg(root.version)
+                      : qsTrc("update", "Release notes")
+                font: ui.theme.largeBodyBoldFont
+                horizontalAlignment: Qt.AlignLeft
+            }
+
+            ReleaseNotesView {
+                id: view
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
         }
 
         SeparatorLine {

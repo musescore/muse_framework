@@ -39,10 +39,14 @@ public:
     virtual bool needCheckForUpdate() const = 0;
     virtual void checkForUpdate(bool manual) = 0;
 
-    virtual bool checkInProgress() const = 0;
-    virtual async::Notification checkInProgressChanged() const = 0;
-
     virtual bool hasUpdate() const = 0;
-    virtual async::Promise<Ret> showUpdate() = 0;
+
+    //! A downloaded update is ready to be installed in-place.
+    virtual bool hasReadyUpdate() const = 0;
+    virtual async::Notification hasReadyUpdateChanged() const = 0;
+    virtual std::string readyUpdateVersion() const = 0;
+
+    //! Install the already-downloaded update (asks to restart, then applies it).
+    virtual void installReadyUpdate() = 0;
 };
 }

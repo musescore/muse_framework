@@ -23,6 +23,7 @@
 #include "appupdateservice.h"
 
 #include <QBuffer>
+#include <QColor>
 #include <QJsonParseError>
 #include <QJsonObject>
 #include <QJsonValue>
@@ -31,6 +32,8 @@
 #include <QUrlQuery>
 
 #include "update/updateerrors.h"
+
+#include "downloadfiledevice.h"
 
 #include "defer.h"
 #include "translation.h"
@@ -44,6 +47,8 @@ using namespace muse::io;
 
 const QString INSTALLED_WEEK_BEGINNING_KEY("Installed-Week-Beginning");
 const QString PREVIOUS_REQUEST_DAY_KEY("Previous-Request-Day");
+
+static const std::string PARTIAL_SUFFIX(".part");
 
 static QDate calculateWeekBeginForDate(const QDate& date)
 {
@@ -186,18 +191,23 @@ Promise<RetVal<ReleaseInfo> > AppUpdateService::checkForUpdate()
             bool isPreRelease = update.preRelease();
 
             if (!allowUpdateOnPreRelease && isPreRelease) {
+                cleanupStalePackages(/*keepFileName*/ std::string());
                 m_lastCheckResult.ret = make_ret(Err::NoUpdate);
                 (void)resolve(m_lastCheckResult);
                 return;
             }
 
             if (update <= current) {
+                cleanupStalePackages(/*keepFileName*/ std::string());
                 m_lastCheckResult.ret = make_ret(Err::NoUpdate);
                 (void)resolve(m_lastCheckResult);
                 return;
             }
 
             m_lastCheckResult = releaseInfo;
+
+            //! NOTE: Keep an already-downloaded package for this release; drop stale ones.
+            cleanupStalePackages(releaseInfo.val.fileName);
 
             downloadPreviousReleasesNotes(update, [this, resolve](const PrevReleasesNotesList& notes) {
                 m_lastCheckResult.val.previousReleasesNotes = notes;
@@ -216,16 +226,53 @@ const RetVal<ReleaseInfo>& AppUpdateService::lastCheckResult() const
 
 RetVal<Progress> AppUpdateService::downloadRelease()
 {
+    if (m_downloadInProgress) {
+        return RetVal<Progress>::make_ok(m_updateProgress);
+    }
+
     if (!m_networkManager) {
         m_networkManager = networkManagerCreator()->makeNetworkManager();
     }
 
-    const ReleaseInfo info = m_lastCheckResult.val;
-    const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
-    auto buff = std::make_shared<QBuffer>();
+    if (!m_lastCheckResult.ret) {
+        return RetVal<Progress>::make_ret(m_lastCheckResult.ret);
+    }
 
-    RetVal<Progress> downloadProgress = m_networkManager->get(fileUrl, buff);
+    const ReleaseInfo info = m_lastCheckResult.val;
+    if (info.fileName.empty()) {
+        return RetVal<Progress>::make_ret(make_ret(Err::NoUpdate));
+    }
+
+    const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
+
+    const path_t finalPath = packagesDir() + "/" + info.fileName;
+    const path_t partialPath = finalPath + PARTIAL_SUFFIX;
+    fileSystem()->makePath(muse::io::absoluteDirpath(partialPath));
+
+    configuration()->setLastDownloadedPackagePath(finalPath);
+
+    //! NOTE: Resume an interrupted download by appending to the partial file and
+    //! requesting the remaining bytes via a Range header.
+    uint64_t offset = 0;
+    if (fileSystem()->exists(partialPath)) {
+        RetVal<uint64_t> sz = fileSystem()->fileSize(partialPath);
+        offset = sz.ret ? sz.val : 0;
+    }
+
+    RequestHeaders headers;
+    io::IODevice::OpenMode mode = io::IODevice::WriteOnly;
+    if (offset > 0) {
+        headers.rawHeaders["Range"] = QByteArray("bytes=") + QByteArray::number(static_cast<qulonglong>(offset)) + "-";
+        mode = io::IODevice::Append;
+    }
+
+    auto device = std::make_shared<DownloadFileDevice>(partialPath, mode);
+
+    m_downloadInProgress = true;
+
+    RetVal<Progress> downloadProgress = m_networkManager->get(fileUrl, device, headers);
     if (!downloadProgress.ret) {
+        m_downloadInProgress = false;
         return RetVal<Progress>::make_ret(downloadProgress.ret);
     }
 
@@ -235,29 +282,42 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         Progress mutProgress = downloadProgress.val;
         mutProgress.cancel();
         m_updateProgress.canceled().disconnect(this);
-    });
+    }, Asyncable::Mode::SetReplace);
 
-    downloadProgress.val.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string& msg) {
-        m_updateProgress.progress(current, total, msg);
-    });
+    downloadProgress.val.progressChanged().onReceive(this, [this, offset](int64_t current, int64_t total, const std::string& msg) {
+        m_updateProgress.progress(static_cast<int64_t>(offset) + current, static_cast<int64_t>(offset) + total, msg);
+    }, Asyncable::Mode::SetReplace);
 
-    downloadProgress.val.finished().onReceive(this, [this, info, buff](const ProgressResult& res) {
+    downloadProgress.val.finished().onReceive(this, [this, finalPath, partialPath, offset](const ProgressResult& res) {
+        m_downloadInProgress = false;
+
         if (!res.ret) {
+            //! NOTE: Keep the partial file so the next attempt can resume from it.
             m_updateProgress.finish(ProgressResult::make_ret(res.ret));
             return;
         }
 
-        const path_t installerPath = configuration()->updateDataPath() + "/" + info.fileName;
-        fileSystem()->makePath(muse::io::absoluteDirpath(installerPath));
+        const int status = res.ret.data<int>("status", 0);
 
-        const Ret ret = fileSystem()->writeFile(installerPath, ByteArray::fromQByteArrayNoCopy(buff->data()));
+        //! NOTE: We requested a range but the server sent the full file (200) or
+        //! rejected the range (416); the partial file is now stale/corrupt - drop
+        //! it so the next attempt starts clean.
+        if (offset > 0 && (status == 200 || status == 416)) {
+            fileSystem()->remove(partialPath);
+            m_updateProgress.finish(ProgressResult::make_ret(make_ret(Err::NetworkError, "range request not honoured")));
+            return;
+        }
+
+        //! Success (200 fresh download or 206 resumed): promote the partial file
+        //! to the final package name.
+        const Ret ret = fileSystem()->move(partialPath, finalPath, /*replace*/ true);
         if (!ret) {
             m_updateProgress.finish(ProgressResult::make_ret(ret));
             return;
         }
 
-        m_updateProgress.finish(ProgressResult::make_ok(Val(installerPath)));
-    });
+        m_updateProgress.finish(ProgressResult::make_ok(Val(finalPath)));
+    }, Asyncable::Mode::SetReplace);
 
     return RetVal<Progress>::make_ok(m_updateProgress);
 }
@@ -349,21 +409,21 @@ RetVal<ReleaseInfo> AppUpdateService::parseRelease(const QByteArray& json) const
     return result;
 }
 
-std::string AppUpdateService::platformFileSuffix() const
+std::vector<std::string> AppUpdateService::platformFileSuffixes() const
 {
     switch (systemInfo()->productType()) {
-    case ISystemInfo::ProductType::Windows: return "msi";
-    case ISystemInfo::ProductType::MacOS: return "dmg";
-    case ISystemInfo::ProductType::Linux: return "appimage";
+    case ISystemInfo::ProductType::Windows: return { "msi" };
+    case ISystemInfo::ProductType::MacOS: return { "dmg" };
+    case ISystemInfo::ProductType::Linux: return { "appimage" };
     case ISystemInfo::ProductType::Unknown: break;
     }
 
-    return "";
+    return {};
 }
 
 QJsonObject AppUpdateService::resolveReleaseAsset(const QJsonObject& release) const
 {
-    std::string fileSuffix = platformFileSuffix();
+    const std::vector<std::string> fileSuffixes = platformFileSuffixes();
     ISystemInfo::ProductType productType = systemInfo()->productType();
     ISystemInfo::CpuArchitecture arch = systemInfo()->cpuArchitecture();
 
@@ -372,24 +432,73 @@ QJsonObject AppUpdateService::resolveReleaseAsset(const QJsonObject& release) co
         assets.push_back(asset);
     }
 
-    for (const QJsonValue asset : assets) {
-        QJsonObject assetObj = asset.toObject();
+    // Honour suffix priority: scan all assets for the most preferred suffix
+    // before considering the next one.
+    for (const std::string& fileSuffix : fileSuffixes) {
+        for (const QJsonValue asset : assets) {
+            QJsonObject assetObj = asset.toObject();
 
-        QString name = assetObj.value("name").toString();
-        if (io::suffix(name) != fileSuffix) {
-            continue;
-        }
-
-        if (productType == ISystemInfo::ProductType::Linux) {
-            if (arch != ISystemInfo::CpuArchitecture::Unknown && arch != assetArch(name)) {
+            QString name = assetObj.value("name").toString();
+            if (io::suffix(name) != fileSuffix) {
                 continue;
             }
-        }
 
-        return assetObj;
+            if (productType == ISystemInfo::ProductType::Linux) {
+                if (arch != ISystemInfo::CpuArchitecture::Unknown && arch != assetArch(name)) {
+                    continue;
+                }
+            }
+
+            return assetObj;
+        }
     }
 
     return QJsonObject();
+}
+
+bool AppUpdateService::canAutoInstall() const
+{
+    if (!configuration()->autoInstallEnabled()) {
+        return false;
+    }
+
+    return updateInstaller()->isInPlaceUpdateSupported();
+}
+
+RetVal<muse::io::path_t> AppUpdateService::prepareUpdate(const muse::io::path_t& packagePath)
+{
+    return updateInstaller()->prepareUpdate(packagePath);
+}
+
+Ret AppUpdateService::finalizeUpdate(const muse::io::path_t& preparedPath)
+{
+    return updateInstaller()->finalizeUpdate(preparedPath, makeInstallProgressUi());
+}
+
+InstallProgressUi AppUpdateService::makeInstallProgressUi() const
+{
+    const QString appName = application()->title().toQString();
+    const QString version = QString::fromStdString(m_lastCheckResult.val.version);
+
+    InstallProgressUi progressUi;
+    progressUi.title = appName.toStdString();
+
+    progressUi.message = version.isEmpty()
+                         ? muse::qtrc("update", "Installing %1").arg(appName).toStdString()
+                         : muse::qtrc("update", "Installing %1 %2").arg(appName, version).toStdString();
+
+    const muse::ui::ThemeInfo& theme = uiConfiguration()->currentTheme();
+
+    auto themeColor = [&theme](muse::ui::ThemeStyleKey key) {
+        const QColor color = theme.values.value(key).value<QColor>();
+        return color.isValid() ? color.name(QColor::HexRgb).toStdString() : std::string();
+    };
+
+    progressUi.backgroundColor = themeColor(muse::ui::BACKGROUND_PRIMARY_COLOR);
+    progressUi.accentColor = themeColor(muse::ui::ACCENT_COLOR);
+    progressUi.textColor = themeColor(muse::ui::FONT_PRIMARY_COLOR);
+
+    return progressUi;
 }
 
 void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished)
@@ -455,8 +564,64 @@ void AppUpdateService::downloadPreviousReleasesNotes(const Version& updateVersio
 void AppUpdateService::clear()
 {
     m_lastCheckResult = RetVal<ReleaseInfo>::make_ok(ReleaseInfo());
+}
 
-#if !defined(Q_OS_LINUX)
-    fileSystem()->remove(configuration()->updateDataPath());
-#endif
+void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
+{
+    const io::path_t recorded = configuration()->lastDownloadedPackagePath();
+    if (!recorded.empty() && io::filename(recorded).toStdString() != keepFileName) {
+        fileSystem()->remove(recorded);
+        fileSystem()->remove(recorded + PARTIAL_SUFFIX);
+        configuration()->setLastDownloadedPackagePath(io::path_t());
+    }
+
+    const io::path_t dir = configuration()->updateDataPath();
+    if (!fileSystem()->exists(dir)) {
+        return;
+    }
+
+    RetVal<io::paths_t> entries = fileSystem()->scanFiles(dir, {}, io::ScanMode::FilesAndFoldersInCurrentDir);
+    if (!entries.ret) {
+        return;
+    }
+
+    //! NOTE: Keep both the finished package and its in-progress ".part" file so an
+    //! interrupted download of the current release can still be resumed.
+    const std::string keepPartial = keepFileName + PARTIAL_SUFFIX;
+
+    for (const io::path_t& entry : entries.val) {
+        const std::string name = io::filename(entry).toStdString();
+        if (name != keepFileName && name != keepPartial) {
+            fileSystem()->remove(entry);
+        }
+    }
+}
+
+bool AppUpdateService::isReleaseDownloaded() const
+{
+    return !downloadedReleasePath().empty();
+}
+
+io::path_t AppUpdateService::downloadedReleasePath() const
+{
+    if (!m_lastCheckResult.ret) {
+        return {};
+    }
+
+    const std::string& fileName = m_lastCheckResult.val.fileName;
+    if (fileName.empty()) {
+        return {};
+    }
+
+    const io::path_t path = packagesDir() + "/" + fileName;
+    if (!fileSystem()->exists(path)) {
+        return {};
+    }
+
+    return path;
+}
+
+io::path_t AppUpdateService::packagesDir() const
+{
+    return canAutoInstall() ? configuration()->updateDataPath() : configuration()->downloadsPath();
 }

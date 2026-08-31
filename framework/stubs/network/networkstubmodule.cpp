@@ -25,6 +25,7 @@
 
 #include "networkmanagercreatorstub.h"
 #include "networkconfigurationstub.h"
+#include "networkinformationstub.h"
 
 using namespace muse::network;
 using namespace muse::modularity;
@@ -38,4 +39,5 @@ void NetworkModule::registerExports()
 {
     globalIoc()->registerExport<INetworkManagerCreator>(moduleName(), new NetworkManagerCreatorStub());
     globalIoc()->registerExport<INetworkConfiguration>(moduleName(), new NetworkConfigurationStub());
+    globalIoc()->registerExport<INetworkInformation>(moduleName(), new NetworkInformationStub());
 }

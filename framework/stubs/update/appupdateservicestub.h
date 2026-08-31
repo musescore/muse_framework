@@ -31,5 +31,12 @@ public:
     async::Promise<muse::RetVal<ReleaseInfo> > checkForUpdate() override;
     const RetVal<ReleaseInfo>& lastCheckResult() const override;
     RetVal<Progress> downloadRelease() override;
+
+    bool canAutoInstall() const override;
+    RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) override;
+    Ret finalizeUpdate(const muse::io::path_t& preparedPath) override;
+
+    bool isReleaseDownloaded() const override;
+    muse::io::path_t downloadedReleasePath() const override;
 };
 }

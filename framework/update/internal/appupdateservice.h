@@ -31,8 +31,10 @@
 #include "global/isysteminfo.h"
 
 #include "network/inetworkmanagercreator.h"
+#include "ui/iuiconfiguration.h"
 #include "update/iupdateconfiguration.h"
 #include "update/iupdaterequestparamsprovider.h"
+#include "update/iupdateinstaller.h"
 
 namespace muse::update {
 class AppUpdateService : public IAppUpdateService, public Contextable, public async::Asyncable
@@ -43,6 +45,8 @@ class AppUpdateService : public IAppUpdateService, public Contextable, public as
     GlobalInject<IUpdateRequestParamsProvider> requestParamsProvider;
     GlobalInject<network::INetworkManagerCreator> networkManagerCreator;
     GlobalInject<IApplication> application;
+    GlobalInject<IUpdateInstaller> updateInstaller;
+    GlobalInject<muse::ui::IUiConfiguration> uiConfiguration;
 
 public:
     AppUpdateService(const modularity::ContextPtr& iocCtx)
@@ -53,6 +57,13 @@ public:
     async::Promise<RetVal<ReleaseInfo> > checkForUpdate() override;
     const RetVal<ReleaseInfo>& lastCheckResult() const override;
     RetVal<Progress> downloadRelease() override;
+
+    bool canAutoInstall() const override;
+    RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) override;
+    Ret finalizeUpdate(const muse::io::path_t& preparedPath) override;
+
+    bool isReleaseDownloaded() const override;
+    muse::io::path_t downloadedReleasePath() const override;
 
 private:
     friend class AppUpdateServiceTests;
@@ -69,8 +80,15 @@ private:
 
     RetVal<ReleaseInfo> parseRelease(const QByteArray& json) const;
 
-    std::string platformFileSuffix() const;
+    InstallProgressUi makeInstallProgressUi() const;
+
+    //! Ordered list of acceptable asset suffixes for this platform, most
+    //! preferred first.
+    std::vector<std::string> platformFileSuffixes() const;
     QJsonObject resolveReleaseAsset(const QJsonObject& release) const;
+
+    void cleanupStalePackages(const std::string& keepFileName);
+    muse::io::path_t packagesDir() const;
 
     using PrevReleaseNotesCallback = std::function<void (const PrevReleasesNotesList&)>;
     void downloadPreviousReleasesNotes(const Version& updateVersion, const PrevReleaseNotesCallback& finished);
@@ -80,5 +98,6 @@ private:
     RetVal<ReleaseInfo> m_lastCheckResult;
     network::INetworkManagerPtr m_networkManager;
     Progress m_updateProgress;
+    bool m_downloadInProgress = false;
 };
 }

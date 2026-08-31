@@ -42,6 +42,14 @@ struct PrevReleaseNotes {
 };
 using PrevReleasesNotesList = std::vector<PrevReleaseNotes>;
 
+struct InstallProgressUi {
+    std::string title;              //!< window caption, e.g. "MuseScore Studio"
+    std::string message;            //!< e.g. "Installing MuseScore Studio 4.6.1"
+    std::string backgroundColor;    //!< "#RRGGBB"
+    std::string accentColor;        //!< "#RRGGBB"
+    std::string textColor;          //!< "#RRGGBB"
+};
+
 struct ReleaseInfo {
     std::string version;
     std::string fileName;

@@ -24,6 +24,7 @@
 #include "modularity/ioc.h"
 #include "internal/networkmanagercreator.h"
 #include "internal/networkconfiguration.h"
+#include "internal/networkinformation.h"
 
 #include "global/api/iapiregister.h"
 
@@ -45,6 +46,7 @@ void NetworkModule::registerExports()
 
     globalIoc()->registerExport<INetworkManagerCreator>(moduleName(), new NetworkManagerCreator());
     globalIoc()->registerExport<INetworkConfiguration>(moduleName(), m_configuration);
+    globalIoc()->registerExport<INetworkInformation>(moduleName(), new NetworkInformation());
 }
 
 void NetworkModule::registerApi()

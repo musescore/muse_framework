@@ -41,5 +41,13 @@ public:
     virtual async::Promise<muse::RetVal<ReleaseInfo> > checkForUpdate() = 0;
     virtual const RetVal<ReleaseInfo>& lastCheckResult() const = 0;
     virtual RetVal<Progress> downloadRelease() = 0;
+
+    virtual bool isReleaseDownloaded() const = 0;
+    virtual muse::io::path_t downloadedReleasePath() const = 0;
+
+    virtual bool canAutoInstall() const = 0;
+
+    virtual RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) = 0;
+    virtual Ret finalizeUpdate(const muse::io::path_t& preparedPath) = 0;
 };
 }

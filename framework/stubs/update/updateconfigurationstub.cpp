@@ -52,9 +52,27 @@ muse::async::Notification UpdateConfigurationStub::needCheckForUpdateChanged() c
     return n;
 }
 
+bool UpdateConfigurationStub::autoInstallEnabled() const
+{
+    return false;
+}
+
+void UpdateConfigurationStub::setAutoInstallEnabled(bool)
+{
+}
+
 std::string UpdateConfigurationStub::skippedReleaseVersion() const
 {
     return "";
+}
+
+muse::io::path_t UpdateConfigurationStub::lastDownloadedPackagePath() const
+{
+    return "";
+}
+
+void UpdateConfigurationStub::setLastDownloadedPackagePath(const io::path_t&)
+{
 }
 
 void UpdateConfigurationStub::setSkippedReleaseVersion(const std::string&)
@@ -87,6 +105,11 @@ std::string UpdateConfigurationStub::appWebSiteUrl() const
 }
 
 std::string UpdateConfigurationStub::privacyPolicyUrl() const
+{
+    return "";
+}
+
+muse::io::path_t UpdateConfigurationStub::downloadsPath() const
 {
     return "";
 }

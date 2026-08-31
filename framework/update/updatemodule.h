@@ -31,6 +31,7 @@ class AppUpdateScenario;
 class AppUpdateService;
 class UpdateConfiguration;
 class UpdateActionController;
+class IUpdateInstaller;
 class UpdateModule : public modularity::IModuleSetup
 {
 public:
@@ -43,6 +44,7 @@ public:
 
 private:
     std::shared_ptr<UpdateConfiguration> m_configuration;
+    std::shared_ptr<IUpdateInstaller> m_updateInstaller;
 };
 
 class UpdateContext : public modularity::IContextSetup

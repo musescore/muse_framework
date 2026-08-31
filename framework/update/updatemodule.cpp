@@ -21,6 +21,8 @@
  */
 #include "updatemodule.h"
 
+#include <QtGlobal>
+
 #include "modularity/ioc.h"
 
 #include "interactive/iinteractiveuriregister.h"
@@ -37,6 +39,17 @@
 #include "internal/appupdatescenario.h"
 #include "internal/appupdateservice.h"
 
+#include "iupdateinstaller.h"
+#if defined(Q_OS_MAC)
+#include "internal/platform/mac/macupdateinstaller.h"
+#elif defined(Q_OS_WIN)
+#include "internal/platform/win/winupdateinstaller.h"
+#elif defined(Q_OS_LINUX)
+#include "internal/platform/linux/linuxupdateinstaller.h"
+#else
+#include "internal/platform/stub/updateinstallerstub.h"
+#endif
+
 using namespace muse::update;
 using namespace muse::modularity;
 
@@ -51,7 +64,18 @@ void UpdateModule::registerExports()
 {
     m_configuration = std::make_shared<UpdateConfiguration>(globalCtx());
 
+#if defined(Q_OS_MAC)
+    m_updateInstaller = std::make_shared<MacUpdateInstaller>(globalCtx());
+#elif defined(Q_OS_WIN)
+    m_updateInstaller = std::make_shared<WinUpdateInstaller>(globalCtx());
+#elif defined(Q_OS_LINUX)
+    m_updateInstaller = std::make_shared<LinuxUpdateInstaller>(globalCtx());
+#else
+    m_updateInstaller = std::make_shared<UpdateInstallerStub>();
+#endif
+
     globalIoc()->registerExport<IUpdateConfiguration>(mname, m_configuration);
+    globalIoc()->registerExport<IUpdateInstaller>(mname, m_updateInstaller);
 }
 
 void UpdateModule::resolveImports()

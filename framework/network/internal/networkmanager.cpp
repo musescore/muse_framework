@@ -27,6 +27,8 @@
 
 #include "networkerrors.h"
 
+#include "log.h"
+
 using namespace muse;
 using namespace muse::network;
 using namespace muse::async;
@@ -190,7 +192,11 @@ RetVal<Progress> NetworkManager::execRequest(RequestType requestType, const QUrl
                 return;
             }
 
-            data.incomingData->write(data.reply->readAll());
+            const QByteArray chunk = data.reply->readAll();
+            if (data.incomingData->write(chunk) != chunk.size()) {
+                LOGE() << "failed to store incoming data: " << data.incomingData->errorString();
+                data.reply->abort();
+            }
         });
     }
 

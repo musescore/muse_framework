@@ -28,6 +28,7 @@ target_sources(muse_network PRIVATE
     inetworkmanager.h
     inetworkmanagercreator.h
     inetworkconfiguration.h
+    inetworkinformation.h
 
     internal/networkmanager.cpp
     internal/networkmanager.h
@@ -35,6 +36,8 @@ target_sources(muse_network PRIVATE
     internal/networkmanagercreator.h
     internal/networkconfiguration.cpp
     internal/networkconfiguration.h
+    internal/networkinformation.cpp
+    internal/networkinformation.h
 )
 
 target_link_libraries(muse_network PUBLIC Qt::Network)

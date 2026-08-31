@@ -31,10 +31,12 @@ public:
     bool needCheckForUpdate() const override;
     void checkForUpdate(bool manual) override;
 
-    bool checkInProgress() const override;
-    async::Notification checkInProgressChanged() const override;
-
     bool hasUpdate() const override;
-    muse::async::Promise<Ret> showUpdate() override;
+
+    bool hasReadyUpdate() const override;
+    async::Notification hasReadyUpdateChanged() const override;
+    std::string readyUpdateVersion() const override;
+
+    void installReadyUpdate() override;
 };
 }

@@ -29,6 +29,7 @@ target_sources(muse_update PRIVATE
     iupdaterequestparamsprovider.h
     iappupdatescenario.h
     iappupdateservice.h
+    iupdateinstaller.h
     updatecommands.h
 
     internal/updateconfiguration.cpp
@@ -45,10 +46,41 @@ target_sources(muse_update PRIVATE
     internal/appupdatescenario.h
     internal/appupdateservice.cpp
     internal/appupdateservice.h
+    internal/downloadfiledevice.cpp
+    internal/downloadfiledevice.h
 )
+
+if (OS_IS_MAC)
+    target_sources(muse_update PRIVATE
+        internal/platform/mac/macupdateinstaller.cpp
+        internal/platform/mac/macupdateinstaller.h
+    )
+elseif (OS_IS_WIN)
+    target_sources(muse_update PRIVATE
+        internal/platform/win/winupdateinstaller.cpp
+        internal/platform/win/winupdateinstaller.h
+        internal/platform/win/winupdateshared.h
+    )
+
+    target_link_libraries(muse_update PRIVATE taskschd ole32 oleaut32)
+elseif (OS_IS_LIN)
+    target_sources(muse_update PRIVATE
+        internal/platform/linux/linuxupdateinstaller.cpp
+        internal/platform/linux/linuxupdateinstaller.h
+    )
+else()
+    target_sources(muse_update PRIVATE
+        internal/platform/stub/updateinstallerstub.cpp
+        internal/platform/stub/updateinstallerstub.h
+    )
+endif()
 
 if (MUSE_QT_SUPPORT)
     target_link_libraries(muse_update PRIVATE Qt::Concurrent)
+endif()
+
+if (NOT CC_IS_EMCC)
+    add_subdirectory(helper)
 endif()
 
 if (MUSE_MODULE_UPDATE_TESTS)
