@@ -26,12 +26,31 @@
 #include <QModelIndex>
 #include <QString>
 
+#include "global/translation.h"
 #include "toast/toastitem.h"
 
 using namespace muse::toast;
 
 namespace {
 constexpr int MAX_VISIBLE_TOASTS = 5;
+constexpr int MAX_NAVIGATION_HINT_ANNOUNCEMENTS = 2;
+
+QString accessibleTitle(const ToastItem& toast)
+{
+    const QString title = QString::fromStdString(toast.title());
+    switch (toast.iconCode()) {
+    case muse::ui::IconCode::Code::ERROR:
+        return muse::qtrc("toast", "Error") + ": " + title;
+    case muse::ui::IconCode::Code::WARNING:
+        return muse::qtrc("toast", "Warning") + ": " + title;
+    case muse::ui::IconCode::Code::INFO:
+        return muse::qtrc("toast", "Information") + ": " + title;
+    case muse::ui::IconCode::Code::TICK:
+        return muse::qtrc("toast", "Success") + ": " + title;
+    default:
+        return title;
+    }
+}
 }
 
 ToastListModel::ToastListModel(QObject* parent)
@@ -49,6 +68,8 @@ void ToastListModel::init()
         beginInsertRows(QModelIndex(), static_cast<int>(m_toasts.size()), static_cast<int>(m_toasts.size()));
         m_toasts.emplace_back(toast);
         endInsertRows();
+
+        announceToast(*toast);
 
         int id = toast->id();
         toast->progressChanged().onNotify(this, [this, id](){
@@ -71,6 +92,22 @@ void ToastListModel::init()
         m_toasts.erase(m_toasts.begin() + toastIndex.value());
         endRemoveRows();
     }, muse::async::Asyncable::Mode::SetReplace);
+}
+
+void ToastListModel::announceToast(const ToastItem& toast)
+{
+    QString announcement = accessibleTitle(toast);
+
+    if (!toast.message().empty()) {
+        announcement += ": " + QString::fromStdString(toast.message());
+    }
+
+    if (!toast.actions().empty() && m_navigationHintShownCount < MAX_NAVIGATION_HINT_ANNOUNCEMENTS) {
+        announcement += " " + muse::qtrc("toast", "Press F6 to go to the notification.");
+        ++m_navigationHintShownCount;
+    }
+
+    accessibilityController()->announce(announcement);
 }
 
 std::optional<int> ToastListModel::indexOfToast(int id) const
@@ -133,6 +170,8 @@ QVariant ToastListModel::data(const QModelIndex& index, int role) const
         return static_cast<int>(toast->iconCode());
     case TitleRole:
         return QString::fromStdString(toast->title());
+    case AccessibleTitleRole:
+        return accessibleTitle(*toast);
     case MessageRole:
         return QString::fromStdString(toast->message());
     case DismissableRole:
@@ -164,6 +203,7 @@ QHash<int, QByteArray> ToastListModel::roleNames() const
         { IdRole, "id" },
         { IconCodeRole, "iconCode" },
         { TitleRole, "title" },
+        { AccessibleTitleRole, "accessibleTitle" },
         { MessageRole, "message" },
         { DismissableRole, "dismissable" },
         { ActionRole, "actions" },
