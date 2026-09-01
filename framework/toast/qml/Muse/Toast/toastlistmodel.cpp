@@ -128,6 +128,16 @@ void ToastListModel::dismissToast(int id)
     toastProvider()->dismissToast(id);
 }
 
+void ToastListModel::pauseToast(int id)
+{
+    toastProvider()->pauseToast(id);
+}
+
+void ToastListModel::resumeToast(int id)
+{
+    toastProvider()->resumeToast(id);
+}
+
 void ToastListModel::executeAction(int id, QString actionStr)
 {
     const std::optional<int> toastIndex = indexOfToast(id);
