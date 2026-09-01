@@ -54,6 +54,8 @@ public:
     Q_INVOKABLE void init();
     Q_INVOKABLE void dismissToast(int id);
     Q_INVOKABLE void executeAction(int id, QString actionStr);
+    Q_INVOKABLE void pauseToast(int id);
+    Q_INVOKABLE void resumeToast(int id);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;

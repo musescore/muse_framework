@@ -55,6 +55,14 @@ Item {
     property int actionButtonsSpacing: 8
 
     property int shadowMargin: 8
+    property NavigationSection navigationSection: null
+    property int navigationOrder: -1
+    property int totalCount: 0
+    readonly property bool navigationFocused: toastNavPanel.active
+    readonly property bool shouldPauseTimer: hoverHandler.hovered || root.navigationFocused
+    property alias navigation: bodyNavCtrl
+
+    property string accessibleTitle: ""
 
     signal dismissed
     signal actionTriggered(string actionStr)
@@ -63,6 +71,41 @@ Item {
     height: implicitHeight
 
     implicitHeight: mainContainer.childrenRect.height + 24 + shadowMargin * 2
+
+    NavigationPanel {
+        id: toastNavPanel
+
+        name: "Toast" + root.navigationOrder
+        section: root.navigationSection
+        order: root.navigationOrder
+        direction: NavigationPanel.Horizontal
+        enabled: root.enabled && root.visible
+
+        accessible.name: root.accessibleTitle
+    }
+
+    NavigationControl {
+        id: bodyNavCtrl
+
+        name: "ToastBody"
+        panel: toastNavPanel
+        order: 0
+        enabled: root.enabled && root.visible
+
+        accessible.role: MUAccessible.StaticText
+        accessible.name: {
+            var name = root.message.length > 0 ? root.accessibleTitle + ". " + root.message : root.accessibleTitle
+            if (root.totalCount > 0) {
+                name += ". " + qsTrc("toast", "%1 of %2").arg(root.navigationOrder + 1).arg(root.totalCount)
+            }
+            return name
+        }
+        accessible.visualItem: root
+    }
+
+    HoverHandler {
+        id: hoverHandler
+    }
 
     StyledRectangularShadow {
         anchors.fill: backgroundRect
@@ -78,6 +121,10 @@ Item {
 
         color: ui.theme.popupBackgroundColor
         radius: 8
+
+        NavigationFocusBorder {
+            navigationCtrl: bodyNavCtrl
+        }
 
         Rectangle {
             id: progressBar
@@ -185,6 +232,11 @@ Item {
                         height: root.actionButtonHeight
                         minWidth: root.actionButtonMinWidth
                         margins: root.actionButtonMargins
+
+                        navigation.panel: toastNavPanel
+                        navigation.order: 1 + index
+                        navigation.name: "ToastAction" + index
+
                         onClicked: {
                             root.actionTriggered(root.actions[index].text)
                         }
@@ -202,6 +254,13 @@ Item {
 
             icon: IconCode.CLOSE_X_ROUNDED
             transparent: true
+
+            toolTipTitle: qsTrc("toast", "Dismiss")
+
+            navigation.panel: toastNavPanel
+            navigation.order: 1 + root.actions.length
+            navigation.name: "ToastDismiss"
+            navigation.accessible.name: dismissButton.toolTipTitle
 
             onClicked: {
                 dismissed()
