@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <optional>
+
 #include <QAbstractListModel>
 #include <QVariant>
 #include <QByteArray>
@@ -66,6 +68,8 @@ private:
         TimeElapsedRole,
         ShowProgressInfoRole
     };
+
+    std::optional<int> indexOfToast(int id) const;
 
     std::vector<std::shared_ptr<ToastItem> > m_toasts;
 };
