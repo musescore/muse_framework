@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "io/path.h"
 #include "types/ret.h"
 
@@ -33,10 +35,34 @@ class UriQuery;
 class MacOSInteractiveHelper
 {
 public:
+    enum class EditAction {
+        Undo,
+        Redo,
+        Cut,
+        Copy,
+        Paste,
+        SelectAll
+    };
+
+    static void setEditMenuIndex(int menuIndex);
+    static void setEditMenuStructure(const std::map<EditAction, int>& structure);
+
     static bool revealInFinder(const io::path_t& filePath);
 
     static Ret isAppExists(const std::string& appIdentifier);
     static Ret canOpenApp(const UriQuery& uri);
     static async::Promise<Ret> openApp(const UriQuery& uri);
+
+    class NativeDialogScope
+    {
+    public:
+        NativeDialogScope();
+        ~NativeDialogScope();
+
+        NativeDialogScope(const NativeDialogScope&) = delete;
+        NativeDialogScope& operator=(const NativeDialogScope&) = delete;
+        NativeDialogScope(NativeDialogScope&&) = delete;
+        NativeDialogScope& operator=(NativeDialogScope&&) = delete;
+    };
 };
 }
