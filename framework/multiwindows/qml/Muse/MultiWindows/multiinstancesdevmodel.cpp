@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "multiinstancesdevmodel.h"
+
 #include <QVariant>
 
 using namespace muse::mi;

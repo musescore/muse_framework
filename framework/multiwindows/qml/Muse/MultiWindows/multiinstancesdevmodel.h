@@ -23,13 +23,13 @@
 #pragma once
 
 #include <QObject>
+#include <QVariant>
 #include <qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "internal/multiprocess/imultiprocessprovider.h"
 
 #include "async/asyncable.h"
-#include <QVariant>
 
 namespace muse::mi {
 class MultiInstancesDevModel : public QObject, public Contextable, public async::Asyncable

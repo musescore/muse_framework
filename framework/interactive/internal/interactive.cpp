@@ -28,10 +28,10 @@
 #include <QGuiApplication>
 #include <QMetaProperty>
 #include <QMetaType>
+#include <QQmlEngine>
 #include <QUrl>
 #include <QWidget>
 #include <QWindow>
-#include <QQmlEngine>
 
 #include "async/async.h"
 #include "io/path.h"

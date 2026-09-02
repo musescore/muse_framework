@@ -23,8 +23,8 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
 #include <QTimer>
+#include <qqmlintegration.h>
 
 #include "abstractnavigation.h"
 

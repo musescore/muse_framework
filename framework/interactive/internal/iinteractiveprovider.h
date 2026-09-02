@@ -24,11 +24,11 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QWindow>
 
 #include "global/async/channel.h"
 
 #include "global/modularity/imoduleinterface.h"
-#include <QWindow>
 
 namespace muse::interactive {
 class QmlLaunchData : public QObject

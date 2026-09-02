@@ -23,12 +23,12 @@
 #include "musescorecomservice.h"
 
 #include <QBuffer>
+#include <QEventLoop>
 #include <QHttpMultiPart>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRandomGenerator>
-#include <QEventLoop>
 
 #include "clouderrors.h"
 
