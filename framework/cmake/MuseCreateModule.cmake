@@ -82,7 +82,6 @@ function(muse_create_module target_name)
         set(MUSE_FRAMEWORK_PATH ${PROJECT_SOURCE_DIR})
     endif()
 
-    get_property(_gtest_src GLOBAL PROPERTY googletest_SOURCE_DIR)
     target_include_directories(${target_name} PRIVATE
         ${PROJECT_BINARY_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -93,7 +92,6 @@ function(muse_create_module target_name)
         ${MUSE_FRAMEWORK_PATH}
         ${MUSE_FRAMEWORK_PATH}/framework
         ${MUSE_FRAMEWORK_PATH}/framework/global
-        ${_gtest_src}/googletest/googletest/include
 
         # compat
         ${MUSE_FRAMEWORK_PATH}/src

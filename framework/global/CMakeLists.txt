@@ -163,6 +163,12 @@ target_sources(muse_global PRIVATE
 
 target_link_libraries(muse_global PRIVATE pugixml utfcpp)
 
+if (MUSE_ENABLE_UNIT_TESTS)
+    # logremover.h uses gtest_prod.h (FRIEND_TEST) when unit tests are enabled
+    get_property(_gtest_src GLOBAL PROPERTY googletest_SOURCE_DIR)
+    target_include_directories(muse_global PRIVATE ${_gtest_src}/googletest/googletest/include)
+endif()
+
 if (MUSE_THREADS_SUPPORT)
     target_sources(muse_global PRIVATE
         concurrency/taskscheduler.h
