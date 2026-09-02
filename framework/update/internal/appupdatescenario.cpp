@@ -22,9 +22,9 @@
 
 #include "appupdatescenario.h"
 
-#include "updateerrors.h"
-
 #include <QUrl>
+
+#include "updateerrors.h"
 
 #include "async/async.h"
 #include "global/concurrency/concurrent.h"

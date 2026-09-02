@@ -254,7 +254,7 @@ target_include_directories(muse_global PRIVATE ${_picojson}/picojson)
 if (MUSE_QT_SUPPORT)
     # These are needed by so many modules, that we make them public here,
     # so that other modules get them transitively.
-    target_link_libraries(muse_global PUBLIC Qt::Core Qt::Gui)
+    target_link_libraries(muse_global PUBLIC Qt::Core Qt::Gui Qt::Qml)
 
     target_link_libraries(muse_global PRIVATE Qt::Quick Qt::Widgets)
 endif()

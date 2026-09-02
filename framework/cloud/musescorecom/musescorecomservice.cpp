@@ -23,6 +23,7 @@
 #include "musescorecomservice.h"
 
 #include <QBuffer>
+#include <QEventLoop>
 #include <QHttpMultiPart>
 #include <QJsonArray>
 #include <QJsonDocument>

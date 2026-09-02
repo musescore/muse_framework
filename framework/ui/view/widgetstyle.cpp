@@ -27,6 +27,7 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QMenu>
+#include <QPainter>
 #include <QPalette>
 #include <QStyle>
 #include <QStyleFactory>

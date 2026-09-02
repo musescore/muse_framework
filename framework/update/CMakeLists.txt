@@ -20,6 +20,8 @@
 
 muse_create_module(muse_update ALIAS muse::update)
 
+target_link_libraries(muse_update PRIVATE Qt::Network)
+
 target_sources(muse_update PRIVATE
     updatemodule.cpp
     updatemodule.h

@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "internal/dockbase.h"
-
 #include <QtGlobal>
+
+#include "internal/dockbase.h"
 
 namespace muse::dock {
 namespace DockToolBarAlignment {

@@ -23,6 +23,7 @@
 #pragma once
 
 #include <QObject>
+#include <QVariant>
 #include <qqmlintegration.h>
 
 namespace muse::uicomponents {

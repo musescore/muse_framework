@@ -19,6 +19,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 muse_create_qml_module(muse_tours_qml ALIAS muse::tours_qml FOR muse_tours)
+target_link_libraries(muse_tours_qml PRIVATE Qt::Quick)
+
 
 qt_add_qml_module(muse_tours_qml
     URI Muse.Tours

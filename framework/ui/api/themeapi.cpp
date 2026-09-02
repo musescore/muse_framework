@@ -22,6 +22,8 @@
 
 #include "themeapi.h"
 
+#include <QFontMetrics>
+
 using namespace muse::ui;
 using namespace muse::api;
 
