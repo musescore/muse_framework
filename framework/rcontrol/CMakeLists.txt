@@ -18,6 +18,8 @@
 # NOTE This is the remote control module
 muse_create_module(muse_rcontrol ALIAS muse::rcontrol)
 
+target_link_libraries(muse_rcontrol PRIVATE Qt::Network)
+
 target_sources(muse_rcontrol PRIVATE
     rcontrolmodule.cpp
     rcontrolmodule.h

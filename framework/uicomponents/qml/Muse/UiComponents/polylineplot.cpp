@@ -21,8 +21,8 @@
  */
 
 #include "polylineplot.h"
-#include "realfn.h"
 
+#include <QCursor>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
@@ -32,6 +32,8 @@
 
 #include <algorithm>
 #include <cmath>
+
+#include "realfn.h"
 
 using namespace muse::uicomponents;
 

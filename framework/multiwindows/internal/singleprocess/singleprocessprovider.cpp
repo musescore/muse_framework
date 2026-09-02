@@ -22,6 +22,8 @@
 
  #include "singleprocessprovider.h"
 
+ #include <QCoreApplication>
+
  #include "../../iprojectprovider.h"
  #include "ui/imainwindow.h"
  #include "actions/iactionsdispatcher.h"

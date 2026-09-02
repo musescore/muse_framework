@@ -20,6 +20,8 @@
 
 muse_create_module(muse_tours ALIAS muse::tours)
 
+target_link_libraries(muse_tours PRIVATE Qt::Quick)
+
 target_sources(muse_tours PRIVATE
     toursmodule.cpp
     toursmodule.h

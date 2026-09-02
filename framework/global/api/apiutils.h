@@ -26,6 +26,7 @@
 #include <vector>
 #include <QString>
 #include <QJSValue>
+#include <QMetaEnum>
 
 #include "apitypes.h"
 #include "iapiengine.h"

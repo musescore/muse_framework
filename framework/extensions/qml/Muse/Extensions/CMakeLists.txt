@@ -19,6 +19,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 muse_create_qml_module(muse_extensions_qml ALIAS muse::extensions_qml FOR muse_extensions)
+target_link_libraries(muse_extensions_qml PRIVATE Qt::Quick)
+
 
 qt_add_qml_module(muse_extensions_qml
     URI Muse.Extensions

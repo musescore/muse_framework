@@ -20,6 +20,8 @@
 
 muse_create_module(muse_multiwindows ALIAS muse::multiwindows)
 
+target_link_libraries(muse_multiwindows PRIVATE Qt::Network)
+
 target_sources(muse_multiwindows PRIVATE
     multiwindowsmodule.cpp
     multiwindowsmodule.h

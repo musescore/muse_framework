@@ -21,6 +21,8 @@
  */
 #include "qmldataformatter.h"
 
+#include <QLocale>
+
 #include "global/dataformatter.h"
 
 using namespace muse::ui;

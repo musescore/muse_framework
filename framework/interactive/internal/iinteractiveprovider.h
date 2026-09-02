@@ -24,6 +24,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QWindow>
 
 #include "global/async/channel.h"
 

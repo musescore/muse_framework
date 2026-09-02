@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "modularity/imodulesetup.h"
 #include <QtGlobal>
+
+#include "modularity/imodulesetup.h"
 
 namespace muse::api {
 class ThemeApi;
