@@ -22,14 +22,14 @@
 
 #include "dockseparator.h"
 
+#include <QTimer>
+
 #include "log.h"
 #include "../docktypes.h"
 
 #include "thirdparty/KDDockWidgets/src/private/multisplitter/Rubberband_quick.h"
 #include "thirdparty/KDDockWidgets/src/DockWidgetBase.h"
 #include "thirdparty/KDDockWidgets/src/private/DockRegistry_p.h"
-
-#include <QTimer>
 
 using namespace muse::dock;
 
