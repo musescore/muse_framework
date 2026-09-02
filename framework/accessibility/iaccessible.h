@@ -157,6 +157,20 @@ public:
     virtual QString accessibleTextAtOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const = 0;
     virtual int accessibleCharacterCount() const = 0;
 
+    //! NOTE The write side of the text interface. Screen readers use it to move the caret,
+    //! most notably when a braille display's cursor routing key is pressed.
+    //! Not every accessible item is editable, so these are optional to implement.
+    virtual void accessibleSetSelection(int selectionIndex, int startOffset, int endOffset)
+    {
+        Q_UNUSED(selectionIndex);
+        Q_UNUSED(startOffset);
+        Q_UNUSED(endOffset);
+    }
+
+    virtual void accessibleRemoveSelection(int selectionIndex) { Q_UNUSED(selectionIndex); }
+
+    virtual void accessibleSetCursorPosition(int position) { Q_UNUSED(position); }
+
     // ListView item Interface
     virtual int accessibleRowIndex() const = 0;
 
