@@ -46,6 +46,26 @@ StyledListView {
 
     visible: root.count > 0
 
+    property int navigationOrder: 0
+
+    property NavigationSection navigationSection: NavigationSection {
+        id: toastNavSec
+        name: "ToastNotifications"
+        enabled: root.enabled && root.visible
+        order: root.navigationOrder
+    }
+
+    QtObject {
+        id: prv
+
+        function restoreFocus() {
+            var newestItem = root.count > 0 ? root.itemAtIndex(root.count - 1) : null
+            if (newestItem) {
+                newestItem.navigation.requestActive()
+            }
+        }
+    }
+
     ToastListModel {
         id: toastmodel
     }
@@ -69,6 +89,7 @@ StyledListView {
         opacity: 0
 
         title: model.title
+        accessibleTitle: model.accessibleTitle
         iconCode: model.iconCode
         message: model.message
         actions: model.actions
@@ -78,6 +99,18 @@ StyledListView {
         showProgressInfo: model.showProgressInfo
         timeElapsed: model.timeElapsed
 
+        navigationSection: toastNavSec
+        navigationOrder: root.count - 1 - model.index
+        totalCount: root.count
+
+        onShouldPauseTimerChanged: {
+            if (shouldPauseTimer) {
+                toastmodel.pauseToast(model.id)
+            } else {
+                toastmodel.resumeToast(model.id)
+            }
+        }
+
         onActionTriggered: function (actionStr) {
             toastmodel.executeAction(model.id, actionStr)
         }
@@ -85,6 +118,14 @@ StyledListView {
         Component.onCompleted: {
             x = 0
             opacity = 1
+
+            toastNavSec.requestPriority()
+        }
+
+        Component.onDestruction: {
+            if (itemRect.navigationFocused) {
+                Qt.callLater(prv.restoreFocus)
+            }
         }
 
         Behavior on x {

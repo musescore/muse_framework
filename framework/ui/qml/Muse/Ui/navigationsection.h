@@ -92,6 +92,8 @@ public:
     Q_INVOKABLE void requestActive(INavigationPanel* panel = nullptr, INavigationControl* control = nullptr, bool enableHighlight = false,
                                    ActivationType activationType = ActivationType::None) override;
 
+    Q_INVOKABLE void requestPriority();
+
 public slots:
     void setType(QmlType type);
 

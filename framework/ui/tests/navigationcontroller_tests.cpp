@@ -845,3 +845,392 @@ TEST_F(Ui_NavigationControllerTests, UpWrapsToLastOnVerticalPanel)
 
     delete sect;
 }
+
+TEST_F(Ui_NavigationControllerTests, NextSectionGoesToPrioritySection)
+{
+    //! CASE A priority section is activated by the next F6, wherever the navigation is
+
+    //! [GIVEN] Three sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+    Section* sect3 = make_section(3, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+    m_controller->reg(sect3->section);
+
+    sect1->section->requestActive();
+
+    //! [GIVEN] The third section is set as the priority one
+    m_controller->setPrioritySection(sect3->section);
+
+    //! [WHEN] Send action `nav-next-section`
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The priority section is activated instead of the second one
+    EXPECT_TRUE(sect3->section->active());
+    EXPECT_TRUE(sect3->panels[0]->panel->active());
+    EXPECT_TRUE(sect3->panels[0]->controls[0]->control->active());
+    EXPECT_FALSE(sect1->section->active());
+    EXPECT_FALSE(sect2->section->active());
+
+    //! [WHEN] Send the action again
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The request was one-shot: the cycle continues from the priority section
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_FALSE(sect3->section->active());
+
+    delete sect1;
+    delete sect2;
+    delete sect3;
+}
+
+TEST_F(Ui_NavigationControllerTests, PrevSectionGoesToPrioritySection)
+{
+    //! CASE A priority section is also activated by the prev section navigation (Shift+F6)
+
+    //! [GIVEN] Three sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+    Section* sect3 = make_section(3, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+    m_controller->reg(sect3->section);
+
+    sect2->section->requestActive();
+
+    //! [GIVEN] The third section is set as the priority one
+    m_controller->setPrioritySection(sect3->section);
+
+    //! [WHEN] Send action `nav-prev-section` (usually Shift+F6)
+    m_dispatcher->dispatch(PREV_SECTION_COMMAND);
+
+    //! [THEN] The priority section is activated on its first panel (a jump, not a cycle step)
+    EXPECT_TRUE(sect3->section->active());
+    EXPECT_TRUE(sect3->panels[0]->panel->active());
+    EXPECT_FALSE(sect1->section->active());
+    EXPECT_FALSE(sect2->section->active());
+
+    delete sect1;
+    delete sect2;
+    delete sect3;
+}
+
+TEST_F(Ui_NavigationControllerTests, NextSectionGoesToPrioritySectionWithNoActiveSection)
+{
+    //! CASE Nothing is active and a priority section is set
+
+    //! [GIVEN] Two sections, nothing active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    //! [GIVEN] The second section is set as the priority one
+    m_controller->setPrioritySection(sect2->section);
+
+    //! [WHEN] Send action `nav-next-section` (usually F6)
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The priority section is activated instead of the first one
+    EXPECT_TRUE(sect2->section->active());
+    EXPECT_FALSE(sect1->section->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, NextSectionSkipsDisabledPrioritySection)
+{
+    //! CASE The priority section was disabled before the next section navigation
+
+    //! [GIVEN] Three sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+    Section* sect3 = make_section(3, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+    m_controller->reg(sect3->section);
+
+    sect1->section->requestActive();
+
+    //! [GIVEN] The third section is set as the priority one, then disabled
+    m_controller->setPrioritySection(sect3->section);
+    sect3->section->setEnabled(false);
+
+    //! [WHEN] Send action `nav-next-section` (usually F6)
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The usual next section is activated
+    EXPECT_TRUE(sect2->section->active());
+    EXPECT_FALSE(sect3->section->active());
+
+    //! [WHEN] The priority section is enabled again and the action is sent again
+    sect3->section->setEnabled(true);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The request was cleared: the cycle continues as usual
+    EXPECT_TRUE(sect3->section->active());
+
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    EXPECT_TRUE(sect1->section->active());
+
+    delete sect1;
+    delete sect2;
+    delete sect3;
+}
+
+TEST_F(Ui_NavigationControllerTests, NextSectionContinuesFromActivePrioritySection)
+{
+    //! CASE The priority section is already the active one
+
+    //! [GIVEN] Two sections, the second one is active and set as the priority one
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect2->section->requestActive();
+    m_controller->setPrioritySection(sect2->section);
+
+    //! [WHEN] Send action `nav-next-section` (usually F6)
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The cycle continues as usual, the navigation does not get stuck
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_FALSE(sect2->section->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, ActivationByOtherMeansClearsPrioritySection)
+{
+    //! CASE The priority section was visited before the next section navigation
+
+    //! [GIVEN] Three sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+    Section* sect3 = make_section(3, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+    m_controller->reg(sect3->section);
+
+    sect1->section->requestActive();
+
+    //! [GIVEN] The third section is set as the priority one, then activated directly
+    m_controller->setPrioritySection(sect3->section);
+    sect3->section->requestActive();
+
+    //! [WHEN] Send action `nav-next-section` (usually F6)
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The request was cleared by the visit: the cycle continues as usual
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_FALSE(sect3->section->active());
+
+    delete sect1;
+    delete sect2;
+    delete sect3;
+}
+
+TEST_F(Ui_NavigationControllerTests, ExclusiveSectionWinsOverPrioritySection)
+{
+    //! CASE An exclusive section is active while a priority section is set
+
+    //! [GIVEN] A regular and an exclusive section, the exclusive one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* exclusive = make_section(2, 2, 3);
+    exclusive->section->setType(NavigationSection::QmlType::Exclusive);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(exclusive->section);
+
+    exclusive->section->requestActive();
+
+    //! [GIVEN] The regular section is set as the priority one
+    m_controller->setPrioritySection(sect1->section);
+
+    //! [WHEN] Send action `nav-next-section` (usually F6)
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The navigation stays trapped in the exclusive section
+    EXPECT_TRUE(exclusive->section->active());
+    EXPECT_FALSE(sect1->section->active());
+
+    //! [WHEN] The exclusive section goes away and the action is sent again
+    m_controller->unreg(exclusive->section);
+    exclusive->section->setActive(false);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The request stayed armed: the priority section is activated
+    EXPECT_TRUE(sect1->section->active());
+
+    delete sect1;
+    delete exclusive;
+}
+
+TEST_F(Ui_NavigationControllerTests, UnregClearsPrioritySection)
+{
+    //! CASE The priority section was unregistered before the next section navigation
+
+    //! [GIVEN] Two sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+
+    //! [GIVEN] The second section is set as the priority one, then unregistered
+    m_controller->setPrioritySection(sect2->section);
+    m_controller->unreg(sect2->section);
+
+    //! [WHEN] Send action `nav-next-section` (usually F6)
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    //! [THEN] The cycle wraps to the first section, no dangling access
+    EXPECT_TRUE(sect1->section->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, DisablingActiveSectionRestoresLastActiveControl)
+{
+    //! CASE The priority-activated section is disabled while active (e.g. the last toast is dismissed)
+
+    //! [GIVEN] Two sections, the first one is active on its second panel
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    NavigationControl* prevControl = sect1->panels[1]->controls[0]->control;
+    EXPECT_TRUE(prevControl->active());
+
+    //! [GIVEN] The second section is priority-activated (usually F6)
+    m_controller->setPrioritySection(sect2->section);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    EXPECT_TRUE(sect2->section->active());
+
+    //! [WHEN] The active section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation goes back to the control that was active before
+    EXPECT_FALSE(sect2->section->active());
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(prevControl->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, DisablingSectionEnteredByPanelNavigationRestoresLastActiveControl)
+{
+    //! CASE The section is entered by panel navigation (usually Tab) after its priority request was consumed
+
+    //! [GIVEN] Two sections, the first one is active, the second one once requested priority
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+    m_controller->setPrioritySection(sect2->section);
+
+    //! [GIVEN] The priority jump was consumed and the navigation is back on the first section
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+    EXPECT_TRUE(sect1->section->active());
+
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    NavigationControl* prevControl = sect1->panels[1]->controls[0]->control;
+    EXPECT_TRUE(prevControl->active());
+
+    //! [GIVEN] Tab past the last panel enters the second section
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+    EXPECT_TRUE(sect2->section->active());
+
+    //! [WHEN] The active section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation goes back to the control that was active before
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(prevControl->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, RestoreFallsBackToDefaultControlWhenLastControlIsGone)
+{
+    //! CASE The control that was active before was destroyed in the meantime
+
+    //! [GIVEN] Two sections, the first one is active, and a default control
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+
+    NavigationControl* defaultControl = sect1->panels[1]->controls[1]->control;
+    m_controller->setDefaultNavigationControl(defaultControl);
+
+    //! [GIVEN] The second section is priority-activated, then the remembered control is destroyed
+    m_controller->setPrioritySection(sect2->section);
+    m_dispatcher->dispatch(NEXT_SECTION_COMMAND);
+
+    delete sect1->panels[0]->controls[0]->control;
+    sect1->panels[0]->controls[0]->control = nullptr;
+
+    //! [WHEN] The active section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation falls back to the default control
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(defaultControl->active());
+
+    delete sect1;
+    delete sect2;
+}
+
+TEST_F(Ui_NavigationControllerTests, DisablingInactiveSectionDoesNotMoveNavigation)
+{
+    //! CASE A section that requested priority is disabled while another one holds the navigation
+
+    //! [GIVEN] Two sections, the first one is active
+    Section* sect1 = make_section(1, 2, 3);
+    Section* sect2 = make_section(2, 2, 3);
+
+    m_controller->reg(sect1->section);
+    m_controller->reg(sect2->section);
+
+    sect1->section->requestActive();
+    m_controller->setPrioritySection(sect2->section);
+
+    //! [WHEN] The inactive section is disabled
+    sect2->section->setEnabled(false);
+
+    //! [THEN] The navigation stays where it is
+    EXPECT_TRUE(sect1->section->active());
+    EXPECT_TRUE(sect1->panels[0]->controls[0]->control->active());
+
+    delete sect1;
+    delete sect2;
+}
