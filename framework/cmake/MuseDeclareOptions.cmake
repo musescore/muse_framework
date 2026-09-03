@@ -7,7 +7,6 @@ option(MUSE_CONFIGURATION_IS_WEB "Configuration is web" OFF)
 
 # === Build options ===
 option(MUSE_COMPILE_ASAN "Enable Address Sanitizer" OFF)
-option(MUSE_COMPILE_USE_PCH "Use precompiled headers." ON)
 
 # === Debug options ===
 option(MUSE_COMPILE_STRING_DEBUG_HACK "Enable string debug hack (only clang)" ON)

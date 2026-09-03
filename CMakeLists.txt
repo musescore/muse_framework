@@ -48,6 +48,14 @@ set(MUSE_APP_BUILD_MODE "dev" CACHE STRING "Build mode")
 # - testing - for testing versions (alpha, beta, RC)
 # - release - for stable release builds
 
+# Consumer applications own these options and must declare them on their side.
+# The standalone framework build is the application here, and deliberately
+# builds with PCH and unity OFF: every source stays self-contained (see #256),
+# so CI catches missing includes and Qt module links that PCH or unity batches
+# would mask.
+option(MUSE_COMPILE_USE_PCH "Use precompiled headers." OFF)
+option(MUSE_COMPILE_USE_UNITY "Use unity build." OFF)
+
 include(${MUSE_FRAMEWORK_SRC_PATH}/cmake/MuseDeclareOptions.cmake)
 
 ###########################################
