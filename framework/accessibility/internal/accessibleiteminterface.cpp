@@ -356,6 +356,14 @@ QString AccessibleItemInterface::text(QAccessible::Text textType) const
         return description();
     }
 #endif
+    case QAccessible::Value: {
+        //! NOTE: Qt's UIA and MSAA bridges read a control's value through
+        //! text(QAccessible::Value) (see QWindowsUiaValueProvider::get_Value).
+        //! Without this case, screen readers report an empty value for Range
+        //! controls even though the QAccessibleValueInterface is fully populated.
+        QVariant val = m_object->item()->accessibleValue();
+        return val.isValid() ? val.toString() : QString();
+    }
     default: break;
     }
 
@@ -533,7 +541,10 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
     QAccessible::Role itemRole = role();
     if (type == QAccessible::InterfaceType::ValueInterface && itemRole == QAccessible::Slider) {
         return static_cast<QAccessibleValueInterface*>(this);
-    } else if (type == QAccessible::InterfaceType::TextInterface) {
+    } else if (type == QAccessible::InterfaceType::TextInterface && itemRole != QAccessible::Slider) {
+        //! NOTE: Sliders must not advertise a text interface. Doing so exposes
+        //! UIA TextPattern on a Range control, and screen readers then read the
+        //! (empty) text content instead of the value on value-change events.
         return static_cast<QAccessibleTextInterface*>(this);
     }
 
