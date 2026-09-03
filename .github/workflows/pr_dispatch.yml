@@ -1,24 +1,19 @@
-name: pr_dispatch
+name: Applications Build
 
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
 
 permissions:
-  pull-requests: write
   contents: read
-  statuses: write
 
 concurrency:
-  group: pr-dispatch-${{ github.event.issue.number }}
+  group: pr-dispatch-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   parse:
-    if: >-
-      github.event.issue.pull_request != null
-      && startsWith(github.event.comment.body, '/build')
-      && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    name: Configure
     runs-on: ubuntu-latest
     outputs:
       head_sha: ${{ steps.pr.outputs.head_sha }}
@@ -31,19 +26,10 @@ jobs:
       mu_branch: ${{ steps.cfg.outputs.mu_branch }}
       mu_platforms: ${{ steps.cfg.outputs.mu_platforms }}
     steps:
-      - name: React with eyes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api -X POST \
-            "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
-            -f content=eyes
       - name: Fetch PR
         id: pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pr_json=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}")
+          pr_json=$(jq -c '.pull_request' "$GITHUB_EVENT_PATH")
           head_sha=$(echo "$pr_json" | jq -r .head.sha)
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo "$pr_json" | jq -r .body > /tmp/pr_body.txt
@@ -84,28 +70,9 @@ jobs:
             echo "mu_branch=$mu_branch"
             echo "mu_platforms=$mu_platforms"
           } >> "$GITHUB_OUTPUT"
-      - name: Post pending statuses + run-link comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ steps.pr.outputs.head_sha }}
-          AU_PLATFORMS: ${{ steps.cfg.outputs.au_platforms }}
-          MU_PLATFORMS: ${{ steps.cfg.outputs.mu_platforms }}
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          post_pending() {
-            gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
-              -f state=pending -f context="$1" -f target_url="$RUN_URL" -f description="dispatched"
-          }
-          [[ "$AU_PLATFORMS" == *linux_x64* ]] && post_pending "build / Audacity Linux"
-          [[ "$AU_PLATFORMS" == *macos* ]] && post_pending "build / Audacity macOS"
-          [[ "$AU_PLATFORMS" == *windows_x64* ]] && post_pending "build / Audacity Windows"
-          [[ "$MU_PLATFORMS" =~ linux_(x64|arm64) ]] && post_pending "build / MuseScore Linux"
-          [[ "$MU_PLATFORMS" == *macos* ]] && post_pending "build / MuseScore macOS"
-          [[ "$MU_PLATFORMS" =~ windows_(x64|portable) ]] && post_pending "build / MuseScore Windows"
-          gh pr comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" \
-            --body "Build dispatched: $RUN_URL"
 
   build_au_linux:
+    name: Audacity Linux
     needs: parse
     if: contains(needs.parse.outputs.au_platforms, 'linux_x64')
     uses: audacity/audacity/.github/workflows/au4_build_linux.yml@master
@@ -116,6 +83,7 @@ jobs:
       framework_ref: ${{ needs.parse.outputs.head_sha }}
 
   build_au_macos:
+    name: Audacity macOS
     needs: parse
     if: contains(needs.parse.outputs.au_platforms, 'macos')
     uses: audacity/audacity/.github/workflows/au4_build_macos.yml@master
@@ -126,6 +94,7 @@ jobs:
       framework_ref: ${{ needs.parse.outputs.head_sha }}
 
   build_au_windows:
+    name: Audacity Windows
     needs: parse
     if: contains(needs.parse.outputs.au_platforms, 'windows_x64')
     uses: audacity/audacity/.github/workflows/au4_build_windows.yml@master
@@ -136,18 +105,20 @@ jobs:
       framework_ref: ${{ needs.parse.outputs.head_sha }}
 
   build_mu_linux:
+    name: MuseScore Linux
     needs: parse
-    if: contains(needs.parse.outputs.mu_platforms, 'linux_x64') || contains(needs.parse.outputs.mu_platforms, 'linux_arm64')
+    if: contains(needs.parse.outputs.mu_platforms, 'linux_x64')
     uses: musescore/MuseScore/.github/workflows/build_linux.yml@main
     with:
       app_repo: ${{ needs.parse.outputs.mu_owner }}/${{ needs.parse.outputs.mu_repo }}
       app_ref: ${{ needs.parse.outputs.mu_branch }}
       framework_repo: ${{ github.repository }}
       framework_ref: ${{ needs.parse.outputs.head_sha }}
-      platforms: ${{ needs.parse.outputs.mu_platforms }}
+      platforms: linux_x64
       build_mode: devel
 
   build_mu_macos:
+    name: MuseScore macOS
     needs: parse
     if: contains(needs.parse.outputs.mu_platforms, 'macos')
     uses: musescore/MuseScore/.github/workflows/build_macos.yml@main
@@ -159,6 +130,7 @@ jobs:
       build_mode: devel
 
   build_mu_windows:
+    name: MuseScore Windows
     needs: parse
     if: contains(needs.parse.outputs.mu_platforms, 'windows_x64') || contains(needs.parse.outputs.mu_platforms, 'windows_portable')
     uses: musescore/MuseScore/.github/workflows/build_windows.yml@main
@@ -169,39 +141,3 @@ jobs:
       framework_ref: ${{ needs.parse.outputs.head_sha }}
       platforms: ${{ needs.parse.outputs.mu_platforms }}
       build_mode: devel
-
-  report:
-    needs: [parse, build_au_linux, build_au_macos, build_au_windows, build_mu_linux, build_mu_macos, build_mu_windows]
-    if: always() && needs.parse.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Forward final statuses to PR head
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ needs.parse.outputs.head_sha }}
-          AU_LINUX: ${{ needs.build_au_linux.result }}
-          AU_MACOS: ${{ needs.build_au_macos.result }}
-          AU_WINDOWS: ${{ needs.build_au_windows.result }}
-          MU_LINUX: ${{ needs.build_mu_linux.result }}
-          MU_MACOS: ${{ needs.build_mu_macos.result }}
-          MU_WINDOWS: ${{ needs.build_mu_windows.result }}
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          post() {
-            local context="$1" result="$2" state
-            case "$result" in
-              success) state=success ;;
-              skipped) return 0 ;;
-              cancelled) state=error ;;
-              *) state=failure ;;
-            esac
-            gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
-              -f state="$state" -f context="$context" -f target_url="$RUN_URL" \
-              -f description="$context: $result"
-          }
-          post "build / Audacity Linux"   "$AU_LINUX"
-          post "build / Audacity macOS"   "$AU_MACOS"
-          post "build / Audacity Windows" "$AU_WINDOWS"
-          post "build / MuseScore Linux"   "$MU_LINUX"
-          post "build / MuseScore macOS"   "$MU_MACOS"
-          post "build / MuseScore Windows" "$MU_WINDOWS"
