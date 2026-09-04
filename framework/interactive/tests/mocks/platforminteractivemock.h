@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-CLA-applies
  *
- * MuseScore Studio
+ * MuseScore
  * Music Composition & Notation
  *
- * Copyright (C) 2025 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore BVBA and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -22,29 +22,21 @@
 
 #pragma once
 
-#include "modularity/imoduleinterface.h"
-#include "cloudtypes.h"
+#include <gmock/gmock.h>
 
-#include "types/retval.h"
+#include "interactive/iplatforminteractive.h"
 
-namespace muse::cloud {
-class IAuthorizationService : MODULE_CONTEXT_INTERFACE
+namespace muse {
+class PlatformInteractiveMock : public IPlatformInteractive
 {
-    INTERFACE_ID(IAuthorizationService)
-
 public:
-    virtual ~IAuthorizationService() = default;
+    MOCK_METHOD(Ret, openUrl, (const std::string& url), (const, override));
+    MOCK_METHOD(Ret, openUrl, (const QUrl& url), (const, override));
 
-    virtual void signUp() = 0;
-    virtual void signIn() = 0;
-    virtual void signOut() = 0;
+    MOCK_METHOD(Ret, isAppExists, (const std::string& appIdentifier), (const, override));
+    MOCK_METHOD(Ret, canOpenApp, (const UriQuery& uri), (const, override));
+    MOCK_METHOD(async::Promise<Ret>, openApp, (const UriQuery& uri), (const, override));
 
-    virtual ValCh<bool> userAuthorized() const = 0;
-    virtual const AccountInfo& accountInfo() const = 0;
-
-    virtual CloudInfo cloudInfo() const = 0;
-
-    virtual Ret checkCloudIsAvailable() const = 0;
+    MOCK_METHOD(Ret, revealInFileBrowser, (const io::path_t& filePath), (const, override));
 };
-using IAuthorizationServicePtr = std::shared_ptr<IAuthorizationService>;
 }

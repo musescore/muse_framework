@@ -32,7 +32,6 @@
 #include "ui/iuiconfiguration.h"
 #include "io/ifilesystem.h"
 #include "network/inetworkmanagercreator.h"
-#include "interactive/iinteractive.h"
 #include "interactive/iplatforminteractive.h"
 #include "multiwindows/imultiwindowsprovider.h"
 
@@ -63,7 +62,6 @@ public:
     muse::GlobalInject<network::INetworkManagerCreator> networkManagerCreator;
     muse::GlobalInject<mi::IMultiWindowsProvider> multiwindowsProvider;
     muse::GlobalInject<muse::IPlatformInteractive> platformInteractive;
-    muse::ContextInject<IInteractive> interactive = { this };
 
 public:
     explicit AbstractCloudService(const modularity::ContextPtr& iocCtx, QObject* parent = nullptr);
@@ -73,8 +71,6 @@ public:
     void signUp() override;
     void signIn() override;
     void signOut() override;
-
-    RetVal<Val> ensureAuthorization(bool publishingScore, const std::string& text = {}) override;
 
     ValCh<bool> userAuthorized() const override;
     const AccountInfo& accountInfo() const override;

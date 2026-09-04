@@ -41,7 +41,6 @@
 
 #include "oauthhttpserverreplyhandler.h"
 
-#include "defer.h"
 #include "log.h"
 
 using namespace muse;
@@ -311,19 +310,6 @@ void AbstractCloudService::signOut()
 
         removeTokens();
     });
-}
-
-RetVal<Val> AbstractCloudService::ensureAuthorization(bool publishingScore, const std::string& text)
-{
-    if (m_userAuthorized.val) {
-        return muse::make_ok();
-    }
-
-    UriQuery query("muse://cloud/requireauthorization");
-    query.addParam("text", Val(text));
-    query.addParam("cloudCode", Val(cloudInfo().code));
-    query.addParam("publishingScore", Val(publishingScore));
-    return interactive()->openSync(query);
 }
 
 ValCh<bool> AbstractCloudService::userAuthorized() const
