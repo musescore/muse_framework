@@ -118,6 +118,7 @@ FocusScope {
         accessible.selectionStart: valueInput.selectionStart
         accessible.selectionEnd: valueInput.selectionEnd
         accessible.cursorPosition: valueInput.cursorPosition
+        accessible.textItem: valueInput
 
         onActiveChanged: {
             if (navCtrl.active) {
