@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <array>
+
 #include "../ivstplugininstance.h"
 #include "../vsttypes.h"
 
@@ -76,6 +78,14 @@ private:
 
     void addParamChange(const ParamChangeEvent& param);
 
+    bool isNotePlaying(int pitch) const;
+
+    struct ActiveNote {
+        Steinberg::Vst::NoteOnEvent noteOn;
+        int32_t busIndex;
+        uint16_t flags;
+    };
+
     bool m_isActive = false;
     muse::audio::gain_t m_volumeGain = 1.f; // 0.0 - 1.0
 
@@ -88,11 +98,14 @@ private:
     VstEventList m_inputEvents;
     VstParameterChanges m_inputParamChanges;
     VstEventList m_outputEvents;
+    audio::TransportEvents m_outputTransportEvents;
     VstProcessData m_processData;
     VstProcessContext m_processContext;
     VstProcessMode m_processMode = VstProcessMode::kRealtime;
 
-    std::unordered_map<size_t, VstEvent> m_playingNotes;
+    std::array<ActiveNote, 128> m_activeNotes;
+    std::array<int, 128> m_pitchToActiveNoteIndex {};
+    size_t m_playingNotesCount = 0;
     std::vector<PluginParamId> m_playingParams;
 
     std::unordered_map<PluginParamId, PluginParamInfo> m_pluginParamInfoMap;

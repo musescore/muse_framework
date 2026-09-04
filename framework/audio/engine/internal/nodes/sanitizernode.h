@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,33 +19,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef MUSE_AUDIO_NOISESOURCE_H
-#define MUSE_AUDIO_NOISESOURCE_H
 
-#include "abstractaudiosource.h"
+#pragma once
 
-namespace muse::audio::engine {
-class NoiseSource : public AbstractAudioSource
+#include "audionode.h"
+
+namespace muse::audio {
+struct SanitizerTag
 {
-public:
-    enum Type {
-        WHITE,
-        PINK
-    };
-
-    NoiseSource();
-
-    void setType(Type type);
-    unsigned int audioChannelsCount() const override;
-
-    samples_t process(float* buffer, samples_t samplesPerChannel) override;
-
-private:
-    float pinkFilter(float white);
-
-    Type m_type = WHITE;
-    float lpf[7] = { 0, 0, 0, 0, 0, 0, 0 };
+    static constexpr const char* name = "Sanitizer";
 };
 }
 
-#endif // MUSE_AUDIO_NOISESOURCE_H
+namespace muse::audio::engine {
+//! Silences the buffer if bad or loud values are detected in the output
+class SanitizerNode : public AudioNode<SanitizerTag>
+{
+private:
+    void doSelfProcess(float* buffer, samples_t samplesPerChannel) override;
+
+    bool m_corruptedOutputAntiSpam = false;
+};
+
+using SanitizerNodePtr = std::shared_ptr<SanitizerNode>;
+}

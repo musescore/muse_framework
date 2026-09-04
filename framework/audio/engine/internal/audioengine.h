@@ -19,8 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef MUSE_AUDIO_AUDIOENGINE_H
-#define MUSE_AUDIO_AUDIOENGINE_H
+
+#pragma once
 
 #include <memory>
 #include <atomic>
@@ -74,5 +74,3 @@ private:
     std::mutex m_quickOperationWaitMutex;
 };
 }
-
-#endif // MUSE_AUDIO_AUDIOENGINE_H

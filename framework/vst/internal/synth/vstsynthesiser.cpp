@@ -203,7 +203,7 @@ samples_t VstSynthesiser::process(float* buffer, samples_t samplesPerChannel)
     }
 
     const msecs_t nextMsecs = samplesToMsecs(samplesPerChannel, m_outputSpec.sampleRate);
-    const VstSequencer::EventSequenceMap sequences = m_sequencer.movePlaybackForward(nextMsecs);
+    const VstSequencer::EventSequenceMap& sequences = m_sequencer.movePlaybackForward(nextMsecs);
     const bool active = m_sequencer.isActive();
 
     samples_t sampleOffset = 0;

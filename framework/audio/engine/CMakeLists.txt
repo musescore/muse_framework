@@ -69,14 +69,8 @@ else()
         internal/mixer.h
         internal/contextplayer.cpp
         internal/contextplayer.h
-        internal/samplerateconvertor.cpp
-        internal/samplerateconvertor.h
         internal/abstractaudiosource.cpp
         internal/abstractaudiosource.h
-        internal/sinesource.cpp
-        internal/sinesource.h
-        # internal/noisesource.cpp
-        # internal/noisesource.h
         internal/abstracteventsequencer.h
         internal/transporteventsdispatcher.cpp
         internal/transporteventsdispatcher.h
@@ -103,13 +97,10 @@ else()
         internal/nodes/chainnode.h
         internal/nodes/trackchain.cpp
         internal/nodes/trackchain.h
+        internal/nodes/sanitizernode.cpp
+        internal/nodes/sanitizernode.h
 
         # DSP
-        internal/dsp/envelopefilterconfig.h
-        internal/dsp/compressor.cpp
-        internal/dsp/compressor.h
-        internal/dsp/limiter.cpp
-        internal/dsp/limiter.h
         internal/dsp/audiomathutils.h
         internal/dsp/smoothlinearvalue.h
 
@@ -120,8 +111,6 @@ else()
         internal/fx/fxresolver.h
         internal/fx/musefxresolver.cpp
         internal/fx/musefxresolver.h
-        internal/fx/equaliser.cpp
-        internal/fx/equaliser.h
         internal/fx/reverb/allpassdispersion.h
         internal/fx/reverb/allpassmodulateddelay.h
         internal/fx/reverb/circularsamplebuffer.h
