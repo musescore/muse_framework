@@ -375,21 +375,21 @@ void AccessibleItem::accessibleSetSelection(int selectionIndex, int startOffset,
         return;
     }
 
+    //! NOTE `select()` silently does nothing for out of range offsets, so clamp first.
     const int count = accessibleCharacterCount();
     const int start = std::clamp(startOffset, 0, count);
     const int end = std::clamp(endOffset, 0, count);
 
-    //! NOTE Accessibility calls may arrive on a thread other than the GUI one
-    //! (in-process UIA providers can be invoked from an RPC thread), so the write
-    //! is queued onto the text item's own thread.
-    QQuickItem* textItem = m_textItem;
-    QMetaObject::invokeMethod(textItem, [textItem, start, end]() {
-        if (start == end) {
-            textItem->setProperty("cursorPosition", start);
-        } else {
-            QMetaObject::invokeMethod(textItem, "select", Q_ARG(int, start), Q_ARG(int, end));
-        }
-    }, Qt::QueuedConnection);
+    //! NOTE Written synchronously, so that the caret has already moved by the time the
+    //! screen reader's call returns. Screen readers may read the caret back immediately
+    //! to confirm it, and the read side of this interface is synchronous too.
+    //! Accessibility calls reach us on the GUI thread on all platforms
+    //! (on Windows the UIA provider is STA and declares ProviderOptions_UseComThreading).
+    if (start == end) {
+        m_textItem->setProperty("cursorPosition", start);
+    } else {
+        QMetaObject::invokeMethod(m_textItem, "select", Q_ARG(int, start), Q_ARG(int, end));
+    }
 }
 
 void AccessibleItem::accessibleRemoveSelection(int selectionIndex)
@@ -399,11 +399,8 @@ void AccessibleItem::accessibleRemoveSelection(int selectionIndex)
     }
 
     //! NOTE Collapse the selection onto the caret, as QAccessibleTextWidget does.
-    QQuickItem* textItem = m_textItem;
-    QMetaObject::invokeMethod(textItem, [textItem]() {
-        const int pos = textItem->property("cursorPosition").toInt();
-        QMetaObject::invokeMethod(textItem, "select", Q_ARG(int, pos), Q_ARG(int, pos));
-    }, Qt::QueuedConnection);
+    const int pos = m_textItem->property("cursorPosition").toInt();
+    QMetaObject::invokeMethod(m_textItem, "select", Q_ARG(int, pos), Q_ARG(int, pos));
 }
 
 void AccessibleItem::accessibleSetCursorPosition(int position)
