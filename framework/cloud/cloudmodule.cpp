@@ -35,6 +35,8 @@ using namespace muse;
 using namespace muse::cloud;
 using namespace muse::modularity;
 
+static const std::string mname("cloud");
+
 std::string CloudModule::moduleName() const
 {
     return "cloud";
@@ -44,12 +46,6 @@ void CloudModule::registerExports()
 {
     m_cloudConfiguration = std::make_shared<CloudConfiguration>(globalCtx());
     globalIoc()->registerExport<ICloudConfiguration>(moduleName(), m_cloudConfiguration);
-#ifdef MUSE_MODULE_CLOUD_MUSESCORECOM
-    m_museScoreComService = std::make_shared<MuseScoreComService>(globalCtx());
-    globalIoc()->registerExport<IMuseScoreComService>(moduleName(), m_museScoreComService);
-#endif
-    m_audioComService = std::make_shared<AudioComService>(globalCtx());
-    globalIoc()->registerExport<IAudioComService>(moduleName(), m_audioComService);
 }
 
 void CloudModule::resolveImports()
@@ -63,6 +59,25 @@ void CloudModule::resolveImports()
 void CloudModule::onInit(const IApplication::RunMode&)
 {
     m_cloudConfiguration->init();
+}
+
+modularity::IContextSetup* CloudModule::newContext(const muse::modularity::ContextPtr& ctx) const
+{
+    return new CloudModuleContext(ctx);
+}
+
+void CloudModuleContext::registerExports()
+{
+#ifdef MUSE_MODULE_CLOUD_MUSESCORECOM
+    m_museScoreComService = std::make_shared<MuseScoreComService>(iocContext());
+    ioc()->registerExport<IMuseScoreComService>(mname, m_museScoreComService);
+#endif
+    m_audioComService = std::make_shared<AudioComService>(iocContext());
+    ioc()->registerExport<IAudioComService>(mname, m_audioComService);
+}
+
+void CloudModuleContext::onInit(const IApplication::RunMode&)
+{
 #ifdef MUSE_MODULE_CLOUD_MUSESCORECOM
     m_museScoreComService->init();
 #endif
