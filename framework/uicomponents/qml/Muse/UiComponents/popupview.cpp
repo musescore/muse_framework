@@ -101,7 +101,7 @@ void PopupView::initCloseController()
     m_closeController->setCanClose(!m_closePolicies.testFlag(ClosePolicy::NoAutoClose));
 
     m_closeController->closeNotification().onNotify(this, [this]() {
-        close(true);
+        close();
     });
 }
 
