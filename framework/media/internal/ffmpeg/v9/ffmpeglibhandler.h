@@ -28,9 +28,9 @@
 #endif
 
 extern "C" {
-#include "thirdparty/ffmpeg/v8/libavcodec/avcodec.h"
-#include "thirdparty/ffmpeg/v8/libavformat/avformat.h"
-#include "thirdparty/ffmpeg/v8/libswscale/swscale.h"
+#include "thirdparty/ffmpeg/v9/libavcodec/avcodec.h"
+#include "thirdparty/ffmpeg/v9/libavformat/avformat.h"
+#include "thirdparty/ffmpeg/v9/libswscale/swscale.h"
 }
 
 #if (defined (_MSCVER) || defined (_MSC_VER))
@@ -39,7 +39,7 @@ extern "C" {
 
 #include "io/path.h"
 
-namespace muse::media::ffmpeg::v8 {
+namespace muse::media::ffmpeg::v9 {
 class FFmpegLibHandler
 {
 public:
