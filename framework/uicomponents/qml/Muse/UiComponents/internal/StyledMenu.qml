@@ -243,13 +243,7 @@ MenuView {
                 root.handleMenuItem(itemId)
             })
 
-            root.subMenuLoader.opened.connect(function(itemId) {
-                root.closePolicies = PopupView.NoAutoClose
-            })
-
             root.subMenuLoader.closed.connect(function(force) {
-                root.closePolicies = PopupView.CloseOnPressOutsideParent
-
                 if (force) {
                     root.close(true)
                     root.openNextMenu()
