@@ -42,6 +42,9 @@ public:
     ValCh<QString> currentLanguageCode() const override;
     void setCurrentLanguageCode(const QString& languageCode) const override;
 
+    ValCh<QString> numberFormatSource() const override;
+    void setNumberFormatSource(const QString& source) const override;
+
     QUrl languagesUpdateUrl() const override;
     QUrl languageFileServerUrl(const QString& languageCode) const override;
 
@@ -57,6 +60,7 @@ public:
 private:
     Config m_config;
     async::Channel<QString> m_currentLanguageCodeChanged;
+    async::Channel<QString> m_numberFormatSourceChanged;
 };
 }
 

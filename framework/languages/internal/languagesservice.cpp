@@ -70,7 +70,17 @@ void LanguagesService::init()
         m_restartRequiredToApplyLanguageChanged.send(m_restartRequiredToApplyLanguage);
     });
 
+    configuration()->numberFormatSource().ch.onReceive(this, [this](const QString&) {
+        applyNumberFormat(QLocale(m_currentLanguage.code));
+    });
+
     m_inited = true;
+}
+
+void LanguagesService::applyNumberFormat(const QLocale& languageLocale)
+{
+    const bool useSystem = configuration()->numberFormatSource().val == SYSTEM_NUMBER_FORMAT_SOURCE;
+    QLocale::setDefault(useSystem ? QLocale::system() : languageLocale);
 }
 
 const LanguagesHash& LanguagesService::languages() const
@@ -208,8 +218,10 @@ void LanguagesService::setCurrentLanguage(const QString& languageCode)
 
     installTranslatorsForLanguage(lang);
 
+    // Layout direction follows the UI language; the number format (default
+    // QLocale) follows the configured source (OS region or UI language)
     QLocale locale(lang.code);
-    QLocale::setDefault(locale);
+    applyNumberFormat(locale);
     qGuiApp->setLayoutDirection(locale.textDirection());
 
     lang.direction = locale.textDirection();

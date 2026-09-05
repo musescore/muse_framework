@@ -72,6 +72,7 @@ FocusScope {
     }
 
     function clear() {
+        prv.userIsEditing = false
         valueInput.text = ""
         currentText = ""
         textCleared()
@@ -87,6 +88,39 @@ FocusScope {
         if (!root.activeFocus) {
             root.forceActiveFocus()
         }
+    }
+
+    //! End the typing session and show the canonical currentText again.
+    //! Called on commit-like events (e.g. spinbox arrow step) by containing controls.
+    function endEditing() {
+        prv.userIsEditing = false
+        prv.syncText()
+    }
+
+    QtObject {
+        id: prv
+
+        //! While the user is typing, external currentText changes (e.g. the model
+        //! echoing a live-committed value back) must not rewrite the field under
+        //! the cursor; the text is re-synced on commit (Enter/focus loss/step).
+        property bool userIsEditing: false
+
+        function syncText() {
+            var newText = root.currentText === undefined ? "" : root.currentText
+            if (valueInput.text !== newText) {
+                valueInput.text = newText
+            }
+        }
+    }
+
+    onCurrentTextChanged: {
+        if (!prv.userIsEditing) {
+            prv.syncText()
+        }
+    }
+
+    Component.onCompleted: {
+        prv.syncText()
     }
 
     onActiveFocusChanged: {
@@ -180,7 +214,8 @@ FocusScope {
             placeholderTextColor: Utils.colorWithAlpha(ui.theme.fontPrimaryColor, 0.3)
             visible: !root.isIndeterminate || activeFocus
 
-            text: root.currentText === undefined ? "" : root.currentText
+            // No `text:` binding here on purpose: prv.syncText() applies currentText
+            // imperatively so that typing is never interrupted by reformatting.
 
             ShortcutOverrideModel {
                 id: shortcutOverrideModel
@@ -241,6 +276,11 @@ FocusScope {
                     selectAll()
                 } else {
                     deselect()
+                    // Safety net: editingFinished is not emitted when the text
+                    // is not acceptable; typing must not block syncs forever.
+                    // (Only the flag: editingFinished still follows and must
+                    // see the user's text.)
+                    prv.userIsEditing = false
                 }
             }
 
@@ -253,6 +293,8 @@ FocusScope {
             }
 
             onTextEdited: {
+                prv.userIsEditing = true
+
                 if (!acceptableInput) {
                     return
                 }
@@ -261,7 +303,9 @@ FocusScope {
             }
 
             onEditingFinished: {
+                prv.userIsEditing = false
                 root.textEditingFinished(valueInput.text)
+                prv.syncText()
             }
         }
 

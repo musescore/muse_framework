@@ -32,6 +32,11 @@ namespace muse::languages {
 const QString SYSTEM_LANGUAGE_CODE = "system";
 const QString PLACEHOLDER_LANGUAGE_CODE = "en@placeholder";
 
+//! Number format (decimal/group separators) sources: the OS region settings,
+//! or the locale deduced from the UI language
+const QString SYSTEM_NUMBER_FORMAT_SOURCE = "system";
+const QString LANGUAGE_NUMBER_FORMAT_SOURCE = "language";
+
 using LanguageFilesMap = QMap<QString /*resourceName*/, io::path_t>;
 
 struct Language

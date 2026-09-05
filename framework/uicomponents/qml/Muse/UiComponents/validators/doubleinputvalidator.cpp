@@ -50,8 +50,14 @@ DoubleInputValidator::DoubleInputValidator(QObject* parent)
 
 void DoubleInputValidator::fixup(QString& string) const
 {
+    // Editable fields never show group separators
     QLocale locale;
+    locale.setNumberOptions(locale.numberOptions() | QLocale::OmitGroupSeparator);
     QString decimalSep = locale.decimalPoint();
+
+    if (!locale.groupSeparator().isEmpty()) {
+        string.remove(locale.groupSeparator());
+    }
 
     auto removeTrailingZeros = [decimalSep](QString& str) {
         if (str.isEmpty()) {
@@ -129,6 +135,15 @@ QValidator::State DoubleInputValidator::validate(QString& inputStr, int& cursorP
 {
     QLocale locale;
     QValidator::State state = Invalid;
+
+    // Group separators are display-only: strip them (e.g. from pasted text)
+    // so they never persist in an editable field
+    QString groupSep = locale.groupSeparator();
+    if (!groupSep.isEmpty() && inputStr.contains(groupSep)) {
+        int sepsBefore = inputStr.left(cursorPos).count(groupSep);
+        inputStr.remove(groupSep);
+        cursorPos -= sepsBefore;
+    }
 
     QString decimalSep = QRegularExpression::escape(locale.decimalPoint());
     const int maxIntDigits = maxIntegerDigits(m_top, m_bottom);
