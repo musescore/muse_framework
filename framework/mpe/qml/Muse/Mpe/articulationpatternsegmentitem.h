@@ -25,7 +25,7 @@
 #include <QObject>
 #include <QList>
 #include <QPoint>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "mpetypes.h"
 

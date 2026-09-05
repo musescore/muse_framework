@@ -24,8 +24,8 @@
 #include <string>
 #include <utility>
 
-#include <QJSValue>
-#include <QJSEngine>
+#include <QtQml/QJSValue>
+#include <QtQml/QJSEngine>
 #include <QObject>
 
 #include "io/path.h"

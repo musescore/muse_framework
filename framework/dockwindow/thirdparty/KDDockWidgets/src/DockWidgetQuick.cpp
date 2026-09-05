@@ -17,7 +17,7 @@
 #include "private/quick/FrameQuick_p.h"
 
 #include <Config.h>
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QCloseEvent>
 
 /**

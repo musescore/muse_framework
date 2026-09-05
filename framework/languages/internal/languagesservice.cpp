@@ -28,7 +28,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 #include <QTranslator>
 
 #include "languageserrors.h"

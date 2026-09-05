@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::uicomponents {
 class FocusListener : public QObject

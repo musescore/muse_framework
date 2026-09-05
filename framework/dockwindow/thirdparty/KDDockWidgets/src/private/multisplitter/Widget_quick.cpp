@@ -12,7 +12,7 @@
 #include "Widget_quick.h"
 
 #include <QDebug>
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 
 using namespace Layouting;
 

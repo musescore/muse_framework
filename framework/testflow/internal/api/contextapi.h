@@ -22,7 +22,7 @@
 #ifndef MUSE_TESTFLOW_API_CONTEXTAPI_H
 #define MUSE_TESTFLOW_API_CONTEXTAPI_H
 
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QHash>
 
 #include "api/apiobject.h"

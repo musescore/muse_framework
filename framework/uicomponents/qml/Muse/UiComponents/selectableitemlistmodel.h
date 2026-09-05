@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 #include <QAbstractListModel>
 
 #include "itemmultiselectionmodel.h"

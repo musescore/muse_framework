@@ -14,8 +14,8 @@
 
 #include "DockWidgetQuick.h"
 
-#include <QQmlParserStatus>
-#include <QQuickItem>
+#include <QtQml/QQmlParserStatus>
+#include <QtQuick/QQuickItem>
 #include <QString>
 
 #include <optional>

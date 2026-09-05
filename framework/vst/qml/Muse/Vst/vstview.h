@@ -21,10 +21,10 @@
  */
 #pragma once
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QAbstractNativeEventFilter>
 #include <QTimer>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/modularity/ioc.h"
 #include "ivstinstancesregister.h"

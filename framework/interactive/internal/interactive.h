@@ -26,6 +26,7 @@
 #include <QVariant>
 #include <QMap>
 #include <QStack>
+#include <QWindow>
 
 #include "async/asyncable.h"
 

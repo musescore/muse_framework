@@ -22,7 +22,7 @@
 #ifndef MUSE_EXTENSIONS_APIV1_IAPIV1OBJECT_H
 #define MUSE_EXTENSIONS_APIV1_IAPIV1OBJECT_H
 
-#include <QJSValue>
+#include <QtQml/QJSValue>
 
 namespace muse::extensions::apiv1 {
 class IApiV1Object

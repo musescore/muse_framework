@@ -24,7 +24,7 @@
 
 #include <QObject>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "navigationpanel.h"
 

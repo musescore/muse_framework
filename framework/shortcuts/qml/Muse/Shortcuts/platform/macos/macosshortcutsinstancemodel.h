@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "../../shortcutsinstancemodel.h"
 

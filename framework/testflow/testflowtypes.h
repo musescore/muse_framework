@@ -22,7 +22,7 @@
 #pragma once
 
 #include <vector>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 
 #include "io/path.h"
 #include "types/ret.h"

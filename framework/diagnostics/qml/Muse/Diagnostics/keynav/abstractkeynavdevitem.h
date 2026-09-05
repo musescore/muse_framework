@@ -24,7 +24,7 @@
 
 #include <QObject>
 #include <QVariant>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "ui/inavigation.h"
 #include "async/asyncable.h"

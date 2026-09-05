@@ -262,7 +262,7 @@ Indicator::Indicator(ClassicIndicators *classicIndicators, IndicatorWindow *pare
 
 #else
 
-#include <QQmlContext>
+#include <QtQml/QQmlContext>
 
 IndicatorWindow::IndicatorWindow(KDDockWidgets::ClassicIndicators *classicIndicators)
     : QQuickView()

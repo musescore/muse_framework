@@ -28,7 +28,7 @@
 #include <QGuiApplication>
 #include <QMetaProperty>
 #include <QMetaType>
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 #include <QUrl>
 #include <QWidget>
 #include <QWindow>

@@ -23,7 +23,7 @@
 #define MUSE_TESTFLOW_ITESTFLOW_H
 
 #include <vector>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 
 #include "modularity/imoduleinterface.h"
 #include "io/path.h"

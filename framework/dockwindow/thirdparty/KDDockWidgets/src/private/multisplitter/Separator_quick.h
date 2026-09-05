@@ -16,7 +16,7 @@
 #include "Separator_p.h"
 #include "Widget_quick.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 namespace Layouting {
 

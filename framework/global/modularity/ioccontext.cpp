@@ -25,8 +25,8 @@
 #include "log.h"
 
 #ifndef NO_QT_SUPPORT
-#include <QQmlEngine>
-#include <QQmlContext>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlContext>
 #include <QWidget>
 
 muse::Contextable::GetContext muse::iocCtxForQmlObject(const QObject* o)

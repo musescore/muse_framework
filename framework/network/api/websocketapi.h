@@ -22,7 +22,7 @@
 #pragma once
 
 #include <map>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QUrl>
 
 #include "global/api/apiobject.h"

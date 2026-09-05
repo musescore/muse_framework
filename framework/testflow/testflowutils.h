@@ -22,7 +22,7 @@
 #ifndef MUSE_TESTFLOW_TESTFLOWUTILS_H
 #define MUSE_TESTFLOW_TESTFLOWUTILS_H
 
-#include <QJSValue>
+#include <QtQml/QJSValue>
 
 #include "global/types/ret.h"
 #include "global/serialization/json.h"

@@ -21,7 +21,7 @@
  */
 #include "ipcsocket.h"
 
-#include <QLocalSocket>
+#include <QtNetwork/QLocalSocket>
 #include <QUuid>
 
 #include "async/async.h"

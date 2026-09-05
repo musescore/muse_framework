@@ -24,7 +24,7 @@
 #include <vector>
 
 #include <QWindow>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 
 #include "ui/internal/navigationcontroller.h"
 #include "rcommand/internal/commanddispatcher.h"

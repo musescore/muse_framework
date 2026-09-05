@@ -24,7 +24,7 @@
 
 #include <QAbstractListModel>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::interactive {
 class ErrorDetailsModel : public QAbstractListModel

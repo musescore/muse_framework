@@ -24,7 +24,7 @@
 
 #include <QAbstractListModel>
 #include <QVariant>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "async/asyncable.h"

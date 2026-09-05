@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <QQuickItem>
-#include <qqmlintegration.h>
+#include <QtQuick/QQuickItem>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/modularity/ioc.h"
 

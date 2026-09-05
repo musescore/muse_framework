@@ -25,7 +25,7 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QMap>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 #include "modularity/ioc.h"

@@ -24,10 +24,10 @@
 #include "kddockwidgets/docks_export.h"
 #include "kddockwidgets/Qt5Qt6Compat_p.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QObject>
 #include <QCloseEvent>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 #include <QScreen>
 
 QT_BEGIN_NAMESPACE

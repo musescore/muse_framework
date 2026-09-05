@@ -24,7 +24,7 @@
 
 #include <QAbstractListModel>
 #include <QList>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "mpetypes.h"
 #include "articulationpatternsegmentitem.h"

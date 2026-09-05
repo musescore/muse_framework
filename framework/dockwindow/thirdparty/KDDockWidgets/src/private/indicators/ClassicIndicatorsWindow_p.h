@@ -81,7 +81,7 @@ public:
 
 #else
 
-#include <QQuickView>
+#include <QtQuick/QQuickView>
 
 namespace KDDockWidgets {
 class ClassicIndicators;

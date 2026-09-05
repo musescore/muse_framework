@@ -119,11 +119,11 @@ See https://github.com/musescore/musescore_devtools/tree/main/include-what-you-u
 #include <QFont> //30
 
 // QtQml includes
-#include <QQmlEngine> //26+62(qqml.h)
-#include <QJSValue> //41
+#include <QtQml/QQmlEngine> //26+62(qqml.h)
+#include <QtQml/QJSValue> //41
 #include <QQmlListProperty> //30
 
 // QtQuick includes
-#include <QQuickItem> //106
+#include <QtQuick/QQuickItem> //106
 
 #endif // NO_QT_SUPPORT

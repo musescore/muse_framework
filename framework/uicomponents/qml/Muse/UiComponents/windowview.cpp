@@ -22,7 +22,7 @@
 
 #include "windowview.h"
 
-#include <QQuickView>
+#include <QtQuick/QQuickView>
 #include <QScreen>
 #include <QTimer>
 #include <QUrl>

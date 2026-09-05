@@ -25,7 +25,7 @@
 #include <QAbstractItemModel>
 #include <QHash>
 #include <QTimer>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "accessibility/iaccessibilitycontroller.h"

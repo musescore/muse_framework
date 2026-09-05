@@ -25,6 +25,8 @@
 
 #include "global/dataformatter.h"
 
+#include <QLocale>
+
 using namespace muse::ui;
 
 QmlDataFormatter::QmlDataFormatter(QObject* parent)

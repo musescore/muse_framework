@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "idiagnosticspathsregister.h"
