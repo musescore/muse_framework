@@ -21,7 +21,7 @@
  */
 #include "abstractnavigation.h"
 
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 
 #include "qmlaccessible.h"
 

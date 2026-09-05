@@ -41,7 +41,7 @@
 #define QQUICKPADDING_H
 
 #include <QtCore/qobject.h>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 QT_BEGIN_NAMESPACE
 

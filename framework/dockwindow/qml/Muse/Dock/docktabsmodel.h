@@ -24,7 +24,7 @@
 
 #include <QAbstractListModel>
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "thirdparty/KDDockWidgets/src/DockWidgetBase.h"
 

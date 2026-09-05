@@ -23,9 +23,9 @@
 #pragma once
 
 #include <QObject>
-#include <QQmlParserStatus>
+#include <QtQml/QQmlParserStatus>
 #include <QWindow>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/async/asyncable.h"
 

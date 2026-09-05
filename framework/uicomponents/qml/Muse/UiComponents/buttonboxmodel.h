@@ -23,8 +23,8 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickItem>
-#include <qqmlintegration.h>
+#include <QtQuick/QQuickItem>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "translation.h"
 #include "qmllistproperty.h"

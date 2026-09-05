@@ -23,7 +23,7 @@
 #define MUSE_API_NAVIGATIONAPI_H
 
 #include <QString>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 
 #include "api/apiobject.h"
 #include "modularity/ioc.h"

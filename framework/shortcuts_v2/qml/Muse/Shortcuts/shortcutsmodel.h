@@ -24,7 +24,7 @@
 
 #include <QAbstractListModel>
 #include <QItemSelection>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 #include <QList>
 
 #include "modularity/ioc.h"

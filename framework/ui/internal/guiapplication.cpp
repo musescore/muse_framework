@@ -23,9 +23,9 @@
 #include "guiapplication.h"
 
 #include <QTimer>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
+#include <QtQml/QQmlContext>
 #include <QQmlComponent>
 
 #include "ui/graphicsapiprovider.h"

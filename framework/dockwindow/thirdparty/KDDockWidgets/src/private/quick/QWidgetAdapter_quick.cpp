@@ -28,9 +28,9 @@
 #include <QResizeEvent>
 #include <QMouseEvent>
 #include <QQmlComponent>
-#include <QQuickItem>
-#include <QQmlEngine>
-#include <QQuickView>
+#include <QtQuick/QQuickItem>
+#include <QtQml/QQmlEngine>
+#include <QtQuick/QQuickView>
 #include <QScopedValueRollback>
 
 #include <qpa/qplatformwindow.h>

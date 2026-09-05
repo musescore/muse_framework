@@ -23,8 +23,8 @@
 #pragma once
 
 #include <QPointer>
-#include <QQuickItem>
-#include <qqmlintegration.h>
+#include <QtQuick/QQuickItem>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"

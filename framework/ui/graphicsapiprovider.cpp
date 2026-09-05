@@ -22,7 +22,7 @@
 #include "graphicsapiprovider.h"
 
 #include <QFile>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 #include <QSGRendererInterface>
 
 #include "global/internal/globalconfiguration.h"

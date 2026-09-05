@@ -21,7 +21,7 @@
  */
 #include "accessiblestub.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 using namespace muse::accessibility;
 

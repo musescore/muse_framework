@@ -15,7 +15,7 @@
 #include "Separator_p.h"
 
 #ifdef KDMULTISPLITTER_QTQUICK
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 #endif
 
 namespace Layouting {

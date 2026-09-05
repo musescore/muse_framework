@@ -20,7 +20,7 @@
 #include "MainWindowInstantiator_p.h"
 #include "LayoutSaverInstantiator_p.h"
 
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 #include <QDebug>
 
 void KDDockWidgets::registerQmlTypes()

@@ -23,10 +23,10 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QTimer>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 

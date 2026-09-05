@@ -24,6 +24,8 @@
 
 #include <QFontMetrics>
 
+#include <QFontMetricsF>
+
 using namespace muse::ui;
 using namespace muse::api;
 

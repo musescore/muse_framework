@@ -21,7 +21,7 @@
  */
 #include "extensionbuilder.h"
 
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 
 #include "global/types/number.h"
 #include "global/async/async.h"

@@ -24,7 +24,7 @@
 
 #include <QObject>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 #include "progress.h"

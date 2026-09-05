@@ -19,6 +19,7 @@
 #pragma once
 
 #include "../iextensionsession.h"
+#include "../extensionstypes.h"
 #include "scriptengine.h"
 
 namespace muse::extensions {

@@ -31,7 +31,7 @@
 #include <dwmapi.h>
 
 #include <QScreen>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 
 #include "log.h"
 

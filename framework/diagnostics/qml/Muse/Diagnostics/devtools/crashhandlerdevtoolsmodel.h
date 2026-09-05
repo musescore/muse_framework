@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::diagnostics {
 class CrashHandlerDevToolsModel : public QObject

@@ -24,9 +24,9 @@
 
 #include <QColor>
 #include <QPointF>
-#include <QQuickPaintedItem>
+#include <QtQuick/QQuickPaintedItem>
 #include <QVector>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "actions/actionable.h"
 #include "async/asyncable.h"

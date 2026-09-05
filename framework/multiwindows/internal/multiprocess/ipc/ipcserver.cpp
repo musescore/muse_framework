@@ -21,8 +21,8 @@
  */
 #include "ipcserver.h"
 
-#include <QLocalServer>
-#include <QLocalSocket>
+#include <QtNetwork/QLocalServer>
+#include <QtNetwork/QLocalSocket>
 #include <QThread>
 
 #include "async/async.h"

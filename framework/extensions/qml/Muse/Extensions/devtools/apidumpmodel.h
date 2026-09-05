@@ -24,7 +24,7 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QString>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "global/api/iapiregister.h"

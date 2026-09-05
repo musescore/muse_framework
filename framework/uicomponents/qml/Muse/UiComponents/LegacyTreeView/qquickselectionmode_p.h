@@ -40,7 +40,7 @@
 #ifndef QQUICKSELECTIONMODE_P_H
 #define QQUICKSELECTIONMODE_P_H
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 QT_BEGIN_NAMESPACE
 

@@ -22,7 +22,7 @@
 
 #include "dockframemodel.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QGuiApplication>
 
 #include "kddockwidgets/src/core/Group.h"

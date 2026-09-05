@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "windowview.h"
 

@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QVariantMap>
-#include <QNetworkRequest>
+#include <QtNetwork/QNetworkRequest>
 
 class QHttpMultiPart;
 class QIODevice;

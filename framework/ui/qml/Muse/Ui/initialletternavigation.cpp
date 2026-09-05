@@ -28,6 +28,8 @@
 
 #include "navigationpanel.h"
 
+#include <QRegularExpression>
+
 using namespace muse::ui;
 
 static QSet<Qt::Key> NAVIGATION_KEYS = {

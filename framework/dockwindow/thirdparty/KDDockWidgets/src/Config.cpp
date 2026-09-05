@@ -29,8 +29,8 @@
 
 #ifdef KDDOCKWIDGETS_QTQUICK
 #include "private/quick/Helpers_p.h"
-#include <QQmlEngine>
-#include <QQmlContext>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlContext>
 #endif
 
 #include "ContextData.h"

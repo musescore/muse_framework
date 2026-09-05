@@ -23,7 +23,7 @@
 
 #include <QObject>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/async/asyncable.h"
 

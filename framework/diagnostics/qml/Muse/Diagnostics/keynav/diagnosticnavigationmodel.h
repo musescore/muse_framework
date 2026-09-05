@@ -24,7 +24,7 @@
 
 #include <QObject>
 #include <QTimer>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "ui/inavigationcontroller.h"

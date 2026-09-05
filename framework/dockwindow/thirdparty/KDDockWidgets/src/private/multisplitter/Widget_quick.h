@@ -13,7 +13,7 @@
 
 #include "Widget.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 QT_BEGIN_NAMESPACE
 class QQuickItem;
