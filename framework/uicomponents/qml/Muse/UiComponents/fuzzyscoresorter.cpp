@@ -49,7 +49,6 @@ std::optional<double> getMaxScoreFromChildren(const FuzzyFilter& fuzzyFilter, co
 FuzzyScoreSorter::FuzzyScoreSorter(QObject* parent)
     : Sorter(parent)
 {
-    setSortOrder(Qt::DescendingOrder);
 }
 
 bool FuzzyScoreSorter::lessThan(const QModelIndex& sourceLeft, const QModelIndex& sourceRight,
@@ -59,21 +58,38 @@ bool FuzzyScoreSorter::lessThan(const QModelIndex& sourceLeft, const QModelIndex
         return sourceLeft < sourceRight;
     }
 
+    // don't sort children when their parent has a score
+    // checking for one parent is enough. left and right always have the same parent
+    if (const QModelIndex leftParent = sourceLeft.parent(); leftParent.isValid()) {
+        if (m_fuzzyFilter->getScore(leftParent)) {
+            return sourceLeft < sourceRight;
+        }
+    }
+
     const std::optional<double> leftScore = m_fuzzyFilter->getScore(sourceLeft);
     const std::optional<double> rightScore = m_fuzzyFilter->getScore(sourceRight);
 
     if (!proxyModel.isRecursiveFilteringEnabled()) {
-        return leftScore < rightScore;
+        return leftScore > rightScore;
     }
 
-    // rank parent items according to the highest child score
+    // prefer parents that match over parents with only children that match
+    if (leftScore && !rightScore) {
+        return true;
+    }
+
+    if (!leftScore && rightScore) {
+        return false;
+    }
+
+    // rank parent items according to their own score or the highest child score, whichever is higher
 
     const QAbstractItemModel& srcModel = *proxyModel.sourceModel();
 
     const std::optional<double> maxLeftChildScore = getMaxScoreFromChildren(*m_fuzzyFilter, srcModel, sourceLeft);
     const std::optional<double> maxRightChildScore = getMaxScoreFromChildren(*m_fuzzyFilter, srcModel, sourceRight);
 
-    return std::max(leftScore, maxLeftChildScore) < std::max(rightScore, maxRightChildScore);
+    return std::max(leftScore, maxLeftChildScore) > std::max(rightScore, maxRightChildScore);
 }
 
 FuzzyFilter* FuzzyScoreSorter::fuzzyFilter() const
