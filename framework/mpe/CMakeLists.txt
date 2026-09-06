@@ -30,7 +30,7 @@ target_sources(muse_mpe PRIVATE
     playbacksetupdata.h
     iarticulationprofilesrepository.h
 
-    internal/articulationstringutils.h
+    articulationstringutils.h
     internal/articulationprofilesrepository.cpp
     internal/articulationprofilesrepository.h
 )
