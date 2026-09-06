@@ -20,6 +20,7 @@
 
 #include "../iextensionsession.h"
 #include "scriptengine.h"
+#include "../extensionstypes.h"
 
 namespace muse::extensions {
 struct Manifest;
