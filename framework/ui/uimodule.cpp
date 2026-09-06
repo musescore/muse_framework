@@ -22,6 +22,7 @@
 #include "uimodule.h"
 
 #include <QFontDatabase>
+#include <QQmlEngine>
 #include <qqml.h>
 
 #include "modularity/ioc.h"
