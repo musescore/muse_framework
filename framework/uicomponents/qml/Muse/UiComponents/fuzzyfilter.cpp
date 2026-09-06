@@ -152,20 +152,29 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
         std::optional<double> tokenScore;
         for (const auto& match : m_matcher(text, patternToken, maxDistance)) {
             const double matchSimilarity = 1.0 - (match.editDistance * perCharScore);
-            double matchScore = 5.0 * matchSimilarity;
 
-            const bool isMatchStartAtStartOfWord = match.beginPos == 0
-                                                   || !QChar::isLetter(text[match.beginPos - 1]);
-            if (isMatchStartAtStartOfWord) {
-                const bool isMatchEndAtEndOfWord = match.endPos == text.size()
-                                                   || !QChar::isLetter(text[match.endPos]);
-                if (isMatchEndAtEndOfWord) {
-                    matchScore += 2.0 * perCharScore;
-                } else {
-                    matchScore += perCharScore;
+            const double scoreBonus = [&] {
+                const bool isFullMatch = (match.endPos - match.beginPos) == text.size();
+                if (isFullMatch) {
+                    return 3.0 * perCharScore;
                 }
-            }
 
+                const bool isMatchStartAtStartOfWord = match.beginPos == 0
+                                                       || !QChar::isLetter(text[match.beginPos - 1]);
+                if (isMatchStartAtStartOfWord) {
+                    const bool isMatchEndAtEndOfWord = match.endPos == text.size()
+                                                       || !QChar::isLetter(text[match.endPos]);
+                    if (isMatchEndAtEndOfWord) {
+                        return 2.0 * perCharScore;
+                    } else {
+                        return perCharScore;
+                    }
+                }
+
+                return 0.0;
+            }();
+
+            const double matchScore = 5.0 * matchSimilarity + scoreBonus;
             if (tokenScore < matchScore) {
                 tokenScore = matchScore;
             }
