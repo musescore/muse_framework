@@ -21,6 +21,10 @@
  */
 #include "dataformatter.h"
 
+#include <QLocale>
+
+#include <cmath>
+
 #include "translation.h"
 #include "types/datetime.h"
 
@@ -34,6 +38,50 @@ double DataFormatter::roundDouble(const double& val, const int decimals)
 String DataFormatter::formatReal(double val, int prec)
 {
     return String::number(val, prec);
+}
+
+String DataFormatter::formatLocalizedReal(double val, int prec, bool omitGroupSeparator)
+{
+    QLocale locale;
+    if (omitGroupSeparator) {
+        locale.setNumberOptions(locale.numberOptions() | QLocale::OmitGroupSeparator);
+    }
+
+    QString str = locale.toString(val, 'f', prec);
+    if (prec <= 0) {
+        return String::fromQString(str);
+    }
+
+    // The zero digit and the separator can each be several UTF-16 code units
+    // (non-Latin digits, multi-character separators), so match whole tokens
+    const QString decSep = locale.decimalPoint().isEmpty() ? QStringLiteral(".") : locale.decimalPoint();
+    const QString zero = locale.zeroDigit().isEmpty() ? QStringLiteral("0") : locale.zeroDigit();
+
+    const int decPos = str.indexOf(decSep);
+    if (decPos == -1) {
+        return String::fromQString(str);
+    }
+
+    const int fracStart = decPos + decSep.size();
+    while (str.size() > fracStart && str.endsWith(zero)) {
+        str.chop(zero.size());
+    }
+    if (str.size() == fracStart) {
+        str.chop(decSep.size());
+    }
+
+    return String::fromQString(str);
+}
+
+int DataFormatter::decimalsForStep(double step, int maxDecimals)
+{
+    int decimals = 0;
+    double scaled = std::abs(step);
+    while (decimals < maxDecimals && std::abs(scaled - std::round(scaled)) > 1e-9 * std::max(1.0, scaled)) {
+        scaled *= 10.0;
+        ++decimals;
+    }
+    return decimals;
 }
 
 String DataFormatter::formatTimeSince(const Date& date)
