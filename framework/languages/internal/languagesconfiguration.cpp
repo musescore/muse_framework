@@ -81,6 +81,11 @@ io::path_t LanguagesConfiguration::languagesUserAppDataPath() const
     return globalConfiguration()->userAppDataPath() + "/locale";
 }
 
+io::path_t LanguagesConfiguration::appLanguagesJsonPath() const
+{
+    return languagesAppDataPath() + "/languages.json";
+}
+
 io::path_t LanguagesConfiguration::builtinLanguagesJsonPath() const
 {
     return ":/languages/resources/languages.json";
