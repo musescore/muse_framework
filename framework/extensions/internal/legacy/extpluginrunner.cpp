@@ -26,6 +26,8 @@
 #include "../../api/v1/ipluginapiv1.h"
 #include "../../extensionserrors.h"
 
+#include "translation.h"
+
 #include "log.h"
 
 using namespace muse;
@@ -33,6 +35,7 @@ using namespace muse::extensions;
 using namespace muse::extensions::legacy;
 using namespace muse::extensions::apiv1;
 
+//! Loads and runs the legacy plug-in described by `action`.
 Ret ExtPluginRunner::run(const Action& action)
 {
     io::path_t qmlPath = action.path;
@@ -41,24 +44,40 @@ Ret ExtPluginRunner::run(const Action& action)
     //! making it easier to maintain backward compatibility and stability.
     QQmlComponent component = QQmlComponent(engine()->qmlEngineApiV1(), qmlPath.toQString());
     if (!component.isReady()) {
+        const QString errorMessage = component.errorString().trimmed();
         LOGE() << "Failed to load QML file: " << qmlPath;
-        LOGE() << component.errorString();
+        LOGE() << errorMessage;
+        showError(errorMessage);
         return make_ret(Err::ExtLoadError);
     }
 
     QObject* obj = component.create();
     if (!obj) {
-        LOGE() << "Failed to create QML Object: " << qmlPath;
+        const QString errorMessage = component.errorString().trimmed();
+        LOGE() << "Failed to create QML Object: " << qmlPath << ", error: " << errorMessage;
+        showError(errorMessage);
         return make_ret(Err::ExtLoadError);
     }
 
     IPluginApiV1* plugin = dynamic_cast<IPluginApiV1*>(obj);
     if (!plugin) {
-        LOGE() << "Qml Object not MuseScore plugin: " << qmlPath;
+        const QString errorMessage = muse::qtrc("extensions", "QML object is not a MuseScore plug-in: %1").arg(qmlPath.toQString());
+        LOGE() << errorMessage;
+        showError(errorMessage);
         return make_ret(Err::ExtBadFormat);
     }
 
     plugin->runPlugin();
 
     return muse::make_ok();
+}
+
+//! Displays `errorMessage` in a copyable error dialog.
+void ExtPluginRunner::showError(const QString& errorMessage)
+{
+    IInteractive::Text text(
+        muse::qtrc("extensions", "An error occurred in the plug-in: %1. Please contact the developer.").arg(errorMessage).toStdString(),
+        IInteractive::TextFormat::PlainText);
+    text.detailedText = errorMessage.toStdString();
+    interactive()->error(muse::trc("extensions", "Plug-in error"), text);
 }
