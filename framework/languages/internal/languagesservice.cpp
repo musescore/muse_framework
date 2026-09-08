@@ -125,7 +125,14 @@ void LanguagesService::loadLanguages()
     RetVal<ByteArray> languagesJson;
     {
         mi::ReadResourceLockGuard lock_guard(multiwindowsProvider(), LANGUAGES_RESOURCE_NAME);
-        languagesJson = fileSystem()->readFile(configuration()->builtinLanguagesJsonPath());
+        const io::path_t appLanguagesJsonPath = configuration()->appLanguagesJsonPath();
+        if (!appLanguagesJsonPath.empty()) {
+            languagesJson = fileSystem()->readFile(appLanguagesJsonPath);
+        }
+
+        if (!languagesJson.ret) {
+            languagesJson = fileSystem()->readFile(configuration()->builtinLanguagesJsonPath());
+        }
     }
     if (!languagesJson.ret) {
         LOGE() << "Failed to read languages.json: " << languagesJson.ret.toString();
