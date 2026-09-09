@@ -35,6 +35,8 @@ target_sources(muse_interactive PRIVATE
     dev/testdialog.h
     dev/testdialog.ui
 
+    internal/filedialogfilters.cpp
+    internal/filedialogfilters.h
     internal/iinteractiveprovider.h
     internal/interactive.cpp
     internal/interactive.h
