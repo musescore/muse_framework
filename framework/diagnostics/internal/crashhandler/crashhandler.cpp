@@ -20,13 +20,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// Crashpad headers first: some transitively include mini_chromium's base/logging.h,
+// which defines a LOG_STREAM macro that clashes with the muse logger's.
+#include <client/crashpad_client.h>
+#include <client/crashpad_info.h>
+#include <client/crash_report_database.h>
+#include <client/settings.h>
+#undef LOG_STREAM
+
 #include "crashhandler.h"
 
 #include <QDir>
-
-#include <client/crashpad_client.h>
-#include <client/crash_report_database.h>
-#include <client/settings.h>
 
 #include "log.h"
 
@@ -98,6 +102,10 @@ void CrashHandler::addSessionTag(const String& tag, const String& value)
     m_sessionTags.emplace(tag, value);
 }
 
+void CrashHandler::setSystemCrashReporterForwardingEnabled(bool enabled)
+{
+    CrashpadInfo::GetCrashpadInfo()->set_system_crash_reporter_forwarding(enabled ? TriState::kEnabled : TriState::kDisabled);
+}
 
 void CrashHandler::removePendingLockFiles(const muse::io::path_t& dumpsDir)
 {

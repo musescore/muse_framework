@@ -50,6 +50,7 @@ public:
     bool start(const muse::io::path_t& handlerFilePath, const muse::io::path_t& dumpsDir, const std::string& serverUrl);
 
     void addSessionTag(const String& tag, const String& value) override;
+    void setSystemCrashReporterForwardingEnabled(bool enabled) override;
 
 private:
     void removePendingLockFiles(const muse::io::path_t& dumpsDir);
