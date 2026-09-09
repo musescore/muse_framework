@@ -38,6 +38,12 @@ public:
     //! Adds a Sentry tag to the session, helpful for filtering.
     //! Must be called when applying command-line options - onInit is too late.
     virtual void addSessionTag(const String& tag, const String& value) = 0;
+
+    //! Whether a crash of this process is also handed to the operating system's crash
+    //! reporter. On by default. A spawned plugin-registration child process may want to turn it off.
+    //! On macOS that reporter is what shows the "<app> quit unexpectedly" dialog.
+    //! Windows and Linux have no such reporter, so this has no effect there.
+    virtual void setSystemCrashReporterForwardingEnabled(bool enabled) = 0;
 };
 }
 
