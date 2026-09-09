@@ -32,6 +32,7 @@
 namespace muse::diagnostics {
 class DiagnosticsConfiguration;
 class DiagnosticsActionsController;
+class CrashHandler;
 class DiagnosticsModule : public muse::modularity::IModuleSetup
 {
     muse::GlobalInject<muse::io::IFileSystem> fileSystem;
@@ -46,6 +47,7 @@ public:
 
 private:
     std::shared_ptr<DiagnosticsConfiguration> m_configuration;
+    std::shared_ptr<CrashHandler> m_crashHandler; // only set when the crashpad client is built in
 };
 
 class DiagnosticsContext : public muse::modularity::IContextSetup

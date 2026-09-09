@@ -63,6 +63,9 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
     std::map<std::string, std::string> annotations = {
         { "sentry[release]", application()->fullVersion().toStdString() + "." + application()->build().toStdString() }
     };
+    for (const auto& [tag, value] : m_sessionTags) {
+        annotations[muse::String{ "sentry[tags][%1]" }.arg(tag).toStdString()] = value.toStdString();
+    }
     // Optional arguments to pass to the handler
     std::vector<std::string> arguments;
     arguments.push_back("--no-rate-limit");
@@ -89,6 +92,12 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
 
     return success;
 }
+
+void CrashHandler::addSessionTag(const String& tag, const String& value)
+{
+    m_sessionTags.emplace(tag, value);
+}
+
 
 void CrashHandler::removePendingLockFiles(const muse::io::path_t& dumpsDir)
 {
