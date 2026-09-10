@@ -38,6 +38,7 @@
 
 #include "diagnostics/diagnosticutils.h"
 
+#include "filedialogfilters.h"
 #include "widgetdialogadapter.h"
 #include "ui/view/widgetdialog.h"
 
@@ -316,9 +317,13 @@ static UriQuery makeSelectFileQuery(FileDialogMode mode, const std::string& titl
     UriQuery q("muse://interactive/selectfile");
     q.set("title", title);
 
+    const bool isOpenMode = mode == FileDialogMode::OpenFile || mode == FileDialogMode::OpenFiles;
+    const bool hidesFilterDetails = options & QFileDialog::HideNameFilterDetails;
+    const bool matchCaseInsensitively = isOpenMode && hidesFilterDetails;
+
     ValList filterList;
     for (const std::string& f : filter) {
-        filterList.push_back(Val(f));
+        filterList.push_back(Val(matchCaseInsensitively ? caseInsensitiveNameFilter(f) : f));
     }
 
     q.set("nameFilters", filterList);
