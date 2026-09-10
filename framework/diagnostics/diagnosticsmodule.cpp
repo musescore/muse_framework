@@ -39,6 +39,7 @@
 #include "muse_framework_config.h"
 
 #ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
+#include "icrashhandler.h"
 #include "internal/crashhandler/crashhandler.h"
 #endif
 
@@ -60,6 +61,11 @@ void DiagnosticsModule::registerExports()
     m_configuration = std::make_shared<DiagnosticsConfiguration>(globalCtx());
     globalIoc()->registerExport<IDiagnosticsConfiguration>(mname, m_configuration);
     globalIoc()->registerExport<IDiagnosticsPathsRegister>(mname, new DiagnosticsPathsRegister());
+
+#ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
+    m_crashHandler = std::make_shared<CrashHandler>();
+    globalIoc()->registerExport<ICrashHandler>(mname, m_crashHandler);
+#endif
 }
 
 void DiagnosticsModule::resolveImports()
@@ -91,8 +97,6 @@ void DiagnosticsModule::onInit(const IApplication::RunMode&)
 
 #ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
 
-    static CrashHandler s_crashHandler;
-
 #ifdef Q_OS_WIN
     const muse::io::path_t handlerFile("crashpad_handler.exe");
 #else
@@ -111,7 +115,7 @@ void DiagnosticsModule::onInit(const IApplication::RunMode&)
         LOGD() << "crash server url: " << serverUrl;
     }
 
-    bool ok = s_crashHandler.start(handlerPath, dumpsDir, serverUrl);
+    bool ok = m_crashHandler->start(handlerPath, dumpsDir, serverUrl);
     if (!ok) {
         LOGE() << "failed start crash handler";
     } else {
