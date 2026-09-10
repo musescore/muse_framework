@@ -38,7 +38,9 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-bash ./buildscripts/ci/tools/s3_install.sh --s3_key ${S3_KEY} --s3_secret ${S3_SECRET}
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+bash "$HERE"/s3_install.sh --s3_key ${S3_KEY} --s3_secret ${S3_SECRET}
 
 echo "=== Publish to S3 ==="
 
