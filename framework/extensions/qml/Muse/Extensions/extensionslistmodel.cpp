@@ -130,7 +130,7 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
         return shortcuts::sequencesToNativeText(shortcut.sequences);
 
         //: No keyboard shortcut is assigned to this plugin.
-        return muse::qtrc("extensions", "Not defined");
+        //return muse::qtrc("extensions", "Not defined");
     }
     case rIsRemovable: {
         return manifest.isRemovable;
