@@ -541,10 +541,11 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
     QAccessible::Role itemRole = role();
     if (type == QAccessible::InterfaceType::ValueInterface && itemRole == QAccessible::Slider) {
         return static_cast<QAccessibleValueInterface*>(this);
-    } else if (type == QAccessible::InterfaceType::TextInterface && itemRole != QAccessible::Slider) {
-        //! NOTE: Sliders must not advertise a text interface. Doing so exposes
-        //! UIA TextPattern on a Range control, and screen readers then read the
-        //! (empty) text content instead of the value on value-change events.
+    } else if (type == QAccessible::InterfaceType::TextInterface
+               && m_object->item()->accessibleRole() == IAccessible::Role::EditableText) {
+        //! NOTE: Only genuine text fields may advertise a text interface. Exposing
+        //! UIA TextPattern on other roles makes screen readers treat them as empty
+        //! text documents: they read "blank" on arrow keys and braille goes blank.
         return static_cast<QAccessibleTextInterface*>(this);
     }
 
