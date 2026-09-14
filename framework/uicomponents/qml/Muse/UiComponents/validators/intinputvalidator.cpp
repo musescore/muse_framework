@@ -96,9 +96,12 @@ QValidator::State IntInputValidator::validate(QString& inputStr, int& cursorPos)
         return Invalid;
     }
 
-    int val = digits.toInt();
-    if (val > m_top || val < m_bottom) {
-        return Invalid;
+    bool ok = false;
+    int val = digits.toInt(&ok);
+    if (ok && (val > m_top || val < m_bottom)) {
+        // Out of range is still typeable ("4" can become "40" when the
+        // minimum is 10); fixup() clamps it on commit
+        state = Intermediate;
     }
 
     return state;
