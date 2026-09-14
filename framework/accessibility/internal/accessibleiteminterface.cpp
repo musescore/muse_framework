@@ -402,19 +402,22 @@ int AccessibleItemInterface::selectionCount() const
     return m_object->item()->accessibleSelectionCount();
 }
 
-void AccessibleItemInterface::addSelection(int, int)
+void AccessibleItemInterface::addSelection(int startOffset, int endOffset)
 {
-    NOT_IMPLEMENTED;
+    //! NOTE On Windows this is what a cursor routing key ends up calling:
+    //! NVDA selects a degenerate (startOffset == endOffset) range, and Qt's UIA bridge
+    //! maps ITextRangeProvider::Select() onto removeSelection() + addSelection().
+    setSelection(0, startOffset, endOffset);
 }
 
-void AccessibleItemInterface::removeSelection(int)
+void AccessibleItemInterface::removeSelection(int selectionIndex)
 {
-    NOT_IMPLEMENTED;
+    m_object->item()->accessibleRemoveSelection(selectionIndex);
 }
 
-void AccessibleItemInterface::setSelection(int, int, int)
+void AccessibleItemInterface::setSelection(int selectionIndex, int startOffset, int endOffset)
 {
-    NOT_IMPLEMENTED;
+    m_object->item()->accessibleSetSelection(selectionIndex, startOffset, endOffset);
 }
 
 int AccessibleItemInterface::cursorPosition() const
@@ -422,9 +425,9 @@ int AccessibleItemInterface::cursorPosition() const
     return m_object->item()->accessibleCursorPosition();
 }
 
-void AccessibleItemInterface::setCursorPosition(int)
+void AccessibleItemInterface::setCursorPosition(int position)
 {
-    NOT_IMPLEMENTED;
+    m_object->item()->accessibleSetCursorPosition(position);
 }
 
 QString AccessibleItemInterface::text(int startOffset, int endOffset) const
