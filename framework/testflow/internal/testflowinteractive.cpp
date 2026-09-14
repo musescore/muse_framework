@@ -201,6 +201,11 @@ Ret TestflowInteractive::closeSync(const UriQuery& uri)
     return m_real->closeSync(uri);
 }
 
+async::Promise<Ret> TestflowInteractive::closeAllDialogs()
+{
+    return m_real->closeAllDialogs();
+}
+
 Ret TestflowInteractive::closeAllDialogsSync()
 {
     return m_real->closeAllDialogsSync();

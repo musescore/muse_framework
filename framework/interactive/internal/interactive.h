@@ -118,6 +118,7 @@ public:
     async::Promise<Ret> close(const UriQuery& uri) override;
     async::Promise<Ret> close(const Uri& uri) override;
     Ret closeSync(const UriQuery& uri) override;
+    async::Promise<Ret> closeAllDialogs() override;
     Ret closeAllDialogsSync() override;
 
     // state
@@ -179,6 +180,7 @@ private:
 
     std::vector<ObjectInfo> allOpenObjects() const;
     std::vector<ObjectInfo> collectOpenObjects(std::function<bool(const ObjectInfo&)> accepted) const;
+    std::vector<ObjectInfo> openDialogs() const;
 
     void notifyAboutCurrentUriChanged();
     void notifyAboutCurrentUriWillBeChanged();
