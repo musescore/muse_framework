@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MUSE_AUDIO_AUDIOMATHUTILS_H
-#define MUSE_AUDIO_AUDIOMATHUTILS_H
+#pragma once
 
 #include <cstdlib>
 #include <limits>
@@ -34,32 +33,6 @@ inline float balanceGain(const balance_t balance, const int audioChannelNumber)
     return (audioChannelNumber * 2 - 1) * balance + 1.f;
 }
 
-inline float samplesRootMeanSquare(const float squaredSum, const samples_t sampleCount)
-{
-    return std::sqrt(squaredSum / sampleCount);
-}
-
-inline float sampleAttackTimeCoefficient(const unsigned int sampleRate, const float attackTimeInSecs)
-{
-    return std::exp(-std::log(9) / (sampleRate * attackTimeInSecs));
-}
-
-inline float sampleReleaseTimeCoefficient(const unsigned int sampleRate, const float releaseTimeInSecs)
-{
-    return std::exp(-std::log(9) / (sampleRate * releaseTimeInSecs));
-}
-
-inline void multiplySamples(float* buffer, const audioch_t& audioChannelsCount,
-                            const audioch_t& audioChannelNumber, const samples_t& samplesPerChannel,
-                            const float& multiplier)
-{
-    for (samples_t i = 0; i < samplesPerChannel; ++i) {
-        int idx = i * audioChannelsCount + audioChannelNumber;
-
-        buffer[idx] *= multiplier;
-    }
-}
-
 template<typename T>
 constexpr T convertFloatSamples(const float value, const int bits)
 {
@@ -69,5 +42,3 @@ constexpr T convertFloatSamples(const float value, const int bits)
     return static_cast<T>(std::round(scaledValue));
 }
 }
-
-#endif // MUSE_AUDIO_AUDIOMATHUTILS_H
