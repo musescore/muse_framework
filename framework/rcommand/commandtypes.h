@@ -30,6 +30,7 @@
 #include "global/types/mnemonicstring.h"
 #include "global/types/translatablestring.h"
 #include "global/types/color.h"
+#include "global/logstream.h"
 #include "ui/uitypes.h"
 
 namespace muse::rcommand {
@@ -214,4 +215,14 @@ inline Response make_response(const Request& request, const Ret& ret, const std:
     response.data = data;
     return response;
 }
+}
+
+inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::rcommand::Params& p)
+{
+    s << "{";
+    for (const auto& [key, value] : p) {
+        s << key << ": " << value.toString() << ", ";
+    }
+    s << "}";
+    return s;
 }
