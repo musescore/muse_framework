@@ -29,6 +29,7 @@
 #include <QEvent>
 #include <QCloseEvent>
 #include <QTimer>
+#include <QAction>
 #include <QScopedValueRollback>
 
 /**
