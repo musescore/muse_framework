@@ -87,6 +87,34 @@ async::Promise<Ret> Playback::init()
         }
     });
 
+    channel()->onNotification(ctxId(), MsgCode::ControlParamsChanged, [this](const Msg& msg) {
+        ONLY_AUDIO_MAIN_THREAD;
+        TrackId trackId = 0;
+        ControlParams params;
+        IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, trackId, params)) {
+            return;
+        }
+        if (trackId == MASTER_TRACK_ID) {
+            m_masterControlParamsChanged.send(params);
+        } else {
+            m_controlParamsChanged.send(trackId, params);
+        }
+    });
+
+    channel()->onNotification(ctxId(), MsgCode::AuxSendsParamsChanged, [this](const Msg& msg) {
+        ONLY_AUDIO_MAIN_THREAD;
+        TrackId trackId = 0;
+        AuxSendsParams params;
+        IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, trackId, params)) {
+            return;
+        }
+        if (trackId == MASTER_TRACK_ID) {
+            m_masterAuxSendsParamsChanged.send(params);
+        } else {
+            m_auxSendsParamsChanged.send(trackId, params);
+        }
+    });
+
     return async::make_promise<Ret>([this](auto resolve, auto /*reject*/) {
         ONLY_AUDIO_MAIN_THREAD;
 
@@ -133,6 +161,8 @@ void Playback::deinit()
     channel()->onNotification(ctxId(), MsgCode::TrackRemoved, nullptr);
     channel()->onNotification(ctxId(), MsgCode::SourceParamsChanged, nullptr);
     channel()->onNotification(ctxId(), MsgCode::FxChainParamsChanged, nullptr);
+    channel()->onNotification(ctxId(), MsgCode::ControlParamsChanged, nullptr);
+    channel()->onNotification(ctxId(), MsgCode::AuxSendsParamsChanged, nullptr);
 
     m_saveSoundTrackProgressStream = SaveSoundTrackProgress();
     m_saveSoundTrackProgressStreamInited = false;
@@ -452,9 +482,19 @@ async::Channel<TrackId, AudioSourceParams> Playback::sourceParamsChanged() const
     return m_sourceParamsChanged;
 }
 
+async::Channel<TrackId, ControlParams> Playback::controlParamsChanged() const
+{
+    return m_controlParamsChanged;
+}
+
 async::Channel<TrackId, AudioFxChain> Playback::fxChainParamsChanged() const
 {
     return m_fxChainParamsChanged;
+}
+
+async::Channel<TrackId, AuxSendsParams> Playback::auxSendsParamsChanged() const
+{
+    return m_auxSendsParamsChanged;
 }
 
 // Same for master
@@ -478,9 +518,19 @@ void Playback::setMasterAuxSendsParams(const AuxSendsParams& params)
     setAuxSendsParams(MASTER_TRACK_ID, params);
 }
 
+async::Channel<ControlParams> Playback::masterControlParamsChanged() const
+{
+    return m_masterControlParamsChanged;
+}
+
 async::Channel<AudioFxChain> Playback::masterFxChainParamsChanged() const
 {
     return m_masterFxChainParamsChanged;
+}
+
+async::Channel<AuxSendsParams> Playback::masterAuxSendsParamsChanged() const
+{
+    return m_masterAuxSendsParamsChanged;
 }
 
 void Playback::processInput(const TrackId trackId) const

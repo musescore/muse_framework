@@ -81,14 +81,18 @@ public:
 
     // These parameters can be changed within the audio system.
     async::Channel<TrackId, AudioSourceParams> sourceParamsChanged() const override;
+    async::Channel<TrackId, ControlParams> controlParamsChanged() const override;
     async::Channel<TrackId, AudioFxChain> fxChainParamsChanged() const override;
+    async::Channel<TrackId, AuxSendsParams> auxSendsParamsChanged() const override;
 
     // Same for master
     async::Promise<TrackParams> masterParams() const override;
     void setMasterControlParams(const ControlParams& params) override;
     void setMasterFxChainParams(const AudioFxChain& params) override;
     void setMasterAuxSendsParams(const AuxSendsParams& params) override;
+    async::Channel<ControlParams> masterControlParamsChanged() const override;
     async::Channel<AudioFxChain> masterFxChainParamsChanged() const override;
+    async::Channel<AuxSendsParams> masterAuxSendsParamsChanged() const override;
 
     // Input processing
     void processInput(const TrackId trackId) const override;
@@ -124,8 +128,12 @@ private:
     async::Channel<TrackId> m_trackAdded;
     async::Channel<TrackId> m_trackRemoved;
     async::Channel<TrackId, AudioSourceParams> m_sourceParamsChanged;
+    async::Channel<TrackId, ControlParams> m_controlParamsChanged;
     async::Channel<TrackId, AudioFxChain> m_fxChainParamsChanged;
+    async::Channel<TrackId, AuxSendsParams> m_auxSendsParamsChanged;
+    async::Channel<ControlParams> m_masterControlParamsChanged;
     async::Channel<AudioFxChain> m_masterFxChainParamsChanged;
+    async::Channel<AuxSendsParams> m_masterAuxSendsParamsChanged;
 
     mutable bool m_saveSoundTrackProgressStreamInited = false;
     async::Channel<int64_t, int64_t, SaveSoundTrackStage> m_saveSoundTrackProgressStream;
