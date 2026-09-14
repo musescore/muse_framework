@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include <QQuickPaintedItem>
+#include <QtQuick/QQuickPaintedItem>
 
 namespace muse::uicomponents {
 class QuickPaintedView : public QQuickPaintedItem

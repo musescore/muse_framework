@@ -25,7 +25,7 @@
 #include <QObject>
 #include <QString>
 #include <QList>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 

@@ -24,7 +24,7 @@
 
 #include <QObject>
 #include <QVariant>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::workspace {
 class NewWorkspaceModel : public QObject

@@ -22,7 +22,7 @@
 
 #include "qmlaccessible.h"
 
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 #include <QTextBoundaryFinder>
 
 #include "log.h"

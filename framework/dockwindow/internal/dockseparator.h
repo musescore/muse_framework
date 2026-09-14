@@ -23,7 +23,7 @@
 #ifndef MUSE_DOCK_DOCKSEPARATOR_H
 #define MUSE_DOCK_DOCKSEPARATOR_H
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 #include "thirdparty/KDDockWidgets/src/private/multisplitter/Separator_p.h"
 #include "thirdparty/KDDockWidgets/src/private/multisplitter/Widget_quick.h"

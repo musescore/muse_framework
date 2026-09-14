@@ -21,12 +21,12 @@
  */
 #pragma once
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
-#include <QQmlParserStatus>
-#include <QQuickItem>
-#include <QQuickView>
-#include <QQmlEngine>
+#include <QtQml/QQmlParserStatus>
+#include <QtQuick/QQuickItem>
+#include <QtQuick/QQuickView>
+#include <QtQml/QQmlEngine>
 
 #include "async/asyncable.h"
 

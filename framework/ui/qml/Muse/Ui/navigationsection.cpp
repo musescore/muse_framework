@@ -22,7 +22,7 @@
 
 #include "navigationsection.h"
 
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 
 #include "log.h"
 

@@ -19,8 +19,8 @@
 
 #include "tcptransport.h"
 
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QtNetwork/QTcpServer>
+#include <QtNetwork/QTcpSocket>
 
 #include "global/serialization/json.h"
 

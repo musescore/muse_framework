@@ -22,8 +22,8 @@
 
 #include "../singleinstance.h"
 
-#include <QLocalServer>
-#include <QLocalSocket>
+#include <QtNetwork/QLocalServer>
+#include <QtNetwork/QLocalSocket>
 
 #include "multiprocess/ipc/ipc.h"
 #include "multiprocess/ipc/ipclock.h"

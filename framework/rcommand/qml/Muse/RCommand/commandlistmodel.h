@@ -20,8 +20,8 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QQmlParserStatus>
-#include <qqmlintegration.h>
+#include <QtQml/QQmlParserStatus>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/async/asyncable.h"
 

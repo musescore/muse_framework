@@ -22,7 +22,7 @@
 #ifndef MUSE_TESTFLOW_API_TESTFLOWAPI_H
 #define MUSE_TESTFLOW_API_TESTFLOWAPI_H
 
-#include <QJSValue>
+#include <QtQml/QJSValue>
 
 #include "api/apiobject.h"
 #include "async/asyncable.h"

@@ -23,8 +23,8 @@
 #ifdef KDDOCKWIDGETS_QTQUICK
 #include "private/quick/TitleBarQuick_p.h"
 
-#include <QQuickItem>
-#include <QQuickView>
+#include <QtQuick/QQuickItem>
+#include <QtQuick/QQuickView>
 #include <QGuiApplication>
 #else
 #include <QApplication>

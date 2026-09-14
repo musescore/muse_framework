@@ -9,7 +9,7 @@
   Contact KDAB at <info@kdab.com> for commercial licensing options.
 */
 
-#include <QQmlContext>
+#include <QtQml/QQmlContext>
 
 #include "MainWindowInstantiator_p.h"
 #include "MainWindowQuick_p.h"

@@ -22,7 +22,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::ui {
 class QmlDataFormatter : public QObject

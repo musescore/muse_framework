@@ -22,7 +22,7 @@
 #ifndef MUSE_DOCK_IDOCKWINDOW_H
 #define MUSE_DOCK_IDOCKWINDOW_H
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QString>
 
 #include "async/channel.h"

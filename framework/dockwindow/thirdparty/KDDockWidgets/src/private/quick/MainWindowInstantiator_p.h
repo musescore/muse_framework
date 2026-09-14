@@ -15,7 +15,7 @@
 #include "kddockwidgets/docks_export.h"
 #include "kddockwidgets/KDDockWidgets.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 namespace KDDockWidgets {
 

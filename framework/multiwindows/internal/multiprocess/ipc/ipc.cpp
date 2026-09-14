@@ -27,7 +27,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-#include <QLocalSocket>
+#include <QtNetwork/QLocalSocket>
 
 #include "ipclog.h"
 

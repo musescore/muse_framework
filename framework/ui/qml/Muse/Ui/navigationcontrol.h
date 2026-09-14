@@ -23,9 +23,9 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "abstractnavigation.h"
 

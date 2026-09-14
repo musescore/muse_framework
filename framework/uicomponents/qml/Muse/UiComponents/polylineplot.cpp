@@ -29,6 +29,7 @@
 #include <QBrush>
 #include <QHoverEvent>
 #include <QMouseEvent>
+#include <QCursor>
 
 #include <algorithm>
 #include <cmath>

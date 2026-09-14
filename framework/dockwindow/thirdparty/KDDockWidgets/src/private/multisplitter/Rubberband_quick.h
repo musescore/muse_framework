@@ -15,7 +15,7 @@
 #include "kddockwidgets/docks_export.h"
 #include "Widget_quick.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 namespace Layouting {
 

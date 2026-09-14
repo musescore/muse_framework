@@ -25,7 +25,7 @@
 #include <memory>
 #include <vector>
 #include <map>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QString>
 
 namespace muse::testflow {

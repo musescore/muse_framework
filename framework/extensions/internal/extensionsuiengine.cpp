@@ -21,8 +21,8 @@
  */
 #include "extensionsuiengine.h"
 
-#include <QQmlEngine>
-#include <QQmlContext>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlContext>
 
 #include "global/api/apiutils.h"
 

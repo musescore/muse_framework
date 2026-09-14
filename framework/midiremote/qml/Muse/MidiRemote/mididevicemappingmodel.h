@@ -24,7 +24,7 @@
 
 #include <QAbstractListModel>
 #include <QItemSelection>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 

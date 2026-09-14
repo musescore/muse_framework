@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "ui/internal/uiengine.h"
 #include "ui/api/themeapi.h"

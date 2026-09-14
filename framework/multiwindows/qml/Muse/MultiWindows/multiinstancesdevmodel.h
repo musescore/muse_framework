@@ -24,7 +24,7 @@
 
 #include <QObject>
 #include <QVariant>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "internal/multiprocess/imultiprocessprovider.h"

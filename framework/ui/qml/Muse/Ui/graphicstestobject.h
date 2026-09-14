@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <QQuickPaintedItem>
-#include <qqmlintegration.h>
+#include <QtQuick/QQuickPaintedItem>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::ui {
 class GraphicsTestObject : public QQuickPaintedItem

@@ -23,7 +23,7 @@
 #include "popupviewclosecontroller.h"
 
 #include <QGuiApplication>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 
 using namespace muse::uicomponents;
 

@@ -22,7 +22,7 @@
 
 #include "dialogview.h"
 
-#include <QQuickView>
+#include <QtQuick/QQuickView>
 #include <QScreen>
 
 #ifdef Q_OS_MAC

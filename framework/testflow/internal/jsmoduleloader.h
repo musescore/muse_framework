@@ -23,7 +23,7 @@
 #define MUSE_TESTFLOW_JSMODULELOADER_H
 
 #include <QObject>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QList>
 
 #include "modularity/ioc.h"

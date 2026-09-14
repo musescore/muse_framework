@@ -23,7 +23,7 @@
 #define MUSE_EXTENSIONS__H
 
 #include <QObject>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QList>
 
 #include "modularity/ioc.h"

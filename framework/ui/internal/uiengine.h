@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/modularity/ioc.h"
 #include "languages/ilanguagesservice.h"

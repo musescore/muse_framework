@@ -23,8 +23,8 @@
 #pragma once
 
 #include <QObject>
-#include <QQmlParserStatus>
-#include <qqmlintegration.h>
+#include <QtQml/QQmlParserStatus>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 #include "modularity/ioc.h"

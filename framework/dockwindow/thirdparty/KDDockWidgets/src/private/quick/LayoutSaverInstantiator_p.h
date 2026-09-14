@@ -16,7 +16,7 @@
 #include "LayoutSaver.h"
 
 #include <QObject>
-#include <QQmlParserStatus>
+#include <QtQml/QQmlParserStatus>
 
 class QQuickItem;
 

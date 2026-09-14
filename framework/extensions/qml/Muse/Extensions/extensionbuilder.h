@@ -24,8 +24,8 @@
 
 #include <QObject>
 #include <QQmlComponent>
-#include <QQuickItem>
-#include <qqmlintegration.h>
+#include <QtQuick/QQuickItem>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "iextensionsprovider.h"

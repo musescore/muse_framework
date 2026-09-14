@@ -23,7 +23,7 @@
 
 #include <QObject>
 #include <QVariant>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 #include "modularity/ioc.h"

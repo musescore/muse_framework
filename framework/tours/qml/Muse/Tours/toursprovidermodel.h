@@ -23,8 +23,8 @@
 #pragma once
 
 #include <QObject>
-#include <QQmlParserStatus>
-#include <qqmlintegration.h>
+#include <QtQml/QQmlParserStatus>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "internal/toursprovider.h"

@@ -24,8 +24,8 @@
 
 #include <QAbstractListModel>
 #include <QList>
-#include <QQmlParserStatus>
-#include <qqmlintegration.h>
+#include <QtQml/QQmlParserStatus>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "async/asyncable.h"
 

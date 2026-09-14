@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QVariant>
 
 #include "global/types/retval.h"

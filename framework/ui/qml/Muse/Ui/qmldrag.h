@@ -22,7 +22,7 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 #include "global/modularity/ioc.h"
 #include "idragcontroller.h"

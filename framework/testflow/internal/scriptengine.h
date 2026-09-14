@@ -23,8 +23,8 @@
 #define MUSE_TESTFLOW_SCRIPTENGINE_H
 
 #include <QString>
-#include <QJSValue>
-#include <QJSEngine>
+#include <QtQml/QJSValue>
+#include <QtQml/QJSEngine>
 #include <QVariantMap>
 #include <QByteArray>
 

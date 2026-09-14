@@ -12,7 +12,7 @@
 #include "Helpers_p.h"
 #include "QWidgetAdapter.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 using namespace KDDockWidgets;
 

@@ -21,7 +21,7 @@
 #include "../DropArea_p.h"
 #include "../WidgetResizeHandler_p.h"
 
-#include <QQuickView>
+#include <QtQuick/QQuickView>
 #include <QDebug>
 
 using namespace KDDockWidgets;

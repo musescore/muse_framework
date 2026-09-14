@@ -21,7 +21,7 @@
  */
 #include "vstview.h"
 
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
 
 #include "ivstplugininstance.h"
 

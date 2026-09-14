@@ -22,7 +22,7 @@
 #include "../TabWidget_p.h"
 #include "QWidgetAdapter_quick_p.h"
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 #include <QAbstractListModel>
 
 namespace KDDockWidgets {

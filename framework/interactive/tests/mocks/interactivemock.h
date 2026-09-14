@@ -23,6 +23,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
+#include <QWindow>
 
 #include "interactive/iinteractive.h"
 

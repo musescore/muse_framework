@@ -55,7 +55,7 @@
 #include <QtCore/qpointer.h>
 #include <QtCore/qabstractitemmodel.h>
 #include <QtCore/qitemselectionmodel.h>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 QT_BEGIN_NAMESPACE
 

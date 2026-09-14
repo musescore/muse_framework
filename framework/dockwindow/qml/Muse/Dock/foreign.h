@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "internal/dockbase.h" // IWYU pragma: keep
 #include "docktypes.h" // IWYU pragma: keep

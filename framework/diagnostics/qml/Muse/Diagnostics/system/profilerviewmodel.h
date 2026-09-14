@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 namespace muse::diagnostics {
 class ProfilerViewModel : public QAbstractListModel

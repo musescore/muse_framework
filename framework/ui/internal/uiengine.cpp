@@ -24,7 +24,7 @@
 
 #include <QQmlApplicationEngine>
 #include <QDir>
-#include <QQmlContext>
+#include <QtQml/QQmlContext>
 #include <QEventLoop>
 #include <QFontDatabase>
 #include <QTimer>

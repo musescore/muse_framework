@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <memory>
-#include <QJSValue>
+#include <QtQml/QJSValue>
 #include <QEventLoop>
 #include <QElapsedTimer>
 

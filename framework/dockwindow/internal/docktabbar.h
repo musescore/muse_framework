@@ -23,7 +23,7 @@
 #ifndef MUSE_DOCK_DOCKTABBAR_H
 #define MUSE_DOCK_DOCKTABBAR_H
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 #include "thirdparty/KDDockWidgets/src/private/quick/TabBarQuick_p.h"
 

@@ -23,11 +23,11 @@
 #pragma once
 
 #include <QObject>
-#include <QQmlParserStatus>
-#include <QQuickItem>
+#include <QtQml/QQmlParserStatus>
+#include <QtQuick/QQuickItem>
 #include <QMap>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "accessibility/iaccessible.h"
 #include "modularity/ioc.h"

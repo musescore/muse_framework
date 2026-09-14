@@ -32,7 +32,7 @@
 #include "async/promise.h"
 #include "progress.h"
 
-class QWindow;
+#include <QWindow>
 
 namespace muse {
 class IInteractive : MODULE_CONTEXT_INTERFACE

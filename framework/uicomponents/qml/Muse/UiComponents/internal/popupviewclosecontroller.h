@@ -22,7 +22,7 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
 
 #include "async/notification.h"
 #include "async/asyncable.h"

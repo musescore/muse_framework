@@ -21,7 +21,7 @@
  */
 #include "apiregister.h"
 
-#include <QQmlEngine>
+#include <QtQml/QQmlEngine>
 #include <QMetaObject>
 #include <QMetaMethod>
 

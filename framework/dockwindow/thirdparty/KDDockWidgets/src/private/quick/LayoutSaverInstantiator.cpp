@@ -18,8 +18,8 @@
 
 #include "LayoutSaverInstantiator_p.h"
 
-#include <QQmlContext>
-#include <QQmlEngine>
+#include <QtQml/QQmlContext>
+#include <QtQml/QQmlEngine>
 
 using namespace KDDockWidgets;
 

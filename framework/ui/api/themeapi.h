@@ -24,7 +24,7 @@
 
 #include <QFont>
 
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "global/api/apiobject.h"
 #include "modularity/ioc.h"

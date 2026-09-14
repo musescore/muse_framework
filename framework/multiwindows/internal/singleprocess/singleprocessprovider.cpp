@@ -30,6 +30,8 @@
 
  #include "log.h"
 
+#include <QCoreApplication>
+
 using namespace muse;
 using namespace muse::mi;
 

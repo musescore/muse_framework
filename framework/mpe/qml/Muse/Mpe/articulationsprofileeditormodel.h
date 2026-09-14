@@ -24,7 +24,7 @@
 
 #include <QObject>
 #include <QList>
-#include <qqmlintegration.h>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 #include "modularity/ioc.h"
 #include "interactive/iinteractive.h"

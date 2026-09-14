@@ -24,7 +24,7 @@
 #include <functional>
 #include <QString>
 #include <QTimer>
-#include <QQuickPaintedItem>
+#include <QtQuick/QQuickPaintedItem>
 
 #include "global/types/version.h"
 #include "uitypes.h"
