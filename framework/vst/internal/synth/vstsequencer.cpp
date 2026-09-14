@@ -46,10 +46,31 @@ static const mpe::ArticulationTypeSet BEND_SUPPORTED_TYPES {
     mpe::ArticulationType::Multibend, mpe::ArticulationType::ContinuousGlissando,
 };
 
-void VstSequencer::init(ParamsMapping&& mapping, bool useDynamicEvents)
+// "Span" articulations expand into many rapid sub-notes sharing one meta.timestamp; an instrument
+// may render them as a single sustained gesture. A new span re-sends the same keyswitch so the
+// instrument can retrigger. Other articulations are one note per keyswitch and never retrigger.
+static const mpe::ArticulationTypeSet SPAN_ARTICULATION_TYPES {
+    mpe::ArticulationType::Tremolo8th, mpe::ArticulationType::Tremolo16th,
+    mpe::ArticulationType::Tremolo32nd, mpe::ArticulationType::Tremolo64th,
+};
+
+static bool isSpanArticulation(mpe::ArticulationType type)
+{
+    return muse::contains(SPAN_ARTICULATION_TYPES, type);
+}
+
+// Keyswitch note the profile assigns to this articulation, or nullopt if it maps none.
+static std::optional<int> keyswitchFor(const VstKeyswitchProfile& profile, mpe::ArticulationType type)
+{
+    auto it = profile.keyswitches.find(type);
+    return it != profile.keyswitches.cend() ? std::optional<int>(it->second) : std::nullopt;
+}
+
+void VstSequencer::init(ParamsMapping&& mapping, bool useDynamicEvents, std::optional<VstKeyswitchProfile> keyswitchProfile)
 {
     m_mapping = std::move(mapping);
     m_useDynamicEvents = useDynamicEvents;
+    m_keyswitchProfile = std::move(keyswitchProfile);
     m_inited = true;
 
     updateMainStreamEvents(m_playbackData.originEvents, m_playbackData.dynamics);
@@ -80,6 +101,7 @@ void VstSequencer::updateMainStreamEvents(const mpe::PlaybackEventsMap& events, 
 void VstSequencer::updateOffStreamEvents(const mpe::PlaybackEventsMap& events)
 {
     addPlaybackEvents(m_offStreamEvents, events);
+    sortNoteOnEventsByPitch(m_offStreamEvents);
     updateOffSequenceIterator();
 }
 
@@ -111,11 +133,12 @@ muse::audio::gain_t VstSequencer::currentGain() const
 void VstSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events)
 {
     SostenutoTimeAndDurations sostenutoTimeAndDurations;
+    LastKeyswitchPerTimestamp lastKeyswitch;
 
     for (const auto& evPair : events) {
         for (const mpe::PlaybackEvent& event : evPair.second) {
             if (std::holds_alternative<mpe::NoteEvent>(event)) {
-                addNoteEvent(destination, std::get<mpe::NoteEvent>(event), sostenutoTimeAndDurations);
+                addNoteEvent(destination, std::get<mpe::NoteEvent>(event), sostenutoTimeAndDurations, lastKeyswitch);
             } else if (std::holds_alternative<mpe::ControllerChangeEvent>(event)) {
                 addControlChangeEvent(destination, evPair.first, std::get<mpe::ControllerChangeEvent>(event));
             }
@@ -160,7 +183,8 @@ void VstSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::Dy
 }
 
 void VstSequencer::addNoteEvent(EventSequenceMap& destination, const mpe::NoteEvent& noteEvent,
-                                SostenutoTimeAndDurations& sostenutoTimeAndDurations)
+                                SostenutoTimeAndDurations& sostenutoTimeAndDurations,
+                                LastKeyswitchPerTimestamp& lastKeyswitch)
 {
     const mpe::ArrangementContext& arrangementCtx = noteEvent.arrangementCtx();
     const int32_t noteId = noteIndex(noteEvent.pitchCtx().nominalPitchLevel);
@@ -178,6 +202,57 @@ void VstSequencer::addNoteEvent(EventSequenceMap& destination, const mpe::NoteEv
     if (arrangementCtx.hasEnd()) {
         const mpe::timestamp_t timestampTo = arrangementCtx.actualTimestamp + noteEvent.arrangementCtx().actualDuration;
         destination[timestampTo].emplace_back(buildEvent(VstEvent::kNoteOffEvent, noteId, velocityFraction, tuning));
+    }
+
+    // Latching keyswitch with span retrigger: send a keyswitch NoteOn when the articulation changes,
+    // or when a span articulation starts a new span. The keyswitch persists until a different one is
+    // sent (no NoteOff); re-sending the same one signals a span retrigger.
+    if (m_keyswitchProfile.has_value() && arrangementCtx.hasStart()) {
+        const VstKeyswitchProfile& profile = *m_keyswitchProfile;
+        // Default to the Standard keyswitch, or to nothing when the instrument does not advertise it:
+        // never fabricate a pitch the instrument did not advertise.
+        std::optional<int> keyswitchPitch = keyswitchFor(profile, mpe::ArticulationType::Standard);
+        mpe::timestamp_t spanStart = -1;
+
+        // Pick by precedence: a specific timbre (pizzicato, mute, harmonic, staccato...) beats a
+        // tremolo, which beats normal. On a tie between two primary timbres on one note, take the
+        // lowest keyswitch note, so the choice is deterministic and not the hash map's iteration order.
+        int bestRank = -1;
+        for (const auto& artPair : noteEvent.expressionCtx().articulations) {
+            if (mpe::isRangedArticulation(artPair.first)) {
+                continue; // forwarded as its own span below, never the primary keyswitch
+            }
+            const std::optional<int> mapped = keyswitchFor(profile, artPair.first);
+            if (!mapped.has_value()) {
+                continue;
+            }
+            const bool span = isSpanArticulation(artPair.first);
+            const bool standard = (artPair.first == mpe::ArticulationType::Standard);
+            const int rank = standard ? 0 : (span ? 1 : 2);
+            if (rank > bestRank || (rank == bestRank && mapped.value() < keyswitchPitch.value())) {
+                bestRank = rank;
+                keyswitchPitch = mapped;
+                spanStart = span ? artPair.second.meta.timestamp : -1;
+            }
+        }
+
+        // upper_bound, not lower_bound: std::prev then yields the most recent state at or before this
+        // timestamp even when an earlier note of the same chord already inserted an entry at it, so a
+        // chord sharing one articulation does not re-emit a duplicate keyswitch per note.
+        auto it = lastKeyswitch.upper_bound(arrangementCtx.actualTimestamp);
+        LastKeyswitchState prevState;
+        if (it != lastKeyswitch.begin()) {
+            prevState = std::prev(it)->second;
+        }
+
+        if (keyswitchPitch.has_value()
+            && (keyswitchPitch.value() != prevState.keyswitch || (spanStart != -1 && spanStart != prevState.spanStart))) {
+            // Full velocity: a keyswitch is a control signal, not a note. A soft dynamic rounds to
+            // velocity 0, which a receiver reads as a note-off and drops, losing the switch.
+            destination[arrangementCtx.actualTimestamp].emplace_back(
+                buildEvent(VstEvent::kNoteOnEvent, keyswitchPitch.value(), 1.f, 0.f));
+            lastKeyswitch[arrangementCtx.actualTimestamp] = { keyswitchPitch.value(), spanStart };
+        }
     }
 
     for (const auto& artPair : noteEvent.expressionCtx().articulations) {
@@ -201,6 +276,58 @@ void VstSequencer::addNoteEvent(EventSequenceMap& destination, const mpe::NoteEv
             const mpe::timestamp_t timestamp = arrangementCtx.actualTimestamp + noteEvent.arrangementCtx().actualDuration * 0.1; // add offset for Sostenuto to take effect
             sostenutoTimeAndDurations.push_back(mpe::TimestampAndDuration { timestamp, meta.overallDuration });
             continue;
+        }
+
+        // A ranged articulation the instrument advertises as a keyswitch is forwarded as a keyswitch
+        // spanning the range: pressed at the start, released at the end. The instrument decides what
+        // the modifier means; the sequencer only reports when it is active.
+        if (m_keyswitchProfile.has_value() && mpe::isRangedArticulation(meta.type)) {
+            if (const std::optional<int> pitch = keyswitchFor(*m_keyswitchProfile, meta.type)) {
+                addKeyswitchSpanEvent(destination, meta, arrangementCtx.actualTimestamp, *pitch);
+            }
+            continue;
+        }
+    }
+}
+
+void VstSequencer::addKeyswitchSpanEvent(EventSequenceMap& destination, const mpe::ArticulationMeta& meta,
+                                         const mpe::timestamp_t noteTimestamp, int keyswitchPitch)
+{
+    // Press at every covered note's onset, not once at the range start, so starting playback partway
+    // through the range still engages it. Dedup within one onset (a chord shares it), like the
+    // release below, so we do not queue N identical note-ons at one instant. Full velocity (a
+    // keyswitch is a control signal, see above).
+    EventSequence& onset = destination[noteTimestamp];
+    bool alreadyPressed = false;
+    for (const EventType& queued : onset) {
+        if (std::holds_alternative<VstEvent>(queued)) {
+            const VstEvent& ev = std::get<VstEvent>(queued);
+            if (ev.type == VstEvent::kNoteOnEvent && ev.noteOn.pitch == keyswitchPitch) {
+                alreadyPressed = true;
+                break;
+            }
+        }
+    }
+    if (!alreadyPressed) {
+        onset.emplace_back(buildEvent(VstEvent::kNoteOnEvent, keyswitchPitch, 1.f, 0.f));
+    }
+
+    if (meta.hasEnd()) {
+        // Dedup the release: every covered note computes the same range-end, so without this we queue
+        // N identical note-offs at one instant and can overflow the host block's fixed-size event list.
+        EventSequence& bucket = destination[meta.timestamp + meta.overallDuration];
+        bool alreadyReleased = false;
+        for (const EventType& queued : bucket) {
+            if (std::holds_alternative<VstEvent>(queued)) {
+                const VstEvent& ev = std::get<VstEvent>(queued);
+                if (ev.type == VstEvent::kNoteOffEvent && ev.noteOff.pitch == keyswitchPitch) {
+                    alreadyReleased = true;
+                    break;
+                }
+            }
+        }
+        if (!alreadyReleased) {
+            bucket.emplace_back(buildEvent(VstEvent::kNoteOffEvent, keyswitchPitch, 1.f, 0.f));
         }
     }
 }
@@ -342,20 +469,33 @@ void VstSequencer::sortNoteOnEventsByPitch(EventSequenceMap& destination)
             continue;
         }
 
-        std::stable_sort(seq.begin(), seq.end(), [](const EventType& e1, const EventType& e2) {
-            if (!std::holds_alternative<VstEvent>(e1) || !std::holds_alternative<VstEvent>(e2)) {
-                return false;
+        // Reorder only the NoteOn events (by pitch), leaving every other event (NoteOff, param and
+        // gain changes) exactly where it is. Sorting the whole sequence with a comparator that
+        // returned "equal" for non-NoteOn events would not be a strict weak ordering.
+        std::vector<VstEvent> noteOns;
+        for (const EventType& event : seq) {
+            if (std::holds_alternative<VstEvent>(event)) {
+                const VstEvent& vstEvent = std::get<VstEvent>(event);
+                if (vstEvent.type == VstEvent::kNoteOnEvent) {
+                    noteOns.push_back(vstEvent);
+                }
             }
+        }
 
-            const VstEvent& ve1 = std::get<VstEvent>(e1);
-            const VstEvent& ve2 = std::get<VstEvent>(e2);
+        if (noteOns.size() <= 1) {
+            continue;
+        }
 
-            if (ve1.type == VstEvent::kNoteOnEvent && ve2.type == VstEvent::kNoteOnEvent) {
-                return ve1.noteOn.pitch < ve2.noteOn.pitch;
-            }
-
-            return false;
+        std::stable_sort(noteOns.begin(), noteOns.end(), [](const VstEvent& e1, const VstEvent& e2) {
+            return e1.noteOn.pitch < e2.noteOn.pitch;
         });
+
+        size_t noteOnIdx = 0;
+        for (EventType& event : seq) {
+            if (std::holds_alternative<VstEvent>(event) && std::get<VstEvent>(event).type == VstEvent::kNoteOnEvent) {
+                event = noteOns[noteOnIdx++];
+            }
+        }
     }
 }
 

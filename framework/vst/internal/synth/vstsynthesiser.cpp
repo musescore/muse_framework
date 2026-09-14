@@ -21,6 +21,15 @@
  */
 #include "vstsynthesiser.h"
 
+#include <string>
+
+#include "mpe/articulationstringutils.h"
+
+#include "pluginterfaces/vst/ivstnoteexpression.h"
+#include "pluginterfaces/vst/ivstchannelcontextinfo.h"
+#include "public.sdk/source/vst/hosting/hostclasses.h"
+#include "public.sdk/source/vst/utility/stringconvert.h"
+
 #include "log.h"
 
 using namespace muse;
@@ -36,6 +45,54 @@ static const std::set<Steinberg::Vst::CtrlNumber> SUPPORTED_CONTROLLERS = {
     Steinberg::Vst::kCtrlSustenutoOnOff,
     Steinberg::Vst::kPitchBend,
 };
+
+// Query the plugin's IKeyswitchController and build a keyswitch profile. Each keyswitch is advertised
+// with the exact mpe::ArticulationType name, so titles convert straight to the type via MuseScore's
+// own table; the host does no fuzzy matching. Only keyswitchMin on bus 0 / channel 0 is read: min
+// alone selects the articulation.
+static std::optional<VstKeyswitchProfile> queryKeyswitchProfile(const PluginControllerPtr& controller)
+{
+    using namespace Steinberg;
+    using namespace Steinberg::Vst;
+
+    if (!controller) {
+        return std::nullopt;
+    }
+
+    FUnknownPtr<IKeyswitchController> keyswitchCtrl(controller);
+    if (!keyswitchCtrl) {
+        return std::nullopt; // the plugin does not support keyswitches
+    }
+
+    const int32 busIndex = 0;
+    const int16 channel = 0;
+    const int32 count = keyswitchCtrl->getKeyswitchCount(busIndex, channel);
+    if (count <= 0) {
+        return std::nullopt;
+    }
+
+    VstKeyswitchProfile profile;
+
+    for (int32 i = 0; i < count; ++i) {
+        KeyswitchInfo info;
+        if (keyswitchCtrl->getKeyswitchInfo(busIndex, channel, i, info) != kResultTrue) {
+            continue;
+        }
+
+        // The title is the canonical articulation name; unknown titles map to Undefined and are skipped.
+        const std::string title = VST3::StringConvert::convert(info.title);
+        const mpe::ArticulationType type = mpe::articulationTypeFromString(QString::fromStdString(title));
+        if (type != mpe::ArticulationType::Undefined) {
+            profile.keyswitches[type] = info.keyswitchMin;
+        }
+    }
+
+    if (profile.keyswitches.empty()) {
+        return std::nullopt;
+    }
+
+    return profile;
+}
 
 VstSynthesiser::VstSynthesiser(const TrackId trackId, const muse::audio::AudioInputParams& params)
     : AbstractSynthesizer(params),
@@ -65,8 +122,11 @@ void VstSynthesiser::init(const OutputSpec& spec)
         m_pluginPtr->updatePluginConfig(m_params.configuration);
         m_vstAudioClient->setOutputSpec(m_outputSpec);
         m_vstAudioClient->loadSupportedParams();
-        m_sequencer.init(m_vstAudioClient->paramsMapping(SUPPORTED_CONTROLLERS), m_useDynamicEvents);
+
+        const std::optional<VstKeyswitchProfile> keyswitchProfile = queryKeyswitchProfile(m_pluginPtr->controller());
+        m_sequencer.init(m_vstAudioClient->paramsMapping(SUPPORTED_CONTROLLERS), m_useDynamicEvents, keyswitchProfile);
         m_inited = true;
+        sendChannelContext();
     };
 
     if (m_pluginPtr->isLoaded()) {
@@ -121,6 +181,37 @@ std::string VstSynthesiser::name() const
     }
 
     return m_pluginPtr->name();
+}
+
+void VstSynthesiser::setHostTrackName(const std::string& name)
+{
+    m_hostTrackName = name;
+    if (m_inited) {
+        sendChannelContext();
+    }
+}
+
+void VstSynthesiser::sendChannelContext()
+{
+    if (m_hostTrackName.empty() || !m_pluginPtr) {
+        return;
+    }
+
+    PluginControllerPtr controller = m_pluginPtr->controller();
+    if (!controller) {
+        return;
+    }
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::ChannelContext::IInfoListener> infoListener(controller);
+    if (!infoListener) {
+        return; // the plugin does not use channel context
+    }
+
+    Steinberg::IPtr<Steinberg::Vst::IAttributeList> list = Steinberg::Vst::HostAttributeList::make();
+    Steinberg::Vst::String128 name128 = {};
+    Steinberg::Vst::StringConvert::convert(m_hostTrackName, name128);
+    list->setString(Steinberg::Vst::ChannelContext::kChannelNameKey, name128);
+    infoListener->setChannelContextInfos(list);
 }
 
 void VstSynthesiser::flushSound()
