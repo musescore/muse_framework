@@ -36,7 +36,9 @@
 using namespace muse;
 using namespace muse::draw;
 
+#ifndef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
 static int s_fontID = -1;
+#endif
 
 void FontsDatabase::setDefaultFont(Font::Type type, const FontDataKey& key)
 {
@@ -71,14 +73,32 @@ const FontDataKey& FontsDatabase::defaultFont(Font::Type type) const
 
 int FontsDatabase::addFont(const FontDataKey& key, const io::path_t& path)
 {
-    s_fontID++;
-    m_fonts.push_back(FontInfo { s_fontID, key, path });
-
 #ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
-    QFontDatabase::addApplicationFont(path.toQString());
+    const int id = QFontDatabase::addApplicationFont(path.toQString());
+#else
+    const int id = ++s_fontID;
 #endif
 
-    return s_fontID;
+    m_fonts.push_back(FontInfo { id, key, path });
+
+    return id;
+}
+
+void FontsDatabase::clearFonts()
+{
+#ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
+    for (const FontInfo& fi : m_fonts) {
+        QFontDatabase::removeApplicationFont(fi.id);
+    }
+
+    for (const auto& it : m_familySubstitutions) {
+        QFont::removeSubstitutions(it.first.family().id().toQString());
+    }
+#endif
+
+    m_fonts.clear();
+    m_familySubstitutions.clear();
+    m_fileDataCache.clear();
 }
 
 FontDataKey FontsDatabase::actualFont(const FontDataKey& requireKey, Font::Type type) const
