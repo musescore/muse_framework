@@ -802,17 +802,25 @@ Ret Interactive::closeSync(const UriQuery& uri)
     return closeObjectsSync(objs);
 }
 
+Promise<Ret> Interactive::closeAllDialogs()
+{
+    return closeObjects(openDialogs());
+}
+
 Ret Interactive::closeAllDialogsSync()
 {
-    std::vector<ObjectInfo> objs = collectOpenObjects([this](const ObjectInfo& obj) {
+    return closeObjectsSync(openDialogs());
+}
+
+std::vector<Interactive::ObjectInfo> Interactive::openDialogs() const
+{
+    return collectOpenObjects([this](const ObjectInfo& obj) {
         if (muse::diagnostics::isDiagnosticsUri(obj.query.uri())) {
             return false;
         }
         ContainerMeta meta = uriRegister()->meta(obj.query.uri());
         return meta.type == ContainerMeta::QWidgetDialog || meta.type == ContainerMeta::QmlDialog;
     });
-
-    return closeObjectsSync(objs);
 }
 
 Promise<Ret> Interactive::closeObjects(const std::vector<ObjectInfo>& objs)
