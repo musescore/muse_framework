@@ -58,6 +58,7 @@ target_sources(muse_global PRIVATE
     timer.cpp
     timer.h
     progress.h
+    idlesleepblocker.h
     utils.cpp
     utils.h
     interpolation.h
@@ -241,6 +242,34 @@ else()
             Winmm # needed for timeBeginPeriod
         )
     endif()
+endif()
+
+#! NOTE IdleSleepBlocker is always declared, so it always needs an implementation
+include(GetPlatformInfo)
+
+if (GLOBAL_NO_INTERNAL)
+    target_sources(muse_global PRIVATE
+        internal/platform/stub/idlesleepblocker.cpp
+    )
+elseif (OS_IS_MAC)
+    target_sources(muse_global PRIVATE
+        internal/platform/macos/idlesleepblocker.cpp
+    )
+    find_library(IOKit NAMES IOKit)
+    target_link_libraries(muse_global PRIVATE ${IOKit})
+elseif (OS_IS_WIN)
+    target_sources(muse_global PRIVATE
+        internal/platform/windows/idlesleepblocker.cpp
+    )
+elseif ((OS_IS_LIN OR OS_IS_FBSD) AND MUSE_QT_SUPPORT)
+    target_sources(muse_global PRIVATE
+        internal/platform/linux/idlesleepblocker.cpp
+    )
+    target_link_libraries(muse_global PRIVATE Qt::DBus)
+else()
+    target_sources(muse_global PRIVATE
+        internal/platform/stub/idlesleepblocker.cpp
+    )
 endif()
 
 include(GetCompilerInfo)

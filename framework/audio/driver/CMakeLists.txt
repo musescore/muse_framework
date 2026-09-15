@@ -79,11 +79,14 @@ elseif(OS_IS_MAC)
         platform/osx/osxaudiodriver.h
         platform/osx/osxdirectaudiodriver.mm
         platform/osx/osxdirectaudiodriver.h
+        platform/osx/osxidlesleeppolicy.mm
+        platform/osx/osxidlesleeppolicy.h
     )
-        
+
     set_source_files_properties(
         platform/osx/osxaudiodriver.mm
         platform/osx/osxdirectaudiodriver.mm
+        platform/osx/osxidlesleeppolicy.mm
         PROPERTIES
         SKIP_UNITY_BUILD_INCLUSION ON
         SKIP_PRECOMPILE_HEADERS ON
