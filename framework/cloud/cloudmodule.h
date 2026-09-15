@@ -28,8 +28,6 @@
 
 namespace muse::cloud {
 class CloudConfiguration;
-class MuseScoreComService;
-class AudioComService;
 class CloudModule : public modularity::IModuleSetup
 {
 public:
@@ -38,8 +36,24 @@ public:
     void resolveImports() override;
     void onInit(const IApplication::RunMode& mode) override;
 
+    modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
+
 private:
     std::shared_ptr<CloudConfiguration> m_cloudConfiguration;
+};
+
+class MuseScoreComService;
+class AudioComService;
+class CloudModuleContext : public modularity::IContextSetup
+{
+public:
+    CloudModuleContext(const muse::modularity::ContextPtr& ctx)
+        : modularity::IContextSetup(ctx) {}
+
+    void registerExports() override;
+    void onInit(const IApplication::RunMode& mode) override;
+
+private:
 #ifdef MUSE_MODULE_CLOUD_MUSESCORECOM
     std::shared_ptr<MuseScoreComService> m_museScoreComService;
 #endif
