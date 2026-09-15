@@ -752,13 +752,14 @@ void EngineRpcController::init()
         onLongRequest(ctxId, MsgCode::SaveSoundTrack, [this](const Msg& msg) {
             ONLY_AUDIO_RPC_THREAD;
             SoundTrackFormat format;
+            SoundTrackSaveOptions options;
             uintptr_t dstDevicePtr = 0;
-            IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, format, dstDevicePtr)) {
+            IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, format, options, dstDevicePtr)) {
                 return make_response_ret(msg, make_ret(Err::InvalidRpcData));
             }
             io::IODevice& dstDevice = *reinterpret_cast<io::IODevice*>(dstDevicePtr);
             if (auto actx = audioContext(msg.ctxId)) {
-                actx->saveSoundTrack(dstDevice, format).onResolve(this, [this, msg](const Ret& ret) {
+                actx->saveSoundTrack(dstDevice, format, options).onResolve(this, [this, msg](const Ret& ret) {
                     channel()->send(make_response_ret(msg, ret));
                 });
                 return make_response_delayed(msg);
