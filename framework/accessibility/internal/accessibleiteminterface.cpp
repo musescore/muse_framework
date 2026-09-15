@@ -356,6 +356,14 @@ QString AccessibleItemInterface::text(QAccessible::Text textType) const
         return description();
     }
 #endif
+    case QAccessible::Value: {
+        //! NOTE: Qt's UIA and MSAA bridges read a control's value through
+        //! text(QAccessible::Value) (see QWindowsUiaValueProvider::get_Value).
+        //! Without this case, screen readers report an empty value for Range
+        //! controls even though the QAccessibleValueInterface is fully populated.
+        QVariant val = m_object->item()->accessibleValue();
+        return val.isValid() ? val.toString() : QString();
+    }
     default: break;
     }
 
@@ -533,7 +541,11 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
     QAccessible::Role itemRole = role();
     if (type == QAccessible::InterfaceType::ValueInterface && itemRole == QAccessible::Slider) {
         return static_cast<QAccessibleValueInterface*>(this);
-    } else if (type == QAccessible::InterfaceType::TextInterface) {
+    } else if (type == QAccessible::InterfaceType::TextInterface
+               && m_object->item()->accessibleRole() == IAccessible::Role::EditableText) {
+        //! NOTE: Only genuine text fields may advertise a text interface. Exposing
+        //! UIA TextPattern on other roles makes screen readers treat them as empty
+        //! text documents: they read "blank" on arrow keys and braille goes blank.
         return static_cast<QAccessibleTextInterface*>(this);
     }
 
