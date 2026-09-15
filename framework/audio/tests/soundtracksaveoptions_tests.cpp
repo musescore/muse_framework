@@ -107,12 +107,14 @@ TEST(Audio_SoundTrackSaveOptionsTests, RejectsNonFiniteValues)
     const double nan = std::numeric_limits<double>::quiet_NaN();
 
     SoundTrackSaveOptions options;
-    options.fadeInDuration = nan;
+    // Assigning through secs_t asserts on non-finite values in debug builds.
+    // Exercise the defensive validation with a corrupted underlying value.
+    options.fadeInDuration.raw() = nan;
     EXPECT_FALSE(options.isValid());
 
     options = SoundTrackSaveOptions();
     options.hasTimeRange = true;
     options.startTime = 0.0;
-    options.endTime = infinity;
+    options.endTime.raw() = infinity;
     EXPECT_FALSE(options.isValid());
 }
