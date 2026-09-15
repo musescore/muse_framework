@@ -123,8 +123,13 @@ protected:
     MenuItem* makeSeparator();
 
     bool isIndexValid(int index) const;
-    void dispatch(const std::string& command, const muse::actions::ActionData& args = muse::actions::ActionData());
-    void dispatch(const muse::UriQuery& query);
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    void dispatchAction(const muse::actions::ActionCode& code, const muse::actions::ActionData& args = muse::actions::ActionData());
+    void dispatchAction(const muse::UriQuery& query);
+#endif
+    void dispatchCommand(const muse::rcommand::Command& command, const muse::rcommand::Params& params = muse::rcommand::Params());
+    void dispatchCommand(const muse::rcommand::CommandQuery& query);
 
 private:
     MenuItem& item(MenuItemList& items, const QString& itemId);

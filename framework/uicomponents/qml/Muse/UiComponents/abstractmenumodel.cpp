@@ -79,39 +79,56 @@ void AbstractMenuModel::handleMenuItem(const QString& itemId)
     MenuItem& menuItem = findItem(itemId);
 
     std::string intent = menuItem.intent();
-    UriQuery query(intent);
-    if (query.isValid()) {
-        dispatch(query);
-    } else {
-        dispatch(intent, menuItem.args());
-    }
-}
-
-void AbstractMenuModel::dispatch(const std::string& command, const ActionData& args)
-{
-    if (muse::strings::startsWith(command, "command://")) {
-        DO_ASSERT(args.empty());
-        commandDispatcher()->dispatch(rcommand::Command(command));
+    if (muse::strings::startsWith(intent, "command://")) {
+        auto params = menuItem.params();
+        if (params.empty()) {
+            dispatchCommand(rcommand::CommandQuery(intent));
+        } else {
+            dispatchCommand(rcommand::Command(intent), params);
+        }
     } else {
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
-        dispatcher()->dispatch(command, args);
+        UriQuery query(intent);
+        if (query.isValid()) {
+            dispatchAction(query);
+        } else {
+            dispatchAction(actions::ActionCode(intent), menuItem.args());
+        }
 #else
         UNREACHABLE;
 #endif
     }
 }
 
-void AbstractMenuModel::dispatch(const UriQuery& query)
-{
-    if (query.uri().scheme() == "command") {
-        commandDispatcher()->dispatch(query);
-    } else {
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
-        dispatcher()->dispatch(query);
-#else
-        UNREACHABLE;
-#endif
+void AbstractMenuModel::dispatchAction(const muse::actions::ActionCode& code, const muse::actions::ActionData& args)
+{
+    IF_ASSERT_FAILED(!muse::strings::startsWith(code, "command://")) {
+        dispatchCommand(rcommand::Command(code));
+        return;
     }
+    dispatcher()->dispatch(code, args);
+}
+
+void AbstractMenuModel::dispatchAction(const muse::UriQuery& query)
+{
+    IF_ASSERT_FAILED(!muse::strings::startsWith(query.uri().scheme(), "command")) {
+        dispatchCommand(rcommand::CommandQuery(query));
+        return;
+    }
+    dispatcher()->dispatch(query);
+}
+
+#endif
+
+void AbstractMenuModel::dispatchCommand(const muse::rcommand::Command& command, const muse::rcommand::Params& params)
+{
+    commandDispatcher()->dispatch(command, params);
+}
+
+void AbstractMenuModel::dispatchCommand(const muse::rcommand::CommandQuery& query)
+{
+    commandDispatcher()->dispatch(query);
 }
 
 QVariantMap AbstractMenuModel::get(int index)
