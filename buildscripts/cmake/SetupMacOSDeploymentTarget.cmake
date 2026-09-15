@@ -31,5 +31,5 @@
 # for it; FORCE makes sure that such an empty value is replaced by the default below.
 
 if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET AND NOT DEFINED ENV{MACOSX_DEPLOYMENT_TARGET})
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15.4 CACHE STRING "Minimum macOS version to target for deployment" FORCE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 13.0 CACHE STRING "Minimum macOS version to target for deployment" FORCE)
 endif()
