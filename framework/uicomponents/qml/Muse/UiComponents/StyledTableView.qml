@@ -117,6 +117,11 @@ Item {
             leftMargin: showVerticalHeader ? 8 : index === 0 ? 16 : 8
             rightMargin: showVerticalHeader ? 8 : index === tableView.model.columnCount() - 1 ? 16 : 8
 
+            // The container border already delimits the right edge; a trailing
+            // separator on the last column would double up with it — but only
+            // once the columns fill the viewport width.
+            showTrailingSeparator: index !== tableView.model.columnCount() - 1 || tableView.contentWidth < tableView.width
+
             title: display.title
             preferredWidth: display.preferredWidth
             availableFormats: display.availableFormats
