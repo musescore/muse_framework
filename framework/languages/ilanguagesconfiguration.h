@@ -39,6 +39,9 @@ public:
     virtual ValCh<QString> currentLanguageCode() const = 0;
     virtual void setCurrentLanguageCode(const QString& languageCode) const = 0;
 
+    virtual ValCh<QString> numberFormatSource() const = 0;
+    virtual void setNumberFormatSource(const QString& source) const = 0;
+
     virtual QUrl languagesUpdateUrl() const = 0;
     virtual QUrl languageFileServerUrl(const QString& languageCode) const = 0;
 
