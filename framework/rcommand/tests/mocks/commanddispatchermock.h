@@ -32,6 +32,7 @@ class CommandDispatcherMock : public ICommandDispatcher
 public:
     MOCK_METHOD(async::Promise<Response>, dispatch, (const Request& request), (override));
     MOCK_METHOD(void, onRequest, (Commandable * client, const Command& command, const CallBack& callback), (override));
+    MOCK_METHOD(void, onRequest, (Commandable * client, const Command& command, const AsyncCallBack& callback), (override));
     MOCK_METHOD(void, unreg, (Commandable * client), (override));
 };
 }
