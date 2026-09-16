@@ -464,16 +464,18 @@ void MultiProcessProvider::notifyAboutWindowWasQuited()
     m_ipcChannel->broadcast(METHOD_INSTANCE_CLOSED);
 }
 
-void MultiProcessProvider::quitForAll()
+async::Promise<Ret> MultiProcessProvider::quitForAll(const modularity::ContextPtr& ctx)
 {
-    if (!isInited()) {
-        return;
-    }
+    return async::make_promise<Ret>([this, ctx](auto resolve) {
+        if (isInited()) {
+            m_ipcChannel->broadcast(METHOD_QUIT);
+        }
 
-    m_ipcChannel->broadcast(METHOD_QUIT);
+        // current
+        quitWindow(ctx);
 
-    // current
-    quitWindow(nullptr);
+        return resolve(make_ok());
+    });
 }
 
 void MultiProcessProvider::quitWindow(const modularity::ContextPtr&)
