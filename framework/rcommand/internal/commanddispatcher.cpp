@@ -45,7 +45,7 @@ async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
     return async::make_promise<Response>([this, request](auto resolve) {
         auto it = m_clients.find(request.command);
         if (it != m_clients.end()) {
-            LOGI() << "try call command: " << request.command;
+            LOGI() << "try call command: " << request.command << ", params: " << request.params;
             Response response = it->second.callback(request);
             return resolve(response);
         } else {
@@ -60,7 +60,7 @@ Response CommandDispatcher::dispatch(const Command& command, const Params& param
     Request request = make_request(command, params);
     auto it = m_clients.find(command);
     if (it != m_clients.end()) {
-        LOGI() << "try call command: " << command;
+        LOGI() << "try call command: " << command << " with params: " << params;
         Response response = it->second.callback(request);
         return response;
     } else {

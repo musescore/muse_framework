@@ -27,10 +27,11 @@
 
 #include "types/translatablestring.h"
 
-#include "log.h"
-
-#include "ui/uitypes.h"
 #include "uicomponents/qml/Muse/UiComponents/abstractmenumodel.h"
+
+#include "dockcommands.h"
+
+#include "log.h"
 
 using namespace muse;
 using namespace muse::dock;
@@ -61,12 +62,12 @@ public:
             items << makeSeparator();
         }
 
-        MenuItem* closeDockItem = makeMenuItem(SET_DOCK_OPEN_ACTION_CODE, TranslatableString("appshell/dock", "Close"));
-        closeDockItem->setArgs(ActionData::make_arg2<QString, bool>(m_panel->objectName(), false));
+        MenuItem* closeDockItem = makeMenuItem(DOCK_SET_OPEN_COMMAND, TranslatableString("appshell/dock", "Close"));
+        closeDockItem->setParams({ { "dock_name", Val(m_panel->objectName().toStdString()) }, { "open", Val(false) } });
         items << closeDockItem;
 
-        MenuItem* toggleFloatingItem = makeMenuItem(TOGGLE_FLOATING_ACTION_CODE, toggleFloatingActionTitle());
-        toggleFloatingItem->setArgs(ActionData::make_arg1<QString>(m_panel->objectName()));
+        MenuItem* toggleFloatingItem = makeMenuItem(DOCK_TOGGLE_FLOATING_COMMAND, toggleFloatingActionTitle());
+        toggleFloatingItem->setParams({ { "dock_name", Val(m_panel->objectName().toStdString()) } });
         items << toggleFloatingItem;
 
         setItems(items);
@@ -75,7 +76,8 @@ public:
     void handleMenuItem(const QString& itemId) override
     {
         // my items
-        if (itemId == SET_DOCK_OPEN_ACTION_CODE || itemId == TOGGLE_FLOATING_ACTION_CODE) {
+        rcommand::Command cmd(itemId.toStdString());
+        if (cmd == DOCK_SET_OPEN_COMMAND || cmd == DOCK_TOGGLE_FLOATING_COMMAND) {
             AbstractMenuModel::handleMenuItem(itemId);
             return;
         }
@@ -113,19 +115,6 @@ public:
     }
 
 private:
-    uicomponents::MenuItem* makeMenuItem(const QString& actionCode, const TranslatableString& title)
-    {
-        MenuItem* item = new MenuItem(this);
-        item->setId(actionCode);
-        item->setActionCode(codeFromQString(actionCode));
-        item->setTitle(title);
-
-        UiActionState state;
-        state.enabled = true;
-        item->setState(state);
-
-        return item;
-    }
 
     TranslatableString toggleFloatingActionTitle() const
     {
@@ -135,13 +124,7 @@ private:
     void listenFloatingChanged()
     {
         connect(m_panel, &DockPanelView::floatingChanged, this, [this]() {
-            int index = itemIndex(TOGGLE_FLOATING_ACTION_CODE);
-
-            if (index == INVALID_ITEM_INDEX) {
-                return;
-            }
-
-            MenuItem& item = this->item(index);
+            MenuItem& item = findItem(DOCK_TOGGLE_FLOATING_COMMAND);
             item.setTitle(toggleFloatingActionTitle());
         });
     }
