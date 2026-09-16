@@ -59,3 +59,37 @@ muse::io::path_t DiagnosticsConfiguration::diagnosticFilesDefaultSavingPath() co
 {
     return globalConfiguration()->homePath();
 }
+
+CrashDumpConfig DiagnosticsConfiguration::crashDumpConfig() const
+{
+    if (m_crashDumpConfig.has_value()) {
+        return *m_crashDumpConfig;
+    }
+
+    return { globalConfiguration()->userAppDataPath() + "/logs/dumps", String::fromStdString(MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL) };
+}
+
+void DiagnosticsConfiguration::setCrashDumpConfig(const CrashDumpConfig& config)
+{
+    m_crashDumpConfig.emplace(config.directory, config.serverUrl);
+}
+
+std::map<String, String> DiagnosticsConfiguration::crashReportTags() const
+{
+    return m_crashReportTags;
+}
+
+void DiagnosticsConfiguration::setCrashReportTags(std::map<String, String> tags)
+{
+    m_crashReportTags = std::move(tags);
+}
+
+bool DiagnosticsConfiguration::systemCrashReporterForwardingEnabled() const
+{
+    return m_systemCrashReporterForwardingEnabled;
+}
+
+void DiagnosticsConfiguration::setSystemCrashReporterForwardingEnabled(bool val)
+{
+    m_systemCrashReporterForwardingEnabled = val;
+}

@@ -43,6 +43,10 @@ target_sources(muse_diagnostics PRIVATE
     internal/diagnosticfileswriter.h
 )
 
+target_compile_definitions(muse_diagnostics PUBLIC
+    MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL="${MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL}"
+)
+
 # --- Crashpad ---
 # Not building with MinGW, so turned off for MinGW
 include(GetCompilerInfo)
@@ -61,10 +65,6 @@ if (MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT)
         internal/crashhandler/crashhandler.cpp
         PROPERTIES
         SKIP_UNITY_BUILD_INCLUSION ON
-    )
-
-    target_compile_definitions(muse_diagnostics PRIVATE
-        MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL="${MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL}"
     )
 
     # gcrashpad is built from the muse_deps crashpad_client source dep;

@@ -23,39 +23,33 @@
 #ifndef MUSE_DIAGNOSTICS_CRASHHANDLER_H
 #define MUSE_DIAGNOSTICS_CRASHHANDLER_H
 
-#include <unordered_map>
-#include <string>
-
 #include "io/path.h"
 #include "modularity/ioc.h"
 #include "global/iapplication.h"
 #include "global/io/ifilesystem.h"
 
-#include "diagnostics/icrashhandler.h"
+#include "diagnostics/idiagnosticsconfiguration.h"
 
 namespace crashpad {
 class CrashpadClient;
 }
 
 namespace muse::diagnostics {
-class CrashHandler : public ICrashHandler
+class CrashHandler
 {
     GlobalInject<muse::io::IFileSystem> fileSystem;
     GlobalInject<muse::IApplication> application;
+    GlobalInject<IDiagnosticsConfiguration> configuration;
 
 public:
     CrashHandler() = default;
-    ~CrashHandler() override;
+    ~CrashHandler();
 
-    bool start(const muse::io::path_t& handlerFilePath, const muse::io::path_t& dumpsDir, const std::string& serverUrl);
-
-    void addSessionTag(const String& tag, const String& value) override;
-    void setSystemCrashReporterForwardingEnabled(bool enabled) override;
+    bool start(const muse::io::path_t& handlerFilePath);
 
 private:
     void removePendingLockFiles(const muse::io::path_t& dumpsDir);
 
-    std::unordered_map<muse::String, String> m_sessionTags;
     crashpad::CrashpadClient* m_client = nullptr;
 };
 }
