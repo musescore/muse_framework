@@ -42,18 +42,21 @@ CrashHandler::~CrashHandler()
     delete m_client;
 }
 
-bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io::path_t& dumpsDir, const std::string& serverUrl)
+bool CrashHandler::start(const muse::io::path_t& handlerFilePath)
 {
     if (!fileSystem()->exists(handlerFilePath)) {
         LOGE() << "crash handler not exists, path: " << handlerFilePath;
         return false;
     }
 
+    const CrashDumpConfig dumpConfig = configuration()->crashDumpConfig();
+    fileSystem()->makePath(dumpConfig.directory);
+
     // Cache directory that will store crashpad information and minidumps
 #ifdef _MSC_VER
-    base::FilePath database(dumpsDir.toStdWString());
+    base::FilePath database(dumpConfig.directory.toStdWString());
 #else
-    base::FilePath database(dumpsDir.toStdString());
+    base::FilePath database(dumpConfig.directory.toStdString());
 #endif
 
     // Path to the out-of-process handler executable
@@ -67,7 +70,7 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
     std::map<std::string, std::string> annotations = {
         { "sentry[release]", application()->fullVersion().toStdString() + "." + application()->build().toStdString() }
     };
-    for (const auto& [tag, value] : m_sessionTags) {
+    for (const auto& [tag, value] : configuration()->crashReportTags()) {
         annotations[muse::String{ "sentry[tags][%1]" }.arg(tag).toStdString()] = value.toStdString();
     }
     // Optional arguments to pass to the handler
@@ -80,7 +83,18 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
         db->GetSettings()->SetUploadsEnabled(true);
     }
 
-    removePendingLockFiles(dumpsDir);
+    removePendingLockFiles(dumpConfig.directory);
+
+    CrashpadInfo::GetCrashpadInfo()->set_system_crash_reporter_forwarding(
+        configuration()->systemCrashReporterForwardingEnabled() ? TriState::kEnabled : TriState::kDisabled);
+
+    std::string serverUrl;
+    if (configuration()->isDumpUploadAllowed()) {
+        serverUrl = dumpConfig.serverUrl.toStdString();
+        LOGD() << "crash server url: " << serverUrl;
+    } else {
+        LOGD() << "not allowed dump upload";
+    }
 
     m_client = new CrashpadClient();
     bool success = m_client->StartHandler(
@@ -95,16 +109,6 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
         );
 
     return success;
-}
-
-void CrashHandler::addSessionTag(const String& tag, const String& value)
-{
-    m_sessionTags.emplace(tag, value);
-}
-
-void CrashHandler::setSystemCrashReporterForwardingEnabled(bool enabled)
-{
-    CrashpadInfo::GetCrashpadInfo()->set_system_crash_reporter_forwarding(enabled ? TriState::kEnabled : TriState::kDisabled);
 }
 
 void CrashHandler::removePendingLockFiles(const muse::io::path_t& dumpsDir)
