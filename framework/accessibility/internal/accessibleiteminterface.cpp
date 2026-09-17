@@ -544,6 +544,14 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
 #endif
 
     if (isTableType && itemRole == QAccessible::ListItem) {
+        //! NOTE: Qt's platform bridges require a cell to have a table: they only assert the result
+        //! of QAccessibleTableCellInterface::table() before dereferencing it. Our table() returns
+        //! the parent interface, which can be null, for example while the accessible parent of the
+        //! item is not assigned yet. Don't present the item as a cell in that case.
+        if (type == QAccessible::InterfaceType::TableCellInterface && !parent()) {
+            return nullptr;
+        }
+
         //! NOTE: Without Action and Text interfaces NVDA doesn't work
         return static_cast<QAccessibleTableCellInterface*>(this);
     }
