@@ -501,7 +501,7 @@ QList<QAccessibleInterface*> AccessibleItemInterface::rowHeaderCells() const
 
 int AccessibleItemInterface::columnIndex() const
 {
-    NOT_IMPLEMENTED;
+    //! NOTE: A list is one-dimensional, its items are all in the single column
     return 0;
 }
 
