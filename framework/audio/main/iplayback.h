@@ -84,14 +84,18 @@ public:
 
     // These parameters can be changed within the audio system.
     virtual async::Channel<TrackId, AudioSourceParams> sourceParamsChanged() const = 0;
+    virtual async::Channel<TrackId, ControlParams> controlParamsChanged() const = 0;
     virtual async::Channel<TrackId, AudioFxChain> fxChainParamsChanged() const = 0;
+    virtual async::Channel<TrackId, AuxSendsParams> auxSendsParamsChanged() const = 0;
 
     // Same for master
     virtual async::Promise<TrackParams> masterParams() const = 0;
     virtual void setMasterControlParams(const ControlParams& params) = 0;
     virtual void setMasterFxChainParams(const AudioFxChain& params) = 0;
     virtual void setMasterAuxSendsParams(const AuxSendsParams& params) = 0;
+    virtual async::Channel<ControlParams> masterControlParamsChanged() const = 0;
     virtual async::Channel<AudioFxChain> masterFxChainParamsChanged() const = 0;
+    virtual async::Channel<AuxSendsParams> masterAuxSendsParamsChanged() const = 0;
 
     // Input processing
     virtual void processInput(const TrackId trackId) const = 0;

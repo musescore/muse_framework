@@ -108,8 +108,8 @@ static const std::vector<CommandInfo> s_commandInfos = {
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND,
-        TranslatableString("diagnostics", "Show rcommands list"),
-        TranslatableString("diagnostics", "Show rcommands list"),
+        TranslatableString("diagnostics", "Show commands list"),
+        TranslatableString("diagnostics", "Show commands list"),
         InputSchema(),
         Decoration()
     },

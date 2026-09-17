@@ -37,7 +37,7 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        anchors.margins: -5 //! NOTE: extra space for user convenience
+        anchors.margins: -2 //! NOTE: extra space for user convenience
 
         cursorShape: (root.separatorCpp && separatorCpp.showResizeCursor)
                      ? (root.separatorCpp.isVertical ? Qt.SizeVerCursor : Qt.SizeHorCursor)
