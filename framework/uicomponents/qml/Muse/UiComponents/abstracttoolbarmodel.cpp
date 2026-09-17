@@ -76,11 +76,6 @@ QHash<int, QByteArray> AbstractToolBarModel::roleNames() const
     return roles;
 }
 
-void AbstractToolBarModel::dispatch(const ActionCode& actionCode, const ActionData& args)
-{
-    dispatcher()->dispatch(actionCode, args);
-}
-
 QVariantMap AbstractToolBarModel::get(int index)
 {
     QVariantMap result;
@@ -99,13 +94,99 @@ QVariantMap AbstractToolBarModel::get(int index)
 
 void AbstractToolBarModel::load()
 {
+    commandsState()->commandStateChanged().onReceive(this, [this](const rcommand::Command& command, const rcommand::CommandState& state) {
+        onCommandStateChanged(command, state);
+    });
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     uiActionsRegister()->actionStateChanged().onReceive(this, [this](const ActionCodeList& codes) {
         onActionsStateChanges(codes);
     }, async::Asyncable::Mode::SetReplace);
+#endif
 
     shortcutsRegister()->shortcutsChanged().onNotify(this, [this]() {
         updateShortcutsAll();
     }, async::Asyncable::Mode::SetReplace);
+}
+
+void AbstractToolBarModel::onCommandStateChanged(const rcommand::Command& command, const rcommand::CommandState& state)
+{
+    updateState(m_items, command, state);
+}
+
+void AbstractToolBarModel::updateState(ToolBarItemList& items, const rcommand::Command& command, const rcommand::CommandState& state)
+{
+    for (ToolBarItem* toolBarItem : items) {
+        if (!toolBarItem) {
+            continue;
+        }
+
+        if (command == toolBarItem->command()) {
+            toolBarItem->setCommandState(state);
+        }
+
+        QList<MenuItem*> subitems = toolBarItem->menuItems();
+        if (!subitems.empty()) {
+            updateState(subitems, command, state);
+        }
+    }
+}
+
+void AbstractToolBarModel::updateState(QList<MenuItem*>& items, const rcommand::Command& command, const rcommand::CommandState& state)
+{
+    for (MenuItem* menuItem : items) {
+        if (!menuItem) {
+            continue;
+        }
+
+        if (command == menuItem->command()) {
+            menuItem->setCommandState(state);
+        }
+
+        MenuItemList subitems = menuItem->subitems();
+        if (!subitems.empty()) {
+            updateState(subitems, command, state);
+        }
+    }
+}
+
+ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, const TranslatableString& title)
+{
+    const rcommand::CommandInfo& info = commandsRegister()->commandInfo(command);
+    if (!info.isValid()) {
+        LOGW() << "not found command: " << command;
+        return nullptr;
+    }
+
+    ToolBarItem* item = new ToolBarItem(info, ToolBarItemType::ACTION, this);
+    item->setCommandState(commandsState()->commandState(command));
+
+    if (!title.isEmpty()) {
+        item->setTitle(title);
+    }
+
+    return item;
+}
+
+ToolBarItem& AbstractToolBarModel::findItem(const rcommand::Command& command) const
+{
+    if (ToolBarItem* toolBarItem = findItemPtr(command)) {
+        return *toolBarItem;
+    }
+
+    static ToolBarItem dummy;
+    return dummy;
+}
+
+ToolBarItem* AbstractToolBarModel::findItemPtr(const rcommand::Command& command) const
+{
+    for (ToolBarItem* toolBarItem : std::as_const(m_items)) {
+        if (toolBarItem->command() == command) {
+            return toolBarItem;
+        }
+    }
+
+    return nullptr;
 }
 
 QVariantList AbstractToolBarModel::itemsProperty() const
@@ -185,22 +266,6 @@ ToolBarItem& AbstractToolBarModel::item(int index)
     return dummy;
 }
 
-ToolBarItem& AbstractToolBarModel::findItem(const ActionCode& actionCode)
-{
-    return item(m_items, actionCode);
-}
-
-ToolBarItem* AbstractToolBarModel::findItemPtr(const actions::ActionCode& actionCode)
-{
-    for (ToolBarItem* toolBarItem : std::as_const(m_items)) {
-        if (toolBarItem->action().code == actionCode) {
-            return toolBarItem;
-        }
-    }
-
-    return nullptr;
-}
-
 ToolBarItem& AbstractToolBarModel::findItem(const QString& itemId)
 {
     return item(m_items, itemId);
@@ -217,6 +282,36 @@ ToolBarItem* AbstractToolBarModel::findItemPtr(const QString& itemId)
     return nullptr;
 }
 
+ToolBarItem* AbstractToolBarModel::makeSeparator()
+{
+    return new ToolBarItem(ToolBarItemType::SEPARATOR, this);
+}
+
+void AbstractToolBarModel::setItem(int index, ToolBarItem* item)
+{
+    if (!isIndexValid(index)) {
+        return;
+    }
+
+    m_items[index] = item;
+
+    QModelIndex modelIndex = this->index(index);
+    emit dataChanged(modelIndex, modelIndex);
+}
+
+ToolBarItem& AbstractToolBarModel::item(const ToolBarItemList& items, const QString& itemId) const
+{
+    for (ToolBarItem* toolBarItem : items) {
+        if (toolBarItem->id() == itemId) {
+            return *toolBarItem;
+        }
+    }
+
+    static ToolBarItem dummy;
+    return dummy;
+}
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 ToolBarItem* AbstractToolBarModel::makeItem(const ActionCode& actionCode, const TranslatableString& title)
 {
     const UiAction& action = uiActionsRegister()->action(actionCode);
@@ -240,6 +335,8 @@ ToolBarItem* AbstractToolBarModel::makeMenuItem(const TranslatableString& title,
 {
     ToolBarItem* item = new ToolBarItem(this);
     item->setId(menuId);
+    item->setTitle(title);
+    item->setEnabled(enabled);
 
     MenuItemList subitems;
     for (const ActionCode& subitemActionCode: subitemsActionCodesList) {
@@ -258,23 +355,39 @@ ToolBarItem* AbstractToolBarModel::makeMenuItem(const TranslatableString& title,
     }
     item->setMenuItems(subitems);
 
-    UiAction action;
-    action.title = title;
-    item->setAction(action);
-
-    UiActionState state;
-    state.enabled = enabled;
-    item->setState(state);
-
     return item;
 }
 
-ToolBarItem* AbstractToolBarModel::makeSeparator()
+ToolBarItem& AbstractToolBarModel::item(const ToolBarItemList& items, const ActionCode& actionCode) const
 {
-    UiAction action;
-    action.title = {};
+    for (ToolBarItem* toolBarItem : items) {
+        if (!toolBarItem) {
+            continue;
+        }
 
-    return new ToolBarItem(action, ToolBarItemType::SEPARATOR, this);
+        if (toolBarItem->actionCode() == actionCode) {
+            return *toolBarItem;
+        }
+    }
+
+    static ToolBarItem dummy;
+    return dummy;
+}
+
+ToolBarItem& AbstractToolBarModel::findItem(const ActionCode& actionCode)
+{
+    return item(m_items, actionCode);
+}
+
+ToolBarItem* AbstractToolBarModel::findItemPtr(const actions::ActionCode& actionCode)
+{
+    for (ToolBarItem* toolBarItem : std::as_const(m_items)) {
+        if (toolBarItem->actionCode() == actionCode) {
+            return toolBarItem;
+        }
+    }
+
+    return nullptr;
 }
 
 void AbstractToolBarModel::onActionsStateChanges(const muse::actions::ActionCodeList& codes)
@@ -291,45 +404,7 @@ void AbstractToolBarModel::onActionsStateChanges(const muse::actions::ActionCode
     }
 }
 
-void AbstractToolBarModel::setItem(int index, ToolBarItem* item)
-{
-    if (!isIndexValid(index)) {
-        return;
-    }
-
-    m_items[index] = item;
-
-    QModelIndex modelIndex = this->index(index);
-    emit dataChanged(modelIndex, modelIndex);
-}
-
-ToolBarItem& AbstractToolBarModel::item(const ToolBarItemList& items, const QString& itemId)
-{
-    for (ToolBarItem* toolBarItem : items) {
-        if (toolBarItem->id() == itemId) {
-            return *toolBarItem;
-        }
-    }
-
-    static ToolBarItem dummy;
-    return dummy;
-}
-
-ToolBarItem& AbstractToolBarModel::item(const ToolBarItemList& items, const ActionCode& actionCode)
-{
-    for (ToolBarItem* toolBarItem : items) {
-        if (!toolBarItem) {
-            continue;
-        }
-
-        if (toolBarItem->action().code == actionCode) {
-            return *toolBarItem;
-        }
-    }
-
-    static ToolBarItem dummy;
-    return dummy;
-}
+#endif // MUSE_MODULE_ACTIONS_SUPPORT
 
 bool AbstractToolBarModel::isCompactMode() const
 {
@@ -359,7 +434,10 @@ void AbstractToolBarModel::updateShortcutsAll()
             continue;
         }
 
-        std::vector<std::string> shortcuts = shortcutsRegister()->shortcut(toolBarItem->action().code).sequences;
+        std::vector<std::string> shortcuts;
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+        shortcuts = shortcutsRegister()->shortcut(toolBarItem->actionCode()).sequences;
+#endif
         toolBarItem->setShortcuts(shortcuts);
 
         for (MenuItem* menuItem : std::as_const(toolBarItem->menuItems())) {
@@ -374,7 +452,10 @@ void AbstractToolBarModel::updateShortcutsAll()
 
 void AbstractToolBarModel::updateShortcuts(MenuItem* menuItem)
 {
-    std::vector<std::string> shortcuts = shortcutsRegister()->shortcut(menuItem->actionCode()).sequences;
+    std::vector<std::string> shortcuts;
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    shortcuts = shortcutsRegister()->shortcut(menuItem->actionCode()).sequences;
+#endif
     menuItem->setShortcuts(shortcuts);
 
     for (MenuItem* subItem : menuItem->subitems()) {

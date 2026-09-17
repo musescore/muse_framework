@@ -32,6 +32,9 @@
 #include "ui/iuiactionsregister.h"
 #include "shortcuts/ishortcutsregister.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/icommandsstate.h"
+#include "rcommand/icommandsregister.h"
+#include "muse_framework_config.h"
 
 Q_MOC_INCLUDE("uicomponents/qml/Muse/UiComponents/toolbaritem.h")
 
@@ -63,9 +66,14 @@ class AbstractToolBarModel : public QAbstractListModel, public Contextable, publ
     Q_PROPERTY(bool isCompactMode READ isCompactMode WRITE setIsCompactMode NOTIFY isCompactModeChanged)
 
 public:
+    GlobalInject<rcommand::ICommandsRegister> commandsRegister;
+    ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+    ContextInject<rcommand::ICommandsState> commandsState = { this };
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
-    ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+#endif
 
 public:
     explicit AbstractToolBarModel(QObject* parent = nullptr);
@@ -99,8 +107,6 @@ protected:
         UserRole
     };
 
-    virtual void onActionsStateChanges(const actions::ActionCodeList& codes);
-
     void setItem(int index, ToolBarItem* item);
     void setItems(const ToolBarItemList& items);
     void clear();
@@ -110,22 +116,40 @@ protected:
 
     ToolBarItem& item(int index);
 
-    ToolBarItem& findItem(const actions::ActionCode& actionCode);
-    ToolBarItem* findItemPtr(const actions::ActionCode& actionCode);
     ToolBarItem& findItem(const QString& itemId);
     ToolBarItem* findItemPtr(const QString& itemId);
 
-    ToolBarItem* makeItem(const actions::ActionCode& actionCode, const TranslatableString& title = {});
-    ToolBarItem* makeMenuItem(const TranslatableString& title, const actions::ActionCodeList& subitemsActionCodesLists,
-                              const QString& menuId = "", bool enabled = true);
     ToolBarItem* makeSeparator();
 
     bool isIndexValid(int index) const;
-    void dispatch(const actions::ActionCode& actionCode, const actions::ActionData& args = actions::ActionData());
+
+    // command support
+    virtual void onCommandStateChanged(const rcommand::Command& command, const rcommand::CommandState& state);
+    void updateState(ToolBarItemList& items, const rcommand::Command& command, const rcommand::CommandState& state);
+    void updateState(QList<MenuItem*>& items, const rcommand::Command& command, const rcommand::CommandState& state);
+
+    ToolBarItem* makeItem(const rcommand::Command& command, const TranslatableString& title = {});
+    ToolBarItem& findItem(const rcommand::Command& command) const;
+    ToolBarItem* findItemPtr(const rcommand::Command& command) const;
+
+    // actions support
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    ToolBarItem* makeItem(const actions::ActionCode& actionCode, const TranslatableString& title = {});
+    ToolBarItem* makeMenuItem(const TranslatableString& title, const actions::ActionCodeList& subitemsActionCodesLists,
+                              const QString& menuId = "", bool enabled = true);
+
+    ToolBarItem& findItem(const actions::ActionCode& actionCode);
+    ToolBarItem* findItemPtr(const actions::ActionCode& actionCode);
+
+    virtual void onActionsStateChanges(const actions::ActionCodeList& codes);
+
+#endif
 
 private:
-    ToolBarItem& item(const ToolBarItemList& items, const QString& itemId);
-    ToolBarItem& item(const ToolBarItemList& items, const actions::ActionCode& actionCode);
+    ToolBarItem& item(const ToolBarItemList& items, const QString& itemId) const;
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    ToolBarItem& item(const ToolBarItemList& items, const actions::ActionCode& actionCode) const;
+#endif
 
     void updateShortcutsAll();
     void updateShortcuts(MenuItem* menuItem);
