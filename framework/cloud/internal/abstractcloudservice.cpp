@@ -322,32 +322,31 @@ const AccountInfo& AbstractCloudService::accountInfo() const
     return m_accountInfo;
 }
 
-Ret AbstractCloudService::checkCloudIsAvailable() const
+Promise<Ret> AbstractCloudService::checkCloudIsAvailable() const
 {
-    RetVal<Progress> progress = m_networkManager->get(m_serverConfig.serverAvailabilityUrl, nullptr, m_serverConfig.headers);
-    if (!progress.ret) {
-        return progress.ret;
-    }
+    static constexpr int ANSWER_TIMEOUT_MS = 5000;
 
-    Ret ret = make_ok();
-    QEventLoop loop;
+    return async::make_promise<Ret>([this](auto resolve) {
+        RetVal<Progress> progress = m_networkManager->get(m_serverConfig.serverAvailabilityUrl, nullptr, m_serverConfig.headers);
+        if (!progress.ret) {
+            return resolve(progress.ret);
+        }
 
-    progress.val.finished().onReceive(this, [&ret, &loop](const ProgressResult& res) {
-        ret = res.ret;
-        loop.quit();
+        auto answered = std::make_shared<bool>(false);
+
+        progress.val.finished().onReceive(this, [answered, resolve](const ProgressResult& res) {
+            *answered = true;
+            (void)resolve(res.ret);
+        });
+
+        QTimer::singleShot(ANSWER_TIMEOUT_MS, [answered, progress]() mutable {
+            if (!*answered) {
+                progress.val.cancel();
+            }
+        });
+
+        return Promise<Ret>::dummy_result();
     });
-
-    QTimer timer;
-    timer.setSingleShot(true);
-    QObject::connect(&timer, &QTimer::timeout, [&progress]() {
-        progress.val.cancel();
-    });
-    timer.start(5000);
-
-    loop.exec();
-    timer.stop();
-
-    return ret;
 }
 
 void AbstractCloudService::setAccountInfo(const AccountInfo& info)

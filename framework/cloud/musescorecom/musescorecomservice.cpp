@@ -393,25 +393,22 @@ Promise<Ret> MuseScoreComService::updateTokens()
     });
 }
 
-RetVal<ScoreInfo> MuseScoreComService::downloadScoreInfo(const QUrl& sourceUrl)
+Promise<RetVal<ScoreInfo> > MuseScoreComService::downloadScoreInfo(const QUrl& sourceUrl)
 {
     return downloadScoreInfo(idFromCloudUrl(sourceUrl).toUint64());
 }
 
-RetVal<ScoreInfo> MuseScoreComService::downloadScoreInfo(int scoreId)
+Promise<RetVal<ScoreInfo> > MuseScoreComService::downloadScoreInfo(int scoreId)
 {
     TRACEFUNC;
 
-    RetVal<ScoreInfo> result = RetVal<ScoreInfo>::make_ok(ScoreInfo());
+    return async::make_promise<RetVal<ScoreInfo> >([this, scoreId](auto resolve) {
+        doDownloadScoreInfo(scoreId, [resolve](const RetVal<ScoreInfo>& info) {
+            (void)resolve(info);
+        });
 
-    QEventLoop loop;
-    doDownloadScoreInfo(scoreId, [&result, &loop](const RetVal<ScoreInfo>& info) {
-        result = info;
-        loop.quit();
+        return Promise<RetVal<ScoreInfo> >::dummy_result();
     });
-    loop.exec();
-
-    return result;
 }
 
 void MuseScoreComService::doDownloadScoreInfo(int scoreId, std::function<void(const RetVal<ScoreInfo>& res)> finished)

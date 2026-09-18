@@ -36,6 +36,6 @@ public:
     MOCK_METHOD(ValCh<bool>, userAuthorized, (), (const, override));
     MOCK_METHOD(const AccountInfo&, accountInfo, (), (const, override));
     MOCK_METHOD(CloudInfo, cloudInfo, (), (const, override));
-    MOCK_METHOD(Ret, checkCloudIsAvailable, (), (const, override));
+    MOCK_METHOD(async::Promise<Ret>, checkCloudIsAvailable, (), (const, override));
 };
 }
