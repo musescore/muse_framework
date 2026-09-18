@@ -20,6 +20,10 @@
 
 set(MODULE_TEST muse_audioplugins_test)
 
+set(MODULE_TEST_DEF
+    MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL="${MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL}"
+)
+
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/audiopluginsconfigurationmock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/knownaudiopluginsregistermock.h

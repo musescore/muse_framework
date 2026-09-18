@@ -41,6 +41,7 @@
 using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::ElementsAre;
+using ::testing::Matcher;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::ReturnRef;
@@ -116,6 +117,20 @@ protected:
 
         ON_CALL(*m_knownPlugins, readPluginsFrom(_))
         .WillByDefault(Return(RetVal<AudioPluginInfoList>::make_ok({})));
+    }
+
+    Matcher<const std::vector<std::string>& > expectedValidationArgs(const path_t& pluginPath) const
+    {
+        const std::string crashServerUrl = MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL;
+        if (!crashServerUrl.empty()) {
+            return ElementsAre("--register-audio-plugin", pluginPath.toStdString(),
+                               "--register-audio-plugin-out", _,
+                               "--crash-dumps-dir", _,
+                               "--crash-server-url", crashServerUrl);
+        }
+
+        return ElementsAre("--register-audio-plugin", pluginPath.toStdString(),
+                           "--register-audio-plugin-out", _);
     }
 
     std::shared_ptr<RegisterAudioPluginsScenario> m_scenario;
@@ -197,8 +212,7 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, UpdatePluginsRegistry)
     // --register-audio-plugin-out file, the main process is the sole cache writer.
     paths_t alreadyRegisteredPaths { foundPluginPaths[0], foundPluginPaths[1] };
     for (const path_t& pluginPath : foundPluginPaths) {
-        auto argsMatch = ElementsAre("--register-audio-plugin",
-                                     pluginPath.toStdString(), "--register-audio-plugin-out", _, "--crash-dumps-dir", _);
+        auto argsMatch = expectedValidationArgs(pluginPath);
 
         if (muse::contains(alreadyRegisteredPaths, pluginPath)) {
             // Ignore already registered plugins
@@ -517,10 +531,7 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, UpdatePluginsRegistry_Left
     EXPECT_CALL(*m_knownPlugins, removePluginsAtPath(io::path_t("/some/path/CRASHED.vst3")))
     .WillOnce(Return(make_ok()));
 
-    EXPECT_CALL(*m_process, execute(m_appPath,
-                                    ElementsAre("--register-audio-plugin", "/some/path/CRASHED.vst3", "--register-audio-plugin-out", _,
-                                                "--crash-dumps-dir", _), _,
-                                    _))
+    EXPECT_CALL(*m_process, execute(m_appPath, expectedValidationArgs("/some/path/CRASHED.vst3"), _, _))
     .WillOnce(Return(0));
 
     // [THEN] register loaded twice (once after registerNewPlugins, once at end of updatePluginsRegistry)
@@ -636,9 +647,7 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, FailedValidationRecordsErr
     .WillByDefault(Return(make_ok()));
 
     // [GIVEN] The subprocess exits with a failure code
-    EXPECT_CALL(*m_process, execute(m_appPath,
-                                    ElementsAre("--register-audio-plugin",
-                                                pluginPath.toStdString(), "--register-audio-plugin-out", _, "--crash-dumps-dir", _), _, _))
+    EXPECT_CALL(*m_process, execute(m_appPath, expectedValidationArgs(pluginPath), _, _))
     .WillOnce(Return(-42));
 
     // [THEN] The main process records the Error entry itself (no second
@@ -731,9 +740,7 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, TimedOutValidationRecordsE
     .WillByDefault(Return(make_ok()));
 
     // [GIVEN] The subprocess wrapper killed the hung validator
-    EXPECT_CALL(*m_process, execute(m_appPath,
-                                    ElementsAre("--register-audio-plugin",
-                                                pluginPath.toStdString(), "--register-audio-plugin-out", _, "--crash-dumps-dir", _), _, _))
+    EXPECT_CALL(*m_process, execute(m_appPath, expectedValidationArgs(pluginPath), _, _))
     .WillOnce(Return(muse::IProcess::ExecuteTimeoutCode));
 
     // [THEN] The plugin is recorded as failed with the timeout code
@@ -782,9 +789,7 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, CanceledValidationDoesNotR
     EXPECT_CALL(*m_knownPlugins, readPluginsFrom(_))
     .Times(0);
 
-    EXPECT_CALL(*m_process, execute(m_appPath,
-                                    ElementsAre("--register-audio-plugin",
-                                                pluginPath.toStdString(), "--register-audio-plugin-out", _, "--crash-dumps-dir", _), _, _))
+    EXPECT_CALL(*m_process, execute(m_appPath, expectedValidationArgs(pluginPath), _, _))
     .WillOnce([&progress](const std::string&, const std::vector<std::string>&, int,
                           const std::function<bool()>& shouldCancel) {
         progress.cancel();
@@ -856,9 +861,7 @@ TEST_F(AudioPlugins_RegisterAudioPluginsScenarioTest, RegisterNewPlugins_MainApp
 
     // [THEN] One subprocess invocation per path, each handed an --register-audio-plugin-out file
     for (const path_t& path : paths) {
-        EXPECT_CALL(*m_process, execute(m_appPath,
-                                        ElementsAre("--register-audio-plugin", path.toStdString(), "--register-audio-plugin-out", _,
-                                                    "--crash-dumps-dir", _), _, _))
+        EXPECT_CALL(*m_process, execute(m_appPath, expectedValidationArgs(path), _, _))
         .WillOnce(Return(0));
     }
 
