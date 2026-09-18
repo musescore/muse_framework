@@ -65,8 +65,12 @@ QtPlatform.FileDialog {
 
     onAccepted: {
         if (root.fileMode === FileDialog.OpenFiles) {
-            const selectedUrls = root.fileUrls || []
-            root.ret = { "errcode": 0, "value": selectedUrls }
+            let selectedFiles = []
+            const selectedUrls = root.files || []
+            for (let i = 0; i < selectedUrls.length; ++i) {
+                selectedFiles.push(selectedUrls[i].toString())
+            }
+            root.ret = { "errcode": 0, "value": selectedFiles }
         } else if (root.fileMode === FileDialog.SaveFile) {
             root.ret = { "errcode": 0, "value": root.appendSuffixIfNeeded(root.currentFile.toString()) }
         } else {
