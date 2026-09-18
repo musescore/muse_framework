@@ -48,7 +48,7 @@ public:
     MOCK_METHOD(void, notifyAboutResourceChanged, (const std::string&), (override));
     MOCK_METHOD(async::Channel<std::string>, resourceChanged, (), (override));
     MOCK_METHOD(void, notifyAboutWindowWasQuited, (), (override));
-    MOCK_METHOD(void, quitForAll, (), (override));
+    MOCK_METHOD(async::Promise<Ret>, quitForAll, (const modularity::ContextPtr&), (override));
     MOCK_METHOD(void, quitWindow, (const modularity::ContextPtr&), (override));
     MOCK_METHOD(void, quitAllAndRestartLast, (), (override));
     MOCK_METHOD(void, quitAllAndRunInstallation, (const io::path_t&), (override));
