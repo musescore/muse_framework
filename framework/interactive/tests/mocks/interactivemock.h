@@ -62,6 +62,9 @@ public:
                 (override));
     MOCK_METHOD(io::paths_t, selectOpeningFilesSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, const int),
                 (override));
+    MOCK_METHOD(async::Promise<io::path_t>, selectSavingFile, (const std::string& title, const io::path_t& path,
+                                                               const std::vector<std::string>& filter, bool confirmOverwrite),
+                (override));
     MOCK_METHOD(io::path_t, selectSavingFileSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, bool),
                 (override));
     MOCK_METHOD(io::path_t, selectDirectory, (const std::string&, const io::path_t&), (override));
