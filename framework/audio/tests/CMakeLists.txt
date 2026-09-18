@@ -24,6 +24,7 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/rpcpacker_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/alignbuffer_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/audioresourcetypes_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/soundtracksaveoptions_tests.cpp
 )
 
 include(SetupGTest)
