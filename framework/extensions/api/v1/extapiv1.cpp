@@ -21,6 +21,7 @@
  */
 #include "extapiv1.h"
 
+#include <QQmlEngine>
 #include <qqml.h>
 
 #include "messagedialog.h"
