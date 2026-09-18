@@ -228,6 +228,23 @@ muse::io::paths_t WebInteractive::selectOpeningFilesSync(const std::string& titl
 #endif
 }
 
+async::Promise<io::path_t> WebInteractive::selectSavingFile(const std::string& title, const io::path_t& dir,
+                                                            const std::vector<std::string>& filter, bool confirmOverwrite)
+{
+#ifdef Q_OS_WASM
+    UNUSED(title);
+    UNUSED(dir);
+    UNUSED(filter);
+    UNUSED(confirmOverwrite);
+    NOT_SUPPORTED;
+    return async::make_promise<io::path_t>([](auto, auto reject) {
+        return reject((int)Ret::Code::NotSupported, "selecting a file to save is not supported");
+    });
+#else
+    return m_origin->selectSavingFile(title, dir, filter, confirmOverwrite);
+#endif
+}
+
 io::path_t WebInteractive::selectSavingFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
                                                 bool confirmOverwrite)
 {

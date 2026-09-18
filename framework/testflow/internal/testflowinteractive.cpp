@@ -119,6 +119,13 @@ io::paths_t TestflowInteractive::selectOpeningFilesSync(const std::string& title
     return m_real->selectOpeningFilesSync(title, dir, filter, options);
 }
 
+async::Promise<io::path_t> TestflowInteractive::selectSavingFile(const std::string& title, const io::path_t& dir,
+                                                                 const std::vector<std::string>& filter,
+                                                                 bool confirmOverwrite)
+{
+    return m_real->selectSavingFile(title, dir, filter, confirmOverwrite);
+}
+
 io::path_t TestflowInteractive::selectSavingFileSync(const std::string& title, const io::path_t& dir,
                                                      const std::vector<std::string>& filter,
                                                      bool confirmOverwrite)

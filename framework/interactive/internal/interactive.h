@@ -95,6 +95,8 @@ public:
                                      const int options) override;
     io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
                                        const int options) override;
+    async::Promise<io::path_t> selectSavingFile(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
+                                                bool confirmOverwrite = true) override;
     io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
                                     bool confirmOverwrite = true) override;
 
