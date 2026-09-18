@@ -26,6 +26,8 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 
+#include "osxidlesleeppolicy.h"
+
 #include "translation.h"
 #include "log.h"
 
@@ -165,6 +167,10 @@ bool OSXAudioDriver::open(const Spec& spec, Spec* activeSpec)
         return false;
     }
 
+    //! NOTE From now on the device is running, so make sure the system knows whether
+    //! it is allowed to go to sleep while that is the case
+    OSXIdleSleepPolicy::setPreventIdleSleep(m_livePlaybackOngoing);
+
     m_activeSpecChanged.send(m_data->format);
 
     LOGI() << "Connected to " << m_data->format.deviceId
@@ -191,6 +197,12 @@ void OSXAudioDriver::doClose()
 bool OSXAudioDriver::isOpened() const
 {
     return m_data->audioQueue != nullptr;
+}
+
+void OSXAudioDriver::setLivePlaybackOngoing(bool ongoing)
+{
+    m_livePlaybackOngoing = ongoing;
+    OSXIdleSleepPolicy::setPreventIdleSleep(ongoing);
 }
 
 const OSXAudioDriver::Spec& OSXAudioDriver::activeSpec() const
