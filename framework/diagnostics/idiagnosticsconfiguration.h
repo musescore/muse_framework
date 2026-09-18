@@ -22,11 +22,27 @@
 #ifndef MUSE_DIAGNOSTICS_IDIAGNOSTICSCONFIGURATION_H
 #define MUSE_DIAGNOSTICS_IDIAGNOSTICSCONFIGURATION_H
 
+#include <map>
+
 #include "modularity/imoduleinterface.h"
 
 #include "io/path.h"
+#include "global/types/string.h"
 
 namespace muse::diagnostics {
+//! Crash dumps are laid in `directory` and then sent to `serverUrl` by a separate process. The process carries the URL information, not the dump.
+//! Hence, a given dump dir should serve for a given server URL only, or a dump may not get uploaded to the intended URL.
+//! Just setting a dumps directory is okay, though - dumps just don't get uploaded.
+struct CrashDumpConfig {
+    CrashDumpConfig(io::path_t directory, String serverUrl = String())
+        : directory{std::move(directory)}, serverUrl{std::move(serverUrl)}
+    {
+    }
+
+    const io::path_t directory;
+    const String serverUrl;
+};
+
 class IDiagnosticsConfiguration : MODULE_GLOBAL_INTERFACE
 {
     INTERFACE_ID(IDiagnosticsConfiguration)
@@ -39,6 +55,18 @@ public:
     virtual void setShouldWarnBeforeSavingDiagnosticFiles(bool val) = 0;
 
     virtual muse::io::path_t diagnosticFilesDefaultSavingPath() const = 0;
+
+    virtual CrashDumpConfig crashDumpConfig() const = 0;
+    virtual void setCrashDumpConfig(const CrashDumpConfig& config) = 0;
+
+    virtual std::map<String, String> crashReportTags() const = 0;
+    virtual void setCrashReportTags(std::map<String, String> tags) = 0;
+
+    //! Whether a crash of this process is also handed to the operating system's crash
+    //! reporter. On macOS that reporter is what shows the "<app> quit unexpectedly" dialog.
+    //! Windows and Linux have no such reporter, so this has no effect there.
+    virtual bool systemCrashReporterForwardingEnabled() const = 0;
+    virtual void setSystemCrashReporterForwardingEnabled(bool val) = 0;
 };
 }
 
