@@ -209,7 +209,6 @@ FocusScope {
                         enabled: Boolean(fuzzyPattern)
                         fuzzyPattern: searchField.searchText
                         roleName: "searchKey"
-                        caseSensitivity: Qt.CaseInsensitive
                     }
                 ]
 
