@@ -22,12 +22,6 @@
 #ifndef MU_LOGREMOVER_H
 #define MU_LOGREMOVER_H
 
-#include "muse_framework_config.h"
-
-#ifdef MUSE_ENABLE_UNIT_TESTS
-#include <gtest/gtest_prod.h>
-#endif
-
 #include "types/string.h"
 #include "types/datetime.h"
 #include "io/path.h"
@@ -39,14 +33,12 @@ public:
 
     static void removeLogs(const io::path_t& logsDir, int olderThanDays, const String& pattern);
 
+    //! Public so it can be unit tested directly, without FRIEND_TEST / gtest_prod.h
+    static Date parseDate(const String& fileName);
+
 private:
 
-#ifdef MUSE_ENABLE_UNIT_TESTS
-    FRIEND_TEST(Global_LogRemoverTests, ParseDate);
-#endif
-
     static void scanDir(const io::path_t& logsDir, io::paths_t& files);
-    static Date parseDate(const String& fileName);
     static void removeFiles(const io::paths_t& files);
 };
 }
