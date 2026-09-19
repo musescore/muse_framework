@@ -299,7 +299,15 @@ QAccessible::Role AccessibleItemInterface::role() const
     case IAccessible::Role::Column: return QAccessible::Column;
     case IAccessible::Role::Row: return QAccessible::Row;
     case IAccessible::Role::Cell: return QAccessible::Cell;
-    case IAccessible::Role::Group:
+    case IAccessible::Role::Group: {
+#ifdef Q_OS_WIN
+        //! NOTE: StaticText is a leaf type; a container must be a group or screen
+        //! readers read it as content.
+        return QAccessible::Grouping;
+#else
+        return QAccessible::UserRole;
+#endif
+    }
     case IAccessible::Role::Information:
     case IAccessible::Role::ElementOnScore: {
 #ifdef Q_OS_WIN
@@ -356,6 +364,11 @@ QString AccessibleItemInterface::text(QAccessible::Text textType) const
         return description();
     }
 #endif
+    case QAccessible::Value: {
+        //! NOTE: Qt's UIA and MSAA bridges read a control's value from here.
+        QVariant val = m_object->item()->accessibleValue();
+        return val.isValid() ? val.toString() : QString();
+    }
     default: break;
     }
 
@@ -533,7 +546,10 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
     QAccessible::Role itemRole = role();
     if (type == QAccessible::InterfaceType::ValueInterface && itemRole == QAccessible::Slider) {
         return static_cast<QAccessibleValueInterface*>(this);
-    } else if (type == QAccessible::InterfaceType::TextInterface) {
+    } else if (type == QAccessible::InterfaceType::TextInterface
+               && m_object->item()->accessibleRole() == IAccessible::Role::EditableText) {
+        //! NOTE: Other roles must not advertise a text interface: screen readers
+        //! then read them as empty text documents.
         return static_cast<QAccessibleTextInterface*>(this);
     }
 
