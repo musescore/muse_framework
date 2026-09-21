@@ -96,7 +96,7 @@ void AbstractToolBarModel::load()
 {
     commandsState()->commandStateChanged().onReceive(this, [this](const rcommand::Command& command, const rcommand::CommandState& state) {
         onCommandStateChanged(command, state);
-    });
+    }, async::Asyncable::Mode::SetReplace);
 
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     uiActionsRegister()->actionStateChanged().onReceive(this, [this](const ActionCodeList& codes) {
