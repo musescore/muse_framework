@@ -54,8 +54,8 @@ public:
                             const QUrl& sourceUrl = QUrl(), int revisionId = 0) override;
     ProgressPtr uploadAudio(DevicePtr audioData, const QString& audioFormat, const QUrl& sourceUrl) override;
 
-    RetVal<ScoreInfo> downloadScoreInfo(const QUrl& sourceUrl) override;
-    RetVal<ScoreInfo> downloadScoreInfo(int scoreId) override;
+    async::Promise<RetVal<ScoreInfo> > downloadScoreInfo(const QUrl& sourceUrl) override;
+    async::Promise<RetVal<ScoreInfo> > downloadScoreInfo(int scoreId) override;
 
     async::Promise<ScoresList> downloadScoresList(int scoresPerBatch, int batchNumber) override;
 

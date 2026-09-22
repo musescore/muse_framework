@@ -38,8 +38,8 @@ public:
                 (override));
     MOCK_METHOD(ProgressPtr, uploadAudio, (DevicePtr audioData, const QString& audioFormat, const QUrl& sourceUrl), (override));
 
-    MOCK_METHOD(RetVal<ScoreInfo>, downloadScoreInfo, (const QUrl& sourceUrl), (override));
-    MOCK_METHOD(RetVal<ScoreInfo>, downloadScoreInfo, (int scoreId), (override));
+    MOCK_METHOD(async::Promise<RetVal<ScoreInfo> >, downloadScoreInfo, (const QUrl& sourceUrl), (override));
+    MOCK_METHOD(async::Promise<RetVal<ScoreInfo> >, downloadScoreInfo, (int scoreId), (override));
     MOCK_METHOD(async::Promise<ScoresList>, downloadScoresList, (int scoresPerBatch, int batchNumber), (override));
     MOCK_METHOD(ProgressPtr, downloadScore, (int scoreId, DevicePtr scoreData, const QString& hash, const QString& secret), (override));
 };
