@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <optional>
+
 #include <QAbstractListModel>
 #include <QVariant>
 #include <QByteArray>
@@ -32,6 +34,7 @@
 
 #include "global/modularity/ioc.h"
 #include "toast/itoastprovider.h"
+#include "accessibility/iaccessibilitycontroller.h"
 
 namespace muse::toast {
 class ToastListModel : public QAbstractListModel, public muse::async::Asyncable, public muse::Contextable
@@ -42,6 +45,8 @@ class ToastListModel : public QAbstractListModel, public muse::async::Asyncable,
 
     muse::GlobalInject<muse::toast::IToastProvider> toastProvider;
 
+    muse::ContextInject<muse::accessibility::IAccessibilityController> accessibilityController = { this };
+
 public:
     explicit ToastListModel(QObject* parent = nullptr);
     ~ToastListModel() override = default;
@@ -49,6 +54,8 @@ public:
     Q_INVOKABLE void init();
     Q_INVOKABLE void dismissToast(int id);
     Q_INVOKABLE void executeAction(int id, QString actionStr);
+    Q_INVOKABLE void pauseToast(int id);
+    Q_INVOKABLE void resumeToast(int id);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
@@ -59,6 +66,7 @@ private:
         IdRole = Qt::UserRole + 1,
         IconCodeRole,
         TitleRole,
+        AccessibleTitleRole,
         MessageRole,
         ActionRole,
         DismissableRole,
@@ -67,6 +75,10 @@ private:
         ShowProgressInfoRole
     };
 
+    void announceToast(const ToastItem& toast);
+    std::optional<int> indexOfToast(int id) const;
+
     std::vector<std::shared_ptr<ToastItem> > m_toasts;
+    int m_navigationHintShownCount = 0;
 };
 }

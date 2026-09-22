@@ -23,11 +23,13 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 #include <QCoreApplication>
 #include <QWindow>
 #include <QTextStream>
 
+#include "global/containers.h"
 #include "global/defer.h"
 
 #include "../navigationcommands.h"
@@ -357,6 +359,11 @@ void NavigationController::unreg(INavigationSection* section)
     TRACEFUNC;
     m_sections.erase(section);
     section->setOnActiveRequested(nullptr);
+    section->enabledChanged().disconnect(this);
+
+    if (m_prioritySection == section) {
+        m_prioritySection = nullptr;
+    }
 }
 
 const std::set<INavigationSection*>& NavigationController::sections() const
@@ -511,6 +518,10 @@ void NavigationController::doActivateSection(INavigationSection* sect, bool isAc
     sect->setActive(true);
     MYLOG() << "activated section: " << sect->name() << ", order: " << sect->index().order();
 
+    if (m_prioritySection == sect) {
+        m_prioritySection = nullptr;
+    }
+
     INavigationPanel* toActivatePanel = nullptr;
     if (isActivateLastPanel) {
         toActivatePanel = lastEnabled(sect->panels());
@@ -529,6 +540,8 @@ void NavigationController::doDeactivateSection(INavigationSection* sect)
     IF_ASSERT_FAILED(sect) {
         return;
     }
+
+    saveLastActiveControl(sect);
 
     for (INavigationPanel* panel : sect->panels()) {
         doDeactivatePanel(panel);
@@ -708,6 +721,85 @@ void NavigationController::setDefaultNavigationControl(INavigationControl* contr
     m_defaultNavigationControl = control;
 }
 
+void NavigationController::setPrioritySection(INavigationSection* section)
+{
+    if (!section) {
+        m_prioritySection = nullptr;
+        return;
+    }
+
+    if (m_sections.find(section) == m_sections.end()) {
+        LOGW() << "unable to set priority section, section is not registered, name: " << section->name();
+        return;
+    }
+
+    m_prioritySection = section;
+
+    section->enabledChanged().onReceive(this, [this, section](bool enabled) {
+        if (!enabled && section->active()) {
+            restoreLastActiveControl(section);
+        }
+    }, async::Asyncable::Mode::SetReplace);
+}
+
+INavigationSection* NavigationController::takePrioritySection(const INavigationSection* activeSec)
+{
+    INavigationSection* prioritySec = m_prioritySection;
+    m_prioritySection = nullptr;
+
+    if (!prioritySec || prioritySec == activeSec || !prioritySec->enabled()) {
+        return nullptr;
+    }
+
+    return prioritySec;
+}
+
+void NavigationController::saveLastActiveControl(INavigationSection* sect)
+{
+    if (!sect->enabled() || sect == m_prioritySection) {
+        return;
+    }
+
+    INavigationPanel* activePanel = findActive(sect->panels());
+    INavigationControl* ctrl = activePanel ? findActive(activePanel->controls()) : nullptr;
+    if (!ctrl) {
+        return;
+    }
+
+    m_lastActiveControl = ctrl;
+}
+
+INavigationControl* NavigationController::takeLastActiveControl()
+{
+    INavigationControl* ctrl = std::exchange(m_lastActiveControl, nullptr);
+
+    const bool isAvailable = ctrl && std::any_of(m_sections.cbegin(), m_sections.cend(), [ctrl](const INavigationSection* sect) {
+        if (!sect->enabled()) {
+            return false;
+        }
+
+        const std::set<INavigationPanel*>& panels = sect->panels();
+        return std::any_of(panels.cbegin(), panels.cend(), [ctrl](const INavigationPanel* panel) {
+            return panel->enabled() && muse::contains(panel->controls(), ctrl);
+        });
+    });
+
+    return isAvailable && ctrl->enabled() ? ctrl : m_defaultNavigationControl;
+}
+
+void NavigationController::restoreLastActiveControl(INavigationSection* sect)
+{
+    INavigationControl* ctrl = takeLastActiveControl();
+
+    doDeactivateSection(sect);
+
+    if (ctrl) {
+        ctrl->requestActive();
+    }
+
+    m_navigationChanged.notify();
+}
+
 muse::async::Notification NavigationController::navigationChanged() const
 {
     return m_navigationChanged;
@@ -722,17 +814,26 @@ void NavigationController::goToNextSection()
     }
 
     INavigationSection* activeSec = findActive(m_sections);
-    if (!activeSec) { // no any active
-        doActivateFirst();
-        return;
-    }
-
-    if (activeSec->type() == INavigationSection::Type::Exclusive) {
+    if (activeSec && activeSec->type() == INavigationSection::Type::Exclusive) {
         INavigationPanel* first = firstEnabled(activeSec->panels());
         if (first) {
             doActivatePanel(first);
             m_navigationChanged.notify();
         }
+        return;
+    }
+
+    if (INavigationSection* prioritySec = takePrioritySection(activeSec)) {
+        if (activeSec) {
+            doDeactivateSection(activeSec);
+        }
+        doActivateSection(prioritySec);
+        m_navigationChanged.notify();
+        return;
+    }
+
+    if (!activeSec) { // no any active
+        doActivateFirst();
         return;
     }
 
@@ -763,17 +864,26 @@ void NavigationController::goToPrevSection(bool isActivateLastPanel)
     }
 
     INavigationSection* activeSec = findActive(m_sections);
-    if (!activeSec) { // no any active
-        doActivateLast();
-        return;
-    }
-
-    if (activeSec->type() == INavigationSection::Type::Exclusive) {
+    if (activeSec && activeSec->type() == INavigationSection::Type::Exclusive) {
         INavigationPanel* first = firstEnabled(activeSec->panels());
         if (first) {
             doActivatePanel(first);
             m_navigationChanged.notify();
         }
+        return;
+    }
+
+    if (INavigationSection* prioritySec = takePrioritySection(activeSec)) {
+        if (activeSec) {
+            doDeactivateSection(activeSec);
+        }
+        doActivateSection(prioritySec);
+        m_navigationChanged.notify();
+        return;
+    }
+
+    if (!activeSec) { // no any active
+        doActivateLast();
         return;
     }
 
@@ -814,6 +924,7 @@ void NavigationController::goToNextPanel()
         return;
     }
 
+    saveLastActiveControl(activeSec);
     doDeactivatePanel(activePanel);
 
     INavigationPanel* nextPanel = nextEnabled(activeSec->panels(), activePanel->index());
@@ -861,6 +972,7 @@ void NavigationController::goToPrevPanel()
         return;
     }
 
+    saveLastActiveControl(activeSec);
     doDeactivatePanel(activePanel);
 
     INavigationPanel* prevPanel = prevEnabled(activeSec->panels(), activePanel->index());
@@ -1382,6 +1494,10 @@ void NavigationController::onActiveRequested(INavigationSection* sect, INavigati
         sect->setActive(true);
         isChanged = true;
         MYLOG() << "activated section: " << sect->name() << ", order: " << sect->index().order();
+    }
+
+    if (m_prioritySection == sect) {
+        m_prioritySection = nullptr;
     }
 
     if (!panel) {
