@@ -23,6 +23,7 @@
 
 #include "global/modularity/imoduleinterface.h"
 #include "global/io/path.h"
+#include "global/async/notification.h"
 
 #include "../types/fontstypes.h"
 
@@ -35,6 +36,7 @@ public:
 
     virtual void setDefaultFont(Font::Type type, const FontDataKey& key) = 0;
     virtual void insertSubstitution(const String& f1, const String& substituteName) = 0;
+    virtual void removeSubstitutions(const String& f1, const std::vector<String>& substituteNames) = 0;
 
     virtual int addFont(const FontDataKey& key, const io::path_t& path) = 0;
 
@@ -44,5 +46,7 @@ public:
     virtual std::vector<FontDataKey> substitutionFonts(const FontDataKey& requireKey) const = 0;
     virtual FontData fontData(const FontDataKey& requireKey, Font::Type type) const = 0;
     virtual bool isFtxFont(const FontDataKey& requireKey, Font::Type type) const = 0;
+
+    virtual async::Notification changed() const = 0;
 };
 }
