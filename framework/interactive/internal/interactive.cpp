@@ -437,8 +437,22 @@ io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const 
 
     return paths;
 #else
-    NOT_SUPPORTED;
-    return io::paths_t{ selectOpeningFileSync(title, dir, filter, options) };
+    UriQuery q = makeSelectFileQuery(FileDialogMode::OpenFiles, title, dir, filter, options);
+
+    RetVal<Val> rv = openSync(q);
+    if (!rv.ret) {
+        return io::paths_t();
+    }
+
+    ValList urls = rv.val.toList();
+
+    io::paths_t paths;
+    paths.reserve(urls.size());
+    for (const Val& url : urls) {
+        paths.emplace_back(QUrl::fromUserInput(url.toQString()).toLocalFile());
+    }
+
+    return paths;
 #endif
 }
 
