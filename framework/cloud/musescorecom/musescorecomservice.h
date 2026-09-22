@@ -34,7 +34,7 @@
 #include "musescorecom/imusescorecomservice.h"
 
 namespace muse::cloud {
-class MuseScoreComService : public IMuseScoreComService, public AbstractCloudService,
+class MuseScoreComService : public IMuseScoreComService, public IMuseScoreComConvertService, public AbstractCloudService,
     public std::enable_shared_from_this<MuseScoreComService>
 {
     GlobalInject<ICloudConfiguration> configuration;
@@ -45,6 +45,8 @@ public:
     explicit MuseScoreComService(const modularity::ContextPtr& iocCtx, QObject* parent = nullptr);
 
     IAuthorizationServicePtr authorization() override;
+
+    IMuseScoreComConvertServicePtr convert() override;
 
     CloudInfo cloudInfo() const override;
 
@@ -61,6 +63,19 @@ public:
 
     ProgressPtr downloadScore(int scoreId, DevicePtr scoreData, const QString& hash = QString(),
                               const QString& secret = QString()) override;
+
+    // IMuseScoreComConvertService
+    async::Promise<RetVal<ConvertConfig> > fetchConfig() override;
+
+    ProgressPtr startConvert(const ConvertUploadDataPtr& data) override;
+
+    async::Promise<RetVal<ConvertQueueList> > fetchQueue() override;
+
+    async::Promise<RetVal<ConvertResult> > submitReview(ConvertType type, int id, ReviewRating review,
+                                                        const QString& comment = QString()) override;
+    async::Promise<Ret> submitReviewComment(ConvertType type, int id, const QString& comment) override;
+
+    async::Promise<Ret> deleteConversion(ConvertType type, int id) override;
 
 private:
     ServerConfig serverConfig() const override;
@@ -80,5 +95,15 @@ private:
                                       int revisionId, ProgressPtr progress);
 
     async::Promise<Ret> doUploadAudio(DevicePtr audioData, const QString& audioFormat, const QUrl& sourceUrl, ProgressPtr progress);
+
+    async::Promise<Ret> doUpload(const ConvertUploadDataPtr& data, ProgressPtr progress);
+
+    async::Promise<Ret> doFetchQueue(std::shared_ptr<ConvertQueueList> queue);
+
+    async::Promise<Ret> doSubmitReview(ConvertType type, int id, ReviewRating review, const QString& comment,
+                                       std::shared_ptr<ConvertResult> result);
+    async::Promise<Ret> doSubmitReviewComment(ConvertType type, int id, const QString& comment);
+
+    async::Promise<Ret> doDeleteConversion(ConvertType type, int id);
 };
 }
