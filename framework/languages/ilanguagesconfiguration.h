@@ -45,6 +45,7 @@ public:
     virtual io::path_t languagesAppDataPath() const = 0;
     virtual io::path_t languagesUserAppDataPath() const = 0;
 
+    virtual io::path_t appLanguagesJsonPath() const = 0;
     virtual io::path_t builtinLanguagesJsonPath() const = 0;
     virtual io::path_t builtinLanguageFilePath(const QString& resourceName, const QString& languageCode) const = 0;
     virtual io::path_t userLanguageFilePath(const QString& resourceName, const QString& languageCode) const = 0;

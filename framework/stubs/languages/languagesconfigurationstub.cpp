@@ -53,6 +53,11 @@ io::path_t LanguagesConfigurationStub::languagesUserAppDataPath() const
     return io::path_t();
 }
 
+io::path_t LanguagesConfigurationStub::appLanguagesJsonPath() const
+{
+    return io::path_t();
+}
+
 io::path_t LanguagesConfigurationStub::builtinLanguagesJsonPath() const
 {
     return io::path_t();
