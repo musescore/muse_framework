@@ -31,6 +31,7 @@ class MuseScoreComServiceMock : public IMuseScoreComService
 {
 public:
     MOCK_METHOD(IAuthorizationServicePtr, authorization, (), (override));
+    MOCK_METHOD(IMuseScoreComConvertServicePtr, convert, (), (override));
     MOCK_METHOD(QUrl, scoreManagerUrl, (), (const, override));
 
     MOCK_METHOD(ProgressPtr, uploadScore,
