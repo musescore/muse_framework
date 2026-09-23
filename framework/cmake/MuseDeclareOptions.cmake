@@ -37,6 +37,7 @@ set(MUSE_MODULE_AUDIO_WORKMODE 3 CACHE STRING "Audio subsystem work mode")
 
 declare_muse_module_opt(AUDIOPLUGINS ON)
 option(MUSE_MODULE_AUDIOPLUGINS_SCAN_TRACE "Enable audio plugin scan logging" OFF)
+set(MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL "" CACHE STRING "URL where to send the crash reports of the plugin validation processes")
 
 declare_muse_module_opt(AUTOMATION ON)
 

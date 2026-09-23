@@ -396,9 +396,17 @@ void RegisterAudioPluginsScenario::processPluginsRegistration(const io::paths_t&
             // clear leftovers from a previous run
             fileSystem()->remove(resultFile);
 
-            const int code = process()->execute(appPath,
-                                                { "--register-audio-plugin", pluginPathStr, "--register-audio-plugin-out",
-                                                  resultFile.toStdString() },
+            std::vector<std::string> args { "--register-audio-plugin", pluginPathStr, "--register-audio-plugin-out",
+                                            resultFile.toStdString() };
+
+            const std::string serverUrl = MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL;
+            if (!serverUrl.empty()) {
+                const std::string dumpsDir = (globalConfiguration()->userAppDataPath() + "/logs/dumps-plugin-validation").toStdString();
+                args.insert(args.end(), { "--crash-dumps-dir", dumpsDir });
+                args.insert(args.end(), { "--crash-server-url", serverUrl });
+            }
+
+            const int code = process()->execute(appPath, args,
                                                 AUDIO_PLUGIN_REGISTRATION_TIMEOUT_MS,
                                                 [this]() { return m_aborted.load() || m_progress.isCanceled(); });
 
