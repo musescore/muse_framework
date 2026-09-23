@@ -8,6 +8,8 @@ option(MUSE_CONFIGURATION_IS_WEB "Configuration is web" OFF)
 # === Build options ===
 option(MUSE_COMPILE_ASAN "Enable Address Sanitizer" OFF)
 option(MUSE_COMPILE_USE_PCH "Use precompiled headers." ON)
+option(MUSE_COMPILE_USE_UNITY "Use unity build." ON)
+option(MUSE_COMPILE_USE_SHARED_LIBS_IN_DEBUG "Build shared libs if possible in debug" OFF)
 
 # === Debug options ===
 option(MUSE_COMPILE_STRING_DEBUG_HACK "Enable string debug hack (only clang)" ON)
