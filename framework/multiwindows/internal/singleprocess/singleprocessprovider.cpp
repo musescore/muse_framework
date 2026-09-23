@@ -27,6 +27,7 @@
  #include "../../iprojectprovider.h"
  #include "ui/imainwindow.h"
  #include "actions/iactionsdispatcher.h"
+ #include "rcommand/icommanddispatcher.h"
 
  #include "log.h"
 
@@ -34,6 +35,9 @@ using namespace muse;
 using namespace muse::mi;
 
 static const std::string pname = "mi";
+
+//! NOTE The command is implemented by the application
+static const rcommand::Command APP_QUIT_COMMAND("command://app/quit");
 
 size_t SingleProcessProvider::windowCount() const
 {
@@ -58,6 +62,11 @@ std::shared_ptr<ui::IMainWindow> SingleProcessProvider::mainWindow(const modular
 std::shared_ptr<actions::IActionsDispatcher> SingleProcessProvider::dispatcher(const modularity::ContextPtr& ctx) const
 {
     return modularity::ioc(ctx)->resolve<actions::IActionsDispatcher>(pname);
+}
+
+std::shared_ptr<rcommand::ICommandDispatcher> SingleProcessProvider::commandDispatcher(const modularity::ContextPtr& ctx) const
+{
+    return modularity::ioc(ctx)->resolve<rcommand::ICommandDispatcher>(pname);
 }
 
 bool SingleProcessProvider::isProjectAlreadyOpened(const muse::io::path_t& projectPath) const
@@ -155,9 +164,63 @@ bool SingleProcessProvider::openNewWindow(const QStringList& args)
     return true;
 }
 
-void SingleProcessProvider::quitForAll()
+async::Promise<Ret> SingleProcessProvider::quitForAll(const modularity::ContextPtr& ctx)
 {
-    QCoreApplication::exit();
+    const std::vector<modularity::ContextPtr> all = application()->contexts();
+
+    std::vector<modularity::ContextPtr> others;
+    for (auto it = all.crbegin(); it != all.crend(); ++it) {
+        const modularity::ContextPtr& c = *it;
+        if (ctx && c->id == ctx->id) {
+            continue;
+        }
+
+        others.push_back(c);
+    }
+
+    //! NOTE The current window quits first, then the others one by one
+    quitWindow(ctx);
+
+    return quitWindows(others);
+}
+
+async::Promise<Ret> SingleProcessProvider::quitWindows(const std::vector<modularity::ContextPtr>& ctxs)
+{
+    return async::make_promise<Ret>([this, ctxs](auto resolve) {
+        if (ctxs.empty()) {
+            return resolve(make_ok());
+        }
+
+        std::shared_ptr<rcommand::ICommandDispatcher> cd = commandDispatcher(ctxs.front());
+        IF_ASSERT_FAILED(cd) {
+            return resolve(make_ret(Ret::Code::InternalError));
+        }
+
+        std::shared_ptr<ui::IMainWindow> w = mainWindow(ctxs.front());
+        IF_ASSERT_FAILED(w) {
+            return resolve(make_ret(Ret::Code::InternalError));
+        }
+
+        //! NOTE Bring the window to the front, so that the user is asked about the window they see
+        w->requestShowOnFront();
+
+        std::vector<modularity::ContextPtr> rest(ctxs.cbegin() + 1, ctxs.cend());
+
+        cd->dispatch(APP_QUIT_COMMAND, { { "all_instances", Val(false) } })
+        .onResolve(this, [this, rest, resolve](const rcommand::Response& response) {
+            if (!response.ret) {
+                LOGD() << "quit for all canceled: " << response.ret.toString();
+                (void)resolve(response.ret);
+                return;
+            }
+
+            quitWindows(rest).onResolve(this, [resolve](const Ret& ret) {
+                (void)resolve(ret);
+            });
+        });
+
+        return async::Promise<Ret>::dummy_result();
+    });
 }
 
 void SingleProcessProvider::quitWindow(const modularity::ContextPtr& ctx)
