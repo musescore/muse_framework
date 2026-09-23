@@ -24,7 +24,6 @@
 
 #include <set>
 #include <string>
-#include <string_view>
 #include <list>
 #include <utility>
 #include <vector>
@@ -32,37 +31,27 @@
 #include <QKeySequence>
 
 #include "global/stringutils.h"
+#include "rcommand/commandtypes.h"
 
 namespace muse::shortcuts {
 struct Shortcut
 {
-    // actions
-    std::string action;
-    std::string context;
-
-    // commands
-    std::string command;
+    rcommand::Command command;
     std::string scope;
-
-    // common
     std::vector<std::string> sequences;
     QKeySequence::StandardKey standardKey = QKeySequence::UnknownKey;
     bool autoRepeat = true;
 
     Shortcut() = default;
-    Shortcut(const std::string& a)
-        : action(a) {}
 
     bool isValid() const
     {
-        return !action.empty() || !command.empty();
+        return command.isValid();
     }
 
     bool operator ==(const Shortcut& sc) const
     {
-        return action == sc.action
-               && context == sc.context
-               && command == sc.command
+        return command == sc.command
                && scope == sc.scope
                && sequences == sc.sequences
                && standardKey == sc.standardKey

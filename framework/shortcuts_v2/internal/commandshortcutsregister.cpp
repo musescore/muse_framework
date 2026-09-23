@@ -26,16 +26,18 @@
 #include "global/serialization/json.h"
 
 #include "multiwindows/resourcelockguard.h"
+#include "rcommand/commandtypes.h"
 
 using namespace muse;
 using namespace muse::shortcuts;
 using namespace muse::async;
+using namespace muse::rcommand;
 
 static const std::string COMMAND_SHORTCUTS_TAG("CommandShortcuts");
 static const std::string DEFAULT_SHORTCUTS_NAME("shortcuts");
 
 namespace muse::shortcuts::command {
-static const Shortcut& findShortcut(const ShortcutList& shortcuts, const std::string& command)
+static const Shortcut& findShortcut(const ShortcutList& shortcuts, const Command& command)
 {
     for (const Shortcut& shortcut : shortcuts) {
         if (shortcut.command == command) {
@@ -229,7 +231,7 @@ void CommandShortcutsRegister::makeUnique(ShortcutList& shortcuts)
     shortcuts.clear();
 
     for (const Shortcut& sc : all) {
-        const std::string& command = sc.command;
+        const Command& command = sc.command;
 
         auto it = std::find_if(shortcuts.begin(), shortcuts.end(), [command](const Shortcut& s) {
             return s.command == command;
@@ -255,7 +257,10 @@ ShortcutList CommandShortcutsRegister::filterAndUpdateAdditionalShortcuts(const 
 
     for (auto& [context, additionalShortcuts] : m_additionalShortcutsMap) {
         for (Shortcut& shortcut : additionalShortcuts) {
-            auto it = std::find(shortcuts.begin(), shortcuts.end(), shortcut.action);
+            auto it = std::find_if(shortcuts.begin(), shortcuts.end(),
+                                   [&shortcut](const Shortcut& candidate) {
+                return candidate.command == shortcut.command;
+            });
             if (it != shortcuts.end()) {
                 shortcut = *it;
                 noAdditionalShortcuts.remove(shortcut);
@@ -303,7 +308,7 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
             JsonObject obj = value.toObject();
             Shortcut shortcut;
             shortcut.scope = key;
-            shortcut.command = obj.value("command").toString().toStdString();
+            shortcut.command = rcommand::Command(obj.value("command").toString());
             shortcut.autoRepeat = obj.value("autoRepeat").toBool();
 
             JsonValue sequences = obj.value("sequences");
@@ -341,7 +346,7 @@ bool CommandShortcutsRegister::writeToFile(const ShortcutList& shortcuts, const 
     JsonObject root;
     for (const Shortcut& shortcut : shortcuts) {
         JsonObject shortcutObj;
-        shortcutObj["command"] = shortcut.command;
+        shortcutObj["command"] = shortcut.command.toString();
         shortcutObj["autoRepeat"] = shortcut.autoRepeat;
         JsonArray sequencesArr;
         for (const std::string& sequence : shortcut.sequences) {
@@ -442,7 +447,12 @@ ShortcutList CommandShortcutsRegister::shortcutsForSequence(const std::string& s
     return list;
 }
 
-const Shortcut& CommandShortcutsRegister::defaultShortcut(const std::string& command) const
+const Shortcut& CommandShortcutsRegister::shortcut(const Command& command) const
+{
+    return command::findShortcut(m_shortcuts, command);
+}
+
+const Shortcut& CommandShortcutsRegister::defaultShortcut(const Command& command) const
 {
     return command::findShortcut(m_defaultShortcuts, command);
 }

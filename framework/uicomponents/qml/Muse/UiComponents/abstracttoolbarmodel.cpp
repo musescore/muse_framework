@@ -104,9 +104,15 @@ void AbstractToolBarModel::load()
     }, async::Asyncable::Mode::SetReplace);
 #endif
 
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    commandShortcutsRegister()->shortcutsChanged().onNotify(this, [this]() {
+        updateShortcutsAll();
+    }, async::Asyncable::Mode::SetReplace);
+#else
     shortcutsRegister()->shortcutsChanged().onNotify(this, [this]() {
         updateShortcutsAll();
     }, async::Asyncable::Mode::SetReplace);
+#endif
 }
 
 void AbstractToolBarModel::onCommandStateChanged(const rcommand::Command& command, const rcommand::CommandState& state)
@@ -435,8 +441,12 @@ void AbstractToolBarModel::updateShortcutsAll()
         }
 
         std::vector<std::string> shortcuts;
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        shortcuts = commandShortcutsRegister()->shortcut(toolBarItem->command()).sequences;
+#else
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
         shortcuts = shortcutsRegister()->shortcut(toolBarItem->actionCode()).sequences;
+#endif
 #endif
         toolBarItem->setShortcuts(shortcuts);
 
@@ -453,8 +463,12 @@ void AbstractToolBarModel::updateShortcutsAll()
 void AbstractToolBarModel::updateShortcuts(MenuItem* menuItem)
 {
     std::vector<std::string> shortcuts;
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    shortcuts = commandShortcutsRegister()->shortcut(menuItem->command()).sequences;
+#else
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     shortcuts = shortcutsRegister()->shortcut(menuItem->actionCode()).sequences;
+#endif
 #endif
     menuItem->setShortcuts(shortcuts);
 

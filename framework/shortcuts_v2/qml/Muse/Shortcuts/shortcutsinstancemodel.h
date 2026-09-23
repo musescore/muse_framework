@@ -30,7 +30,6 @@
 #include "async/asyncable.h"
 
 #include "modularity/ioc.h"
-#include "ishortcutsregister.h"
 #include "icommandshortcutsregister.h"
 #include "ishortcutscontroller.h"
 
@@ -50,7 +49,6 @@ class ShortcutsInstanceModel : public QObject, public Contextable, public async:
 
 public:
     GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
-    ContextInject<IShortcutsRegister> shortcutsRegister = { this };
     ContextInject<IShortcutsController> controller = { this };
 
 public:

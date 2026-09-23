@@ -28,9 +28,7 @@
 #include <QList>
 
 #include "modularity/ioc.h"
-#include "ishortcutsregister.h"
 #include "icommandshortcutsregister.h"
-#include "ui/iuiactionsregister.h"
 #include "async/asyncable.h"
 #include "interactive/iinteractive.h"
 #include "iglobalconfiguration.h"
@@ -56,8 +54,6 @@ class ShortcutsModel : public QAbstractListModel, public Contextable, public asy
     GlobalInject<IGlobalConfiguration> globalConfiguration;
     GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
-    ContextInject<IShortcutsRegister> shortcutsRegister = { this };
-    ContextInject<ui::IUiActionsRegister> uiactionsRegister = { this };
     ContextInject<IInteractive> interactive = { this };
 
 public:
@@ -108,8 +104,7 @@ private:
     bool isPresetEditedOrHasUnsavedChanges(const std::string& presetName) const;
     void markUnsavedChanges();
 
-    const muse::ui::UiAction& action(const std::string& actionCode) const;
-    QString actionText(const std::string& actionCode) const;
+    QString commandText(const rcommand::Command& command) const;
 
     QModelIndex currentShortcutIndex() const;
     void notifyAboutShortcutChanged(const QModelIndex& index);
