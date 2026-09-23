@@ -100,6 +100,7 @@ static RetVal<AccountInfo> parseMuseScoreComAccountInfo(const QByteArray& data)
 static QString convertTypeToApiString(ConvertType type)
 {
     switch (type) {
+    case ConvertType::Unknown: return QString();
     case ConvertType::Omr: return "omr";
     case ConvertType::Audio2Score: return "audio2score";
     }
@@ -117,8 +118,8 @@ static ConvertType convertTypeFromApiString(const QString& str)
         return ConvertType::Audio2Score;
     }
 
-    LOGW() << "Unknown convert type: \"" << str << "\", falling back to Omr";
-    return ConvertType::Omr;
+    LOGW() << "Unknown convert type: \"" << str << "\"";
+    return ConvertType::Unknown;
 }
 
 static ConvertStatus convertStatusFromApiString(const QString& str)
@@ -1054,6 +1055,10 @@ Promise<Ret> MuseScoreComService::doUpload(const ConvertUploadDataPtr& data, Pro
     TRACEFUNC;
 
     return make_promise<Ret>([this, data, progress](auto resolve, auto) {
+        IF_ASSERT_FAILED(data->type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         RetVal<QUrl> uploadUrl = prepareUrlForRequest(MUSESCORECOM_CONVERT_UPLOAD_API_URL);
         if (!uploadUrl.ret) {
             return resolve(uploadUrl.ret);
@@ -1171,6 +1176,10 @@ Promise<Ret> MuseScoreComService::doSubmitReview(ConvertType type, int id, Revie
                                                  std::shared_ptr<ConvertResult> result)
 {
     return Promise<Ret>([this, type, id, review, comment, result](auto resolve, auto) {
+        IF_ASSERT_FAILED(type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         RetVal<QUrl> url = prepareUrlForRequest(MUSESCORECOM_CONVERT_REVIEW_API_URL);
         if (!url.ret) {
             return resolve(url.ret);
@@ -1211,6 +1220,10 @@ Promise<Ret> MuseScoreComService::deleteConversion(ConvertType type, int id)
 Promise<Ret> MuseScoreComService::doDeleteConversion(ConvertType type, int id)
 {
     return Promise<Ret>([this, type, id](auto resolve, auto) {
+        IF_ASSERT_FAILED(type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         QVariantMap params;
         params["type"] = convertTypeToApiString(type);
         params["id"] = id;
@@ -1252,6 +1265,10 @@ Promise<Ret> MuseScoreComService::submitReviewComment(ConvertType type, int id, 
 Promise<Ret> MuseScoreComService::doSubmitReviewComment(ConvertType type, int id, const QString& comment)
 {
     return Promise<Ret>([this, type, id, comment](auto resolve, auto) {
+        IF_ASSERT_FAILED(type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         RetVal<QUrl> url = prepareUrlForRequest(MUSESCORECOM_CONVERT_COMMENT_API_URL);
         if (!url.ret) {
             return resolve(url.ret);
