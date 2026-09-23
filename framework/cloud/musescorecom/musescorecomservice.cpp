@@ -192,7 +192,7 @@ static std::optional<ScoreConversionInfo> parseScoreConversionInfo(const QJsonOb
 static RetVal<ScoresList> parseScoreList(const QByteArray& data, int batchNumber)
 {
     QJsonParseError err;
-    QJsonDocument doc = QJsonDocument::fromJson(data);
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         return RetVal<ScoresList>::make_ret((int)Ret::Code::InternalError, err.errorString().toStdString());
     }
@@ -238,7 +238,7 @@ static RetVal<ScoresList> parseScoreList(const QByteArray& data, int batchNumber
 static RetVal<ScoreInfo> parseScoreInfo(const QByteArray& data)
 {
     QJsonParseError err;
-    QJsonDocument doc = QJsonDocument::fromJson(data);
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         return RetVal<ScoreInfo>::make_ret((int)Ret::Code::InternalError, err.errorString().toStdString());
     }
