@@ -84,7 +84,8 @@ std::string bothCases(const std::string& letter)
 
 bool needsCaseInsensitiveRewrite(const std::string& glob)
 {
-    return std::ranges::any_of(tokenizeGlob(glob), isPlainLetter);
+    const std::vector<std::string> tokens = tokenizeGlob(glob);
+    return std::any_of(tokens.begin(), tokens.end(), isPlainLetter);
 }
 
 std::string caseInsensitiveGlobIfNeeded(const std::string& glob)
@@ -110,7 +111,7 @@ std::string muse::interactive::caseInsensitiveNameFilter(const std::string& filt
     }
 
     std::vector<std::string> globs = splitGlobs(parts->globs);
-    std::ranges::transform(globs, globs.begin(), caseInsensitiveGlobIfNeeded);
+    std::transform(globs.begin(), globs.end(), globs.begin(), caseInsensitiveGlobIfNeeded);
 
     return parts->description + '(' + muse::strings::join(globs, " ") + ')';
 }
