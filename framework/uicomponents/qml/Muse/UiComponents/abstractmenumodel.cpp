@@ -351,9 +351,15 @@ void AbstractMenuModel::subscribeOnChanges()
     });
 #endif
 
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    commandShortcutsRegister()->shortcutsChanged().onNotify(this, [this]() {
+        updateShortcutsAll();
+    });
+#else
     shortcutsRegister()->shortcutsChanged().onNotify(this, [this]() {
         updateShortcutsAll();
     });
+#endif
 
     m_subscribedOnChanges = true;
 }
@@ -545,7 +551,13 @@ void AbstractMenuModel::updateShortcutsAll()
 
 void AbstractMenuModel::updateShortcuts(MenuItem* item)
 {
-    std::vector<std::string> shortcuts = shortcutsRegister()->shortcut(item->actionCode()).sequences;
+    std::vector<std::string> shortcuts;
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    shortcuts = commandShortcutsRegister()->shortcut(item->command()).sequences;
+#else
+    shortcuts = shortcutsRegister()->shortcut(item->actionCode()).sequences;
+#endif
     item->setShortcuts(shortcuts);
 
     for (MenuItem* subItem : item->subitems()) {

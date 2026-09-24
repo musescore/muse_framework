@@ -30,11 +30,18 @@
 
 #include "modularity/ioc.h"
 #include "ui/iuiactionsregister.h"
-#include "shortcuts/ishortcutsregister.h"
+
 #include "actions/iactionsdispatcher.h"
 #include "rcommand/icommandsstate.h"
 #include "rcommand/icommandsregister.h"
+
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/icommandshortcutsregister.h"
+#else
+#include "shortcuts/ishortcutsregister.h"
+#endif
 
 Q_MOC_INCLUDE("uicomponents/qml/Muse/UiComponents/toolbaritem.h")
 
@@ -67,8 +74,13 @@ class AbstractToolBarModel : public QAbstractListModel, public Contextable, publ
 
 public:
     GlobalInject<rcommand::ICommandsRegister> commandsRegister;
-    ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
     ContextInject<rcommand::ICommandsState> commandsState = { this };
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    GlobalInject<shortcuts::ICommandShortcutsRegister> commandShortcutsRegister;
+#else
+    ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+#endif
 
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };

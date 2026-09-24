@@ -23,7 +23,6 @@
 
 #include "modularity/ioc.h"
 
-#include "internal/shortcutsregister.h"
 #include "internal/commandshortcutsregister.h"
 #include "internal/shortcutscontroller.h"
 #include "internal/shortcutsconfiguration.h"
@@ -89,18 +88,11 @@ IContextSetup* ShortcutsModule::newContext(const modularity::ContextPtr& ctx) co
 void ShortcutsContext::registerExports()
 {
     m_shortcutsController = std::make_shared<ShortcutsController>(iocContext());
-    m_shortcutsRegister = std::make_shared<ShortcutsRegister>(iocContext());
 
-    ioc()->registerExport<IShortcutsRegister>(mname, m_shortcutsRegister);
     ioc()->registerExport<IShortcutsController>(mname, m_shortcutsController);
 }
 
 void ShortcutsContext::onInit(const IApplication::RunMode&)
 {
     m_shortcutsController->init();
-}
-
-void ShortcutsContext::onAllInited(const IApplication::RunMode&)
-{
-    m_shortcutsRegister->init();
 }

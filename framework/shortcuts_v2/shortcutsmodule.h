@@ -29,7 +29,6 @@
 
 namespace muse::shortcuts {
 class ShortcutsController;
-class ShortcutsRegister;
 class CommandShortcutsRegister;
 class ShortcutsConfiguration;
 class ShortcutsModule : public modularity::IModuleSetup
@@ -55,10 +54,8 @@ public:
 
     void registerExports() override;
     void onInit(const IApplication::RunMode& mode) override;
-    void onAllInited(const IApplication::RunMode& mode) override;
 
 private:
     std::shared_ptr<ShortcutsController> m_shortcutsController;
-    std::shared_ptr<ShortcutsRegister> m_shortcutsRegister;
 };
 }

@@ -26,31 +26,19 @@
 
 #include "async/asyncable.h"
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
 #include "rcommand/icommanddispatcher.h"
 #include "rcommand/icommandsstate.h"
 #include "interactive/iinteractive.h"
-#include "ui/iuiactionsregister.h"
-#include "ui/iuicontextresolver.h"
-#include "ishortcutsregister.h"
-#include "icommandshortcutsregister.h"
-#include "shortcutcontext.h"
+#include "../icommandshortcutsregister.h"
 #include "../ishortcutsresolver.h"
 
 namespace muse::shortcuts {
 class ShortcutsController : public IShortcutsController, public Contextable, public async::Asyncable
 {
     GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
-    ContextInject<muse::ui::IUiActionsRegister> aregister = { this };
-    ContextInject<IShortcutsRegister> shortcutsRegister = { this };
-    ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<muse::rcommand::ICommandsState> commandsState = { this };
     ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<muse::IInteractive> interactive = { this };
-    ContextInject<muse::ui::IUiContextResolver> uiContextResolver = { this };
-
-    //! NOTE May be missing because it must be implemented outside the framework
-    ContextInject<IShortcutContextPriority> shortcutContextPriority = { this };
     ContextInject<IShortcutsResolver> shortcutsResolver = { this };
 
 public:
@@ -59,10 +47,14 @@ public:
 
     void init();
 
+    bool active() override;
+    void setActive(bool active) override;
+    async::Notification activeChanged() const override;
+
     void activate(const std::string& sequence) override;
-    bool isRegistered(const std::string& sequence) const override;
 
 private:
-    muse::actions::ActionCode resolveAction(const std::string& sequence) const;
+    bool m_active = true;
+    async::Notification m_activeChanged;
 };
 }

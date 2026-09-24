@@ -32,13 +32,18 @@
 #include "rcommand/commandtypes.h"
 #include "types/uri.h"
 #include "ui/iuiactionsregister.h"
-#include "shortcuts/ishortcutsregister.h"
 #include "actions/iactionsdispatcher.h"
 #include "rcommand/icommanddispatcher.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
 
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/icommandshortcutsregister.h"
+#else
+#include "shortcuts/ishortcutsregister.h"
+#endif
 
 namespace muse::uicomponents {
 class AbstractMenuModel : public QAbstractListModel, public muse::Contextable, public async::Asyncable
@@ -52,9 +57,14 @@ class AbstractMenuModel : public QAbstractListModel, public muse::Contextable, p
 
 public:
     muse::GlobalInject<rcommand::ICommandsRegister> commandsRegister;
-    muse::ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
     muse::ContextInject<rcommand::ICommandsState> commandsState = { this };
     muse::ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    muse::GlobalInject<shortcuts::ICommandShortcutsRegister> commandShortcutsRegister;
+#else
+    muse::ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+#endif
 
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     muse::ContextInject<ui::IUiActionsRegister> uiActionsRegister = { this };
