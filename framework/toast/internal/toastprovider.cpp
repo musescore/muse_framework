@@ -36,8 +36,9 @@ muse::async::Promise<ToastActionCode> ToastProvider::show(ToastItem item)
 {
     return muse::async::make_promise<ToastActionCode>([this, item](auto resolve, auto) {
         int id = item.id();
-        m_toasts.emplace_back(std::make_shared<ToastItem>(item));
-        m_toastAdded.send(m_toasts.back());
+        auto toast = std::make_shared<ToastItem>(item);
+        m_toasts.emplace_back(toast);
+        m_toastAdded.send(toast);
 
         m_resolvers[id] = std::move(resolve);
 
