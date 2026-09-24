@@ -281,8 +281,23 @@ QJSValue ScriptEngine::newArray(size_t length)
     return m_engine->newArray(uint(length));
 }
 
+QJSValue ScriptEngine::newArrayBuffer(const QByteArray& data)
+{
+    return m_engine->toScriptValue(data);
+}
+
+muse::api::JsPromise ScriptEngine::newPromise()
+{
+    return muse::api::JsPromise::make(m_engine);
+}
+
 QJSValue ScriptEngine::freeze(const QJSValue& val)
 {
     static QJSValue freezeFn = m_engine->evaluate("Object.freeze");
     return freezeFn.call({ val });
+}
+
+QJSValue ScriptEngine::evaluate(const QString& code)
+{
+    return m_engine->evaluate(code);
 }

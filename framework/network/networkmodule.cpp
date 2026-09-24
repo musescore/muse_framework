@@ -28,10 +28,16 @@
 
 #include "global/api/iapiregister.h"
 
+#include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_NETWORK_API
+#include "api/fetchapi.h"
+
 #ifdef MUSE_MODULE_NETWORK_WEBSOCKET
 #include "api/websocketapi.h"
 #include "api/websocketserverapi.h"
-#endif
+#endif // MUSE_MODULE_NETWORK_WEBSOCKET
+#endif // MUSE_MODULE_NETWORK_API
 
 using namespace muse::network;
 
@@ -53,13 +59,16 @@ void NetworkModule::registerApi()
 {
     using namespace muse::api;
 
+#ifdef MUSE_MODULE_NETWORK_API
     auto api = globalIoc()->resolve<IApiRegister>(moduleName());
     if (api) {
 #ifdef MUSE_MODULE_NETWORK_WEBSOCKET
-        api->regApiCreator(moduleName(), "MuseApi.Websocket", new ApiCreator<api::WebSocketApi>());
-        api->regApiCreator(moduleName(), "MuseApi.WebsocketServer", new ApiCreator<api::WebSocketServerApi>());
-#endif
+        api->regApi<api::WebSocketApi>(moduleName(), "MuseApi.Websocket");
+        api->regApi<api::WebSocketServerApi>(moduleName(), "MuseApi.WebsocketServer");
+#endif // MUSE_MODULE_NETWORK_WEBSOCKET
+        api->regApi<api::FetchApi>(moduleName(), "MuseApi.Http");
     }
+#endif // MUSE_MODULE_NETWORK_API
 }
 
 void NetworkModule::onInit(const IApplication::RunMode&)
