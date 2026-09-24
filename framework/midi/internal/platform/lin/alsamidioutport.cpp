@@ -117,7 +117,7 @@ std::vector<MidiDevice> AlsaMidiOutPort::availableDevices() const
 
             if (canConnect) {
                 MidiDevice dev;
-                dev.name = snd_seq_client_info_get_name(cinfo);
+                dev.name = std::string(snd_seq_client_info_get_name(cinfo)) + ": " + snd_seq_port_info_get_name(pinfo);
 
                 int client = snd_seq_port_info_get_client(pinfo);
                 int port = snd_seq_port_info_get_port(pinfo);
