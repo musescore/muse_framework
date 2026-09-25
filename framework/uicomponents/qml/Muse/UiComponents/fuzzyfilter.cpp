@@ -22,8 +22,7 @@
 
 #include "fuzzyfilter.h"
 
-#include <algorithm>
-#include <iterator>
+#include <QChar>
 
 #include "sortfilterproxymodel.h"
 
@@ -36,7 +35,7 @@ FuzzyFilter::FuzzyFilter(QObject* parent)
 bool FuzzyFilter::acceptsRow(int sourceRow, const QModelIndex& sourceParent, const SortFilterProxyModel& proxyModel)
 {
     const QModelIndex sourceIndex = proxyModel.sourceModel()->index(sourceRow, 0, sourceParent);
-    const std::optional<double> score = getScore(sourceIndex, proxyModel);
+    const std::optional<double> score = getOrCalcScore(sourceIndex, proxyModel);
 
     return score.has_value();
 }
@@ -83,31 +82,36 @@ void FuzzyFilter::setRoleName(const QString& roleName)
     emit dataChanged();
 }
 
-Qt::CaseSensitivity FuzzyFilter::caseSensitivity() const
+std::optional<double> FuzzyFilter::getScore(const QModelIndex& sourceIndex) const
 {
-    return m_caseSensitivity;
-}
-
-void FuzzyFilter::setCaseSensitivity(const Qt::CaseSensitivity caseSensitivity)
-{
-    if (m_caseSensitivity == caseSensitivity) {
-        return;
-    }
-
-    m_caseSensitivity = caseSensitivity;
-    compilePattern();
-    emit caseSensitivityChanged();
-    emit dataChanged();
-}
-
-std::optional<double> FuzzyFilter::getScore(const QPersistentModelIndex& sourceIndex, const SortFilterProxyModel& proxyModel)
-{
-    auto scoreIt = m_scoreCache.find(sourceIndex);
+    const auto scoreIt = m_scoreCache.find(sourceIndex);
     if (scoreIt != m_scoreCache.end()) {
         return scoreIt.value();
     }
 
-    std::optional<double> score = calcScore(sourceIndex, proxyModel);
+    return std::nullopt;
+}
+
+void FuzzyFilter::compilePattern()
+{
+    clearScoreCache();
+
+    const QStringList tokens = m_fuzzyPattern.toLower().split(u' ');
+
+    m_patternTokens.clear();
+    m_patternTokens.reserve(tokens.size());
+    for (const auto& token : tokens) {
+        m_patternTokens.push_back(token.toStdU32String());
+    }
+}
+
+std::optional<double> FuzzyFilter::getOrCalcScore(const QModelIndex& sourceIndex, const SortFilterProxyModel& proxyModel)
+{
+    if (const std::optional<double> score = getScore(sourceIndex)) {
+        return score;
+    }
+
+    const std::optional<double> score = calcScore(sourceIndex, proxyModel);
     // don't cache score of filtered out items because the cache
     // is always reset before filtering and therefore only used for sorting
     // already filtered items
@@ -120,22 +124,6 @@ std::optional<double> FuzzyFilter::getScore(const QPersistentModelIndex& sourceI
     return score;
 }
 
-void FuzzyFilter::compilePattern()
-{
-    clearScoreCache();
-
-    m_patternTokens.clear();
-
-    const QString caseAdjustedPattern = caseSensitivity() == Qt::CaseInsensitive
-                                        ? m_fuzzyPattern.toLower()
-                                        : m_fuzzyPattern;
-
-    const QStringList tokens = caseAdjustedPattern.split(u' ');
-    std::transform(tokens.begin(), tokens.end(), std::back_inserter(m_patternTokens), [](const QString& token) {
-        return token.toStdU32String();
-    });
-}
-
 std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, const SortFilterProxyModel& proxyModel)
 {
     const int role = proxyModel.roleIdFromName(m_roleName);
@@ -145,9 +133,7 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
 
     const QString rawText = proxyModel.sourceModel()->data(sourceIndex, role)
                             .toString();
-    const std::u32string text = caseSensitivity() == Qt::CaseInsensitive
-                                ? rawText.toLower().toStdU32String()
-                                : rawText.toStdU32String();
+    const std::u32string text = rawText.toLower().toStdU32String();
 
     double score = 0.0;
     for (const auto& patternToken : m_patternTokens) {
@@ -162,36 +148,44 @@ std::optional<double> FuzzyFilter::calcScore(const QModelIndex& sourceIndex, con
                                         ? 1 + (tokenSize / CHARS_PER_ERROR)
                                         : 0;
 
-        const double inverseTokenSize = 1.0 / tokenSize;
-        std::optional<double> bestTokenScore;
-
+        const double perCharScore = 1.0 / tokenSize;
+        std::optional<double> tokenScore;
         for (const auto& match : m_matcher(text, patternToken, maxDistance)) {
-            const double matchSimilarity = 1.0 - (match.editDistance * inverseTokenSize);
-            double matchScore = 5.0 * matchSimilarity;
+            const double matchSimilarity = 1.0 - (match.editDistance * perCharScore);
 
-            const bool isMatchStartAtStartOfWord = match.beginPos == 0
-                                                   || text[match.beginPos - 1] == U' ';
-            if (isMatchStartAtStartOfWord) {
-                const bool isMatchEndAtEndOfWord = match.endPos == text.size()
-                                                   || text[match.endPos] == U' ';
-                if (isMatchEndAtEndOfWord) {
-                    matchScore += 2.0 * inverseTokenSize;
-                } else {
-                    matchScore += inverseTokenSize;
+            const double scoreBonus = [&] {
+                const bool isFullMatch = (match.endPos - match.beginPos) == text.size();
+                if (isFullMatch) {
+                    return 3.0 * perCharScore;
                 }
-            }
 
-            if (bestTokenScore < matchScore) {
-                bestTokenScore = matchScore;
+                const bool isMatchStartAtStartOfWord = match.beginPos == 0
+                                                       || !QChar::isLetter(text[match.beginPos - 1]);
+                if (isMatchStartAtStartOfWord) {
+                    const bool isMatchEndAtEndOfWord = match.endPos == text.size()
+                                                       || !QChar::isLetter(text[match.endPos]);
+                    if (isMatchEndAtEndOfWord) {
+                        return 2.0 * perCharScore;
+                    } else {
+                        return perCharScore;
+                    }
+                }
+
+                return 0.0;
+            }();
+
+            const double matchScore = 5.0 * matchSimilarity + scoreBonus;
+            if (tokenScore < matchScore) {
+                tokenScore = matchScore;
             }
         }
 
         // no match for token found -> no score for entire pattern
-        if (!bestTokenScore) {
-            return bestTokenScore;
+        if (!tokenScore) {
+            return std::nullopt;
         }
 
-        score += *bestTokenScore;
+        score += *tokenScore;
     }
 
     return score;
