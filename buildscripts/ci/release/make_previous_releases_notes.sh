@@ -42,9 +42,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
 echo "=== Get release info ==="
 
-bash ./buildscripts/ci/release/get_file_from_s3.sh \
+bash "$HERE"/get_file_from_s3.sh \
     --s3_key "${S3_KEY}" \
     --s3_secret "${S3_SECRET}" \
     --s3_url "${S3_URL}" \
@@ -53,5 +55,4 @@ bash ./buildscripts/ci/release/get_file_from_s3.sh \
 
 echo "=== Append release info to previous releases ==="
 
-HERE="$(cd "$(dirname "$0")" && pwd)"
 python3 "$HERE"/append_release_to_previous_releases.py ${ARTIFACTS_DIR}/"${CURRENT_FILE_NAME}" ${ARTIFACTS_DIR}/"${PREVIOUS_FILE_NAME}"
