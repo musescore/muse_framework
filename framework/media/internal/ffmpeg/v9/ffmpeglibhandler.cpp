@@ -27,7 +27,7 @@
 
 #include "log.h"
 
-namespace muse::media::ffmpeg::v8 {
+namespace muse::media::ffmpeg::v9 {
 #define RESOLVE_FROM(lib, name) do { \
         name = reinterpret_cast<decltype(name)>(getSymbol(lib, #name)); \
         if (!name) { LOGW() << "FFmpeg: missing symbol " #name; clearFunctions(); return false; } \
