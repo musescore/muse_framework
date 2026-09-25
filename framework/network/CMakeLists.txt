@@ -42,16 +42,22 @@ target_sources(muse_network PRIVATE
 
 target_link_libraries(muse_network PUBLIC Qt::Network)
 
-if (MUSE_MODULE_NETWORK_WEBSOCKET)
+if (MUSE_MODULE_NETWORK_API)
     target_sources(muse_network PRIVATE
-        api/websocketapi.cpp
-        api/websocketapi.h
-        api/websocketserverapi.cpp
-        api/websocketserverapi.h
+        api/fetchapi.cpp
+        api/fetchapi.h
     )
 
-    target_compile_definitions(muse_network PRIVATE MUSE_MODULE_NETWORK_WEBSOCKET)
-    target_link_libraries(muse_network PRIVATE Qt::WebSockets)
+    if (MUSE_MODULE_NETWORK_WEBSOCKET)
+        target_sources(muse_network PRIVATE
+            api/websocketapi.cpp
+            api/websocketapi.h
+            api/websocketserverapi.cpp
+            api/websocketserverapi.h
+        )
+
+        target_link_libraries(muse_network PRIVATE Qt::WebSockets)
+    endif()
 endif()
 
 if (MUSE_MODULE_NETWORK_TESTS)
