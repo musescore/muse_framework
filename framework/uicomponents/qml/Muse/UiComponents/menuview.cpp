@@ -220,8 +220,8 @@ void MenuView::updateGeometry()
             setCascadeAlign(Qt::AlignmentFlag::AlignLeft);
             newPopupPos = PopupPosition::Right;
         } else {
-            // move to the left to an area that doesn't fit
-            movePos(m_globalPos.x() - (viewRect.right() - paddedAnchorRect.right()) + padding() * 2, m_globalPos.y());
+            // Place the menu to the left of the cursor instead of pinning it to the screen edge
+            movePos(parentTopLeft.x() - viewRect.width() + padding() * 2, m_globalPos.y());
         }
     }
 
