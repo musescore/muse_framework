@@ -186,7 +186,6 @@ void BaseApplication::doSetup(const std::shared_ptr<CmdOptions>& options)
     for (modularity::IModuleSetup* m : m_modules) {
         m->registerUiTypes();
         m->resolveImports();
-        m->registerApi();
     }
 
     // ====================================================
@@ -208,6 +207,7 @@ void BaseApplication::doSetup(const std::shared_ptr<CmdOptions>& options)
     m_globalModule->onInit(runMode);
     for (modularity::IModuleSetup* m : m_modules) {
         m->onInit(runMode);
+        m->registerApi();
     }
 
     // ====================================================
