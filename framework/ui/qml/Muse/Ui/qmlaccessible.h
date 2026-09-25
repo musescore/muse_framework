@@ -101,6 +101,12 @@ class AccessibleItem : public QObject, public QQmlParserStatus, public accessibi
     Q_PROPERTY(bool ignored READ ignored WRITE setIgnored NOTIFY ignoredChanged)
     Q_PROPERTY(QQuickItem * visualItem READ visualItem WRITE setVisualItem NOTIFY visualItemChanged)
 
+    //! NOTE The editable text item (TextInput/TextEdit and their Controls counterparts
+    //! TextField/TextArea) that a screen reader is allowed to move the caret in.
+    //! Set it on any control that exposes `text`/`cursorPosition`, otherwise cursor
+    //! routing keys have nothing to act on.
+    Q_PROPERTY(QQuickItem * textItem READ textItem WRITE setTextItem NOTIFY textItemChanged)
+
     Q_PROPERTY(QWindow * window READ window WRITE setWindow NOTIFY windowChanged)
 
     Q_INTERFACES(QQmlParserStatus)
@@ -149,6 +155,10 @@ public:
     QString accessibleTextAtOffset(int offset, TextBoundaryType boundaryType, int* startOffset, int* endOffset) const override;
     int accessibleCharacterCount() const override;
 
+    void accessibleSetSelection(int selectionIndex, int startOffset, int endOffset) override;
+    void accessibleRemoveSelection(int selectionIndex) override;
+    void accessibleSetCursorPosition(int position) override;
+
     // ListView item Interface
     int accessibleRowIndex() const override;
 
@@ -182,6 +192,7 @@ public:
 
     bool ignored() const;
     QQuickItem* visualItem() const;
+    QQuickItem* textItem() const;
 
     QWindow* window() const;
 
@@ -202,6 +213,7 @@ public slots:
     void setRow(int row);
     void setIgnored(bool ignored);
     void setVisualItem(QQuickItem* item);
+    void setTextItem(QQuickItem* item);
     void setWindow(QWindow* window);
 
 signals:
@@ -221,6 +233,7 @@ signals:
     void rowChanged();
     void ignoredChanged(bool ignored);
     void visualItemChanged(QQuickItem* item);
+    void textItemChanged(QQuickItem* item);
     void stateChanged();
     void windowChanged();
 
@@ -249,6 +262,7 @@ private:
     int m_row = 0;
     bool m_ignored = false;
     QQuickItem* m_visualItem = nullptr;
+    QQuickItem* m_textItem = nullptr;
     QWindow* m_window = nullptr;
     QMap<State, bool> m_state;
     async::Channel<Property, Val> m_accessiblePropertyChanged;
