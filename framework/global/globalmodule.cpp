@@ -45,7 +45,10 @@
 
 #include "settings.h"
 
+#include "io/dir.h"
+
 #include "api/internal/apiregister.h"
+#include "api/internal/filesystemapirestriction.h"
 #include "api/iapiregister.h"
 #include "api/logapi.h"
 #include "api/filesystemapi.h"
@@ -94,6 +97,7 @@ void GlobalModule::registerExports()
     globalIoc()->registerExport<IProcess>(moduleName(), new Process());
     globalIoc()->registerExport<ITickerProvider>(moduleName(), m_tickerProvider);
     globalIoc()->registerExport<api::IApiRegister>(moduleName(), new api::ApiRegister());
+    globalIoc()->registerExport<api::IFileSystemApiRestriction>(moduleName(), new api::FileSystemApiRestriction());
 
 #ifndef NO_QT_SUPPORT
     m_eventController = std::make_shared<ApplicationEventController>();
@@ -115,7 +119,14 @@ void GlobalModule::registerApi()
     if (api) {
         api->regApiCreator(moduleName(), "MuseApi.Log", new ApiCreator<LogApi>());
         api->regApiCreator(moduleName(), "api.process", new ApiCreator<ProcessApi>());
-        api->regApiCreator(moduleName(), "api.filesystem", new ApiCreator<FileSystemApi>());
+        api->regApiCreator(moduleName(), "MuseApi.FS", new ApiCreator<FileSystemApi>());
+    }
+
+    // added fs restrictions
+    auto fsRestriction = globalIoc()->resolve<api::IFileSystemApiRestriction>(moduleName());
+    if (fsRestriction) {
+        fsRestriction->addAllowedPathBase("temp", io::Dir::tempPath());
+        fsRestriction->addAllowedPathBase("userData", m_configuration->userDataPath());
     }
 }
 

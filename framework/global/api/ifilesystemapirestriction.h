@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2024 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,6 +19,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
-#include "../thirdparty/kors_modularity/modularity/imoduleinterface.h" // IWYU pragma: export
+#include "modularity/imoduleinterface.h"
+
+#include "global/io/path.h"
+#include "global/types/ret.h"
+
+namespace muse::api {
+class IFileSystemApiRestriction : MODULE_GLOBAL_INTERFACE
+{
+    INTERFACE_ID(IFileSystemApiRestriction)
+public:
+    virtual ~IFileSystemApiRestriction() = default;
+
+    virtual void addAllowedPathBase(const std::string& key, const io::path_t& path) = 0;
+    virtual void removeAllowedPathBase(const std::string& key) = 0;
+    virtual void clearAllowedPathBases() = 0;
+
+    virtual Ret isPathAllowed(const io::path_t& path) const = 0;
+};
+}
