@@ -28,7 +28,7 @@ Two things to know:
 - Only **stable** builds upload debug files. Nightly builds still report
   crashes, but those reports stay unsymbolicated.
 - On macOS the DWARF stays in the object files, so a separate `dsymutil` step
-  (`buildscripts/ci/macos/generate_dsym.sh`) collects it into a dSYM before
+  (`buildscripts/ci/macos/generate_dsym.cmake`) collects it into a dSYM before
   packaging, while the object files and the debug map are still around.
 
 Debug files must match the build the dump came from. They are matched by debug
