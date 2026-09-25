@@ -20,9 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MUSE_AUDIO_FLUIDSYNTH_H
-#define MUSE_AUDIO_FLUIDSYNTH_H
+#pragma once
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -34,6 +34,8 @@
 
 #include "../abstractsynthesizer.h"
 #include "fluidsequencer.h"
+
+#include "log.h"
 
 namespace muse::audio::synth {
 struct Fluid;
@@ -70,29 +72,54 @@ public:
 
 private:
     struct KeyTuning {
-        std::vector<int> keys;
-        std::vector<double> pitches;
+        static constexpr int MIDI_KEY_COUNT = 128;
+
+        std::array<int, MIDI_KEY_COUNT> keys;
+        std::array<double, MIDI_KEY_COUNT> pitches;
+        std::array<int, MIDI_KEY_COUNT> keyIndex; // index into keys/pitches for a given key, or -1 if not present
+        int count = 0;
+
+        KeyTuning()
+        {
+            keyIndex.fill(-1);
+        }
 
         void add(int key, double tuning)
         {
-            keys.push_back(key);
-            pitches.push_back((key * 100.0) + tuning);
+            IF_ASSERT_FAILED(key >= 0 && key < MIDI_KEY_COUNT) {
+                return;
+            }
+
+            const double pitch = (key * 100.0) + tuning;
+
+            const int index = keyIndex[key];
+            if (index >= 0) {
+                pitches[index] = pitch;
+                return;
+            }
+
+            keyIndex[key] = count;
+            keys[count] = key;
+            pitches[count] = pitch;
+            ++count;
         }
 
         int size() const
         {
-            return static_cast<int>(keys.size());
+            return count;
         }
 
         void reset()
         {
-            keys.clear();
-            pitches.clear();
+            for (int i = 0; i < count; ++i) {
+                keyIndex[keys[i]] = -1;
+            }
+            count = 0;
         }
 
         bool isEmpty() const
         {
-            return keys.empty() && pitches.empty();
+            return count == 0;
         }
     };
 
@@ -124,5 +151,3 @@ private:
 
 using FluidSynthPtr = std::shared_ptr<FluidSynth>;
 }
-
-#endif //MUSE_AUDIO_FLUIDSYNTH_H

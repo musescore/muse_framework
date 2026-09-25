@@ -55,16 +55,20 @@ public:
 
     void setSize(int32_t numChannels, int32_t samples)
     {
-        for (int ch = 0; ch < num_channels; ch++) {
-            dealloc(ch);
+        if (numChannels != num_channels || samples > capacity) {
+            for (int ch = 0; ch < num_channels; ch++) {
+                dealloc(ch);
+            }
+
+            num_channels = numChannels;
+            capacity = samples;
+            data.resize(num_channels);
+            for (int ch = 0; ch < num_channels; ch++) {
+                alloc(ch, capacity);
+            }
         }
 
-        num_channels = numChannels;
         num_samples = samples;
-        data.resize(num_channels);
-        for (int ch = 0; ch < num_channels; ch++) {
-            alloc(ch, num_samples);
-        }
     }
 
     float** getPtrs()
@@ -113,6 +117,7 @@ public:
 private:
     int32_t num_channels{ 0 };
     int32_t num_samples{ 0 };
+    int32_t capacity{ 0 };
     std::vector<float*> data;
 
     void alloc(int32_t channel, int32_t samples)
@@ -350,7 +355,7 @@ bool ReverbProcessor::shouldProcessDuringSilence() const
 
 void ReverbProcessor::process(float* buffer, samples_t sampleCount, samples_t)
 {
-    if (m_processor._blockSize != static_cast<int>(sampleCount)) {
+    if (static_cast<int>(sampleCount) > m_processor._blockSize) {
         setFormat(m_processor._audioChannelsCount, m_processor._sampleRate, sampleCount);
     }
 
