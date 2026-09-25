@@ -48,6 +48,7 @@ public:
 
         NotSupported    = 4,
         NotImplemented  = 5,
+        NotAllowed      = 9,
 
         BadData         = 6,
         BadArgs         = 7,
@@ -187,6 +188,11 @@ inline muse::Ret make_ret(Ret::Code e)
 inline muse::Ret make_ret(Ret::Code e, const std::string& text)
 {
     return Ret(static_cast<int>(e), text);
+}
+
+inline muse::Ret make_ret(Ret::Code e, const char* text)
+{
+    return Ret(static_cast<int>(e), std::string(text));
 }
 
 inline muse::Ret make_ret(int e, const std::string& text)

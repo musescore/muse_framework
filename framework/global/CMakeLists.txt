@@ -197,6 +197,9 @@ else()
         api/processapi.h
         api/filesystemapi.cpp
         api/filesystemapi.h
+        api/ifilesystemapirestriction.h
+        api/internal/filesystemapirestriction.cpp
+        api/internal/filesystemapirestriction.h
 
         internal/applicationeventcontroller.cpp
         internal/applicationeventcontroller.h

@@ -51,6 +51,8 @@ public:
                                          ScanMode mode = ScanMode::FilesInCurrentDirAndSubdirs);
 
     static path_t fromNativeSeparators(const path_t& pathName);
+    static path_t cleanPath(const path_t& path);
+    static path_t tempPath();
 
 private:
     path_t m_path;

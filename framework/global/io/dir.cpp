@@ -90,3 +90,13 @@ path_t Dir::fromNativeSeparators(const path_t& pathName)
 #endif
     return pathName;
 }
+
+path_t Dir::cleanPath(const path_t& path)
+{
+    return fileSystem()->cleanPath(path);
+}
+
+path_t Dir::tempPath()
+{
+    return fileSystem()->temporaryDirectoryPath();
+}
