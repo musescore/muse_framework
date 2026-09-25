@@ -58,6 +58,13 @@ static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& for
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
                                    const secs_t totalDuration, IAudioNodePtr source)
+    : SoundTrackWriter(dstDevice, format, totalDuration, secs_t(0.0), secs_t(0.0), std::move(source))
+{
+}
+
+SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
+                                   const secs_t totalDuration, const secs_t fadeInDuration, const secs_t fadeOutDuration,
+                                   IAudioNodePtr source)
     : m_source(std::move(source))
 {
     if (!m_source) {
@@ -75,6 +82,8 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
     };
 
     m_dataSamples = durationToSamples(totalDuration);
+    m_fadeInSamples = std::min(durationToSamples(fadeInDuration), m_dataSamples);
+    m_fadeOutSamples = std::min(durationToSamples(fadeOutDuration), m_dataSamples);
     m_leadingSilenceSamples = durationToSamples(format.leadingSilenceDuration);
     const samples_t trailingSilenceSamples = durationToSamples(format.trailingSilenceDuration);
     m_totalSamples = m_leadingSilenceSamples + m_dataSamples + trailingSilenceSamples;
@@ -101,10 +110,13 @@ Ret SoundTrackWriter::write()
         return false;
     }
 
+    const ProcessMode originalMode = m_source->mode();
     m_source->setOutputSpec(m_encoderPtr->format().outputSpec);
     m_source->setMode(ProcessMode::PlayingOffline);
 
     DEFER {
+        m_source->setMode(originalMode);
+
         if (!m_isAborted) {
             m_encoderPtr->end();
         }
@@ -171,6 +183,7 @@ Ret SoundTrackWriter::writeStreaming()
         std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
 
         m_source->process(m_intermBuffer.data(), chunk);
+        applyFades(framesWritten - m_leadingSilenceSamples, chunk);
 
         const size_t encoded = m_encoderPtr->encode(chunk, m_intermBuffer.data());
         if (encoded == 0) {
@@ -204,6 +217,37 @@ Ret SoundTrackWriter::writeStreaming()
     }
 
     return muse::make_ok();
+}
+
+void SoundTrackWriter::applyFades(samples_t audioFramesWritten, samples_t frameCount)
+{
+    if (m_fadeInSamples == 0 && m_fadeOutSamples == 0) {
+        return;
+    }
+
+    const audioch_t channelCount = m_encoderPtr->format().outputSpec.audioChannelCount;
+    const samples_t fadeOutStart = m_dataSamples - m_fadeOutSamples;
+
+    for (samples_t frame = 0; frame < frameCount; ++frame) {
+        const samples_t dataFrame = audioFramesWritten + frame;
+        float gain = 1.f;
+
+        if (m_fadeInSamples > 0 && dataFrame < m_fadeInSamples) {
+            const samples_t denominator = std::max<samples_t>(1, m_fadeInSamples - 1);
+            gain = static_cast<float>(dataFrame) / static_cast<float>(denominator);
+        }
+
+        if (m_fadeOutSamples > 0 && dataFrame >= fadeOutStart) {
+            const samples_t denominator = std::max<samples_t>(1, m_fadeOutSamples - 1);
+            const samples_t remainingFrames = m_dataSamples - dataFrame - 1;
+            gain = std::min(gain, static_cast<float>(remainingFrames) / static_cast<float>(denominator));
+        }
+
+        const size_t firstSample = static_cast<size_t>(frame * channelCount);
+        for (audioch_t channel = 0; channel < channelCount; ++channel) {
+            m_intermBuffer[firstSample + channel] *= gain;
+        }
+    }
 }
 
 void SoundTrackWriter::sendProgress(uint64_t framesWritten, uint64_t totalFrames)
