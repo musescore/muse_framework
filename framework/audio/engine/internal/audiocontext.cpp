@@ -1006,7 +1006,7 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
         }
 
         const Track* t = track(target.trackId);
-        if (!t || t->type == TrackType::Aux_track) {
+        if (!t || (t->type != TrackType::Sound_track && t->type != TrackType::Event_track)) {
             return make_ret(Err::InvalidTrackId);
         }
     }
