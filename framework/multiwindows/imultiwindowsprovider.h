@@ -27,6 +27,8 @@
 #include "modularity/ioc.h"
 #include "io/path.h"
 #include "async/channel.h"
+#include "async/promise.h"
+#include "types/ret.h"
 #include "types/val.h"
 
 namespace muse::mi {
@@ -64,7 +66,7 @@ public:
 
     // Quit
     virtual void notifyAboutWindowWasQuited() = 0;
-    virtual void quitForAll() = 0;
+    virtual async::Promise<Ret> quitForAll(const modularity::ContextPtr& ctx) = 0;
     virtual void quitWindow(const modularity::ContextPtr& ctx) = 0;
     virtual void quitAllAndRestartLast() = 0;
     virtual void quitAllAndRunInstallation(const io::path_t& installerPath) = 0;

@@ -319,6 +319,16 @@ muse::rcommand::Command MenuItem::command() const
     return rcommand::Command(m_intent);
 }
 
+void MenuItem::setParams(const rcommand::Params& params)
+{
+    m_params = params;
+}
+
+muse::rcommand::Params MenuItem::params() const
+{
+    return m_params;
+}
+
 void MenuItem::setCommandQuery(const rcommand::CommandQuery& query)
 {
     m_intent = query.toString();

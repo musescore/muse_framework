@@ -29,6 +29,7 @@ public:
 
     async::Promise<Response> dispatch(const Request& request) override;
     void onRequest(Commandable* client, const Command& command, const CallBack& callback) override;
+    void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) override;
     void unreg(Commandable* client) override;
 
     // for utests
@@ -41,7 +42,10 @@ private:
     {
         Commandable* client = nullptr;
         CallBack callback = nullptr;
+        AsyncCallBack asyncCallback = nullptr;
     };
+
+    void reg(Commandable* client, const Command& command, const Client& c);
 
     std::map<Command, Client> m_clients;
 };

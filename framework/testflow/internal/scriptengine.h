@@ -77,7 +77,10 @@ public:
     QJSValue newQObject(QObject* o) override;
     QJSValue newObject() override;
     QJSValue newArray(size_t length = 0) override;
+    QJSValue newArrayBuffer(const QByteArray& data) override;
+    muse::api::JsPromise newPromise() override;
     QJSValue freeze(const QJSValue& val) override;
+    QJSValue evaluate(const QString& code) override;
 
     static void dump(const QString& name, const QJSValue& val);
 

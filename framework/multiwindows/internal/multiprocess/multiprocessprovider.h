@@ -86,7 +86,7 @@ public:
 
     // Quit for all
     void notifyAboutWindowWasQuited() override;
-    void quitForAll() override;
+    async::Promise<Ret> quitForAll(const modularity::ContextPtr& ctx) override;
     void quitWindow(const modularity::ContextPtr& ctx) override;
     void quitAllAndRestartLast() override;
     void quitAllAndRunInstallation(const io::path_t& installerPath) override;

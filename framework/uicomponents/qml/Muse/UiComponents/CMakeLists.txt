@@ -92,8 +92,6 @@ qt_add_qml_module(muse_uicomponents_qml
         sortervalue.h
         sortfilterproxymodel.cpp
         sortfilterproxymodel.h
-        shortcutoverridemodel.cpp
-        shortcutoverridemodel.h
         tablesortfilterproxymodel.cpp
         tablesortfilterproxymodel.h
         toolbaritem.cpp
@@ -241,6 +239,18 @@ else()
     )
     set_source_files_properties(StubStyledRectangularShadow.qml PROPERTIES
         QT_QML_SOURCE_TYPENAME StyledRectangularShadow.qml
+    )
+endif()
+
+if (MUSE_MODULE_SHORTCUTS_V2)
+    target_sources(muse_uicomponents_qml PRIVATE
+        shortcutoverridemodel_v2.cpp
+        shortcutoverridemodel_v2.h
+    )
+else()
+    target_sources(muse_uicomponents_qml PRIVATE
+        shortcutoverridemodel.cpp
+        shortcutoverridemodel.h
     )
 endif()
 

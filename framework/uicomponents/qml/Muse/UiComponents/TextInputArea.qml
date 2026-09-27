@@ -39,6 +39,8 @@ FocusScope {
     property bool resizeVerticallyWithText: false
     property bool allowNewLineByEnter: true
 
+    property alias verticalScrollBarPolicy: verticalScrollBar.policy
+
     property real textSidePadding: 12
 
     readonly property alias inputField: valueInput
@@ -129,6 +131,8 @@ FocusScope {
         anchors.fill: parent
 
         ScrollBar.vertical: StyledScrollBar {
+            id: verticalScrollBar
+
             anchors.margins: 8
             anchors.top: parent.top
             anchors.bottom: parent.bottom

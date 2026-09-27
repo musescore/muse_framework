@@ -20,6 +20,10 @@
 
 muse_create_module(muse_audioplugins ALIAS muse::audioplugins)
 
+target_compile_definitions(muse_audioplugins PRIVATE
+    MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL="${MUSE_MODULE_AUDIOPLUGINS_CRASHREPORT_URL}"
+)
+
 target_sources(muse_audioplugins PRIVATE
     audiopluginsmodule.cpp
     audiopluginsmodule.h

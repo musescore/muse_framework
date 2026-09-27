@@ -39,6 +39,7 @@
 
 #include "diagnostics/diagnosticutils.h"
 
+#include "filedialogfilters.h"
 #include "widgetdialogadapter.h"
 #include "ui/view/widgetdialog.h"
 
@@ -318,9 +319,13 @@ static UriQuery makeSelectFileQuery(FileDialogMode mode, const std::string& titl
     UriQuery q("muse://interactive/selectfile");
     q.set("title", title);
 
+    const bool isOpenMode = mode == FileDialogMode::OpenFile || mode == FileDialogMode::OpenFiles;
+    const bool hidesFilterDetails = options & QFileDialog::HideNameFilterDetails;
+    const bool matchCaseInsensitively = isOpenMode && hidesFilterDetails;
+
     ValList filterList;
     for (const std::string& f : filter) {
-        filterList.push_back(Val(f));
+        filterList.push_back(Val(matchCaseInsensitively ? caseInsensitiveNameFilter(f) : f));
     }
 
     q.set("nameFilters", filterList);
@@ -437,8 +442,75 @@ io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const 
 
     return paths;
 #else
-    NOT_SUPPORTED;
-    return io::paths_t{ selectOpeningFileSync(title, dir, filter, options) };
+    UriQuery q = makeSelectFileQuery(FileDialogMode::OpenFiles, title, dir, filter, options);
+
+    RetVal<Val> rv = openSync(q);
+    if (!rv.ret) {
+        return io::paths_t();
+    }
+
+    ValList urls = rv.val.toList();
+
+    io::paths_t paths;
+    paths.reserve(urls.size());
+    for (const Val& url : urls) {
+        paths.emplace_back(QUrl::fromUserInput(url.toQString()).toLocalFile());
+    }
+
+    return paths;
+#endif
+}
+
+async::Promise<io::path_t> Interactive::selectSavingFile(const std::string& title, const io::path_t& dir,
+                                                         const std::vector<std::string>& filter, bool confirmOverwrite)
+{
+#ifndef Q_OS_LINUX
+    return async::make_promise<io::path_t>([title, dir, filter, confirmOverwrite](auto resolve, auto reject) {
+        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
+
+        dlg->setAcceptMode(QFileDialog::AcceptSave);
+        dlg->setFileMode(QFileDialog::AnyFile);
+        dlg->setOption(QFileDialog::DontConfirmOverwrite, !confirmOverwrite);
+
+        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
+
+            QStringList files = dlg->selectedFiles();
+
+            if (result != QDialog::Accepted || files.isEmpty()) {
+                Ret ret = muse::make_ret(Ret::Code::Cancel);
+                (void)reject(ret.code(), ret.text());
+                return;
+            }
+
+            QString file = files.first();
+            (void)resolve(file);
+        });
+
+        dlg->open();
+
+        return async::Promise<io::path_t>::Result::unchecked();
+    }, async::PromiseType::AsyncByBody);
+
+#else
+
+    UriQuery q
+        = makeSelectFileQuery(FileDialogMode::SaveFile, title, dir, filter, !confirmOverwrite ? QFileDialog::DontConfirmOverwrite : 0);
+
+    async::Promise<Val> promise = openAsync(q);
+
+    return async::make_promise<io::path_t>([promise, this](auto resolve, auto reject) {
+        async::Promise<Val> mut = promise;
+        mut.onResolve(this, [resolve](const Val& val) {
+            (void)resolve(QUrl::fromUserInput(val.toQString()).toLocalFile());
+        }).onReject(this, [resolve, reject](int code, const std::string& err) {
+            (void)reject(code, err);
+        });
+        return async::Promise<io::path_t>::Result::unchecked();
+    }, async::PromiseType::AsyncByBody);
 #endif
 }
 
@@ -802,17 +874,25 @@ Ret Interactive::closeSync(const UriQuery& uri)
     return closeObjectsSync(objs);
 }
 
+Promise<Ret> Interactive::closeAllDialogs()
+{
+    return closeObjects(openDialogs());
+}
+
 Ret Interactive::closeAllDialogsSync()
 {
-    std::vector<ObjectInfo> objs = collectOpenObjects([this](const ObjectInfo& obj) {
+    return closeObjectsSync(openDialogs());
+}
+
+std::vector<Interactive::ObjectInfo> Interactive::openDialogs() const
+{
+    return collectOpenObjects([this](const ObjectInfo& obj) {
         if (muse::diagnostics::isDiagnosticsUri(obj.query.uri())) {
             return false;
         }
         ContainerMeta meta = uriRegister()->meta(obj.query.uri());
         return meta.type == ContainerMeta::QWidgetDialog || meta.type == ContainerMeta::QmlDialog;
     });
-
-    return closeObjectsSync(objs);
 }
 
 Promise<Ret> Interactive::closeObjects(const std::vector<ObjectInfo>& objs)

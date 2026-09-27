@@ -95,6 +95,8 @@ public:
                                      const int options) override;
     io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
                                        const int options) override;
+    async::Promise<io::path_t> selectSavingFile(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
+                                                bool confirmOverwrite = true) override;
     io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
                                     bool confirmOverwrite = true) override;
 
@@ -118,6 +120,7 @@ public:
     async::Promise<Ret> close(const UriQuery& uri) override;
     async::Promise<Ret> close(const Uri& uri) override;
     Ret closeSync(const UriQuery& uri) override;
+    async::Promise<Ret> closeAllDialogs() override;
     Ret closeAllDialogsSync() override;
 
     // state
@@ -179,6 +182,7 @@ private:
 
     std::vector<ObjectInfo> allOpenObjects() const;
     std::vector<ObjectInfo> collectOpenObjects(std::function<bool(const ObjectInfo&)> accepted) const;
+    std::vector<ObjectInfo> openDialogs() const;
 
     void notifyAboutCurrentUriChanged();
     void notifyAboutCurrentUriWillBeChanged();

@@ -39,7 +39,6 @@
 #include "muse_framework_config.h"
 
 #ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
-#include "icrashhandler.h"
 #include "internal/crashhandler/crashhandler.h"
 #endif
 
@@ -64,7 +63,6 @@ void DiagnosticsModule::registerExports()
 
 #ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
     m_crashHandler = std::make_shared<CrashHandler>();
-    globalIoc()->registerExport<ICrashHandler>(mname, m_crashHandler);
 #endif
 }
 
@@ -90,12 +88,12 @@ void DiagnosticsModule::onInit(const IApplication::RunMode&)
 {
     m_configuration->init();
 
+#ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
+
     auto globalConf = globalIoc()->resolve<IGlobalConfiguration>(mname);
     IF_ASSERT_FAILED(globalConf) {
         return;
     }
-
-#ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
 
 #ifdef Q_OS_WIN
     const muse::io::path_t handlerFile("crashpad_handler.exe");
@@ -104,18 +102,8 @@ void DiagnosticsModule::onInit(const IApplication::RunMode&)
 #endif
 
     const muse::io::path_t handlerPath = globalConf->appBinDirPath() + "/" + handlerFile;
-    const muse::io::path_t dumpsDir = globalConf->userAppDataPath() + "/logs/dumps";
-    fileSystem()->makePath(dumpsDir);
 
-    std::string serverUrl { MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL };
-    if (!m_configuration->isDumpUploadAllowed()) {
-        serverUrl.clear();
-        LOGD() << "not allowed dump upload";
-    } else {
-        LOGD() << "crash server url: " << serverUrl;
-    }
-
-    bool ok = m_crashHandler->start(handlerPath, dumpsDir, serverUrl);
+    const bool ok = m_crashHandler->start(handlerPath);
     if (!ok) {
         LOGE() << "failed start crash handler";
     } else {

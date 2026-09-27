@@ -108,6 +108,10 @@ jobs:
   build_au_linux:
     needs: parse
     if: contains(needs.parse.outputs.au_platforms, 'linux_x64')
+    permissions:
+      # needed for testflow job in au4_build_linux.yml
+      actions: read
+      contents: read
     uses: audacity/audacity/.github/workflows/au4_build_linux.yml@master
     with:
       app_repo: ${{ needs.parse.outputs.au_owner }}/${{ needs.parse.outputs.au_repo }}

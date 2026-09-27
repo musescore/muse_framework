@@ -25,6 +25,7 @@
 #include "modularity/imoduleinterface.h"
 #include "cloudtypes.h"
 
+#include "async/promise.h"
 #include "types/retval.h"
 
 namespace muse::cloud {
@@ -44,7 +45,7 @@ public:
 
     virtual CloudInfo cloudInfo() const = 0;
 
-    virtual Ret checkCloudIsAvailable() const = 0;
+    virtual async::Promise<Ret> checkCloudIsAvailable() const = 0;
 };
 using IAuthorizationServicePtr = std::shared_ptr<IAuthorizationService>;
 }

@@ -79,6 +79,24 @@ static Ret retFromReply(const QNetworkReply* reply)
         ret.setData("status", status.toInt());
     }
 
+    QVariant statusText = reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute);
+    if (statusText.isValid()) {
+        ret.setData("statusText", statusText.toString().toStdString());
+    }
+
+    QVariantMap headers;
+    const QList<QNetworkReply::RawHeaderPair> pairs = reply->rawHeaderPairs();
+    for (const QNetworkReply::RawHeaderPair& pair : pairs) {
+        const QString name = QString::fromUtf8(pair.first).toLower();
+        const QString value = QString::fromUtf8(pair.second);
+        if (headers.contains(name)) {
+            headers[name] = headers[name].toString() + QStringLiteral(", ") + value;
+        } else {
+            headers.insert(name, value);
+        }
+    }
+    ret.setData("headers", headers);
+
     return ret;
 }
 

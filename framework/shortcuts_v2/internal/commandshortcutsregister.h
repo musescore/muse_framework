@@ -29,6 +29,7 @@
 
 #include "modularity/ioc.h"
 #include "ishortcutsconfiguration.h"
+#include "rcommand/commandtypes.h"
 #include "rcommand/icommandsregister.h"
 #include "multiwindows/imultiwindowsprovider.h"
 
@@ -53,7 +54,8 @@ public:
     Ret setAdditionalShortcuts(const std::string& context, const ShortcutList& shortcuts) override;
 
     ShortcutList shortcutsForSequence(const std::string& sequence) const override;
-    const Shortcut& defaultShortcut(const std::string& command) const override;
+    const Shortcut& shortcut(const rcommand::Command& command) const override;
+    const Shortcut& defaultShortcut(const rcommand::Command& command) const override;
 
     Ret importFromFile(const io::path_t& filePath) override;
     Ret exportToFile(const io::path_t& filePath) const override;

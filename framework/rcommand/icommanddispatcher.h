@@ -34,12 +34,18 @@ class ICommandDispatcher : MODULE_CONTEXT_INTERFACE
 public:
     virtual ~ICommandDispatcher() = default;
 
+    using OnResponse = std::function<void (const Response& response)>;
+
     using CallBack = std::function<Response (const Request& request)>;
+    using AsyncCallBack = std::function<void (const Request& request, OnResponse onResponse)>;
+
     using CallBackRet = std::function<Ret ()>;
     using CallBackParamsRet = std::function<Ret (const Params& params)>;
+    using CallBackParamsPromiseRet = std::function<async::Promise<Ret>(const Params& params)>;
 
     virtual async::Promise<Response> dispatch(const Request& request) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
+    virtual void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) = 0;
     virtual void unreg(Commandable* client) = 0;
 
     // Helpers for convenience
@@ -69,6 +75,22 @@ public:
     {
         onRequest(client, command, [callback](const Request& request) {
             return make_response(request, callback(request.params));
+        });
+    }
+
+    void onRequest(Commandable* client, const Command& command, const CallBackParamsPromiseRet& callback)
+    {
+        onRequest(client, command, AsyncCallBack([callback](const Request& request, const OnResponse& onResponse) {
+            answerWhenResolved(request, callback(request.params), onResponse);
+        }));
+    }
+
+private:
+
+    static void answerWhenResolved(const Request& request, async::Promise<Ret> retPromise, const OnResponse& onResponse)
+    {
+        retPromise.onResolve(nullptr, [request, onResponse](const Ret& ret) {
+            onResponse(make_response(request, ret));
         });
     }
 };

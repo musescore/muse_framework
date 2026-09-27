@@ -123,6 +123,8 @@ public:
     rcommand::CommandInfo commandInfo() const;
     void setCommand(const rcommand::Command& command);
     rcommand::Command command() const;
+    void setParams(const rcommand::Params& params);
+    rcommand::Params params() const;
     void setCommandQuery(const rcommand::CommandQuery& query);
     rcommand::CommandQuery commandQuery() const;
     void setCommandState(const rcommand::CommandState& state);
@@ -174,6 +176,7 @@ private:
     MenuItemRole m_role = MenuItemRole::NoRole;
     MenuItemList m_subitems;
 
+    rcommand::Params m_params;
     muse::actions::ActionData m_args;
 };
 

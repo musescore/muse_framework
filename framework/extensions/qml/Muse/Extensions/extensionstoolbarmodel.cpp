@@ -50,9 +50,7 @@ void ExtensionsToolBarModel::load()
                            ? TranslatableString::untranslatable(a.title)
                            : TranslatableString::untranslatable(m.title));
 
-            ui::UiAction uiaction;
-            uiaction.code = makeCommand(m.uri, a.code).toString();
-            item->setAction(uiaction);
+            item->setCommand(makeCommand(m.uri, a.code));
 
             items << item;
         }

@@ -21,6 +21,8 @@
  */
 #include "shortcutsinstancemodel.h"
 
+#include "log.h"
+
 using namespace muse::shortcuts;
 
 ShortcutsInstanceModel::ShortcutsInstanceModel(QObject* parent)
@@ -30,15 +32,11 @@ ShortcutsInstanceModel::ShortcutsInstanceModel(QObject* parent)
 
 void ShortcutsInstanceModel::init()
 {
-    shortcutsRegister()->shortcutsChanged().onNotify(this, [this](){
-        doLoadShortcuts();
-    });
-
     commandShortcutsRegister()->shortcutsChanged().onNotify(this, [this](){
         doLoadShortcuts();
     });
 
-    shortcutsRegister()->activeChanged().onNotify(this, [this](){
+    controller()->activeChanged().onNotify(this, [this](){
         emit activeChanged();
     });
 
@@ -52,7 +50,7 @@ QVariantMap ShortcutsInstanceModel::shortcuts() const
 
 bool ShortcutsInstanceModel::active() const
 {
-    return shortcutsRegister()->active();
+    return controller()->active();
 }
 
 void ShortcutsInstanceModel::activate(const QString& seq)
@@ -64,9 +62,7 @@ void ShortcutsInstanceModel::doLoadShortcuts()
 {
     m_shortcuts.clear();
 
-    const ShortcutList& commandShortcuts = commandShortcutsRegister()->shortcuts();
-    ShortcutList shortcuts = commandShortcuts;
-    shortcuts.insert(shortcuts.end(), shortcutsRegister()->shortcuts().begin(), shortcutsRegister()->shortcuts().end());
+    const ShortcutList& shortcuts = commandShortcutsRegister()->shortcuts();
 
     for (const Shortcut& sc : shortcuts) {
         for (const std::string& seq : sc.sequences) {

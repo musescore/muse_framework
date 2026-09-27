@@ -75,7 +75,7 @@ public:
     ValCh<bool> userAuthorized() const override;
     const AccountInfo& accountInfo() const override;
 
-    Ret checkCloudIsAvailable() const override;
+    async::Promise<Ret> checkCloudIsAvailable() const override;
 
 private slots:
     void onUserAuthorized();

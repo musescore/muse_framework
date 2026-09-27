@@ -35,6 +35,8 @@ target_sources(muse_cloud PRIVATE
     internal/abstractcloudservice.h
     internal/abstractcloudservice.cpp
     musescorecom/imusescorecomservice.h
+    musescorecom/imusescorecomconvertservice.h
+    musescorecom/converttypes.h
     audiocom/iaudiocomservice.h
     audiocom/audiocomservice.h
     audiocom/audiocomservice.cpp

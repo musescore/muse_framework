@@ -37,6 +37,14 @@ using namespace muse::audio::engine;
 
 constexpr size_t MIN_TRACK_COUNT_FOR_MULTITHREADING = 2;
 
+static bool isChainSilent(const TrackChainPtr& chain)
+{
+    if (auto signal = chain->signal()) {
+        return signal->isSilent();
+    }
+    return false;
+}
+
 Mixer::~Mixer()
 {
     ONLY_AUDIO_MAIN_OR_ENGINE_THREAD;
@@ -151,11 +159,9 @@ void Mixer::process(float* outBuffer, samples_t samplesPerChannel)
         }
 
         //! NOTE If the signal is silent, do not write to the output buffer
-        // and don't process aux tracks
-        if (auto signal = t.chain->signal()) {
-            if (signal->isSilent()) {
-                continue;
-            }
+        //! or the aux buffers
+        if (isChainSilent(t.chain)) {
+            continue;
         }
 
         mixOutputFromChannel(outBuffer, t.buffer.data(), outBufferSize);
@@ -307,7 +313,9 @@ void Mixer::processAuxChannels(float* buffer, samples_t samplesPerChannel)
     const size_t outBufferSize = samplesPerChannel * m_outputSpec.audioChannelCount;
 
     for (TrackData& aux : m_auxTracks) {
-        if (!aux.processed) {
+        //! NOTE Process when the aux received a signal this block (aux.processed) and/or if
+        //! it's not yet silent (e.g. reverb is still ringing out)
+        if (!aux.processed && isChainSilent(aux.chain)) {
             continue;
         }
 
@@ -315,10 +323,8 @@ void Mixer::processAuxChannels(float* buffer, samples_t samplesPerChannel)
         aux.chain->process(auxBuffer, samplesPerChannel);
 
         //! NOTE If the signal is silent, do not write to the output buffer
-        if (auto signal = aux.chain->signal()) {
-            if (!signal->isSilent()) {
-                mixOutputFromChannel(buffer, auxBuffer, outBufferSize);
-            }
+        if (!isChainSilent(aux.chain)) {
+            mixOutputFromChannel(buffer, auxBuffer, outBufferSize);
         }
     }
 }

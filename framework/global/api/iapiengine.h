@@ -38,6 +38,28 @@ struct ApiContext {
     std::string scopeId;
 };
 
+struct JsPromise {
+    QJSValue promise;
+    QJSValue resolve;
+    QJSValue reject;
+
+    static JsPromise make(QJSEngine* engine)
+    {
+        QJSValue holder = engine->newObject();
+        QJSValue factory = engine->evaluate(QStringLiteral(
+                                                R"(
+                        (function (holder) {
+                            holder.promise = new Promise(function (resolve, reject) {
+                                holder.resolve = resolve
+                                holder.reject = reject
+                            })
+                        })
+                        )"));
+        factory.call({ holder });
+        return { holder.property("promise"), holder.property("resolve"), holder.property("reject") };
+    }
+};
+
 class IApiEngine
 {
 public:
@@ -54,7 +76,10 @@ public:
     virtual QJSValue newQObject(QObject* o) = 0;
     virtual QJSValue newObject() = 0;
     virtual QJSValue newArray(size_t length = 0) = 0;
+    virtual QJSValue newArrayBuffer(const QByteArray& data) = 0;
+    virtual JsPromise newPromise() = 0;
     virtual QJSValue freeze(const QJSValue& val) = 0;
+    virtual QJSValue evaluate(const QString& code) = 0;
 };
 
 class JsApiEngine : public muse::api::IApiEngine
@@ -105,9 +130,24 @@ public:
         return m_engine->newArray(uint(length));
     }
 
+    QJSValue newArrayBuffer(const QByteArray& data) override
+    {
+        return m_engine->toScriptValue(data);
+    }
+
+    JsPromise newPromise() override
+    {
+        return muse::api::JsPromise::make(m_engine);
+    }
+
     QJSValue freeze(const QJSValue& val) override
     {
         return m_freezeFn.call({ val });
+    }
+
+    QJSValue evaluate(const QString& code) override
+    {
+        return m_engine->evaluate(code);
     }
 
 private:

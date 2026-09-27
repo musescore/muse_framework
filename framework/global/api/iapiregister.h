@@ -43,11 +43,24 @@ public:
         virtual bool isNeedDelete() const = 0;
     };
 
+    template<class T>
+    struct ApiCreator : public IApiRegister::ICreator
+    {
+        ApiObject* create(IApiEngine* e) override { return new T(e); }
+        bool isNeedDelete() const override { return true; }
+    };
+
     virtual void regApiCreator(const std::string& module, const std::string& api, ICreator* c) = 0;
     virtual void regApiSingltone(const std::string& module, const std::string& api, ApiObject* o) = 0;
     virtual std::pair<ApiObject*, bool /*is need delete*/> createApi(const std::string& api, IApiEngine* e) const = 0;
 
     virtual void regEnum(const char* uri, const char* name, const QMetaEnum& meta, EnumType type) = 0;
+
+    template<typename T>
+    void regApi(const std::string& module, const std::string& api)
+    {
+        regApiCreator(module, api, new ApiCreator<T>());
+    }
 
     template<typename E>
     void regEnum(const char* uri, EnumType type = EnumType::String, const char* name = nullptr)
@@ -105,11 +118,7 @@ public:
 };
 
 template<class T>
-struct ApiCreator : public IApiRegister::ICreator
-{
-    ApiObject* create(IApiEngine* e) override { return new T(e); }
-    bool isNeedDelete() const override { return true; }
-};
+using ApiCreator = typename IApiRegister::ApiCreator<T>;
 }
 
 #endif // MUSE_API_IAPIREGISTER_H

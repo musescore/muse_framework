@@ -74,6 +74,8 @@ public:
     muse::io::paths_t selectOpeningFilesSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
                                              const int options = 0) override;
 
+    muse::async::Promise<muse::io::path_t> selectSavingFile(const std::string& title, const muse::io::path_t& path,
+                                                            const std::vector<std::string>& filter, bool confirmOverwrite = true) override;
     muse::io::path_t selectSavingFileSync(const std::string& title, const muse::io::path_t& path, const std::vector<std::string>& filter,
                                           bool confirmOverwrite = true) override;
 
@@ -96,9 +98,11 @@ public:
 
     void raise(const muse::UriQuery& uri) override;
 
-    void close(const muse::UriQuery& uri) override;
-    void close(const muse::Uri& uri) override;
-    void closeAllDialogs() override;
+    muse::async::Promise<muse::Ret> close(const muse::UriQuery& uri) override;
+    muse::async::Promise<muse::Ret> close(const muse::Uri& uri) override;
+    muse::Ret closeSync(const muse::UriQuery& uri) override;
+    muse::async::Promise<muse::Ret> closeAllDialogs() override;
+    muse::Ret closeAllDialogsSync() override;
 
     muse::ValCh<muse::Uri> currentUri() const override;
     muse::RetVal<bool> isCurrentUriDialog() const override;
