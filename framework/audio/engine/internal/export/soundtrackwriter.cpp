@@ -82,8 +82,8 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
     };
 
     m_dataSamples = durationToSamples(totalDuration);
-    m_fadeInSamples = std::min(durationToSamples(fadeInDuration), m_dataSamples);
-    m_fadeOutSamples = std::min(durationToSamples(fadeOutDuration), m_dataSamples);
+    m_fadeInSamples = std::min(durationToSamples(std::min(fadeInDuration, totalDuration)), m_dataSamples);
+    m_fadeOutSamples = std::min(durationToSamples(std::min(fadeOutDuration, totalDuration)), m_dataSamples);
     m_leadingSilenceSamples = durationToSamples(format.leadingSilenceDuration);
     const samples_t trailingSilenceSamples = durationToSamples(format.trailingSilenceDuration);
     m_totalSamples = m_leadingSilenceSamples + m_dataSamples + trailingSilenceSamples;
