@@ -21,6 +21,8 @@
  */
 #include "audiocontext.h"
 
+#include <unordered_set>
+
 #include "audio/common/audiosanitizer.h"
 #include "audio/common/audioerrors.h"
 #include "audio/common/audioutils.h"
@@ -996,6 +998,18 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
 {
 #ifdef MUSE_MODULE_AUDIO_EXPORT
     using namespace muse::audio::soundtrack;
+
+    std::unordered_set<TrackId> seenTrackIds;
+    for (const SoundTrackTarget& target : targets) {
+        if (!seenTrackIds.insert(target.trackId).second) {
+            return make_ret(Err::InvalidTrackId);
+        }
+
+        const Track* t = track(target.trackId);
+        if (!t || t->type == TrackType::Aux_track) {
+            return make_ret(Err::InvalidTrackId);
+        }
+    }
 
     const secs_t totalDuration = m_player->duration();
     auto writer = std::make_shared<MultiSoundTrackWriter>(targets, format, totalDuration, m_mixer);

@@ -68,6 +68,7 @@ MultiSoundTrackWriter::MultiSoundTrackWriter(const SoundTrackTargetList& targets
     m_trackEncoders.reserve(targets.size());
     for (const SoundTrackTarget& target : targets) {
         IF_ASSERT_FAILED(target.dstDevice) {
+            m_hasEncodeError = true;
             continue;
         }
 
