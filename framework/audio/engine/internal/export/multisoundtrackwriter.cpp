@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited and others
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "soundtrackwriter.h"
+#include "multisoundtrackwriter.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -37,11 +37,11 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::soundtrack;
 
-SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
-                                   const secs_t totalDuration, IAudioNodePtr source)
-    : m_source(std::move(source))
+MultiSoundTrackWriter::MultiSoundTrackWriter(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
+                                             const secs_t totalDuration, engine::MixerPtr mixer)
+    : m_mixer(std::move(mixer))
 {
-    if (!m_source) {
+    if (!m_mixer) {
         return;
     }
     IF_ASSERT_FAILED(format.isValid()) {
@@ -61,33 +61,57 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
     m_totalSamples = m_leadingSilenceSamples + m_dataSamples + trailingSilenceSamples;
 
     const samples_t intermediateSamplesNumber = outputSpec.samplesPerChannel * outputSpec.audioChannelCount;
-    m_intermBuffer.resize(intermediateSamplesNumber);
+    m_silenceBuffer.assign(intermediateSamplesNumber, 0.f);
+    m_scratchOutBuffer.resize(intermediateSamplesNumber);
     m_renderStep = outputSpec.samplesPerChannel;
 
-    m_encoderPtr = createEncoder(format, dstDevice);
-    if (!m_encoderPtr) {
-        return;
-    }
+    m_trackEncoders.reserve(targets.size());
+    for (const SoundTrackTarget& target : targets) {
+        IF_ASSERT_FAILED(target.dstDevice) {
+            continue;
+        }
 
-    if (!m_encoderPtr->begin(m_totalSamples)) {
-        m_encoderPtr.reset();
+        encode::AbstractAudioEncoderPtr encoder = createEncoder(format, *target.dstDevice);
+        if (!encoder || !encoder->begin(m_totalSamples)) {
+            LOGE() << "Failed to start encoder for track " << target.trackId;
+            m_hasEncodeError = true;
+            continue;
+        }
+
+        m_trackEncoderIndexByTrackId[target.trackId] = m_trackEncoders.size();
+        m_trackEncoders.push_back(TrackEncoder { target.trackId, std::move(encoder), false });
     }
 }
 
-Ret SoundTrackWriter::write()
+MultiSoundTrackWriter::~MultiSoundTrackWriter()
+{
+    if (m_mixer) {
+        m_mixer->setTrackStemCallback(nullptr);
+    }
+}
+
+Ret MultiSoundTrackWriter::write()
 {
     TRACEFUNC;
 
-    if (!m_source || !m_encoderPtr) {
-        return false;
+    if (!m_mixer || m_trackEncoders.empty() || m_hasEncodeError) {
+        return make_ret(Err::NoAudioToExport);
     }
 
-    m_source->setOutputSpec(m_encoderPtr->format().outputSpec);
-    m_source->setMode(ProcessMode::PlayingOffline);
+    m_mixer->setOutputSpec(m_trackEncoders.front().encoder->format().outputSpec);
+    m_mixer->setMode(ProcessMode::PlayingOffline);
+
+    m_mixer->setTrackStemCallback([this](TrackId trackId, const float* buffer, samples_t samplesPerChannel) {
+        onTrackStem(trackId, buffer, samplesPerChannel);
+    });
 
     DEFER {
+        m_mixer->setTrackStemCallback(nullptr);
+
         if (!m_isAborted) {
-            m_encoderPtr->end();
+            for (auto& te : m_trackEncoders) {
+                te.encoder->end();
+            }
         }
 
         m_isAborted = false;
@@ -101,17 +125,44 @@ Ret SoundTrackWriter::write()
     return muse::make_ok();
 }
 
-void SoundTrackWriter::abort()
+void MultiSoundTrackWriter::abort()
 {
     m_isAborted = true;
 }
 
-Progress SoundTrackWriter::progress()
+Progress MultiSoundTrackWriter::progress()
 {
     return m_progress;
 }
 
-Ret SoundTrackWriter::writeStreaming()
+bool MultiSoundTrackWriter::encodeSilenceToAllTargets(samples_t chunk)
+{
+    for (TrackEncoder& te : m_trackEncoders) {
+        if (te.encoder->encode(chunk, m_silenceBuffer.data()) == 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void MultiSoundTrackWriter::onTrackStem(TrackId trackId, const float* buffer, samples_t samplesPerChannel)
+{
+    auto it = m_trackEncoderIndexByTrackId.find(trackId);
+    if (it == m_trackEncoderIndexByTrackId.end()) {
+        return;
+    }
+
+    TrackEncoder& te = m_trackEncoders[it->second];
+    te.gotChunkThisBlock = true;
+
+    if (te.encoder->encode(samplesPerChannel, buffer) == 0) {
+        LOGE() << "Failed to encode stem for track " << trackId;
+        m_hasEncodeError = true;
+    }
+}
+
+Ret MultiSoundTrackWriter::writeStreaming()
 {
     TRACEFUNC;
     if (m_totalSamples == 0) {
@@ -129,10 +180,7 @@ Ret SoundTrackWriter::writeStreaming()
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, leadingEnd - framesWritten));
 
-        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
-
-        const size_t encoded = m_encoderPtr->encode(chunk, m_intermBuffer.data());
-        if (encoded == 0) {
+        if (!encodeSilenceToAllTargets(chunk)) {
             return make_ret(Err::ErrorEncode);
         }
 
@@ -141,20 +189,37 @@ Ret SoundTrackWriter::writeStreaming()
         rpcChannel()->process();
     }
 
-    // Phase 2: actual audio data
+    // Phase 2: actual audio data. A single mixer render drives every stem at once:
+    // Mixer::process() computes every track's own buffer before summing them, and our
+    // stem callback (set in write()) intercepts and encodes each one as it's produced.
     const samples_t audioEnd = m_leadingSilenceSamples + m_dataSamples;
     while (framesWritten < audioEnd && !m_isAborted) {
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, audioEnd - framesWritten));
 
+        for (TrackEncoder& te : m_trackEncoders) {
+            te.gotChunkThisBlock = false;
+        }
+
         //! NOTE The mixer mixes additively and relies on the caller to zero the output buffer
         //! (real time does this via AudioEngine::fillSilent), so clear it before each block.
-        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
+        //! The summed result itself is discarded here; only the per-track stems are used.
+        std::fill(m_scratchOutBuffer.begin(), m_scratchOutBuffer.end(), 0.f);
+        m_mixer->process(m_scratchOutBuffer.data(), chunk);
 
-        m_source->process(m_intermBuffer.data(), chunk);
+        for (TrackEncoder& te : m_trackEncoders) {
+            if (te.gotChunkThisBlock) {
+                continue;
+            }
 
-        const size_t encoded = m_encoderPtr->encode(chunk, m_intermBuffer.data());
-        if (encoded == 0) {
+            //! NOTE A requested track wasn't processed this block (e.g. removed mid-export);
+            //! keep its stem in sync with the others by writing silence for this chunk.
+            if (te.encoder->encode(chunk, m_silenceBuffer.data()) == 0) {
+                return make_ret(Err::ErrorEncode);
+            }
+        }
+
+        if (m_hasEncodeError) {
             return make_ret(Err::ErrorEncode);
         }
 
@@ -168,10 +233,7 @@ Ret SoundTrackWriter::writeStreaming()
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, m_totalSamples - framesWritten));
 
-        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
-
-        const size_t encoded = m_encoderPtr->encode(chunk, m_intermBuffer.data());
-        if (encoded == 0) {
+        if (!encodeSilenceToAllTargets(chunk)) {
             return make_ret(Err::ErrorEncode);
         }
 
@@ -187,7 +249,7 @@ Ret SoundTrackWriter::writeStreaming()
     return muse::make_ok();
 }
 
-void SoundTrackWriter::sendProgress(uint64_t framesWritten, uint64_t totalFrames)
+void MultiSoundTrackWriter::sendProgress(uint64_t framesWritten, uint64_t totalFrames)
 {
     const int current = totalFrames > 0 ? static_cast<int>((framesWritten * 100) / totalFrames) : 0;
     m_progress.progress(current, 100);

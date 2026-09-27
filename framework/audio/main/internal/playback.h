@@ -116,6 +116,7 @@ public:
 
     // Export
     async::Promise<bool> saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice) override;
+    async::Promise<bool> saveSoundTracks(const SoundTrackFormat& format, const SoundTrackTargetList& targets) override;
     void abortSavingAllSoundTracks() override;
     SaveSoundTrackProgress saveSoundTrackProgressChanged() const override;
 

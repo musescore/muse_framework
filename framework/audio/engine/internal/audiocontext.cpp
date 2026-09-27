@@ -32,6 +32,7 @@
 #include "muse_framework_config.h"
 #ifdef MUSE_MODULE_AUDIO_EXPORT
 #include "export/soundtrackwriter.h"
+#include "export/multisoundtrackwriter.h"
 #endif
 
 using namespace muse;
@@ -811,6 +812,45 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
     });
 }
 
+async::Promise<Ret> AudioContext::saveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format)
+{
+    return async::make_promise<Ret>([this, targets, format](auto resolve, auto) {
+        ONLY_AUDIO_ENGINE_THREAD;
+
+#ifdef MUSE_MODULE_AUDIO_EXPORT
+        //! NOTE These engine state changes must run inside execOperation so they are
+        // synchronized with the audio driver process (see doSaveSoundTracks).
+        Operation prepare = [this]() {
+            m_player->stop();
+            m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+        };
+        if (m_execOperation) {
+            m_execOperation->execOperation(OperationType::LongOperation, prepare);
+        } else {
+            prepare();
+        }
+
+        const bool lazyProcessingWasEnabled = configuration()->isLazyProcessingOfOnlineSoundsEnabled();
+        configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(false);
+
+        listenInputProcessing([this, targets, format, lazyProcessingWasEnabled, resolve](Ret ret) {
+            if (ret) {
+                ret = doSaveSoundTracks(targets, format);
+            }
+
+            configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(lazyProcessingWasEnabled);
+            (void)resolve(ret);
+        });
+
+        return async::Promise<Ret>::dummy_result();
+#else
+        UNUSED(targets);
+        UNUSED(format);
+        return resolve(make_ret(Err::DisabledAudioExport, "audio export is disabled"));
+#endif
+    });
+}
+
 bool AudioContext::hasPendingChunks(const TrackId trackId) const
 {
     ONLY_AUDIO_ENGINE_THREAD;
@@ -948,6 +988,52 @@ Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackForm
 
     return ret;
 #else
+    return make_ret(Err::DisabledAudioExport, "audio export is disabled");
+#endif
+}
+
+Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format)
+{
+#ifdef MUSE_MODULE_AUDIO_EXPORT
+    using namespace muse::audio::soundtrack;
+
+    const secs_t totalDuration = m_player->duration();
+    auto writer = std::make_shared<MultiSoundTrackWriter>(targets, format, totalDuration, m_mixer);
+
+    writer->progress().progressChanged().onReceive(this, [this](int64_t current, int64_t total, std::string /*title*/) {
+        m_saveSoundTracksProgress.progress.send(current, total, SaveSoundTrackStage::WritingSoundTrack);
+    });
+
+    std::weak_ptr<MultiSoundTrackWriter> weakPtr = writer;
+    m_saveSoundTracksProgress.aborted.onNotify(this, [weakPtr]() {
+        if (auto writer = weakPtr.lock()) {
+            writer->abort();
+        }
+    });
+
+    //! NOTE See the equivalent comment in doSaveSoundTrack: the offline render and the
+    // source/engine state changes around it must run inside execOperation.
+    Ret ret;
+    Operation func = [this, writer, &ret]() {
+        setMode(ProcessMode::PlayingOffline);
+        ret = writer->write();
+        m_mixer->setOutputSpec(outputSpec());
+        setMode(ProcessMode::Idle);
+        m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+    };
+
+    if (m_execOperation) {
+        m_execOperation->execOperation(OperationType::LongOperation, func);
+    } else {
+        func();
+    }
+
+    m_saveSoundTracksProgress.aborted.disconnect(this);
+
+    return ret;
+#else
+    UNUSED(targets);
+    UNUSED(format);
     return make_ret(Err::DisabledAudioExport, "audio export is disabled");
 #endif
 }

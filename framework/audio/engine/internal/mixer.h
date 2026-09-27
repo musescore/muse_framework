@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include "common/iaudiotaskscheduler.h"
@@ -66,6 +67,15 @@ public:
     void setTracksToProcessWhenIdle(const std::unordered_set<TrackId>& trackIds);
     void setNonMutedTrackCount(size_t count);
 
+    //! NOTE Called on the audio processing thread for every non-aux track on every
+    //! processed block, with that track's buffer as it stands right before being
+    //! summed into the master output (i.e. after its own fx/volume/pan chain).
+    //! Used to export per-track "stems" in a single render pass instead of
+    //! re-rendering the whole graph once per track. Aux/reverb sends are not
+    //! included, since they are only computed once tracks have been summed.
+    using TrackStemCallback = std::function<void (TrackId trackId, const float* buffer, samples_t samplesPerChannel)>;
+    void setTrackStemCallback(TrackStemCallback callback);
+
     void process(float* buffer, samples_t samplesPerChannel) override;
 
     std::string dump() const override;
@@ -100,6 +110,8 @@ private:
 
     size_t m_nonMutedTrackCount = 0;
     std::unordered_set<TrackId> m_tracksToProcessWhenIdle;
+
+    TrackStemCallback m_trackStemCallback;
 };
 
 using MixerPtr = std::shared_ptr<Mixer>;

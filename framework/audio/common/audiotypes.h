@@ -172,6 +172,15 @@ struct SoundTrackFormat {
     }
 };
 
+//! NOTE One destination file for a single-instrument/single-track "stem" export, i.e. exporting
+//! more than one audio file (typically one per instrument/part) from a single render pass.
+struct SoundTrackTarget {
+    TrackId trackId = -1;
+    io::IODevice* dstDevice = nullptr;
+};
+
+using SoundTrackTargetList = std::vector<SoundTrackTarget>;
+
 struct AudioEngineConfig {
     bool autoProcessOnlineSoundsInBackground = false;
     bool isLazyProcessingOfOnlineSoundsEnabled = false;

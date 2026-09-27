@@ -127,6 +127,7 @@ public:
 
     // Export
     async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format) override;
+    async::Promise<Ret> saveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format) override;
     SaveSoundTrackProgress saveSoundTrackProgressChanged() const override;
     void abortSavingAllSoundTracks() override;
 
@@ -175,6 +176,7 @@ private:
     bool hasPendingChunks(const TrackId id) const;
     size_t tracksBeingProcessedCount() const;
     Ret doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format);
+    Ret doSaveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format);
 
     AudioCtxId m_ctxId = 0;
     IExecOperation* m_execOperation = nullptr;

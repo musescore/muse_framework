@@ -679,6 +679,40 @@ async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io
     }, PromiseType::AsyncByBody);
 }
 
+async::Promise<bool> Playback::saveSoundTracks(const SoundTrackFormat& format, const SoundTrackTargetList& targets)
+{
+    ONLY_AUDIO_MAIN_THREAD;
+    return async::make_promise<bool>([this, format, targets](auto resolve, auto reject) {
+        ONLY_AUDIO_MAIN_THREAD;
+
+        std::vector<TrackId> trackIds;
+        std::vector<uint64_t> dstDevicePtrs;
+        trackIds.reserve(targets.size());
+        dstDevicePtrs.reserve(targets.size());
+        for (const SoundTrackTarget& target : targets) {
+            trackIds.push_back(target.trackId);
+            dstDevicePtrs.push_back(reinterpret_cast<uint64_t>(target.dstDevice));
+        }
+
+        Msg msg = rpc::make_request(ctxId(), MsgCode::SaveSoundTracks, RpcPacker::pack(format, trackIds, dstDevicePtrs));
+        channel()->send(msg, [resolve, reject](const Msg& res) {
+            ONLY_AUDIO_MAIN_THREAD;
+            Ret ret;
+            IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
+                doReject(MsgCode::SaveSoundTracks, reject, audio::make_ret(Err::InvalidRpcData));
+                return;
+            }
+
+            if (ret) {
+                (void)resolve(true);
+            } else {
+                doReject(MsgCode::SaveSoundTracks, reject, ret);
+            }
+        });
+        return Promise<bool>::dummy_result();
+    }, PromiseType::AsyncByBody);
+}
+
 void Playback::abortSavingAllSoundTracks()
 {
     ONLY_AUDIO_MAIN_THREAD;

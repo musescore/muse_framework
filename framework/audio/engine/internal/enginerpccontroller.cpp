@@ -32,11 +32,11 @@
 #ifdef CHECK_METHODS_DURATION
 #include <chrono>
 #define BEGIN_METHOD_DURATION \
-    auto _start_clock = std::chrono::high_resolution_clock::now();
+        auto _start_clock = std::chrono::high_resolution_clock::now();
 #define END_METHOD_DURATION(method) \
-    auto _end_clock = std::chrono::high_resolution_clock::now(); \
-    auto _duration_us = std::chrono::duration_cast<std::chrono::microseconds>(_end_clock - _start_clock); \
-    LOGDA() << rpc::to_string(method) << " duration: " << (_duration_us.count() / 1000.0) << " ms";
+        auto _end_clock = std::chrono::high_resolution_clock::now(); \
+        auto _duration_us = std::chrono::duration_cast<std::chrono::microseconds>(_end_clock - _start_clock); \
+        LOGDA() << rpc::to_string(method) << " duration: " << (_duration_us.count() / 1000.0) << " ms";
 #else
 #define BEGIN_METHOD_DURATION
 #define END_METHOD_DURATION(method)
@@ -759,6 +759,34 @@ void EngineRpcController::init()
             io::IODevice& dstDevice = *reinterpret_cast<io::IODevice*>(dstDevicePtr);
             if (auto actx = audioContext(msg.ctxId)) {
                 actx->saveSoundTrack(dstDevice, format).onResolve(this, [this, msg](const Ret& ret) {
+                    channel()->send(make_response_ret(msg, ret));
+                });
+                return make_response_delayed(msg);
+            } else {
+                return make_response_ret(msg, make_ret(Err::InvalidContext));
+            }
+        });
+
+        onLongRequest(ctxId, MsgCode::SaveSoundTracks, [this](const Msg& msg) {
+            ONLY_AUDIO_RPC_THREAD;
+            SoundTrackFormat format;
+            std::vector<TrackId> trackIds;
+            std::vector<uint64_t> dstDevicePtrs;
+            IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, format, trackIds, dstDevicePtrs)) {
+                return make_response_ret(msg, make_ret(Err::InvalidRpcData));
+            }
+            IF_ASSERT_FAILED(trackIds.size() == dstDevicePtrs.size()) {
+                return make_response_ret(msg, make_ret(Err::InvalidRpcData));
+            }
+
+            SoundTrackTargetList targets;
+            targets.reserve(trackIds.size());
+            for (size_t i = 0; i < trackIds.size(); ++i) {
+                targets.push_back({ trackIds.at(i), reinterpret_cast<io::IODevice*>(dstDevicePtrs.at(i)) });
+            }
+
+            if (auto actx = audioContext(msg.ctxId)) {
+                actx->saveSoundTracks(targets, format).onResolve(this, [this, msg](const Ret& ret) {
                     channel()->send(make_response_ret(msg, ret));
                 });
                 return make_response_delayed(msg);
