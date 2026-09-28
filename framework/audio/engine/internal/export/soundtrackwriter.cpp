@@ -29,32 +29,13 @@
 
 #include "audio/common/audioerrors.h"
 
-#include "mp3encoder.h"
-#include "oggencoder.h"
-#include "flacencoder.h"
-#include "wavencoder.h"
-#include "aacencoder.h"
+#include "encoderfactory.h"
 
 #include "log.h"
 
 using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::soundtrack;
-
-static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice)
-{
-    switch (format.type) {
-    case SoundTrackType::MP3: return std::make_unique<encode::Mp3Encoder>(format, dstDevice);
-    case SoundTrackType::OGG: return std::make_unique<encode::OggEncoder>(format, dstDevice);
-    case SoundTrackType::FLAC: return std::make_unique<encode::FlacEncoder>(format, dstDevice);
-    case SoundTrackType::WAV: return std::make_unique<encode::WavEncoder>(format, dstDevice);
-    case SoundTrackType::AAC: return std::make_unique<encode::AacEncoder>(format, dstDevice);
-    case SoundTrackType::Undefined: break;
-    }
-
-    UNREACHABLE;
-    return nullptr;
-}
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
                                    const secs_t totalDuration, IAudioNodePtr source)
