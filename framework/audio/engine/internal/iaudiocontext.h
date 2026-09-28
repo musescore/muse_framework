@@ -106,6 +106,10 @@ public:
 
     // Export
     virtual async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format) = 0;
+    //! NOTE Renders every requested track in a single offline pass, writing one file per
+    //! target instead of doing a full separate render for each one.
+    virtual async::Promise<Ret> saveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
+                                                const SoundTracksExportOptions& options) = 0;
     virtual SaveSoundTrackProgress saveSoundTrackProgressChanged() const = 0;
     virtual void abortSavingAllSoundTracks() = 0;
 };
