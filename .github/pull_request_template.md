@@ -8,7 +8,9 @@ Resolves: #NNNNN <!-- Replace `NNNNN` with a GitHub issue number, or a direct li
 - [ ] The title of the PR describes the problem it addresses.
 - [ ] Each commit's message describes its purpose and effects, and references the issue it resolves. If changes are extensive, there is a sequence of easily reviewable commits.
 - [ ] The code in the PR follows [the coding rules](https://github.com/musescore/muse_framework/wiki/CodeGuidelines).
-- [ ] I understand all aspects of the code I'm contributing and I'm able to explain it if requested.
+- [ ] This PR includes AI assistance
+- AI tool (if applicable):  
+- [ ] If the PR is AI-assisted, I have read, understood and complied with the [guidelines for AI-assisted contributions](https://github.com/musescore/muse_framework/blob/main/AI_POLICY.md)
 - [ ] The code compiles and runs on my machine, preferably after each commit individually. I have manually tested and verified that my changes fulfil their intended purpose.
 - [ ] No prior attempts to resolve this problem exist, or if they do, I listed them in my PR description and described how I avoided repeating past mistakes.
 - [ ] There are no unnecessary changes.
