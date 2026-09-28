@@ -56,6 +56,9 @@ public:
 
     void process(float* buffer, audio::samples_t sampleCount, audio::samples_t playbackPositionSamples = 0) override;
 
+    bool isReady() const override;
+    void resetState() override;
+
 private:
     bool m_inited = false;
 

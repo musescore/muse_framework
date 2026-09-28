@@ -47,6 +47,11 @@ public:
         virtual std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec) = 0;
         virtual AudioResourceMetaList resolveResources() const = 0;
 
+        //! NOTE Fresh, uncached instances (see IFxResolver::createFxListCopy)
+        virtual std::vector<IFxProcessorPtr> createFxListCopy(const audio::TrackId copyId, const AudioFxChain& fxChain,
+                                                              const OutputSpec& outputSpec) = 0;
+        virtual void releaseFxListCopy(const audio::TrackId copyId, const AudioFxChain& fxChain) = 0;
+
         virtual void refresh() = 0;
         virtual void clearAllFx() = 0;
     };
@@ -56,6 +61,15 @@ public:
     virtual std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain& fxChain,
                                                        const OutputSpec& outputSpec) = 0;
     virtual AudioResourceMetaList resolveAvailableResources() const = 0;
+
+    //! NOTE Unlike resolveFxList(), which returns the instances cached for a track (so asking twice
+    //! returns the same processors), this always creates new instances with the same settings.
+    //! Used to give each worker of a parallel export its own copy of a shared bus (aux/master).
+    //! copyId must be a unique id that is not used by any real track; release the copies with
+    //! releaseFxListCopy() using the same copyId and chain.
+    virtual std::vector<IFxProcessorPtr> createFxListCopy(const TrackId copyId, const AudioFxChain& fxChain,
+                                                          const OutputSpec& outputSpec) = 0;
+    virtual void releaseFxListCopy(const TrackId copyId, const AudioFxChain& fxChain) = 0;
 
     virtual void registerResolver(const AudioFxType type, IResolverPtr resolver) = 0;
     virtual void clearAllFx() = 0;

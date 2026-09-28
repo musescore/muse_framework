@@ -34,6 +34,15 @@ std::vector<IFxProcessorPtr> FxResolverStub::resolveFxList(const TrackId, const 
     return {};
 }
 
+std::vector<IFxProcessorPtr> FxResolverStub::createFxListCopy(const TrackId, const AudioFxChain&, const OutputSpec&)
+{
+    return {};
+}
+
+void FxResolverStub::releaseFxListCopy(const TrackId, const AudioFxChain&)
+{
+}
+
 AudioResourceMetaList FxResolverStub::resolveAvailableResources() const
 {
     return {};

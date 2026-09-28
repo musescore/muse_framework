@@ -54,6 +54,8 @@ public:
 
     void process(float* buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
 
+    void resetState() override;
+
 private:
     enum Params
     {

@@ -59,6 +59,16 @@ bool FxNode::shouldProcessDuringSilence() const
     return m_fxProcessor->shouldProcessDuringSilence();
 }
 
+bool FxNode::isReady() const
+{
+    return m_fxProcessor->isReady();
+}
+
+void FxNode::resetState()
+{
+    m_fxProcessor->resetState();
+}
+
 void FxNode::onOutputSpecChanged(const OutputSpec& spec)
 {
     m_fxProcessor->setOutputSpec(spec);

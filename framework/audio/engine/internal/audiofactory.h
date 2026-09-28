@@ -55,6 +55,8 @@ public:
     // Make FX
     FxChainPtr makeMasterFxChain(const AudioFxChain& fxChain) const override;
     FxChainPtr makeTrackFxChain(const TrackId trackId, const AudioFxChain& fxChain) const override;
+    FxChainPtr makeFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const override;
+    void releaseFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const override;
     void clearAllFx() override;
 };
 }

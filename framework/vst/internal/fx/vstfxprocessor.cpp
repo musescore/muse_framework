@@ -113,6 +113,7 @@ void VstFxProcessor::setActive(bool active)
 void VstFxProcessor::setMode(const muse::audio::ProcessMode mode)
 {
     m_vstAudioClient->setIsPlaying(muse::audio::isModePlaying(mode));
+    m_vstAudioClient->setIsOffline(mode == muse::audio::ProcessMode::PlayingOffline);
 }
 
 bool VstFxProcessor::shouldProcessDuringSilence() const
@@ -127,4 +128,21 @@ void VstFxProcessor::process(float* buffer, samples_t sampleCount, samples_t pla
     }
 
     m_vstAudioClient->process(buffer, sampleCount, playbackPositionSamples);
+}
+
+bool VstFxProcessor::isReady() const
+{
+    return m_inited;
+}
+
+void VstFxProcessor::resetState()
+{
+    if (!m_inited) {
+        return;
+    }
+
+    //! NOTE Deactivating and reactivating is the VST3 way to make a plugin drop its internal
+    //! audio state (tails, envelopes); it keeps the plugin's settings.
+    m_vstAudioClient->setIsActive(false);
+    m_vstAudioClient->setIsActive(true);
 }

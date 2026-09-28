@@ -47,6 +47,9 @@ public:
 
     bool shouldProcessDuringSilence() const;
 
+    bool isReady() const;
+    void resetState();
+
 protected:
 
     void onModeChanged(const ProcessMode mode) override;

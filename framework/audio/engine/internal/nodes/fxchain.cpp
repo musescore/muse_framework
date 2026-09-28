@@ -160,3 +160,24 @@ async::Channel<bool> FxChain::shouldProcessDuringSilenceChanged() const
 {
     return m_shouldProcessDuringSilenceChanged;
 }
+
+bool FxChain::isReady() const
+{
+    for (const auto& node : m_nodes) {
+        FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
+        if (fx && !fx->isReady()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void FxChain::resetState()
+{
+    for (auto& node : m_nodes) {
+        if (FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node)) {
+            fx->resetState();
+        }
+    }
+}

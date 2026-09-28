@@ -107,6 +107,23 @@ FxChainPtr AudioFactory::makeTrackFxChain(const TrackId trackId, const AudioFxCh
     return chain;
 }
 
+FxChainPtr AudioFactory::makeFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const
+{
+    std::vector<IFxProcessorPtr> fxlist = fxResolver()->createFxListCopy(copyId, fxChain, audioEngine()->outputSpec());
+
+    FxChainPtr chain = std::make_shared<FxChain>();
+    chain->setName("FxChain [copy " + std::to_string(copyId) + "]");
+    chain->setFxList(fxlist);
+    chain->setFxChainSpec(fxChain);
+
+    return chain;
+}
+
+void AudioFactory::releaseFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const
+{
+    fxResolver()->releaseFxListCopy(copyId, fxChain);
+}
+
 void AudioFactory::clearAllFx()
 {
     fxResolver()->clearAllFx();

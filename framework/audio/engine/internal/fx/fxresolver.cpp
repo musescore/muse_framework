@@ -90,6 +90,55 @@ std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, co
     return result;
 }
 
+std::vector<IFxProcessorPtr> FxResolver::createFxListCopy(const TrackId copyId, const AudioFxChain& fxChain, const OutputSpec& outputSpec)
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+
+    std::lock_guard lock(m_mutex);
+
+    std::vector<IFxProcessorPtr> result;
+
+    for (const auto& resolver : m_resolvers) {
+        AudioFxChain fxChainByType;
+
+        for (const auto& fx : fxChain) {
+            if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::Undefined) {
+                fxChainByType.insert(fx);
+            }
+        }
+
+        if (fxChainByType.empty()) {
+            continue;
+        }
+
+        std::vector<IFxProcessorPtr> fxList = resolver.second->createFxListCopy(copyId, fxChainByType, outputSpec);
+        result.insert(result.end(), fxList.begin(), fxList.end());
+    }
+
+    return result;
+}
+
+void FxResolver::releaseFxListCopy(const TrackId copyId, const AudioFxChain& fxChain)
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+
+    std::lock_guard lock(m_mutex);
+
+    for (const auto& resolver : m_resolvers) {
+        AudioFxChain fxChainByType;
+
+        for (const auto& fx : fxChain) {
+            if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::Undefined) {
+                fxChainByType.insert(fx);
+            }
+        }
+
+        if (!fxChainByType.empty()) {
+            resolver.second->releaseFxListCopy(copyId, fxChainByType);
+        }
+    }
+}
+
 AudioResourceMetaList FxResolver::resolveAvailableResources() const
 {
     ONLY_AUDIO_ENGINE_THREAD;
