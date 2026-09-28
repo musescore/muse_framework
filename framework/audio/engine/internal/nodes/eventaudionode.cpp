@@ -22,6 +22,8 @@
 
 #include "eventaudionode.h"
 
+#include <algorithm>
+
 #include "audio/common/audiosanitizer.h"
 
 #include "log.h"
@@ -49,6 +51,29 @@ EventAudioNode::EventAudioNode(TrackId trackId, const mpe::PlaybackData& playbac
 EventAudioNode::~EventAudioNode()
 {
     m_playbackData.offStream.disconnect(this);
+}
+
+std::optional<secs_t> EventAudioNode::firstNoteTime() const
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+
+    if (!m_synth) {
+        return std::nullopt;
+    }
+
+    //! NOTE The synth's playback data is kept up to date with the score (main stream changes)
+    const mpe::PlaybackEventsMap& events = m_synth->playbackData().originEvents;
+    for (auto it = events.cbegin(); it != events.cend(); ++it) {
+        const bool hasNote = std::any_of(it->second.cbegin(), it->second.cend(), [](const mpe::PlaybackEvent& event) {
+            return std::holds_alternative<mpe::NoteEvent>(event);
+        });
+
+        if (hasNote) {
+            return muse::usecs_to_secs(muse::usecs_t(it->first));
+        }
+    }
+
+    return std::nullopt;
 }
 
 void EventAudioNode::onModeChanged(const ProcessMode mode)
