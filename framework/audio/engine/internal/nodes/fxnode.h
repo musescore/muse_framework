@@ -47,6 +47,7 @@ public:
 
     bool shouldProcessDuringSilence() const;
 
+    //! NOTE See IFxProcessor::isReady() / resetState()
     bool isReady() const;
     void resetState();
 

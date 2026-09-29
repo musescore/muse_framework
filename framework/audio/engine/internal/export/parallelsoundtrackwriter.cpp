@@ -48,6 +48,7 @@ using namespace muse::audio;
 using namespace muse::audio::engine;
 using namespace muse::audio::soundtrack;
 
+//! NOTE Whether the chain's last processed block was silent
 static bool isChainSilent(const TrackChainPtr& chain)
 {
     if (auto signal = chain->signal()) {
@@ -56,6 +57,7 @@ static bool isChainSilent(const TrackChainPtr& chain)
     return false;
 }
 
+//! NOTE dst += src * gain
 static void mixInto(float* dst, const float* src, size_t size, float gain = 1.f)
 {
     for (size_t i = 0; i < size; ++i) {
@@ -63,6 +65,7 @@ static void mixInto(float* dst, const float* src, size_t size, float gain = 1.f)
     }
 }
 
+//! NOTE An active send above 0%, the same rule as Mixer
 static bool isSendActive(const AuxSendsParams& sends, size_t auxIdx)
 {
     return auxIdx < sends.size() && sends.at(auxIdx).active && !muse::is_zero(sends.at(auxIdx).signalAmount);

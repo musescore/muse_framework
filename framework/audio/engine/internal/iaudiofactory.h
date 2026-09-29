@@ -62,6 +62,7 @@ public:
 
     //! NOTE A new chain with new effect instances and the same settings (see IFxResolver::createFxListCopy)
     virtual FxChainPtr makeFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const = 0;
+    //! NOTE Releases the effect instances of a chain made by makeFxChainCopy()
     virtual void releaseFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const = 0;
 
     //! NOTE For internal purposes,

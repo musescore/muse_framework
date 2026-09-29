@@ -54,6 +54,7 @@ public:
 
     void process(float* buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
 
+    //! NOTE Clears the reverb tail (see IFxProcessor::resetState())
     void resetState() override;
 
 private:

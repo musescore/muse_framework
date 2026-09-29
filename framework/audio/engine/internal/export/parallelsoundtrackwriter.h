@@ -91,9 +91,12 @@ public:
     ParallelSoundTrackWriter(std::vector<Track> tracks, std::vector<File> files, std::vector<AuxChannels> auxChannelsPerWorker,
                              const SoundTrackFormat& format, const secs_t totalDuration, const Options& options);
 
+    //! NOTE Renders and encodes all files; blocks until done, cancelled or failed
     Ret write();
+    //! NOTE Can be called from another thread; write() then returns Ret::Code::Cancel
     void abort();
 
+    //! NOTE Overall progress of write(), in percent
     Progress progress();
 
     //! NOTE Per file, in the order of the files given to the constructor: [0; 100]
@@ -124,14 +127,21 @@ private:
         int weight = 0;
     };
 
+    //! NOTE Worker thread: render jobs first, then combined files once all render jobs are done
     void workerLoop(size_t workerIdx);
+    //! NOTE Renders the job's tracks; encodes its file, if any, and feeds the combined files
     bool runRenderJob(const RenderJob& job, const AuxChannels& auxChannels);
+    //! NOTE Mixes a combined file from its accumulated buffers and encodes it
     bool runCombinedFile(FileState& file, const AuxChannels& auxChannels);
 
+    //! NOTE Processes one block of a track; false if it produced no sound
     bool renderTrack(size_t trackIdx, samples_t dataFrame, samples_t chunk, std::vector<float>& trackBuffer);
+    //! NOTE Adds a track's block and aux sends to the combined files it belongs to
     void contributeToCombinedFiles(size_t trackIdx, samples_t dataFrame, samples_t chunk, const float* trackBuffer);
+    //! NOTE Runs the aux sends through the aux channels and adds them to the mix, like Mixer::processAuxChannels()
     void processAuxChannels(const std::vector<bool>& auxUsed, const AuxChannels& auxChannels, std::vector<std::vector<float> >& auxBuffers,
                             const std::vector<bool>& auxReceived, samples_t chunk, float* mixBuffer);
+    //! NOTE Encodes the leading/trailing silence of a file
     bool encodeSilence(FileState& file, samples_t frames, std::vector<float>& silenceBuffer);
 
     std::vector<Track> m_tracks;

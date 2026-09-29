@@ -29,5 +29,6 @@ class IODevice;
 }
 
 namespace muse::audio::soundtrack {
+//! NOTE The encoder for format.type, writing to dstDevice
 encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice);
 }

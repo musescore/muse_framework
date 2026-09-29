@@ -128,6 +128,7 @@ public:
 
     // Export
     async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format) override;
+    //! NOTE See IAudioContext::saveSoundTracks()
     async::Promise<Ret> saveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
                                         const SoundTracksExportOptions& options) override;
     SaveSoundTrackProgress saveSoundTrackProgressChanged() const override;
@@ -178,13 +179,19 @@ private:
     bool hasPendingChunks(const TrackId id) const;
     size_t tracksBeingProcessedCount() const;
     Ret doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format);
+    //! NOTE Runs the parallel export once the aux copies are ready (see saveSoundTracks())
     Ret doSaveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format, const SoundTracksExportOptions& options);
 
     // Parallel (multi-file) export
+    //! NOTE Every target needs a device and tracks, each listed at most once
     Ret validateSoundTrackTargets(const SoundTrackTargetList& targets) const;
+    //! NOTE Hardware threads, capped by the larger of the target and distinct track counts
     size_t exportWorkerCount(const SoundTrackTargetList& targets) const;
+    //! NOTE Aux tracks in the order of the mixer's aux channels (the AuxSendsParams indices)
     std::vector<const Track*> auxTracks() const;
+    //! NOTE Creates each worker's copies of the used aux channels and calls completed once they're loaded
     void prepareExportAuxCopies(const SoundTrackTargetList& targets, size_t workerCount, std::function<void(const Ret&)> completed);
+    //! NOTE Releases the copies made by prepareExportAuxCopies()
     void releaseExportAuxCopies();
 
     struct ExportAuxCopy {

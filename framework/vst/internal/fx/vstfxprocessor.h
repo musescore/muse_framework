@@ -56,7 +56,9 @@ public:
 
     void process(float* buffer, audio::samples_t sampleCount, audio::samples_t playbackPositionSamples = 0) override;
 
+    //! NOTE Ready once the plugin instance has loaded (see IFxProcessor::isReady())
     bool isReady() const override;
+    //! NOTE Deactivates and reactivates the plugin, which clears its state
     void resetState() override;
 
 private:

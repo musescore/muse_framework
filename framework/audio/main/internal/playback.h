@@ -116,6 +116,7 @@ public:
 
     // Export
     async::Promise<bool> saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice) override;
+    //! NOTE See IPlayback::saveSoundTracks()
     async::Promise<bool> saveSoundTracks(const SoundTrackFormat& format, const SoundTrackTargetList& targets,
                                          const SoundTracksExportOptions& options = {}) override;
     void abortSavingAllSoundTracks() override;

@@ -50,6 +50,7 @@ public:
         //! NOTE Fresh, uncached instances (see IFxResolver::createFxListCopy)
         virtual std::vector<IFxProcessorPtr> createFxListCopy(const audio::TrackId copyId, const AudioFxChain& fxChain,
                                                               const OutputSpec& outputSpec) = 0;
+        //! NOTE Releases the instances created by createFxListCopy()
         virtual void releaseFxListCopy(const audio::TrackId copyId, const AudioFxChain& fxChain) = 0;
 
         virtual void refresh() = 0;
@@ -69,6 +70,7 @@ public:
     //! releaseFxListCopy() using the same copyId and chain.
     virtual std::vector<IFxProcessorPtr> createFxListCopy(const TrackId copyId, const AudioFxChain& fxChain,
                                                           const OutputSpec& outputSpec) = 0;
+    //! NOTE See IResolver::releaseFxListCopy()
     virtual void releaseFxListCopy(const TrackId copyId, const AudioFxChain& fxChain) = 0;
 
     virtual void registerResolver(const AudioFxType type, IResolverPtr resolver) = 0;

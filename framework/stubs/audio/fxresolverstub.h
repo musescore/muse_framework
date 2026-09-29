@@ -31,7 +31,9 @@ public:
     std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
     std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
     AudioResourceMetaList resolveAvailableResources() const override;
+    //! NOTE See IFxResolver::IResolver::createFxListCopy()
     std::vector<IFxProcessorPtr> createFxListCopy(const TrackId copyId, const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
+    //! NOTE See createFxListCopy()
     void releaseFxListCopy(const TrackId copyId, const AudioFxChain& fxChain) override;
     void registerResolver(const AudioFxType type, IResolverPtr resolver) override;
     void clearAllFx() override;
