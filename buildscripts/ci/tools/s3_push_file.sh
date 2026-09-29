@@ -40,7 +40,7 @@ done
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-bash "$HERE"/s3_install.sh --s3_key ${S3_KEY} --s3_secret ${S3_SECRET}
+bash "$HERE"/s3_install.sh --s3_key "$S3_KEY" --s3_secret "$S3_SECRET"
 
 echo "=== Publish to S3 ==="
 
@@ -49,4 +49,4 @@ if [ -n "$CACHE_CONTROL" ]; then
     EXTRA_ARGS+=(--add-header="Cache-Control: ${CACHE_CONTROL}")
 fi
 
-s3cmd put --acl-public --guess-mime-type "${EXTRA_ARGS[@]}" $FILE_PATH "$S3_URL"
+s3cmd put --acl-public --guess-mime-type "${EXTRA_ARGS[@]}" "$FILE_PATH" "$S3_URL"
