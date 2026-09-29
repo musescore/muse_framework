@@ -41,7 +41,7 @@ target_sources(muse_shortcuts PRIVATE
     internal/shortcutscontroller.h
     internal/shortcutsconfiguration.cpp
     internal/shortcutsconfiguration.h
-)
+    )
 
 target_link_libraries(muse_shortcuts PRIVATE Qt::Gui)
 

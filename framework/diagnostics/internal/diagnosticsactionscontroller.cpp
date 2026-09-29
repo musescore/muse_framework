@@ -70,7 +70,11 @@ void DiagnosticsActionsController::init()
         return muse::make_ok();
     });
     cd->onRequest(this, DIAGNOSTICS_SHOW_ACTIONS_COMMAND, [this]() { openUri(ACTIONS_LIST_URI); return muse::make_ok(); });
-    cd->onRequest(this, DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, [this]() { openUri(RCOMMAND_LIST_URI); return muse::make_ok(); });
+    cd->onRequest(this, DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, [this]() {
+        openUri(RCOMMAND_LIST_URI);
+        commandDispatcher()->dispatch(rcommand::Command("command://shortcuts/migrate")); // TODO: remove this after migration
+        return muse::make_ok();
+    });
 
     // compat
     {
