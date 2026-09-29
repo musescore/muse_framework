@@ -128,7 +128,7 @@ private:
     bool runRenderJob(const RenderJob& job, const AuxChannels& auxChannels);
     bool runCombinedFile(FileState& file, const AuxChannels& auxChannels);
 
-    bool renderTrack(size_t trackIdx, samples_t dataFrame, samples_t chunk, std::vector<float>& trackBuffer, std::vector<bool>& started);
+    bool renderTrack(size_t trackIdx, samples_t dataFrame, samples_t chunk, std::vector<float>& trackBuffer);
     void contributeToCombinedFiles(size_t trackIdx, samples_t dataFrame, samples_t chunk, const float* trackBuffer);
     void processAuxChannels(const std::vector<bool>& auxUsed, const AuxChannels& auxChannels, std::vector<std::vector<float> >& auxBuffers,
                             const std::vector<bool>& auxReceived, samples_t chunk, float* mixBuffer);
@@ -137,6 +137,7 @@ private:
     std::vector<Track> m_tracks;
     std::vector<std::unique_ptr<FileState> > m_files;
     std::vector<std::vector<size_t> > m_trackCombinedFiles; // per track: combined files that need its output
+    std::vector<samples_t> m_trackStartFrames;               // per track: first frame it's processed at
     std::vector<RenderJob> m_renderJobs;
     std::vector<size_t> m_combinedFiles;
     std::vector<AuxChannels> m_auxChannelsPerWorker;

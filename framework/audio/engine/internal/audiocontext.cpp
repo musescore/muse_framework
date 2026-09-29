@@ -1283,7 +1283,20 @@ void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, s
     m_exportAuxCopiesTimer = std::make_shared<Timer>(std::chrono::milliseconds(10));
     std::weak_ptr<Timer> weakTimer = m_exportAuxCopiesTimer;
 
-    m_exportAuxCopiesTimer->onTimeout(this, [weakTimer, allReady, completed]() {
+    //! NOTE The export can be cancelled while it waits
+    m_saveSoundTracksProgress.aborted.onNotify(this, [this, weakTimer, completed]() {
+        m_saveSoundTracksProgress.aborted.disconnect(this);
+
+        std::shared_ptr<Timer> timer = weakTimer.lock();
+        if (!timer || !timer->isActive()) {
+            return;
+        }
+
+        timer->stop();
+        completed(make_ret(Ret::Code::Cancel));
+    });
+
+    m_exportAuxCopiesTimer->onTimeout(this, [this, weakTimer, allReady, completed]() {
         //! NOTE A tick may still be queued after stop() or after the timer was replaced
         std::shared_ptr<Timer> timer = weakTimer.lock();
         if (!timer || !timer->isActive()) {
@@ -1292,6 +1305,7 @@ void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, s
 
         if (allReady()) {
             timer->stop();
+            m_saveSoundTracksProgress.aborted.disconnect(this);
             completed(make_ok());
             return;
         }
@@ -1299,6 +1313,7 @@ void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, s
         constexpr float LOADING_TIMEOUT_SECS = 60.f;
         if (timer->secondsSinceStart() > LOADING_TIMEOUT_SECS) {
             timer->stop();
+            m_saveSoundTracksProgress.aborted.disconnect(this);
             LOGE() << "Timed out waiting for the export copies of the aux effects to load";
             completed(make_ret(Err::InvalidFxParams));
         }

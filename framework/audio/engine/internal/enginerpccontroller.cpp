@@ -785,16 +785,19 @@ void EngineRpcController::init()
             targets.reserve(dstDevicePtrs.size());
             size_t offset = 0;
             for (size_t i = 0; i < dstDevicePtrs.size(); ++i) {
-                const size_t count = static_cast<size_t>(trackCounts.at(i));
-                IF_ASSERT_FAILED(offset + count <= trackIds.size()) {
+                IF_ASSERT_FAILED(offset <= trackIds.size() && trackCounts.at(i) <= trackIds.size() - offset) {
                     return make_response_ret(msg, make_ret(Err::InvalidRpcData));
                 }
+                const size_t count = static_cast<size_t>(trackCounts.at(i));
 
                 SoundTrackTarget target;
                 target.trackIds.assign(trackIds.cbegin() + offset, trackIds.cbegin() + offset + count);
                 target.dstDevice = reinterpret_cast<io::IODevice*>(dstDevicePtrs.at(i));
                 targets.push_back(std::move(target));
                 offset += count;
+            }
+            IF_ASSERT_FAILED(offset == trackIds.size()) {
+                return make_response_ret(msg, make_ret(Err::InvalidRpcData));
             }
 
             if (auto actx = audioContext(msg.ctxId)) {

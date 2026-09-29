@@ -29,27 +29,41 @@ path deliberately matches that so both paths produce the same audio.
 `AudioContext::saveSoundTracks()`:
 
 1. waits for online sounds to finish processing (same as `saveSoundTrack`),
-2. validates the targets: a track may only belong to one target, since each
-   target is rendered by one worker and a track can't be processed by two
-   threads at once,
+2. validates the targets: every target needs a destination and at least one
+   track, and may not list the same track twice. A track may belong to several
+   targets (e.g. a part and the full score),
 3. creates, per worker, a copy of every aux channel that at least one exported
    track sends to (active send above 0%) — see below — and waits until the
-   copies are fully loaded,
+   copies are fully loaded (the wait can be cancelled),
 4. runs `ParallelSoundTrackWriter` inside `execOperation`, like the
    single-file export, so the real-time driver doesn't touch the graph
    meanwhile,
 5. releases the copies.
 
-The writer starts one thread per worker (`std::thread::hardware_concurrency()`,
-at most one per file). Each worker takes the next file from the queue until
-the queue is empty, and renders it block by block:
+The number of workers (`AudioContext::exportWorkerCount()`) is
+`std::thread::hardware_concurrency()`, capped by the larger of the number of
+targets and the number of distinct tracks.
 
-- the file's tracks are **borrowed** from the live mixer (their synths, fx and
-  volume/pan are used as is; nothing is reloaded),
-- each track's output is added to the file's mix and, per its aux sends, to
-  the worker's copy of the aux channels,
-- the aux copies are processed and added to the mix,
-- the mix is encoded.
+Every track is rendered exactly once, by one worker, since a track can't be
+processed by two threads at once. The writer splits the work into render jobs:
+
+- a file whose tracks aren't in any other file (typically a part) is rendered
+  directly, block by block: its tracks are **borrowed** from the live mixer
+  (their synths, fx and volume/pan are used as is; nothing is reloaded), their
+  output is mixed and, per their aux sends, fed to the worker's copy of the aux
+  channels, which are processed and added to the mix, and the mix is encoded,
+- tracks that also belong to a *combined* file (the full score, or a part
+  sharing an instrument with another part) additionally add their output and
+  aux sends to that file's full-length buffers,
+- tracks that only belong to combined files get render-only jobs.
+
+Workers take render jobs (heaviest first) until none are left. Once every
+render job is done, each combined file runs its accumulated aux sends through
+the aux channels, is mixed and encoded.
+
+Optionally (`SoundTracksExportOptions::idleUntilFirstNote`), a track isn't
+processed until shortly before its first note; its source is moved there on
+the engine thread before the workers start.
 
 The engine thread meanwhile only reports progress and handles incoming
 messages (e.g. abort).

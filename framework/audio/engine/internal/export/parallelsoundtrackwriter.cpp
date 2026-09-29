@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <new>
 #include <numeric>
 #include <thread>
 
@@ -151,13 +152,20 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
             continue;
         }
 
-        state.accumulator = std::make_unique<Accumulator>();
-        state.accumulator->dry.assign(m_dataSamples * m_outputSpec.audioChannelCount, 0.f);
-        state.accumulator->auxSends.resize(auxCount);
-        for (size_t auxIdx = 0; auxIdx < auxCount; ++auxIdx) {
-            if (state.auxUsed.at(auxIdx)) {
-                state.accumulator->auxSends[auxIdx].assign(m_dataSamples * m_outputSpec.audioChannelCount, 0.f);
+        //! NOTE A combined file keeps its tracks' whole output in memory until all of them are rendered
+        try {
+            state.accumulator = std::make_unique<Accumulator>();
+            state.accumulator->dry.assign(m_dataSamples * m_outputSpec.audioChannelCount, 0.f);
+            state.accumulator->auxSends.resize(auxCount);
+            for (size_t auxIdx = 0; auxIdx < auxCount; ++auxIdx) {
+                if (state.auxUsed.at(auxIdx)) {
+                    state.accumulator->auxSends[auxIdx].assign(m_dataSamples * m_outputSpec.audioChannelCount, 0.f);
+                }
             }
+        } catch (const std::bad_alloc&) {
+            LOGE() << "Not enough memory for the combined files of the export";
+            m_hasEncodeError = true;
+            return;
         }
 
         for (const size_t t : state.file.tracks) {
@@ -214,6 +222,34 @@ Ret ParallelSoundTrackWriter::write()
             if (aux) {
                 aux->setOutputSpec(m_outputSpec);
                 aux->setMode(ProcessMode::PlayingOffline);
+            }
+        }
+    }
+
+    //! NOTE Tracks that idle until their first note start at the block containing their wake-up point.
+    //! Their sources are moved there now, on this (engine) thread, rather than by the workers
+    const samples_t renderStep = m_outputSpec.samplesPerChannel;
+    m_trackStartFrames.assign(m_tracks.size(), 0);
+    for (size_t t = 0; t < m_tracks.size(); ++t) {
+        const Track& track = m_tracks.at(t);
+        if (!m_options.idleUntilFirstNote || renderStep == 0) {
+            continue;
+        }
+
+        if (!track.firstNoteTime.has_value()) {
+            m_trackStartFrames[t] = m_dataSamples; // no notes: never processed
+            continue;
+        }
+
+        const samples_t firstNote
+            = static_cast<samples_t>(std::llround(std::max(0.0, track.firstNoteTime->raw()) * m_outputSpec.sampleRate));
+        const samples_t wakeUp = firstNote > m_idlePreRollSamples ? firstNote - m_idlePreRollSamples : 0;
+        const samples_t startFrame = (wakeUp / renderStep) * renderStep;
+        m_trackStartFrames[t] = startFrame;
+
+        if (startFrame > 0 && startFrame < m_dataSamples) {
+            if (auto source = std::dynamic_pointer_cast<AudioSourceNode>(track.chain->source())) {
+                source->seek(TimePosition::fromSamples(startFrame, m_outputSpec.sampleRate), true);
             }
         }
     }
@@ -374,37 +410,15 @@ void ParallelSoundTrackWriter::workerLoop(size_t workerIdx)
     }
 }
 
-bool ParallelSoundTrackWriter::renderTrack(size_t trackIdx, samples_t dataFrame, samples_t chunk, std::vector<float>& trackBuffer,
-                                           std::vector<bool>& started)
+bool ParallelSoundTrackWriter::renderTrack(size_t trackIdx, samples_t dataFrame, samples_t chunk, std::vector<float>& trackBuffer)
 {
     const Track& track = m_tracks.at(trackIdx);
 
     std::fill(trackBuffer.begin(), trackBuffer.end(), 0.f);
 
-    if (m_options.idleUntilFirstNote) {
-        //! NOTE A track is silent until its first note, so it isn't processed until shortly before then
-        if (!track.firstNoteTime.has_value()) {
-            return false;
-        }
-
-        const samples_t firstNote
-            = static_cast<samples_t>(std::llround(std::max(0.0, track.firstNoteTime->raw()) * m_outputSpec.sampleRate));
-        const samples_t wakeUp = firstNote > m_idlePreRollSamples ? firstNote - m_idlePreRollSamples : 0;
-
-        if (dataFrame + chunk <= wakeUp) {
-            return false;
-        }
-
-        if (!started.at(trackIdx)) {
-            started[trackIdx] = true;
-
-            //! NOTE The source is still where the export started; move it to where it starts playing
-            if (dataFrame > 0) {
-                if (auto source = std::dynamic_pointer_cast<AudioSourceNode>(track.chain->source())) {
-                    source->seek(TimePosition::fromSamples(dataFrame, m_outputSpec.sampleRate), true);
-                }
-            }
-        }
+    //! NOTE A track that idles until its first note isn't processed before its start frame (see write())
+    if (dataFrame < m_trackStartFrames.at(trackIdx)) {
+        return false;
     }
 
     track.chain->process(trackBuffer.data(), chunk);
@@ -502,7 +516,6 @@ bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChann
     std::vector<float> mixBuffer(bufferSize, 0.f);
     std::vector<std::vector<float> > auxBuffers(auxUsed.size());
     std::vector<bool> auxReceived(auxUsed.size(), false);
-    std::vector<bool> started(m_tracks.size(), false);
 
     for (size_t auxIdx = 0; auxIdx < auxUsed.size(); ++auxIdx) {
         if (auxUsed.at(auxIdx)) {
@@ -535,7 +548,7 @@ bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChann
         }
 
         for (const size_t trackIdx : job.tracks) {
-            if (!renderTrack(trackIdx, dataFrame, chunk, trackBuffer, started)) {
+            if (!renderTrack(trackIdx, dataFrame, chunk, trackBuffer)) {
                 continue;
             }
 
