@@ -789,6 +789,13 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
         ONLY_AUDIO_ENGINE_THREAD;
 
 #ifdef MUSE_MODULE_AUDIO_EXPORT
+        //! NOTE The engine keeps handling requests while an export waits (e.g. for online sounds),
+        //! so a second export could start meanwhile; it would share this one's state
+        if (m_isSavingSoundTracks) {
+            return resolve(make_ret(Err::ExportInProgress, "another export is in progress"));
+        }
+        m_isSavingSoundTracks = true;
+
         //! NOTE These engine state changes must run inside execOperation so they are
         // synchronized with the audio driver process (see doSaveSoundTrack).
         Operation prepare = [this]() {
@@ -810,6 +817,7 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
             }
 
             configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(lazyProcessingWasEnabled);
+            m_isSavingSoundTracks = false;
             (void)resolve(ret);
         });
 
@@ -827,6 +835,12 @@ async::Promise<Ret> AudioContext::saveSoundTracks(const SoundTrackTargetList& ta
         ONLY_AUDIO_ENGINE_THREAD;
 
 #ifdef MUSE_MODULE_AUDIO_EXPORT
+        //! NOTE See saveSoundTrack(): one export at a time
+        if (m_isSavingSoundTracks) {
+            return resolve(make_ret(Err::ExportInProgress, "another export is in progress"));
+        }
+        m_isSavingSoundTracks = true;
+
         //! NOTE These engine state changes must run inside execOperation so they are
         // synchronized with the audio driver process (see doSaveSoundTracks).
         Operation prepare = [this]() {
@@ -845,6 +859,7 @@ async::Promise<Ret> AudioContext::saveSoundTracks(const SoundTrackTargetList& ta
         listenInputProcessing([this, targets, format, options, lazyProcessingWasEnabled, resolve](Ret ret) {
             auto finish = [this, lazyProcessingWasEnabled, resolve](const Ret& ret) {
                 configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(lazyProcessingWasEnabled);
+                m_isSavingSoundTracks = false;
                 (void)resolve(ret);
             };
 

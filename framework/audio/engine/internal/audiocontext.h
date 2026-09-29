@@ -230,5 +230,6 @@ private:
         async::Notification aborted;
     };
     SaveSoundTrackProgressData m_saveSoundTracksProgress;
+    bool m_isSavingSoundTracks = false; // an export is running; they share the progress, abort and aux copy state
 };
 }
