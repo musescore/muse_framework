@@ -34,11 +34,13 @@ std::vector<IFxProcessorPtr> FxResolverStub::resolveFxList(const TrackId, const 
     return {};
 }
 
+//! Stub: no effects.
 std::vector<IFxProcessorPtr> FxResolverStub::createFxListCopy(const TrackId, const AudioFxChain&, const OutputSpec&)
 {
     return {};
 }
 
+//! Stub: nothing to release.
 void FxResolverStub::releaseFxListCopy(const TrackId, const AudioFxChain&)
 {
 }

@@ -679,6 +679,8 @@ async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io
     }, PromiseType::AsyncByBody);
 }
 
+//! Sends the export to the engine: the targets are flattened into track ids, track counts and
+//! device pointers for the RPC message.
 async::Promise<bool> Playback::saveSoundTracks(const SoundTrackFormat& format, const SoundTrackTargetList& targets,
                                                const SoundTracksExportOptions& options)
 {
@@ -695,6 +697,7 @@ async::Promise<bool> Playback::saveSoundTracks(const SoundTrackFormat& format, c
         for (const SoundTrackTarget& target : targets) {
             trackIds.insert(trackIds.end(), target.trackIds.cbegin(), target.trackIds.cend());
             trackCounts.push_back(target.trackIds.size());
+            // The engine writes to the device directly; only its address is sent, like in saveSoundTrack()
             dstDevicePtrs.push_back(reinterpret_cast<uint64_t>(target.dstDevice));
         }
 

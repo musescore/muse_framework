@@ -130,11 +130,13 @@ void VstFxProcessor::process(float* buffer, samples_t sampleCount, samples_t pla
     m_vstAudioClient->process(buffer, sampleCount, playbackPositionSamples);
 }
 
+//! Ready once the plugin instance has loaded; until then the processor passes audio through.
 bool VstFxProcessor::isReady() const
 {
     return m_inited;
 }
 
+//! Deactivates and reactivates the plugin, which clears its audio state but keeps its settings.
 void VstFxProcessor::resetState()
 {
     if (!m_inited) {

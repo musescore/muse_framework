@@ -828,6 +828,9 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
     });
 }
 
+//! Renders several files at the same time (see export/README.md): waits for online sounds,
+//! validates the targets, prepares the effect copies, then runs the parallel export.
+//! Only one export can run at a time.
 async::Promise<Ret> AudioContext::saveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
                                                   const SoundTracksExportOptions& options)
 {
@@ -1035,6 +1038,8 @@ Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackForm
 #endif
 }
 
+//! Builds the writer's track and file lists from the targets (each track once) and runs it
+//! inside execOperation, like the single-file export.
 Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
                                     const SoundTracksExportOptions& options)
 {
@@ -1045,6 +1050,7 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
     auto trackWeight = [](const Track& t) {
         int weight = 1;
         switch (resourceTypeFromString(t.params.source.resourceMeta.type)) {
+        // Plugin instruments (e.g. Kontakt) are the slowest to render, then MuseSounds
         case AudioResourceType::VstPlugin: weight = 8;
             break;
         case AudioResourceType::MuseSamplerSoundPack: weight = 4;
@@ -1054,6 +1060,7 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
 
         for (const auto& fx : t.params.fxChain) {
             if (fx.second.active && resourceTypeFromString(fx.second.resourceMeta.type) == AudioResourceType::VstPlugin) {
+                // Each plugin effect on the track adds to its cost
                 weight += 4;
             }
         }
@@ -1071,6 +1078,7 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
         file.dstDevice = target.dstDevice;
 
         for (const TrackId trackId : target.trackIds) {
+            // A track shared by several targets gets one entry, so it's rendered once
             auto it = trackIndexById.find(trackId);
             if (it == trackIndexById.end()) {
                 const Track* t = track(trackId);
@@ -1083,6 +1091,7 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
                 writerTrack.auxSends = t->params.auxSends;
                 writerTrack.weight = trackWeight(*t);
                 if (auto source = std::dynamic_pointer_cast<AudioSourceNode>(t->chain->source())) {
+                    // Read here, on the engine thread, since the workers mustn't touch the source's playback data
                     writerTrack.firstNoteTime = source->firstNoteTime();
                 }
 
@@ -1108,9 +1117,11 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
     });
 
     writer->fileProgressChanged().onReceive(this, [this](size_t fileIdx, int percent) {
+        // This stage reuses the progress arguments: current = percent, total = file index
         m_saveSoundTracksProgress.progress.send(percent, static_cast<int64_t>(fileIdx), SaveSoundTrackStage::WritingSoundTrackFile);
     });
 
+    // Weak, so a late abort after the export can't keep the writer alive
     std::weak_ptr<ParallelSoundTrackWriter> weakPtr = writer;
     m_saveSoundTracksProgress.aborted.onNotify(this, [weakPtr]() {
         if (auto writer = weakPtr.lock()) {
@@ -1149,6 +1160,8 @@ Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const S
 #endif
 }
 
+//! Every target needs a destination and at least one existing event/sound track, listed once.
+//! A track may belong to several targets.
 Ret AudioContext::validateSoundTrackTargets(const SoundTrackTargetList& targets) const
 {
     if (targets.empty()) {
@@ -1182,6 +1195,8 @@ Ret AudioContext::validateSoundTrackTargets(const SoundTrackTargetList& targets)
     return make_ok();
 }
 
+//! Hardware threads, capped by the larger of the target count and the number of distinct tracks,
+//! since no job covers less than one track.
 size_t AudioContext::exportWorkerCount(const SoundTrackTargetList& targets) const
 {
     //! NOTE Render jobs are per file or per track, so there's no use for more workers than tracks
@@ -1190,10 +1205,12 @@ size_t AudioContext::exportWorkerCount(const SoundTrackTargetList& targets) cons
         trackIds.insert(target.trackIds.cbegin(), target.trackIds.cend());
     }
 
+    // hardware_concurrency() may return 0 when unknown
     const size_t threadCount = std::max<size_t>(1, std::thread::hardware_concurrency());
     return std::max<size_t>(1, std::min(threadCount, std::max(targets.size(), trackIds.size())));
 }
 
+//! The aux tracks, in the order of the mixer's aux channels (the indices of AuxSendsParams).
 std::vector<const AudioContext::Track*> AudioContext::auxTracks() const
 {
     //! NOTE Same order as the mixer's aux channels (both are appended in addAuxTrack),
@@ -1208,6 +1225,8 @@ std::vector<const AudioContext::Track*> AudioContext::auxTracks() const
     return result;
 }
 
+//! Creates each worker's copies of the aux channels that the exported tracks send to, and calls
+//! `completed` once all of them are loaded, after a timeout, or when the export is cancelled.
 void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, size_t workerCount,
                                           std::function<void(const Ret&)> completed)
 {
@@ -1228,6 +1247,7 @@ void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, s
 
             const AuxSendsParams& sends = t->params.auxSends;
             for (size_t auxIdx = 0; auxIdx < sends.size() && auxIdx < auxes.size(); ++auxIdx) {
+                // The same rule as the mixer: an active send above 0%
                 if (sends.at(auxIdx).active && !muse::is_zero(sends.at(auxIdx).signalAmount)) {
                     auxUsed[auxIdx] = true;
                 }
@@ -1337,6 +1357,7 @@ void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, s
     m_exportAuxCopiesTimer->start();
 }
 
+//! Releases the effect copies made by prepareExportAuxCopies().
 void AudioContext::releaseExportAuxCopies()
 {
     ONLY_AUDIO_ENGINE_THREAD;

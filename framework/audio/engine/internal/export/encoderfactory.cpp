@@ -34,6 +34,7 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::soundtrack;
 
+//! The encoder for `format.type`, writing to `dstDevice`.
 encode::AbstractAudioEncoderPtr muse::audio::soundtrack::createEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice)
 {
     switch (format.type) {

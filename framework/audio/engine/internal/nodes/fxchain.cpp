@@ -161,6 +161,7 @@ async::Channel<bool> FxChain::shouldProcessDuringSilenceChanged() const
     return m_shouldProcessDuringSilenceChanged;
 }
 
+//! Whether every effect of the chain has finished loading (see IFxProcessor::isReady()).
 bool FxChain::isReady() const
 {
     for (const auto& node : m_nodes) {
@@ -173,6 +174,7 @@ bool FxChain::isReady() const
     return true;
 }
 
+//! Clears the audio state of every effect of the chain (see IFxProcessor::resetState()).
 void FxChain::resetState()
 {
     for (auto& node : m_nodes) {

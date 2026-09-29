@@ -59,11 +59,13 @@ bool FxNode::shouldProcessDuringSilence() const
     return m_fxProcessor->shouldProcessDuringSilence();
 }
 
+//! Whether the node's effect has finished loading.
 bool FxNode::isReady() const
 {
     return m_fxProcessor->isReady();
 }
 
+//! Clears the audio state of the node's effect.
 void FxNode::resetState()
 {
     m_fxProcessor->resetState();

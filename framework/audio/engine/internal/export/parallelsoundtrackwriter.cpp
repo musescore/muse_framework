@@ -48,7 +48,7 @@ using namespace muse::audio;
 using namespace muse::audio::engine;
 using namespace muse::audio::soundtrack;
 
-//! NOTE Whether the chain's last processed block was silent
+//! Whether the last block the chain processed was silent.
 static bool isChainSilent(const TrackChainPtr& chain)
 {
     if (auto signal = chain->signal()) {
@@ -57,7 +57,7 @@ static bool isChainSilent(const TrackChainPtr& chain)
     return false;
 }
 
-//! NOTE dst += src * gain
+//! Adds `src` (scaled by `gain`) to `dst`.
 static void mixInto(float* dst, const float* src, size_t size, float gain = 1.f)
 {
     for (size_t i = 0; i < size; ++i) {
@@ -65,12 +65,14 @@ static void mixInto(float* dst, const float* src, size_t size, float gain = 1.f)
     }
 }
 
-//! NOTE An active send above 0%, the same rule as Mixer
+//! An active send above 0%, the same rule the mixer uses.
 static bool isSendActive(const AuxSendsParams& sends, size_t auxIdx)
 {
     return auxIdx < sends.size() && sends.at(auxIdx).active && !muse::is_zero(sends.at(auxIdx).signalAmount);
 }
 
+//! Starts an encoder per file and plans the work: which files are rendered directly, which
+//! are combined (and get full-length buffers), and which tracks need render-only jobs.
 ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, std::vector<File> files,
                                                    std::vector<AuxChannels> auxChannelsPerWorker, const SoundTrackFormat& format,
                                                    const secs_t totalDuration, const Options& options)
@@ -91,9 +93,11 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
     m_dataSamples = durationToSamples(totalDuration);
     m_leadingSilenceSamples = durationToSamples(format.leadingSilenceDuration);
     const samples_t trailingSilenceSamples = durationToSamples(format.trailingSilenceDuration);
+    // Every file has the same length: silence, the score, silence
     m_totalSamples = m_leadingSilenceSamples + m_dataSamples + trailingSilenceSamples;
     m_idlePreRollSamples = durationToSamples(options.idlePreRoll);
 
+    // All workers have the same aux channel layout, so the first one describes them all
     const AuxChannels* firstAuxChannels = m_auxChannelsPerWorker.empty() ? nullptr : &m_auxChannelsPerWorker.front();
     const size_t auxCount = firstAuxChannels ? firstAuxChannels->size() : 0;
 
@@ -105,6 +109,7 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
         }
 
         encode::AbstractAudioEncoderPtr encoder = createEncoder(format, *file.dstDevice);
+        // The encoder needs the total length up front (e.g. for the WAV header)
         if (!encoder || !encoder->begin(m_totalSamples)) {
             LOGE() << "Failed to start encoder";
             m_hasEncodeError = true;
@@ -134,6 +139,7 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
     // Decide which files are rendered directly: smallest first (parts before the full score), and a file
     // qualifies when none of its tracks is already rendered by another directly rendered file
     std::vector<size_t> fileOrder(m_files.size());
+    // File indices 0..n-1, sorted below by track count
     std::iota(fileOrder.begin(), fileOrder.end(), 0);
     std::stable_sort(fileOrder.begin(), fileOrder.end(), [this](size_t a, size_t b) {
         return m_files.at(a)->file.tracks.size() < m_files.at(b)->file.tracks.size();
@@ -145,12 +151,14 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
     for (const size_t fileIdx : fileOrder) {
         FileState& state = *m_files.at(fileIdx);
 
+        // Free: none of its tracks is rendered by a file chosen earlier
         const bool isFree = std::none_of(state.file.tracks.cbegin(), state.file.tracks.cend(), [&](size_t t) { return trackOwned.at(t); });
         if (isFree) {
             for (const size_t t : state.file.tracks) {
                 trackOwned[t] = true;
             }
 
+            // Rendered and encoded directly by one job, which owns its tracks
             m_renderJobs.push_back({ fileIdx, state.file.tracks, state.weight });
             continue;
         }
@@ -172,6 +180,7 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
         }
 
         for (const size_t t : state.file.tracks) {
+            // Whoever renders track t also adds its output to this file
             m_trackCombinedFiles[t].push_back(fileIdx);
         }
 
@@ -190,6 +199,7 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
         return a.weight > b.weight;
     });
 
+    // Combined files with the most aux channels to run take longest, so they start first
     std::stable_sort(m_combinedFiles.begin(), m_combinedFiles.end(), [this](size_t a, size_t b) {
         auto usedAuxCount = [this](size_t f) { return std::count(m_files.at(f)->auxUsed.cbegin(), m_files.at(f)->auxUsed.cend(), true); };
         return usedAuxCount(a) > usedAuxCount(b);
@@ -198,6 +208,7 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
     if (!m_combinedFiles.empty()) {
         size_t bufferCount = 0;
         for (const size_t f : m_combinedFiles) {
+            // One dry buffer, plus one per aux channel the file sends to
             bufferCount += 1 + std::count(m_files.at(f)->auxUsed.cbegin(), m_files.at(f)->auxUsed.cend(), true);
         }
 
@@ -206,6 +217,8 @@ ParallelSoundTrackWriter::ParallelSoundTrackWriter(std::vector<Track> tracks, st
     }
 }
 
+//! Runs the workers and, on this thread, reports progress and handles messages until all
+//! files are written, the export is cancelled or an encoder fails.
 Ret ParallelSoundTrackWriter::write()
 {
     TRACEFUNC;
@@ -247,7 +260,9 @@ Ret ParallelSoundTrackWriter::write()
         const samples_t firstNote
             = static_cast<samples_t>(std::llround(std::max(0.0, track.firstNoteTime->raw()) * m_outputSpec.sampleRate));
         const samples_t wakeUp = firstNote > m_idlePreRollSamples ? firstNote - m_idlePreRollSamples : 0;
+        // Rounded down to a block boundary, since tracks are processed block by block
         const samples_t startFrame = (wakeUp / renderStep) * renderStep;
+        // renderTrack() skips the track before this frame
         m_trackStartFrames[t] = startFrame;
 
         if (startFrame > 0 && startFrame < m_dataSamples) {
@@ -257,6 +272,7 @@ Ret ParallelSoundTrackWriter::write()
         }
     }
 
+    // No more workers than there are aux copies, or jobs to give them
     const size_t workerCount = std::max<size_t>(1, std::min(m_auxChannelsPerWorker.size(),
                                                             std::max(m_renderJobs.size(), m_combinedFiles.size())));
     LOGI() << "Exporting " << m_files.size() << " files (" << m_combinedFiles.size() << " combined, " << m_renderJobs.size()
@@ -273,6 +289,7 @@ Ret ParallelSoundTrackWriter::write()
     const size_t renderOnlyJobCount = std::count_if(m_renderJobs.cbegin(), m_renderJobs.cend(), [](const RenderJob& job) {
         return !job.fileIdx.has_value();
     });
+    // Total work for the progress bar: every file's frames, plus the frames of render-only jobs
     const uint64_t totalFrames = static_cast<uint64_t>(m_totalSamples) * m_files.size()
                                  + static_cast<uint64_t>(m_dataSamples) * renderOnlyJobCount;
     int lastProgress = -1;
@@ -312,6 +329,7 @@ Ret ParallelSoundTrackWriter::write()
             }
         }
 
+        // Handle incoming messages (e.g. abort) while the workers run
         rpcChannel()->process();
 
         if (m_isAborted || m_hasEncodeError || allDone()) {
@@ -341,21 +359,25 @@ Ret ParallelSoundTrackWriter::write()
     return muse::make_ok();
 }
 
+//! Stops the export; write() then returns Ret::Code::Cancel. Can be called from any thread.
 void ParallelSoundTrackWriter::abort()
 {
     m_isAborted = true;
 }
 
+//! Overall progress of write(), in percent.
 Progress ParallelSoundTrackWriter::progress()
 {
     return m_progress;
 }
 
+//! Sent from write()'s thread when a file's progress changes: file index, percent.
 async::Channel<size_t, int> ParallelSoundTrackWriter::fileProgressChanged() const
 {
     return m_fileProgressChanged;
 }
 
+//! Progress of each file in percent, in the order of the files given to the constructor.
 std::vector<int> ParallelSoundTrackWriter::filesProgress() const
 {
     std::vector<int> result;
@@ -369,6 +391,8 @@ std::vector<int> ParallelSoundTrackWriter::filesProgress() const
     return result;
 }
 
+//! A worker thread: takes render jobs until none are left, waits for all of them to be done,
+//! then takes combined files.
 void ParallelSoundTrackWriter::workerLoop(size_t workerIdx)
 {
 #ifdef __APPLE__
@@ -380,6 +404,7 @@ void ParallelSoundTrackWriter::workerLoop(size_t workerIdx)
 
     // Phase 1: render jobs
     while (!m_isAborted && !m_hasEncodeError) {
+        // Take the next job; the atomic counter gives each job to exactly one worker
         const size_t jobIdx = m_nextRenderJobIdx.fetch_add(1);
         if (jobIdx >= m_renderJobs.size()) {
             break;
@@ -391,15 +416,18 @@ void ParallelSoundTrackWriter::workerLoop(size_t workerIdx)
             m_hasEncodeError = true;
         }
 
+        // Counted even if the job failed, so no worker waits for it in phase 2
         ++m_renderJobsDone;
     }
 
     // Phase 2: combined files, once every track has been rendered
     while (!m_isAborted && !m_hasEncodeError && m_renderJobsDone.load() < m_renderJobs.size()) {
+        // Other workers are still rendering tracks the combined files need
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
 
     while (!m_isAborted && !m_hasEncodeError) {
+        // Same as for render jobs: each combined file goes to one worker
         const size_t idx = m_nextCombinedFileIdx.fetch_add(1);
         if (idx >= m_combinedFiles.size()) {
             break;
@@ -413,6 +441,8 @@ void ParallelSoundTrackWriter::workerLoop(size_t workerIdx)
     }
 }
 
+//! Processes one block of a track into `trackBuffer`. False if the track wasn't processed
+//! (before its start frame) or produced silence.
 bool ParallelSoundTrackWriter::renderTrack(size_t trackIdx, samples_t dataFrame, samples_t chunk, std::vector<float>& trackBuffer)
 {
     const Track& track = m_tracks.at(trackIdx);
@@ -429,6 +459,7 @@ bool ParallelSoundTrackWriter::renderTrack(size_t trackIdx, samples_t dataFrame,
     return !isChainSilent(track.chain);
 }
 
+//! Adds a track's block, and its aux sends, to the buffers of the combined files it belongs to.
 void ParallelSoundTrackWriter::contributeToCombinedFiles(size_t trackIdx, samples_t dataFrame, samples_t chunk, const float* trackBuffer)
 {
     const size_t channelCount = m_outputSpec.audioChannelCount;
@@ -440,6 +471,7 @@ void ParallelSoundTrackWriter::contributeToCombinedFiles(size_t trackIdx, sample
         FileState& file = *m_files.at(fileIdx);
         Accumulator& acc = *file.accumulator;
 
+        // Other tracks of the same combined file may be rendered by other workers right now
         std::lock_guard lock(acc.mutex);
 
         mixInto(acc.dry.data() + offset, trackBuffer, size);
@@ -452,6 +484,8 @@ void ParallelSoundTrackWriter::contributeToCombinedFiles(size_t trackIdx, sample
     }
 }
 
+//! Runs the aux sends of one block through this worker's aux channels and adds their output to
+//! the mix, like Mixer::processAuxChannels().
 void ParallelSoundTrackWriter::processAuxChannels(const std::vector<bool>& auxUsed, const AuxChannels& auxChannels,
                                                   std::vector<std::vector<float> >& auxBuffers, const std::vector<bool>& auxReceived,
                                                   samples_t chunk, float* mixBuffer)
@@ -478,6 +512,7 @@ void ParallelSoundTrackWriter::processAuxChannels(const std::vector<bool>& auxUs
     }
 }
 
+//! Encodes `frames` of silence (leading or trailing) into a file.
 bool ParallelSoundTrackWriter::encodeSilence(FileState& file, samples_t frames, std::vector<float>& silenceBuffer)
 {
     const samples_t renderStep = m_outputSpec.samplesPerChannel;
@@ -497,6 +532,8 @@ bool ParallelSoundTrackWriter::encodeSilence(FileState& file, samples_t frames, 
     return true;
 }
 
+//! Renders the tracks of one job block by block. A job with a file mixes and encodes it; every
+//! job also feeds the combined files its tracks belong to.
 bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChannels& auxChannels)
 {
     const size_t channelCount = m_outputSpec.audioChannelCount;
@@ -504,6 +541,7 @@ bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChann
     const size_t bufferSize = renderStep * channelCount;
 
     FileState* file = job.fileIdx ? m_files.at(*job.fileIdx).get() : nullptr;
+    // A render-only job has no mix of its own, so it runs no aux channels
     const std::vector<bool> auxUsed = file ? file->auxUsed : std::vector<bool>(auxChannels.size(), false);
 
     //! NOTE This worker's aux copies may still hold the tail of its previous file
@@ -573,12 +611,14 @@ bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChann
         }
 
         if (!file) {
+            // Render-only jobs write no file, so their progress is counted separately
             m_renderOnlyFramesDone += chunk;
             continue;
         }
 
         processAuxChannels(auxUsed, auxChannels, auxBuffers, auxReceived, chunk, mixBuffer.data());
 
+        // encode() returns the number of bytes written; 0 means it failed
         if (file->encoder->encode(chunk, mixBuffer.data()) == 0) {
             LOGE() << "Failed to encode";
             return false;
@@ -590,6 +630,7 @@ bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChann
     // Phase 3: trailing silence
     if (file) {
         std::fill(mixBuffer.begin(), mixBuffer.end(), 0.f);
+        // The rest of the file is trailing silence
         if (!encodeSilence(*file, m_totalSamples - m_leadingSilenceSamples - m_dataSamples, mixBuffer)) {
             return false;
         }
@@ -598,6 +639,8 @@ bool ParallelSoundTrackWriter::runRenderJob(const RenderJob& job, const AuxChann
     return true;
 }
 
+//! Mixes a combined file from its accumulated buffers (running the aux sends through the aux
+//! channels) and encodes it.
 bool ParallelSoundTrackWriter::runCombinedFile(FileState& file, const AuxChannels& auxChannels)
 {
     IF_ASSERT_FAILED(file.accumulator) {
@@ -641,6 +684,7 @@ bool ParallelSoundTrackWriter::runCombinedFile(FileState& file, const AuxChannel
         const size_t offset = dataFrame * channelCount;
         const size_t chunkSize = chunk * channelCount;
 
+        // The summed dry output of all the file's tracks for this block
         std::copy(acc.dry.cbegin() + offset, acc.dry.cbegin() + offset + chunkSize, mixBuffer.begin());
 
         for (size_t auxIdx = 0; auxIdx < file.auxUsed.size(); ++auxIdx) {
@@ -650,6 +694,7 @@ bool ParallelSoundTrackWriter::runCombinedFile(FileState& file, const AuxChannel
 
             const auto sendsBegin = acc.auxSends[auxIdx].cbegin() + offset;
             std::copy(sendsBegin, sendsBegin + chunkSize, auxBuffers[auxIdx].begin());
+            // As in the render jobs, an aux channel only counts as fed when it got a signal
             auxReceived[auxIdx] = std::any_of(sendsBegin, sendsBegin + chunkSize, [](float s) { return s != 0.f; });
         }
 

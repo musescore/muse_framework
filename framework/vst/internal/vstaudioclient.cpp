@@ -139,6 +139,7 @@ void VstAudioClient::setIsPlaying(const bool newPlaying)
     m_needUpdateState = m_isActive;
 }
 
+//! While offline (export), transport events requested by the plugin are dropped.
 void VstAudioClient::setIsOffline(const bool isOffline)
 {
     m_isOffline = isOffline;

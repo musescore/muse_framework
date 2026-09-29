@@ -53,6 +53,7 @@ EventAudioNode::~EventAudioNode()
     m_playbackData.offStream.disconnect(this);
 }
 
+//! Time of the first note in the synth's playback data, or nullopt if there are no notes.
 std::optional<secs_t> EventAudioNode::firstNoteTime() const
 {
     ONLY_AUDIO_ENGINE_THREAD;
