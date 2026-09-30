@@ -1,4 +1,4 @@
-# 00001 Modularity
+# 00001 Core Architecture: Modularity
 
 Date: 2020-05-30   
 Tags: modularity    
