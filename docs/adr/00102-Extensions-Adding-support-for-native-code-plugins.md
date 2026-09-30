@@ -1,4 +1,4 @@
-# 00102 Adding support for native code plugins
+# 00102 Extensions: Adding support for native code plugins
 
 Date: 2026-07-15  
 Tags: extensions, api, native   

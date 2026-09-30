@@ -1,4 +1,4 @@
-# ADR-00104: Command-First Architecture
+# ADR-00104: Commands: Command-First Architecture
 
 Date: 2026-08-21
 Tags: command, query, menu, toolbar, mcp

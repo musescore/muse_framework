@@ -1,4 +1,4 @@
-# 00003 AppShell
+# 00003 Core Architecture: AppShell
 
 Date: 2020-05-30   
 Tags: appshell, modularity    

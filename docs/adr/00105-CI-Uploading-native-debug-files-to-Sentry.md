@@ -1,4 +1,4 @@
-# 00105 Uploading native debug files to Sentry
+# 00105 CI: Uploading native debug files to Sentry
 
 Date: 2026-09-25  
 Tags: crashdumps, sentry, ci, symbols   
