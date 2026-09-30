@@ -23,14 +23,11 @@
 #include "migrationhelper.h"
 
 #include "io/buffer.h"
-#include "io/iodevice.h"
 #include "io/path.h"
+#include "io/file.h"
 #include "rcommand/commandtypes.h"
 #include "serialization/textstream.h"
 #include "shortcutstypes.h"
-#include "thirdparty/kors_logger/src/log_base.h"
-#include "types/bytearray.h"
-#include "io/file.h"
 
 #include "log.h"
 
@@ -128,7 +125,7 @@ void MigrationHelper::onFinished()
     s.flush();
 
     io::path_t filePath = io::dirpath(configuration()->shortcutsUserAppDataPath()) + "/migration.json";
-    Ret ret =io::File::writeFile(filePath, buf.data());
+    Ret ret = io::File::writeFile(filePath, buf.data());
 
     if (ret) {
         LOGI() << "Migration data saved to: " << filePath << " commands count: " << m_resultInfos.size();
