@@ -159,6 +159,7 @@ protected:
 
     void unregisterService(const InterfaceInfo& info)
     {
+        std::shared_ptr<IModuleInterface> released;
         std::map<int, OnChangedInternal> onChanges;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -167,13 +168,16 @@ protected:
                 return;
             }
 
-            it->second.p = nullptr;
+            released = it->second.p;
             onChanges = it->second.onChanges;
+            it->second.p = nullptr;
         }
 
         for (const auto& c : onChanges) {
-            c.second(nullptr);
+            c.second(nullptr); // notify subscribers that the object is released (now null)
         }
+
+        released = nullptr; // actually release the object
     }
 
     void registerService(const std::string& module,
