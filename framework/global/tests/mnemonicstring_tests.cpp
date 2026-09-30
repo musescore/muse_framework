@@ -92,3 +92,20 @@ TEST_F(Global_MnemonicStringTests, processMnemonic)
         EXPECT_EQ(mStr.qTranslatedWithoutMnemonic(), "Multi & Mnemonic");
     }
 }
+
+TEST_F(Global_MnemonicStringTests, plain)
+{
+    auto plain = [](const char* str) {
+        return MnemonicString(TranslatableString::untranslatable(str)).qTranslatedPlain();
+    };
+
+    //! [CHECK] Without mnemonic
+    EXPECT_EQ(plain("&Parts"), "Parts");
+    EXPECT_EQ(plain("Ampersand && Mnemonic"), "Ampersand & Mnemonic");
+
+    //! [CHECK] Without ellipsis
+    EXPECT_EQ(plain("&Parts…"), "Parts");
+    EXPECT_EQ(plain("&Parts..."), "Parts");
+    EXPECT_EQ(plain("&Parts …"), "Parts");
+    EXPECT_EQ(plain("Parts… (&P)"), "Parts (P)");
+}
