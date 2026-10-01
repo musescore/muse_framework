@@ -38,7 +38,7 @@ using namespace muse::update;
 using namespace muse::actions;
 using namespace muse::async;
 
-void AppUpdateScenario::init()
+void AppUpdateScenario::delayedInit()
 {
     const std::string installing = configuration()->installingReleaseVersion();
     if (installing.empty()) {
@@ -49,6 +49,10 @@ void AppUpdateScenario::init()
 
     //! NOTE: The version differs if the user canceled the installer or it failed.
     m_hasCompletedUpdate = Version(installing) == application()->fullVersion();
+
+    if (m_hasCompletedUpdate) {
+        showUpdateCompletedToast();
+    }
 }
 
 bool AppUpdateScenario::needCheckForUpdate() const
@@ -188,6 +192,15 @@ std::string AppUpdateScenario::applyReleaseInfoResult(const Val& result)
 
     const auto action = map.find("action");
     return action != map.end() ? action->second.toString() : std::string();
+}
+
+void AppUpdateScenario::showUpdateCompletedToast()
+{
+    const std::string title = muse::qtrc("update", "Updated to %1 %2")
+                              .arg(application()->title().toQString(), application()->fullVersion().toString().toQString())
+                              .toStdString();
+
+    toastService()->showWithTimeout(title, std::string(), std::chrono::seconds(10), muse::ui::IconCode::Code::TICK_FILLED);
 }
 
 void AppUpdateScenario::showUpdateAvailableToast(const ReleaseInfo& info, bool downloaded)
