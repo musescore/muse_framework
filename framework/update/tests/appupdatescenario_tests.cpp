@@ -41,6 +41,7 @@
 using ::testing::_;
 using ::testing::Invoke;
 using ::testing::InvokeWithoutArgs;
+using ::testing::IsEmpty;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::ReturnRef;
@@ -112,9 +113,9 @@ public:
         m_scenario->downloadUpdateInBackground();
     }
 
-    void init()
+    void delayedInit()
     {
-        m_scenario->init();
+        m_scenario->delayedInit();
     }
 
     void skipRelease(const std::string& version)
@@ -197,9 +198,9 @@ public:
             //! NOTE: The toggle keeps its initial value unless the test says otherwise
             const bool toggle = autoUpdateEnabled.value_or(query.param("autoUpdateEnabled").toBool());
             const Val result(ValMap {
-                { "action", Val(action) },
-                { "autoUpdateEnabled", Val(toggle) },
-            });
+                    { "action", Val(action) },
+                    { "autoUpdateEnabled", Val(toggle) },
+                });
 
             return async::make_promise<Val>([result](auto resolve) {
                 return resolve(result);
@@ -515,7 +516,7 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_WhileDownloading_DoesNotSurfaceUpdate
     EXPECT_FALSE(m_scenario->hasReadyUpdate());
 }
 
-TEST_F(AppUpdateScenarioTests, Init_LaunchedWithInstalledVersion_ReportsCompletedUpdate)
+TEST_F(AppUpdateScenarioTests, DelayedInit_LaunchedWithInstalledVersion_ReportsCompletedUpdate)
 {
     //! [GIVEN] The app quit to install this very version and is now running it
     ON_CALL(*m_configuration, installingReleaseVersion())
@@ -524,8 +525,17 @@ TEST_F(AppUpdateScenarioTests, Init_LaunchedWithInstalledVersion_ReportsComplete
     //! [THEN] The record is cleared so the banner shows only once
     EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(""));
 
-    //! [WHEN] The scenario starts
-    init();
+    //! [THEN] The "updated" toast is shown, with no buttons
+    EXPECT_CALL(*m_toastService,
+                showWithTimeout("Updated to App 4.0.0", "", std::chrono::seconds(10), ui::IconCode::Code::TICK_FILLED, true, IsEmpty()))
+    .WillOnce(InvokeWithoutArgs([]() {
+        return async::make_promise<toast::ToastResult>([](auto resolve) {
+            return resolve(toast::ToastResult(static_cast<int>(toast::ToastActionCode::Dismiss)));
+        });
+    }));
+
+    //! [WHEN] The app finished starting
+    delayedInit();
 
     //! [THEN] The update is reported as completed until dismissed
     EXPECT_TRUE(m_scenario->hasCompletedUpdate());
@@ -534,7 +544,7 @@ TEST_F(AppUpdateScenarioTests, Init_LaunchedWithInstalledVersion_ReportsComplete
     EXPECT_FALSE(m_scenario->hasCompletedUpdate());
 }
 
-TEST_F(AppUpdateScenarioTests, Init_InstallDidNotHappen_NoCompletedUpdate)
+TEST_F(AppUpdateScenarioTests, DelayedInit_InstallDidNotHappen_NoCompletedUpdate)
 {
     //! [GIVEN] The app quit to install a version, but still runs the old one
     ON_CALL(*m_configuration, installingReleaseVersion())
@@ -543,14 +553,18 @@ TEST_F(AppUpdateScenarioTests, Init_InstallDidNotHappen_NoCompletedUpdate)
     //! [THEN] The record is still cleared
     EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(""));
 
-    //! [WHEN] The scenario starts
-    init();
+    //! [THEN] No toast is shown
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
+
+    //! [WHEN] The app finished starting
+    delayedInit();
 
     //! [THEN] Nothing is reported
     EXPECT_FALSE(m_scenario->hasCompletedUpdate());
 }
 
-TEST_F(AppUpdateScenarioTests, Init_NothingWasInstalling_NoCompletedUpdate)
+TEST_F(AppUpdateScenarioTests, DelayedInit_NothingWasInstalling_NoCompletedUpdate)
 {
     //! [GIVEN] A regular launch
     ON_CALL(*m_configuration, installingReleaseVersion())
@@ -559,8 +573,12 @@ TEST_F(AppUpdateScenarioTests, Init_NothingWasInstalling_NoCompletedUpdate)
     EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(_))
     .Times(0);
 
-    //! [WHEN] The scenario starts
-    init();
+    //! [THEN] No toast is shown
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
+
+    //! [WHEN] The app finished starting
+    delayedInit();
 
     EXPECT_FALSE(m_scenario->hasCompletedUpdate());
 }
