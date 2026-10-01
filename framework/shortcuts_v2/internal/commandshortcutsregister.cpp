@@ -21,12 +21,17 @@
  */
 #include "commandshortcutsregister.h"
 
-#include "containers.h"
+#include "global/containers.h"
+#include "global/stringutils.h"
 #include "global/io/file.h"
+#include "global/io/buffer.h"
 #include "global/serialization/json.h"
+#include "global/serialization/textstream.h"
 
 #include "multiwindows/resourcelockguard.h"
 #include "rcommand/commandtypes.h"
+
+#include "log.h"
 
 using namespace muse;
 using namespace muse::shortcuts;
@@ -283,51 +288,33 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
     }
 
     JsonDocument doc = JsonDocument::fromJson(data);
-    if (!doc.isObject()) {
+    if (!doc.isArray()) {
         LOGE() << "failed parse json: " << path;
         return false;
     }
 
-    JsonObject rootObj = doc.rootObject();
-
-    for (const std::string& key : rootObj.keys()) {
-        JsonValue scope = rootObj.value(key);
-        if (!scope.isArray()) {
-            LOGE() << "failed parse json: " << path << ", key: " << key;
+    JsonArray rootArr = doc.rootArray();
+    for (size_t i = 0; i < rootArr.size(); ++i) {
+        JsonValue value = rootArr.at(i);
+        if (!value.isObject()) {
+            LOGE() << "failed parse json: " << path;
             continue;
         }
 
-        JsonArray arr = scope.toArray();
-        for (size_t i = 0; i < arr.size(); ++i) {
-            JsonValue value = arr.at(i);
-            if (!value.isObject()) {
-                LOGE() << "failed parse json: " << path << ", key: " << key << ", i: " << i;
-                continue;
-            }
+        JsonObject obj = value.toObject();
 
-            JsonObject obj = value.toObject();
+        JsonArray shortcutsArr = obj.value("shortcuts").toArray();
+        for (size_t j = 0; j < shortcutsArr.size(); ++j) {
+            JsonObject shortcutObj = shortcutsArr.at(j).toObject();
             Shortcut shortcut;
-            shortcut.scope = key;
-            shortcut.command = rcommand::Command(obj.value("command").toString());
-            shortcut.autoRepeat = obj.value("autoRepeat").toBool();
-
-            JsonValue sequences = obj.value("sequences");
-            if (!sequences.isArray()) {
-                LOGE() << "failed parse json: " << path << ", key: " << key << ", i: " << i;
-                continue;
+            shortcut.scope = obj.value("scope").toStdString();
+            shortcut.command = rcommand::Command(shortcutObj.value("command").toStdString());
+            shortcut.autoRepeat = shortcutObj.value("autorepeat").toBool();
+            JsonArray sequencesArr = shortcutObj.value("sequences").toArray();
+            for (size_t k = 0; k < sequencesArr.size(); ++k) {
+                shortcut.sequences.push_back(sequencesArr.at(k).toStdString());
             }
-
-            JsonArray sequencesArr = sequences.toArray();
-            for (size_t j = 0; j < sequencesArr.size(); ++j) {
-                JsonValue sequence = sequencesArr.at(j);
-                if (!sequence.isString()) {
-                    LOGE() << "failed parse json: " << path << ", key: " << key << ", i: " << i << ", j: " << j;
-                    continue;
-                }
-                shortcut.sequences.push_back(sequence.toString().toStdString());
-            }
-
-            shortcuts.push_back(shortcut);
+            shortcuts.push_back(std::move(shortcut));
         }
     }
 
@@ -343,32 +330,80 @@ bool CommandShortcutsRegister::writeToFile(const ShortcutList& shortcuts, const 
         return false;
     }
 
-    JsonObject root;
-    for (const Shortcut& shortcut : shortcuts) {
-        JsonObject shortcutObj;
-        shortcutObj["command"] = shortcut.command.toString();
-        shortcutObj["autoRepeat"] = shortcut.autoRepeat;
-        JsonArray sequencesArr;
-        for (const std::string& sequence : shortcut.sequences) {
-            sequencesArr.append(JsonValue(sequence));
-        }
-        shortcutObj["sequences"] = sequencesArr;
+    //! NOTE Json doesn't format very nicely and adds unnecessary escape characters, so we serialize manually.
+    io::Buffer buf;
+    {
+        buf.open(io::IODevice::ReadWrite);
+        TextStream s(&buf);
 
-        JsonValue scopeValue = root.value(shortcut.scope);
-        if (!scopeValue.isArray()) {
-            scopeValue = JsonArray();
+        // group shortcuts by scope
+        struct Scope {
+            std::string scope;
+            ShortcutList shortcuts;
+        };
+
+        std::vector<Scope> scopes;
+        for (const Shortcut& sc : shortcuts) {
+            auto it = std::find_if(scopes.begin(), scopes.end(), [&sc](const Scope& scope) {
+                return scope.scope == sc.scope;
+            });
+            if (it == scopes.end()) {
+                scopes.push_back({ sc.scope, { sc } });
+            } else {
+                it->shortcuts.push_back(sc);
+            }
         }
-        JsonArray scopeValueArr = scopeValue.toArray();
-        scopeValueArr.append(shortcutObj);
-        root[shortcut.scope] = scopeValueArr;
+
+        // serialize scopes
+
+        auto escapeSeq = [](const std::string& seq) {
+            std::string escaped = seq;
+            muse::strings::replace(escaped, "\\", "\\\\");
+            muse::strings::replace(escaped, "\"", "\\\"");
+            return escaped;
+        };
+        s << "[\n";
+        for (size_t si = 0; si < scopes.size(); ++si) {
+            const Scope& scope = scopes.at(si);
+            s << "  {\n";
+            s << "    \"scope\": \"" << scope.scope << "\",\n";
+            s << "    \"shortcuts\": [\n";
+            size_t ci = 0;
+            for (const Shortcut& sc : scope.shortcuts) {
+                s << "      {";
+                s << "        \"command\": \"" << sc.command.toString() << "\",";
+                s << "        \"sequences\": [";
+                for (size_t i = 0; i < sc.sequences.size(); ++i) {
+                    s << "\"" << escapeSeq(sc.sequences.at(i)) << "\"";
+                    if (i < sc.sequences.size() - 1) {
+                        s << ",";
+                    }
+                }
+                s << "]";
+                if (sc.autoRepeat) {
+                    s << ", \"autorepeat\": true";
+                }
+                s << "      }";
+                if (++ci < scope.shortcuts.size()) {
+                    s << ",";
+                }
+                s << "\n";
+            }
+            s << "    ]\n";
+            s << "  }";
+            if (si < scopes.size() - 1) {
+                s << ",";
+            }
+            s << "\n";
+        }
+        s << "]";
+        s.flush();
     }
-
-    ByteArray data = JsonDocument(root).toJson();
 
     Ret ret;
     {
         mi::WriteResourceLockGuard guard(multiwindowsProvider(), COMMAND_SHORTCUTS_TAG);
-        ret = io::File::writeFile(path, data);
+        ret = io::File::writeFile(path, buf.data());
     }
 
     LOGD() << "write shortcuts to file: " << path;
