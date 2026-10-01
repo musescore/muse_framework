@@ -33,6 +33,7 @@ qt_add_qml_module(muse_update_qml
         AppUpdateProgressDialog.qml
         UpdateBanner.qml
         internal/AppReleaseInfoBottomPanel.qml
+        internal/AutoUpdateSetting.qml
         internal/ReleaseNotesView.qml
         internal/UpdateCompletedContent.qml
         internal/UpdateReadyContent.qml
