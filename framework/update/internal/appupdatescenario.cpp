@@ -156,9 +156,10 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool re
     query.addParam("notes", Val(info.notes));
     query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
     query.addParam("readyToInstall", Val(readyToInstall));
+    query.addParam("autoUpdateEnabled", Val(configuration()->autoUpdateEnabled()));
 
     return interactive()->open(query).then<Ret>(this, [this, info](const Val& val, auto resolve) {
-        const QString actionCode = val.toQString();
+        const std::string actionCode = applyReleaseInfoResult(val);
         if (actionCode == "remindLater") {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
@@ -174,6 +175,19 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool re
 
         return Promise<Ret>::dummy_result();
     });
+}
+
+std::string AppUpdateScenario::applyReleaseInfoResult(const Val& result)
+{
+    const ValMap map = result.toMap();
+
+    const auto autoUpdate = map.find("autoUpdateEnabled");
+    if (autoUpdate != map.end()) {
+        configuration()->setAutoUpdateEnabled(autoUpdate->second.toBool());
+    }
+
+    const auto action = map.find("action");
+    return action != map.end() ? action->second.toString() : std::string();
 }
 
 void AppUpdateScenario::showUpdateAvailableToast(const ReleaseInfo& info, bool downloaded)
@@ -496,9 +510,10 @@ void AppUpdateScenario::showReadyUpdateInfo()
     query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
     query.addParam("version", Val(m_readyUpdateVersion));
     query.addParam("readyToInstall", Val(true));
+    query.addParam("autoUpdateEnabled", Val(configuration()->autoUpdateEnabled()));
 
     interactive()->open(query).onResolve(this, [this](const Val& val) {
-        const QString actionCode = val.toQString();
+        const std::string actionCode = applyReleaseInfoResult(val);
 
         if (actionCode == "skip") {
             skipRelease(m_readyUpdateVersion);

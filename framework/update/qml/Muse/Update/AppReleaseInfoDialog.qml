@@ -35,11 +35,23 @@ StyledDialogView {
     property alias readyToInstall: buttons.readyToInstall
     property alias notes: view.notes
     property alias previousReleasesNotes: view.previousReleasesNotes
+    property alias autoUpdateEnabled: autoUpdateSetting.checked
 
     contentWidth: 644
     contentHeight: 474
 
     margins: 22
+
+    function finish(action) {
+        root.ret = {
+            errcode: 0,
+            value: {
+                action: action,
+                autoUpdateEnabled: root.autoUpdateEnabled
+            }
+        }
+        root.hide()
+    }
 
     onNavigationActivateRequested: {
         buttons.focusOnFirst()
@@ -110,6 +122,22 @@ StyledDialogView {
             Layout.rightMargin: -root.margins
         }
 
+        AutoUpdateSetting {
+            id: autoUpdateSetting
+
+            Layout.fillWidth: true
+
+            appName: root.appName
+
+            navigationPanel.section: root.navigationSection
+            navigationPanel.order: 2
+        }
+
+        SeparatorLine {
+            Layout.leftMargin: -root.margins
+            Layout.rightMargin: -root.margins
+        }
+
         AppReleaseInfoBottomPanel {
             id: buttons
 
@@ -121,27 +149,15 @@ StyledDialogView {
             navigationPanel.order: 1
 
             onRemindLaterRequested: {
-                root.ret = {
-                    errcode: 0,
-                    value: "remindLater"
-                }
-                root.hide()
+                root.finish("remindLater")
             }
 
             onInstallRequested: {
-                root.ret = {
-                    errcode: 0,
-                    value: "install"
-                }
-                root.hide()
+                root.finish("install")
             }
 
             onSkipRequested: {
-                root.ret = {
-                    errcode: 0,
-                    value: "skip"
-                }
-                root.hide()
+                root.finish("skip")
             }
         }
     }

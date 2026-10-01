@@ -21,6 +21,8 @@
  */
 #include <gmock/gmock.h>
 
+#include <optional>
+
 #include <QThreadPool>
 
 #include "global/tests/mocks/applicationmock.h"
@@ -182,16 +184,25 @@ public:
     }
 
     //! The release info dialog: checks the query, then resolves with the given action
-    //! ("install", "skip", "remindLater") once messages are processed
-    static auto releaseInfoDialog(bool expectedReadyToInstall, const std::string& action)
+    //! ("install", "skip", "remindLater") and the auto-update toggle state once messages are processed
+    static auto releaseInfoDialog(bool expectedReadyToInstall, const std::string& action,
+                                  std::optional<bool> autoUpdateEnabled = std::nullopt)
     {
-        return Invoke([expectedReadyToInstall, action](const UriQuery& query) {
+        return Invoke([expectedReadyToInstall, action, autoUpdateEnabled](const UriQuery& query) {
             EXPECT_EQ(query.uri(), Uri("muse://update/appreleaseinfo"));
             EXPECT_EQ(query.param("appName").toString(), "App");
             EXPECT_EQ(query.param("version").toString(), "1000.0");
             EXPECT_EQ(query.param("readyToInstall").toBool(), expectedReadyToInstall);
-            return async::make_promise<Val>([action](auto resolve) {
-                return resolve(Val(action));
+
+            //! NOTE: The toggle keeps its initial value unless the test says otherwise
+            const bool toggle = autoUpdateEnabled.value_or(query.param("autoUpdateEnabled").toBool());
+            const Val result(ValMap {
+                { "action", Val(action) },
+                { "autoUpdateEnabled", Val(toggle) },
+            });
+
+            return async::make_promise<Val>([result](auto resolve) {
+                return resolve(result);
             });
         });
     }
@@ -788,5 +799,102 @@ TEST_F(AppUpdateScenarioTests, ManualCheck_ReleaseNotDownloaded_OpensReleaseInfo
 
     //! [WHEN] The user checks for updates manually
     m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ReleaseInfo_PassesCurrentAutoUpdateSetting)
+{
+    //! [GIVEN] Automatic update is off
+    ON_CALL(*m_configuration, autoUpdateEnabled())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [THEN] The dialog gets the current setting for its toggle
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(Invoke([](const UriQuery& query) {
+        EXPECT_FALSE(query.param("autoUpdateEnabled").toBool());
+        return async::make_promise<Val>([](auto resolve) {
+            return resolve(Val(ValMap { { "action", Val(std::string("remindLater")) } }));
+        });
+    }));
+
+    //! [THEN] A result without the toggle state does not touch the setting
+    EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(_))
+    .Times(0);
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ReleaseInfo_RemindLater_AppliesAutoUpdateToggle)
+{
+    //! [GIVEN] Automatic update is off
+    ON_CALL(*m_configuration, autoUpdateEnabled())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user turns the toggle on and clicks "Remind me later"
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "remindLater", /*autoUpdateEnabled*/ true));
+
+    //! [THEN] The setting is saved, and nothing is downloaded
+    EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(true));
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ReleaseInfo_Skip_AppliesAutoUpdateToggle)
+{
+    //! [GIVEN] Automatic update is on
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user turns the toggle off and skips the release
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "skip", /*autoUpdateEnabled*/ false));
+
+    //! [THEN] The setting is saved and the release is skipped
+    EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(false));
+    EXPECT_CALL(*m_configuration, setSkippedReleaseVersion("1000.0"));
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ReadyUpdateInfo_Install_AppliesAutoUpdateToggle)
+{
+    //! [GIVEN] A ready update and no in-place install support
+    ON_CALL(*m_networkInformation, isMetered())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, downloadRelease())
+    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
+
+    downloadUpdateInBackground();
+    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
+
+    ON_CALL(*m_service, canAutoInstall())
+    .WillByDefault(Return(false));
+
+    //! [GIVEN] The user turns the toggle off and clicks "Restart & update"
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ true, "install", /*autoUpdateEnabled*/ false));
+
+    //! [THEN] The setting is saved and the install prompt follows
+    EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(false));
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(dialog(IInteractive::Button::Cancel));
+
+    //! [WHEN] The user opens the ready update details from the banner
+    m_scenario->showReadyUpdateInfo();
     pump();
 }
