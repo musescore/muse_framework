@@ -92,7 +92,7 @@ public:
         ON_CALL(*m_service, isReleaseDownloaded())
         .WillByDefault(Return(false));
 
-        ON_CALL(*m_configuration, autoDownloadEnabled())
+        ON_CALL(*m_configuration, autoUpdateEnabled())
         .WillByDefault(Return(true));
     }
 
@@ -186,10 +186,10 @@ TEST_F(AppUpdateScenarioTests, BgDownload_UnmeteredNetwork_StartsDownload)
     EXPECT_EQ(m_scenario->readyUpdateVersion(), "1000.0");
 }
 
-TEST_F(AppUpdateScenarioTests, BgDownload_AutoDownloadDisabled_SkipsDownload)
+TEST_F(AppUpdateScenarioTests, BgDownload_AutoUpdateDisabled_SkipsDownload)
 {
     //! [GIVEN] The user turned automatic download off
-    ON_CALL(*m_configuration, autoDownloadEnabled())
+    ON_CALL(*m_configuration, autoUpdateEnabled())
     .WillByDefault(Return(false));
     ON_CALL(*m_networkInformation, isMetered())
     .WillByDefault(Return(false));

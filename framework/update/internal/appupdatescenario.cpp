@@ -340,7 +340,7 @@ void AppUpdateScenario::downloadUpdateInBackground()
         return;
     }
 
-    if (!configuration()->autoDownloadEnabled()) {
+    if (!configuration()->autoUpdateEnabled()) {
         LOGI() << "background update download skipped: user has disabled";
         return;
     }
