@@ -73,7 +73,7 @@ void AppUpdateScenario::checkForUpdate(bool manual)
             } else if (!res.ret) {
                 showServerErrorMsg();
             } else {
-                showReleaseInfo(res.val);
+                showReleaseInfo(res.val, service()->isReleaseDownloaded());
             }
         } else if (!res.ret && !noUpdate) {
             LOGE() << res.ret.toString();
@@ -148,12 +148,14 @@ Promise<IInteractive::Result> AppUpdateScenario::showNoUpdateMsg()
                                IInteractive::Option::WithIcon);
 }
 
-Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info)
+Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool readyToInstall)
 {
     UriQuery query("muse://update/appreleaseinfo");
     query.addParam("appName", Val(application()->title().toStdString()));
+    query.addParam("version", Val(info.version));
     query.addParam("notes", Val(info.notes));
     query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
+    query.addParam("readyToInstall", Val(readyToInstall));
 
     return interactive()->open(query).then<Ret>(this, [this, info](const Val& val, auto resolve) {
         const QString actionCode = val.toQString();
@@ -189,11 +191,7 @@ void AppUpdateScenario::showUpdateAvailableToast(const ReleaseInfo& info, bool d
         { downloaded ? muse::trc("update", "Restart & update") : muse::trc("update", "Install update"), installBtn, /*accent*/ true },
     }).onResolve(this, [this, info, downloaded](const toast::ToastResult& result) {
         if (result.isCode(seeDetailsBtn)) {
-            if (downloaded) {
-                showReadyUpdateInfo();
-            } else {
-                showReleaseInfo(info).onResolve(this, [](const Ret&) {});
-            }
+            showReleaseInfo(info, downloaded).onResolve(this, [](const Ret&) {});
         } else if (result.isCode(installBtn)) {
             if (downloaded) {
                 installReadyUpdate();

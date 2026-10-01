@@ -76,7 +76,7 @@ private:
     muse::async::Promise<Ret> processUpdateError(const Ret& error);
 
     async::Promise<IInteractive::Result> showNoUpdateMsg();
-    muse::async::Promise<Ret> showReleaseInfo(const ReleaseInfo& info);
+    muse::async::Promise<Ret> showReleaseInfo(const ReleaseInfo& info, bool readyToInstall);
     void showUpdateAvailableToast(const ReleaseInfo& info, bool downloaded);
     async::Promise<IInteractive::Result> showServerErrorMsg();
     async::Promise<Ret> askToRetryOnNotEnoughDiskSpace(const Ret& error, const std::function<async::Promise<Ret>()>& retry);

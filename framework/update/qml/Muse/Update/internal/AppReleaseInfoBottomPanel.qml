@@ -29,6 +29,7 @@ RowLayout {
     id: root
 
     property string defaultButtonName: installButton.text
+    property bool readyToInstall: false
 
     property NavigationPanel navigationPanel: NavigationPanel {
         name: "UpdateBottomPanel"
@@ -37,9 +38,9 @@ RowLayout {
 
     spacing: 12
 
-    signal skipRequested()
-    signal remindLaterRequested()
-    signal installRequested()
+    signal skipRequested
+    signal remindLaterRequested
+    signal installRequested
 
     function focusOnFirst() {
         installButton.navigation.requestActive()
@@ -68,9 +69,8 @@ RowLayout {
         Layout.alignment: Qt.AlignVCenter
 
         text: qsTrc("update", "Remind me later")
-        icon: IconCode.CLOCK
 
-        orientation: Qt.Horizontal
+        visible: !root.readyToInstall
 
         navigation.name: "RemindMeLaterButton"
         navigation.panel: root.navigationPanel
@@ -86,8 +86,7 @@ RowLayout {
 
         Layout.alignment: Qt.AlignVCenter
 
-        text: qsTrc("update", "Update now")
-        icon: IconCode.IMPORT
+        text: root.readyToInstall ? qsTrc("update", "Restart & update") : qsTrc("update", "Install update")
 
         accentButton: true
         orientation: Qt.Horizontal
