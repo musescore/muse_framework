@@ -118,6 +118,16 @@ public:
         m_scenario->delayedInit();
     }
 
+    bool hasReadyUpdate() const
+    {
+        return !m_scenario->m_readyPackagePath.empty();
+    }
+
+    void installReadyUpdate()
+    {
+        m_scenario->installReadyUpdate();
+    }
+
     void skipRelease(const std::string& version)
     {
         m_scenario->skipRelease(version);
@@ -265,8 +275,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_UnmeteredNetwork_StartsDownload)
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
 
     //! [THEN] The update is surfaced as ready to install
-    EXPECT_TRUE(m_scenario->hasReadyUpdate());
-    EXPECT_EQ(m_scenario->readyUpdateVersion(), "1000.0");
+    EXPECT_TRUE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, BgDownload_AutoUpdateDisabled_SkipsDownload)
@@ -284,7 +293,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_AutoUpdateDisabled_SkipsDownload)
     //! [WHEN] A background download is requested
     downloadUpdateInBackground();
 
-    EXPECT_FALSE(m_scenario->hasReadyUpdate());
+    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, BgDownload_MeteredNetwork_SkipsDownload)
@@ -301,7 +310,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_MeteredNetwork_SkipsDownload)
     downloadUpdateInBackground();
 
     //! [THEN] No update is surfaced as ready
-    EXPECT_FALSE(m_scenario->hasReadyUpdate());
+    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, BgDownload_MeteredThenUnmetered_DownloadsOnRetry)
@@ -345,8 +354,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_AlreadyDownloaded_SurfacedEvenOnMetere
     downloadUpdateInBackground();
 
     //! [THEN] The downloaded update is still surfaced as ready to install
-    EXPECT_TRUE(m_scenario->hasReadyUpdate());
-    EXPECT_EQ(m_scenario->readyUpdateVersion(), "1000.0");
+    EXPECT_TRUE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, BgDownload_NotEnoughDiskSpace_SkipsSilently)
@@ -363,7 +371,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_NotEnoughDiskSpace_SkipsSilently)
     downloadUpdateInBackground();
 
     //! [THEN] No update is surfaced as ready and a later retry is allowed
-    EXPECT_FALSE(m_scenario->hasReadyUpdate());
+    EXPECT_FALSE(hasReadyUpdate());
 
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
@@ -477,7 +485,7 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
 
     downloadUpdateInBackground();
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-    ASSERT_TRUE(m_scenario->hasReadyUpdate());
+    ASSERT_TRUE(hasReadyUpdate());
 
     //! [THEN] The version is remembered as skipped and the package is deleted
     EXPECT_CALL(*m_configuration, setSkippedReleaseVersion("1000.0"));
@@ -487,7 +495,7 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
     skipRelease("1000.0");
 
     //! [THEN] Nothing is left to install
-    EXPECT_FALSE(m_scenario->hasReadyUpdate());
+    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, SkipRelease_WhileDownloading_DoesNotSurfaceUpdate)
@@ -513,7 +521,7 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_WhileDownloading_DoesNotSurfaceUpdate
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
 
     //! [THEN] The skipped release is not surfaced as ready to install
-    EXPECT_FALSE(m_scenario->hasReadyUpdate());
+    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, DelayedInit_LaunchedWithInstalledVersion_ReportsCompletedUpdate)
@@ -536,12 +544,6 @@ TEST_F(AppUpdateScenarioTests, DelayedInit_LaunchedWithInstalledVersion_ReportsC
 
     //! [WHEN] The app finished starting
     delayedInit();
-
-    //! [THEN] The update is reported as completed until dismissed
-    EXPECT_TRUE(m_scenario->hasCompletedUpdate());
-
-    m_scenario->dismissCompletedUpdate();
-    EXPECT_FALSE(m_scenario->hasCompletedUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, DelayedInit_InstallDidNotHappen_NoCompletedUpdate)
@@ -559,9 +561,6 @@ TEST_F(AppUpdateScenarioTests, DelayedInit_InstallDidNotHappen_NoCompletedUpdate
 
     //! [WHEN] The app finished starting
     delayedInit();
-
-    //! [THEN] Nothing is reported
-    EXPECT_FALSE(m_scenario->hasCompletedUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, DelayedInit_NothingWasInstalling_NoCompletedUpdate)
@@ -579,42 +578,6 @@ TEST_F(AppUpdateScenarioTests, DelayedInit_NothingWasInstalling_NoCompletedUpdat
 
     //! [WHEN] The app finished starting
     delayedInit();
-
-    EXPECT_FALSE(m_scenario->hasCompletedUpdate());
-}
-
-TEST_F(AppUpdateScenarioTests, DismissReadyUpdate_HidesBanner_KeepsPackage)
-{
-    //! [GIVEN] A ready update
-    ON_CALL(*m_networkInformation, isMetered())
-    .WillByDefault(Return(false));
-    EXPECT_CALL(*m_service, downloadRelease())
-    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
-
-    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
-    .WillOnce(toast(DOWNLOADED_TOAST));
-
-    downloadUpdateInBackground();
-    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-    ASSERT_TRUE(m_scenario->hasReadyUpdate());
-
-    //! [THEN] The package is not removed
-    EXPECT_CALL(*m_service, removeDownloadedRelease())
-    .Times(0);
-
-    //! [WHEN] The user closes the banner
-    m_scenario->dismissReadyUpdate();
-
-    //! [THEN] The banner is hidden, but the update can still be installed
-    EXPECT_FALSE(m_scenario->hasReadyUpdate());
-
-    ON_CALL(*m_service, canAutoInstall())
-    .WillByDefault(Return(false));
-    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Cancel));
-
-    m_scenario->installReadyUpdate();
-    pump();
 }
 
 TEST_F(AppUpdateScenarioTests, InstallReadyUpdate_GoesStraightToInstall)
@@ -641,7 +604,7 @@ TEST_F(AppUpdateScenarioTests, InstallReadyUpdate_GoesStraightToInstall)
     .WillOnce(dialog(IInteractive::Button::Cancel));
 
     //! [WHEN] The user chooses "Restart and update"
-    m_scenario->installReadyUpdate();
+    installReadyUpdate();
     pump();
 }
 
@@ -887,23 +850,24 @@ TEST_F(AppUpdateScenarioTests, ReleaseInfo_Skip_AppliesAutoUpdateToggle)
     pump();
 }
 
-TEST_F(AppUpdateScenarioTests, ReadyUpdateInfo_Install_AppliesAutoUpdateToggle)
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_AppliesAutoUpdateToggle)
 {
-    //! [GIVEN] A ready update and no in-place install support
+    //! [GIVEN] A background download is running and in-place install is not available
     ON_CALL(*m_networkInformation, isMetered())
     .WillByDefault(Return(false));
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
-    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
-    .WillOnce(toast(DOWNLOADED_TOAST));
-
-    downloadUpdateInBackground();
-    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-
+    ON_CALL(*m_service, downloadedReleasePath())
+    .WillByDefault(Return(io::path_t("upd/MuseScore.dmg")));
     ON_CALL(*m_service, canAutoInstall())
     .WillByDefault(Return(false));
 
-    //! [GIVEN] The user turns the toggle off and clicks "Restart & update"
+    downloadUpdateInBackground();
+
+    //! [GIVEN] The user clicks "See details" on the toast,
+    //! turns the toggle off and clicks "Restart & update"
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST, SEE_DETAILS));
     EXPECT_CALL(*m_interactive, open(_))
     .WillOnce(releaseInfoDialog(/*readyToInstall*/ true, "install", /*autoUpdateEnabled*/ false));
 
@@ -912,7 +876,7 @@ TEST_F(AppUpdateScenarioTests, ReadyUpdateInfo_Install_AppliesAutoUpdateToggle)
     EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
     .WillOnce(dialog(IInteractive::Button::Cancel));
 
-    //! [WHEN] The user opens the ready update details from the banner
-    m_scenario->showReadyUpdateInfo();
+    //! [WHEN] The download finishes
+    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
     pump();
 }

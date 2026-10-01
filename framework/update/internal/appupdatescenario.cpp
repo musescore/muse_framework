@@ -48,9 +48,9 @@ void AppUpdateScenario::delayedInit()
     configuration()->setInstallingReleaseVersion(std::string());
 
     //! NOTE: The version differs if the user canceled the installer or it failed.
-    m_hasCompletedUpdate = Version(installing) == application()->fullVersion();
+    bool hasCompletedUpdate = Version(installing) == application()->fullVersion();
 
-    if (m_hasCompletedUpdate) {
+    if (hasCompletedUpdate) {
         showUpdateCompletedToast();
     }
 }
@@ -408,9 +408,6 @@ void AppUpdateScenario::downloadUpdateInBackground()
     //! waiting to be installed - surface it without downloading again.
     if (service()->isReleaseDownloaded()) {
         m_readyPackagePath = service()->downloadedReleasePath();
-        m_readyUpdateVersion = service()->lastCheckResult().val.version;
-        m_readyUpdateDismissed = false;
-        m_hasReadyUpdateChanged.notify();
 
         showUpdateAvailableToast(service()->lastCheckResult().val, /*downloaded*/ true);
         return;
@@ -443,9 +440,6 @@ void AppUpdateScenario::downloadUpdateInBackground()
         }
 
         m_readyPackagePath = res.val.toString();
-        m_readyUpdateVersion = service()->lastCheckResult().val.version;
-        m_readyUpdateDismissed = false;
-        m_hasReadyUpdateChanged.notify();
 
         showUpdateAvailableToast(service()->lastCheckResult().val, /*downloaded*/ true);
     }, Asyncable::Mode::SetReplace);
@@ -457,42 +451,6 @@ void AppUpdateScenario::skipRelease(const std::string& version)
     service()->removeDownloadedRelease();
 
     m_readyPackagePath = io::path_t();
-    m_hasReadyUpdateChanged.notify();
-}
-
-bool AppUpdateScenario::hasCompletedUpdate() const
-{
-    return m_hasCompletedUpdate;
-}
-
-async::Notification AppUpdateScenario::hasCompletedUpdateChanged() const
-{
-    return m_hasCompletedUpdateChanged;
-}
-
-void AppUpdateScenario::dismissCompletedUpdate()
-{
-    if (!m_hasCompletedUpdate) {
-        return;
-    }
-
-    m_hasCompletedUpdate = false;
-    m_hasCompletedUpdateChanged.notify();
-}
-
-bool AppUpdateScenario::hasReadyUpdate() const
-{
-    return !m_readyPackagePath.empty() && !m_readyUpdateDismissed;
-}
-
-async::Notification AppUpdateScenario::hasReadyUpdateChanged() const
-{
-    return m_hasReadyUpdateChanged;
-}
-
-std::string AppUpdateScenario::readyUpdateVersion() const
-{
-    return m_readyUpdateVersion;
 }
 
 void AppUpdateScenario::installReadyUpdate()
@@ -507,44 +465,4 @@ void AppUpdateScenario::installReadyUpdate()
     }
 
     prepareAndInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
-}
-
-void AppUpdateScenario::showReadyUpdateInfo()
-{
-    if (m_readyPackagePath.empty()) {
-        return;
-    }
-
-    const ReleaseInfo& info = service()->lastCheckResult().val;
-
-    UriQuery query("muse://update/appreleaseinfo");
-    query.addParam("appName", Val(application()->title().toStdString()));
-    query.addParam("notes", Val(info.notes));
-    query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
-    query.addParam("version", Val(m_readyUpdateVersion));
-    query.addParam("readyToInstall", Val(true));
-    query.addParam("autoUpdateEnabled", Val(configuration()->autoUpdateEnabled()));
-
-    interactive()->open(query).onResolve(this, [this](const Val& val) {
-        const std::string actionCode = applyReleaseInfoResult(val);
-
-        if (actionCode == "skip") {
-            skipRelease(m_readyUpdateVersion);
-            return;
-        }
-
-        if (actionCode == "install") {
-            installReadyUpdate();
-        }
-    });
-}
-
-void AppUpdateScenario::dismissReadyUpdate()
-{
-    if (m_readyPackagePath.empty() || m_readyUpdateDismissed) {
-        return;
-    }
-
-    m_readyUpdateDismissed = true;
-    m_hasReadyUpdateChanged.notify();
 }
