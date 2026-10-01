@@ -56,22 +56,10 @@ public:
     bool needCheckForUpdate() const override;
     void checkForUpdate(bool manual) override;
 
-    bool hasUpdate() const override;
-
-    bool hasReadyUpdate() const override;
-    async::Notification hasReadyUpdateChanged() const override;
-    std::string readyUpdateVersion() const override;
-
-    void installReadyUpdate() override;
-    void showReadyUpdateInfo() override;
-    void dismissReadyUpdate() override;
-
-    bool hasCompletedUpdate() const override;
-    async::Notification hasCompletedUpdateChanged() const override;
-    void dismissCompletedUpdate() override;
-
 private:
     friend class AppUpdateScenarioTests;
+
+    bool hasUpdate() const;
 
     muse::async::Promise<Ret> processUpdateError(const Ret& error);
 
@@ -90,6 +78,8 @@ private:
     muse::async::Promise<Ret> prepareAndInstall(const io::path_t& packagePath);
     muse::async::Promise<Ret> askToRestartAndInstall(const io::path_t& packagePath, const io::path_t& preparedPath);
 
+    void installReadyUpdate();
+
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
     void skipRelease(const std::string& version);
 
@@ -97,9 +87,6 @@ private:
 
     bool m_bgDownloadInProgress = false;
     io::path_t m_readyPackagePath;
-    bool m_readyUpdateDismissed = false;
-    std::string m_readyUpdateVersion;
-    async::Notification m_hasReadyUpdateChanged;
 
     bool m_hasCompletedUpdate = false;
     async::Notification m_hasCompletedUpdateChanged;
