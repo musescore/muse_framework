@@ -82,7 +82,11 @@ void AppUpdateScenario::checkForUpdate(bool manual)
         m_checkInProgress = false;
 
         if (!manual && res.ret) {
-            downloadUpdateInBackground();
+            if (configuration()->autoUpdateEnabled()) {
+                downloadUpdateInBackground();
+            } else if (hasUpdate()) {
+                showUpdateAvailableToast(res.val, /*downloaded*/ false);
+            }
         }
     });
 }
@@ -167,6 +171,36 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info)
         });
 
         return Promise<Ret>::dummy_result();
+    });
+}
+
+void AppUpdateScenario::showUpdateAvailableToast(const ReleaseInfo& info, bool downloaded)
+{
+    constexpr int seeDetailsBtn = int(toast::ToastActionCode::Custom) + 1;
+    constexpr int installBtn = int(toast::ToastActionCode::Custom) + 2;
+
+    const std::string msg = muse::qtrc("update", "%1 %2 is now ready to install.")
+                            .arg(application()->title().toQString(), QString::fromStdString(info.version)).toStdString();
+
+    toastService()->show(muse::trc("update", "New update available"), msg,
+                         muse::ui::IconCode::Code::INFO_FILLED, true,
+    {
+        { muse::trc("update", "See details"), seeDetailsBtn },
+        { downloaded ? muse::trc("update", "Restart & update") : muse::trc("update", "Install update"), installBtn, /*accent*/ true },
+    }).onResolve(this, [this, info, downloaded](const toast::ToastResult& result) {
+        if (result.isCode(seeDetailsBtn)) {
+            if (downloaded) {
+                showReadyUpdateInfo();
+            } else {
+                showReleaseInfo(info).onResolve(this, [](const Ret&) {});
+            }
+        } else if (result.isCode(installBtn)) {
+            if (downloaded) {
+                installReadyUpdate();
+            } else {
+                downloadRelease().onResolve(this, [](const Ret&) {});
+            }
+        }
     });
 }
 
@@ -352,6 +386,8 @@ void AppUpdateScenario::downloadUpdateInBackground()
         m_readyUpdateVersion = service()->lastCheckResult().val.version;
         m_readyUpdateDismissed = false;
         m_hasReadyUpdateChanged.notify();
+
+        showUpdateAvailableToast(service()->lastCheckResult().val, /*downloaded*/ true);
         return;
     }
 
@@ -385,6 +421,8 @@ void AppUpdateScenario::downloadUpdateInBackground()
         m_readyUpdateVersion = service()->lastCheckResult().val.version;
         m_readyUpdateDismissed = false;
         m_hasReadyUpdateChanged.notify();
+
+        showUpdateAvailableToast(service()->lastCheckResult().val, /*downloaded*/ true);
     }, Asyncable::Mode::SetReplace);
 }
 

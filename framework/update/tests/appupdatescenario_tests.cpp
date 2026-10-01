@@ -27,6 +27,7 @@
 #include "network/tests/mocks/networkinformationmock.h"
 #include "interactive/tests/mocks/interactivemock.h"
 #include "multiwindows/tests/mocks/multiwindowsprovidermock.h"
+#include "toast/tests/mocks/toastservicemock.h"
 #include "mocks/updateconfigurationmock.h"
 #include "mocks/appupdateservicemock.h"
 
@@ -72,6 +73,9 @@ public:
 
         m_multiwindowsProvider = std::make_shared<NiceMock<mi::MultiWindowsProviderMock> >();
         m_scenario->multiwindowsProvider.set(m_multiwindowsProvider);
+
+        m_toastService = std::make_shared<NiceMock<toast::ToastServiceMock> >();
+        m_scenario->toastService.set(m_toastService);
 
         m_application = std::make_shared<NiceMock<ApplicationMock> >();
         m_scenario->application.set(m_application);
@@ -137,6 +141,46 @@ public:
         });
     }
 
+    //! An "update available" toast: checks its content and buttons, then resolves
+    //! (once messages are processed) as if the button at the given index was clicked,
+    //! or as dismissed when no button is clicked
+    static auto toast(const std::vector<std::string>& expectedButtons, int clickedButton = NO_CLICK)
+    {
+        return Invoke([expectedButtons, clickedButton](const std::string& title, const std::string& message,
+                                                       ui::IconCode::Code iconCode, bool dismissible,
+                                                       const std::vector<toast::ToastAction>& actions) {
+            EXPECT_EQ(title, "New update available");
+            EXPECT_EQ(message, "App 1000.0 is now ready to install.");
+            EXPECT_EQ(iconCode, ui::IconCode::Code::INFO_FILLED);
+            EXPECT_TRUE(dismissible);
+
+            std::vector<std::string> buttons;
+            for (const toast::ToastAction& action : actions) {
+                buttons.push_back(action.text);
+            }
+            EXPECT_EQ(buttons, expectedButtons);
+            EXPECT_TRUE(!actions.empty() && actions.back().accent);
+
+            int code = static_cast<int>(toast::ToastActionCode::Dismiss);
+            if (clickedButton != NO_CLICK && clickedButton < static_cast<int>(actions.size())) {
+                code = actions.at(clickedButton).code;
+            }
+
+            return async::make_promise<toast::ToastResult>([code](auto resolve) {
+                return resolve(toast::ToastResult(code));
+            });
+        });
+    }
+
+    static auto checkForUpdateResolves(const RetVal<ReleaseInfo>& result)
+    {
+        return InvokeWithoutArgs([result]() {
+            return async::make_promise<RetVal<ReleaseInfo> >([result](auto resolve) {
+                return resolve(result);
+            });
+        });
+    }
+
     static RetVal<Val> notEnoughDiskSpace()
     {
         return RetVal<Val>(make_ret(Err::NotEnoughDiskSpace, "Free up 250 MB"));
@@ -153,6 +197,13 @@ public:
 
     static constexpr const char* CURRENT_VERSION = "4.0.0";
 
+    static constexpr int NO_CLICK = -1;
+    static constexpr int SEE_DETAILS = 0;
+    static constexpr int INSTALL = 1;
+
+    inline static const std::vector<std::string> AVAILABLE_TOAST = { "See details", "Install update" };
+    inline static const std::vector<std::string> DOWNLOADED_TOAST = { "See details", "Restart & update" };
+
     AppUpdateScenario* m_scenario = nullptr;
     std::shared_ptr<ApplicationMock> m_application;
     std::shared_ptr<UpdateConfigurationMock> m_configuration;
@@ -160,6 +211,7 @@ public:
     std::shared_ptr<network::NetworkInformationMock> m_networkInformation;
     std::shared_ptr<InteractiveMock> m_interactive;
     std::shared_ptr<mi::MultiWindowsProviderMock> m_multiwindowsProvider;
+    std::shared_ptr<toast::ToastServiceMock> m_toastService;
     RetVal<ReleaseInfo> m_lastCheckResult;
     Progress m_downloadProgress;
 };
@@ -177,6 +229,10 @@ TEST_F(AppUpdateScenarioTests, BgDownload_UnmeteredNetwork_StartsDownload)
 
     //! [WHEN] A background download is requested
     downloadUpdateInBackground();
+
+    //! [THEN] The "ready to install" toast is shown once the download finishes
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
 
     //! [WHEN] The download finishes successfully
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
@@ -253,6 +309,10 @@ TEST_F(AppUpdateScenarioTests, BgDownload_AlreadyDownloaded_SurfacedEvenOnMetere
     //! [THEN] No download is started
     EXPECT_CALL(*m_service, downloadRelease())
     .Times(0);
+
+    //! [THEN] The "ready to install" toast is shown
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
 
     //! [WHEN] A background download is requested
     downloadUpdateInBackground();
@@ -385,6 +445,9 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
 
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
+
     downloadUpdateInBackground();
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
     ASSERT_TRUE(m_scenario->hasReadyUpdate());
@@ -414,6 +477,10 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_WhileDownloading_DoesNotSurfaceUpdate
     ON_CALL(*m_configuration, skippedReleaseVersion())
     .WillByDefault(Return("1000.0"));
     skipRelease("1000.0");
+
+    //! [THEN] No toast is shown for the skipped release
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
 
     //! [WHEN] The (not yet canceled) download still reports success
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
@@ -480,6 +547,9 @@ TEST_F(AppUpdateScenarioTests, DismissReadyUpdate_HidesBanner_KeepsPackage)
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
 
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
+
     downloadUpdateInBackground();
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
     ASSERT_TRUE(m_scenario->hasReadyUpdate());
@@ -511,6 +581,9 @@ TEST_F(AppUpdateScenarioTests, InstallReadyUpdate_GoesStraightToInstall)
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
 
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
+
     downloadUpdateInBackground();
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
 
@@ -525,5 +598,147 @@ TEST_F(AppUpdateScenarioTests, InstallReadyUpdate_GoesStraightToInstall)
 
     //! [WHEN] The user chooses "Restart and update"
     m_scenario->installReadyUpdate();
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_Installs)
+{
+    //! [GIVEN] A background download is running and in-place install is not available
+    ON_CALL(*m_networkInformation, isMetered())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, downloadRelease())
+    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
+    ON_CALL(*m_service, canAutoInstall())
+    .WillByDefault(Return(false));
+
+    downloadUpdateInBackground();
+
+    //! [GIVEN] The user clicks "Restart & update" on the toast
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST, INSTALL));
+
+    //! [THEN] The downloaded package is installed: no new download, no release info dialog
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, open(_))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(dialog(IInteractive::Button::Cancel));
+
+    //! [WHEN] The download finishes
+    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_OpensReadyUpdateInfo)
+{
+    //! [GIVEN] A background download is running
+    ON_CALL(*m_networkInformation, isMetered())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, downloadRelease())
+    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
+
+    downloadUpdateInBackground();
+
+    //! [GIVEN] The user clicks "See details" on the toast
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST, SEE_DETAILS));
+
+    //! [THEN] The release info is opened in the "ready to install" mode
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(Invoke([](const UriQuery& query) {
+        EXPECT_EQ(query.uri(), Uri("muse://update/appreleaseinfo"));
+        EXPECT_TRUE(query.param("readyToInstall").toBool());
+        EXPECT_EQ(query.param("version").toString(), "1000.0");
+        return async::make_promise<Val>([](auto resolve) {
+            return resolve(Val());
+        });
+    }));
+
+    //! [WHEN] The download finishes
+    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, AutoCheck_AutoUpdateDisabled_InstallUpdate_Downloads)
+{
+    //! [GIVEN] The user turned automatic update off
+    ON_CALL(*m_configuration, autoUpdateEnabled())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [THEN] No background download is started
+    EXPECT_CALL(*m_service, downloadRelease())
+    .Times(0);
+
+    //! [THEN] The "update available" toast is shown, and the user clicks "Install update"
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(AVAILABLE_TOAST, INSTALL));
+
+    //! [THEN] The download dialog is opened, followed by the install prompt
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Invoke([](const UriQuery& query) {
+        EXPECT_EQ(query.uri(), Uri("muse://update/app"));
+        EXPECT_EQ(query.param("mode").toString(), "download");
+        return RetVal<Val>::make_ok(Val(std::string("upd/MuseScore.dmg")));
+    }));
+    ON_CALL(*m_service, canAutoInstall())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(dialog(IInteractive::Button::Cancel));
+
+    //! [WHEN] An automatic check finds an update
+    m_scenario->checkForUpdate(/*manual*/ false);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, AutoCheck_AutoUpdateDisabled_SeeDetails_OpensReleaseInfo)
+{
+    //! [GIVEN] The user turned automatic update off
+    ON_CALL(*m_configuration, autoUpdateEnabled())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [THEN] The "update available" toast is shown, and the user clicks "See details"
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(AVAILABLE_TOAST, SEE_DETAILS));
+
+    //! [THEN] The release info is opened (not in the "ready to install" mode); the user postpones
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(Invoke([](const UriQuery& query) {
+        EXPECT_EQ(query.uri(), Uri("muse://update/appreleaseinfo"));
+        EXPECT_FALSE(query.param("readyToInstall").toBool());
+        return async::make_promise<Val>([](auto resolve) {
+            return resolve(Val(std::string("remindLater")));
+        });
+    }));
+
+    //! [THEN] Nothing is downloaded
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+
+    //! [WHEN] An automatic check finds an update
+    m_scenario->checkForUpdate(/*manual*/ false);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, AutoCheck_AutoUpdateDisabled_SkippedRelease_NoToast)
+{
+    //! [GIVEN] The user turned automatic update off and skipped the available release
+    ON_CALL(*m_configuration, autoUpdateEnabled())
+    .WillByDefault(Return(false));
+    ON_CALL(*m_configuration, skippedReleaseVersion())
+    .WillByDefault(Return("1000.0"));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [THEN] No toast is shown
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
+
+    //! [WHEN] An automatic check finds the skipped release
+    m_scenario->checkForUpdate(/*manual*/ false);
     pump();
 }

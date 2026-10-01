@@ -30,6 +30,7 @@
 #include "actions/iactionsdispatcher.h"
 #include "multiwindows/imultiwindowsprovider.h"
 #include "network/inetworkinformation.h"
+#include "toast/itoastservice.h"
 #include "update/iupdateconfiguration.h"
 #include "update/iappupdateservice.h"
 #include "global/iapplication.h"
@@ -41,6 +42,7 @@ class AppUpdateScenario : public IAppUpdateScenario, public Contextable, public 
     GlobalInject<mi::IMultiWindowsProvider> multiwindowsProvider;
     GlobalInject<IUpdateConfiguration> configuration;
     GlobalInject<network::INetworkInformation> networkInformation;
+    GlobalInject<toast::IToastService> toastService;
     ContextInject<IInteractive> interactive = { this };
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<IAppUpdateService> service = { this };
@@ -75,6 +77,7 @@ private:
 
     async::Promise<IInteractive::Result> showNoUpdateMsg();
     muse::async::Promise<Ret> showReleaseInfo(const ReleaseInfo& info);
+    void showUpdateAvailableToast(const ReleaseInfo& info, bool downloaded);
     async::Promise<IInteractive::Result> showServerErrorMsg();
     async::Promise<Ret> askToRetryOnNotEnoughDiskSpace(const Ret& error, const std::function<async::Promise<Ret>()>& retry);
 
