@@ -358,16 +358,17 @@ Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& package
 
 Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall(const io::path_t& packagePath)
 {
+    const std::string title = muse::trc("update", "Restart to finish updating");
     const std::string info = muse::qtrc("update", "%1 needs to close to complete the installation. "
                                                   "If you have any unsaved changes, you will be prompted to save them before %1 closes.")
                              .arg(application()->title().toQString()).toStdString();
-    const int closeBtn = int(IInteractive::Button::CustomButton) + 1;
+    const int restartBtn = int(IInteractive::Button::Apply);
     const IInteractive::ButtonDatas buttons = {
         interactive()->buttonData(IInteractive::Button::Cancel),
-        IInteractive::ButtonData(closeBtn, muse::trc("update", "Close"), true)
+        IInteractive::ButtonData(restartBtn, muse::trc("update", "Restart"), true)
     };
 
-    return interactive()->info("", info, buttons, closeBtn)
+    return interactive()->info(title, info, buttons, restartBtn)
            .then<Ret>(this, [this, packagePath](const IInteractive::Result& res, auto resolve) {
         if (res.isButton(IInteractive::Button::Cancel)) {
             return resolve(muse::make_ret(Ret::Code::Cancel));
