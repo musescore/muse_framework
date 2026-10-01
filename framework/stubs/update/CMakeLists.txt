@@ -30,7 +30,3 @@ target_sources(muse_update PRIVATE
     appupdateservicestub.cpp
     appupdateservicestub.h
 )
-
-if (MUSE_MODULE_UPDATE_QML)
-    add_subdirectory(qml/Muse/Update)
-endif()
