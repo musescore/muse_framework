@@ -181,6 +181,21 @@ public:
         });
     }
 
+    //! The release info dialog: checks the query, then resolves with the given action
+    //! ("install", "skip", "remindLater") once messages are processed
+    static auto releaseInfoDialog(bool expectedReadyToInstall, const std::string& action)
+    {
+        return Invoke([expectedReadyToInstall, action](const UriQuery& query) {
+            EXPECT_EQ(query.uri(), Uri("muse://update/appreleaseinfo"));
+            EXPECT_EQ(query.param("appName").toString(), "App");
+            EXPECT_EQ(query.param("version").toString(), "1000.0");
+            EXPECT_EQ(query.param("readyToInstall").toBool(), expectedReadyToInstall);
+            return async::make_promise<Val>([action](auto resolve) {
+                return resolve(Val(action));
+            });
+        });
+    }
+
     static RetVal<Val> notEnoughDiskSpace()
     {
         return RetVal<Val>(make_ret(Err::NotEnoughDiskSpace, "Free up 250 MB"));
@@ -630,13 +645,15 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_Installs)
     pump();
 }
 
-TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_OpensReadyUpdateInfo)
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_InstallUsesDownloadedPackage)
 {
-    //! [GIVEN] A background download is running
+    //! [GIVEN] A background download is running and in-place install is not available
     ON_CALL(*m_networkInformation, isMetered())
     .WillByDefault(Return(false));
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
+    ON_CALL(*m_service, canAutoInstall())
+    .WillByDefault(Return(false));
 
     downloadUpdateInBackground();
 
@@ -644,16 +661,17 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_OpensReadyUpdateIn
     EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
     .WillOnce(toast(DOWNLOADED_TOAST, SEE_DETAILS));
 
-    //! [THEN] The release info is opened in the "ready to install" mode
+    //! [THEN] The release info is opened in the "ready to install" mode, and the user clicks "Restart & update"
     EXPECT_CALL(*m_interactive, open(_))
-    .WillOnce(Invoke([](const UriQuery& query) {
-        EXPECT_EQ(query.uri(), Uri("muse://update/appreleaseinfo"));
-        EXPECT_TRUE(query.param("readyToInstall").toBool());
-        EXPECT_EQ(query.param("version").toString(), "1000.0");
-        return async::make_promise<Val>([](auto resolve) {
-            return resolve(Val());
-        });
-    }));
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ true, "install"));
+
+    //! [THEN] The downloaded package is installed without downloading it again
+    ON_CALL(*m_service, downloadedReleasePath())
+    .WillByDefault(Return(io::path_t("upd/MuseScore.dmg")));
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(dialog(IInteractive::Button::Cancel));
 
     //! [WHEN] The download finishes
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
@@ -707,13 +725,7 @@ TEST_F(AppUpdateScenarioTests, AutoCheck_AutoUpdateDisabled_SeeDetails_OpensRele
 
     //! [THEN] The release info is opened (not in the "ready to install" mode); the user postpones
     EXPECT_CALL(*m_interactive, open(_))
-    .WillOnce(Invoke([](const UriQuery& query) {
-        EXPECT_EQ(query.uri(), Uri("muse://update/appreleaseinfo"));
-        EXPECT_FALSE(query.param("readyToInstall").toBool());
-        return async::make_promise<Val>([](auto resolve) {
-            return resolve(Val(std::string("remindLater")));
-        });
-    }));
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "remindLater"));
 
     //! [THEN] Nothing is downloaded
     EXPECT_CALL(*m_interactive, openSync(_))
@@ -740,5 +752,41 @@ TEST_F(AppUpdateScenarioTests, AutoCheck_AutoUpdateDisabled_SkippedRelease_NoToa
 
     //! [WHEN] An automatic check finds the skipped release
     m_scenario->checkForUpdate(/*manual*/ false);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ManualCheck_ReleaseAlreadyDownloaded_OpensReadyToInstallInfo)
+{
+    //! [GIVEN] The available release was already downloaded
+    ON_CALL(*m_service, isReleaseDownloaded())
+    .WillByDefault(Return(true));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [THEN] No toast is shown; the release info is opened in the "ready to install" mode
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ true, "remindLater"));
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ManualCheck_ReleaseNotDownloaded_OpensReleaseInfo)
+{
+    //! [GIVEN] The available release is not downloaded yet
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [THEN] No toast is shown; the release info is opened in the regular mode
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "remindLater"));
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
     pump();
 }
