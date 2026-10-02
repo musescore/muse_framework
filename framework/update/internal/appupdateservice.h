@@ -59,10 +59,9 @@ public:
     RetVal<Progress> downloadRelease() override;
 
     bool canAutoInstall() const override;
-    RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) override;
-    Ret finalizeUpdate(const muse::io::path_t& preparedPath) override;
+    Ret installUpdate() override;
 
-    bool isReleaseDownloaded() const override;
+    bool isReleaseReadyToInstall() const override;
     muse::io::path_t downloadedReleasePath() const override;
     void removeDownloadedRelease() override;
 
@@ -87,6 +86,10 @@ private:
     };
     Ret checkDiskSpace(DiskSpaceFor purpose, uint64_t packageSize, uint64_t downloadedBytes = 0) const;
 
+    void prepareUpdate(const muse::io::path_t& packagePath);
+    muse::io::path_t preparedUpdatePath() const;
+    void resetPreparedUpdate();
+
     InstallProgressUi makeInstallProgressUi() const;
 
     //! Ordered list of acceptable asset suffixes for this platform, most
@@ -105,6 +108,9 @@ private:
     RetVal<ReleaseInfo> m_lastCheckResult;
     network::INetworkManagerPtr m_networkManager;
     Progress m_updateProgress;
+
     bool m_downloadInProgress = false;
+    muse::io::path_t m_preparedPackagePath;
+    muse::io::path_t m_preparedPath;
 };
 }
