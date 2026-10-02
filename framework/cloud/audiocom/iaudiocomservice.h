@@ -27,13 +27,15 @@
 
 #include "cloud/cloudtypes.h"
 
+#include "cloud/iauthorizationservice.h"
+
 class QIODevice;
 class QString;
 
 using DevicePtr = std::shared_ptr<QIODevice>;
 
 namespace muse::cloud {
-class IAudioComService : MODULE_GLOBAL_INTERFACE
+class IAudioComService : MODULE_CONTEXT_INTERFACE
 {
     INTERFACE_ID(IAudioComService)
 
