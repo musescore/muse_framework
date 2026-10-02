@@ -21,6 +21,8 @@
  */
 #include "audiocontext.h"
 
+#include <cmath>
+
 #include "audio/common/audiosanitizer.h"
 #include "audio/common/audioerrors.h"
 #include "audio/common/audioutils.h"
@@ -774,17 +776,28 @@ async::Channel<secs_t> AudioContext::playbackPositionChanged() const
 }
 
 // Export
-async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format)
+async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format,
+                                                 const SoundTrackSaveOptions& options)
 {
-    return async::make_promise<Ret>([this, &dstDevice, format](auto resolve, auto) {
+    return async::make_promise<Ret>([this, &dstDevice, format, options](auto resolve, auto) {
         ONLY_AUDIO_ENGINE_THREAD;
 
 #ifdef MUSE_MODULE_AUDIO_EXPORT
+        if (!options.isValid() || (options.hasTimeRange && options.endTime > m_player->duration())) {
+            return resolve(make_ret(Err::EngineInvalidParameter, "invalid sound track export time range"));
+        }
+
         //! NOTE These engine state changes must run inside execOperation so they are
         // synchronized with the audio driver process (see doSaveSoundTrack).
-        Operation prepare = [this]() {
+        Operation prepare = [this, options]() {
             m_player->stop();
-            m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+            const secs_t startTime = options.hasTimeRange ? options.startTime : secs_t(0.0);
+            //! NOTE Round down at the start boundary. Rounding to the nearest sample
+            // can seek a fraction after an event that lies exactly on the selected
+            // beat, causing that event (notably the first metronome click) to be skipped.
+            const samples_t startSample = static_cast<samples_t>(
+                std::floor(startTime.raw() * static_cast<double>(m_outputSpec.sampleRate)));
+            m_player->seek(TimePosition::fromSamples(startSample, m_outputSpec.sampleRate));
         };
         if (m_execOperation) {
             m_execOperation->execOperation(OperationType::LongOperation, prepare);
@@ -795,9 +808,9 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
         const bool lazyProcessingWasEnabled = configuration()->isLazyProcessingOfOnlineSoundsEnabled();
         configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(false);
 
-        listenInputProcessing([this, &dstDevice, format, lazyProcessingWasEnabled, resolve](Ret ret) {
+        listenInputProcessing([this, &dstDevice, format, options, lazyProcessingWasEnabled, resolve](Ret ret) {
             if (ret) {
-                ret = doSaveSoundTrack(dstDevice, format);
+                ret = doSaveSoundTrack(dstDevice, format, options);
             }
 
             configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(lazyProcessingWasEnabled);
@@ -906,13 +919,14 @@ void AudioContext::listenInputProcessing(std::function<void(const Ret&)> complet
 #endif
 }
 
-Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format)
+Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format, const SoundTrackSaveOptions& options)
 {
 #ifdef MUSE_MODULE_AUDIO_EXPORT
     using namespace muse::audio::soundtrack;
 
-    const secs_t totalDuration = m_player->duration();
-    auto writer = std::make_shared<SoundTrackWriter>(dstDevice, format, totalDuration, m_mixer);
+    const secs_t totalDuration = options.hasTimeRange ? options.endTime - options.startTime : m_player->duration();
+    auto writer = std::make_shared<SoundTrackWriter>(dstDevice, format, totalDuration,
+                                                     options.fadeInDuration, options.fadeOutDuration, m_mixer);
 
     writer->progress().progressChanged().onReceive(this, [this](int64_t current, int64_t total, std::string /*title*/) {
         m_saveSoundTracksProgress.progress.send(current, total, SaveSoundTrackStage::WritingSoundTrack);

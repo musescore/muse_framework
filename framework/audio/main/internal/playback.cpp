@@ -655,12 +655,14 @@ async::Promise<AutomatedControlParamsChanges> Playback::automatedControlParamsCh
     }, PromiseType::AsyncByBody);
 }
 
-async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice)
+async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice,
+                                              const SoundTrackSaveOptions& options)
 {
     ONLY_AUDIO_MAIN_THREAD;
-    return async::make_promise<bool>([this, format, &dstDevice](auto resolve, auto reject) {
+    return async::make_promise<bool>([this, format, options, &dstDevice](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
-        Msg msg = rpc::make_request(ctxId(), MsgCode::SaveSoundTrack, RpcPacker::pack(format, reinterpret_cast<uintptr_t>(&dstDevice)));
+        Msg msg = rpc::make_request(ctxId(), MsgCode::SaveSoundTrack,
+                                    RpcPacker::pack(format, options, reinterpret_cast<uintptr_t>(&dstDevice)));
         channel()->send(msg, [resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
             Ret ret;
