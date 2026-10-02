@@ -48,6 +48,14 @@ public:
     virtual bool shouldProcessDuringSilence() const = 0;
 
     virtual void process(float* buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) = 0;
+
+    //! NOTE Whether the processor is fully set up and will actually process audio. Plugins that
+    //! load asynchronously (e.g. VST) pass audio through untouched until they report ready.
+    virtual bool isReady() const { return true; }
+
+    //! NOTE Clears internal audio state (reverb tails, compressor envelopes, delay lines) so the
+    //! next processed block starts from silence, e.g. between two files of a multi-file export.
+    virtual void resetState() {}
 };
 
 using IFxProcessorPtr = std::shared_ptr<IFxProcessor>;
