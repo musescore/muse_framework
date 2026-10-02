@@ -44,7 +44,7 @@ Rectangle {
 
     NavigationFocusBorder { navigationCtrl: navCtrl }
 
-    border.width: ui.theme.borderWidth
+    border.width: Math.max(ui.theme.borderWidth, 1)
     border.color: ui.theme.strokeColor
 
     ColorPickerModel {
