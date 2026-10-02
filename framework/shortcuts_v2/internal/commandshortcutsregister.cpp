@@ -309,7 +309,7 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
             Shortcut shortcut;
             shortcut.scope = obj.value("scope").toStdString();
             shortcut.command = rcommand::Command(shortcutObj.value("command").toStdString());
-            shortcut.autoRepeat = shortcutObj.value("autorepeat").toBool();
+            shortcut.autoRepeat = shortcutObj.value("autorepeat", JsonValue(true)).toBool();
             JsonArray sequencesArr = shortcutObj.value("sequences").toArray();
             for (size_t k = 0; k < sequencesArr.size(); ++k) {
                 shortcut.sequences.push_back(sequencesArr.at(k).toStdString());
@@ -371,8 +371,8 @@ bool CommandShortcutsRegister::writeToFile(const ShortcutList& shortcuts, const 
             size_t ci = 0;
             for (const Shortcut& sc : scope.shortcuts) {
                 s << "      {";
-                s << "        \"command\": \"" << sc.command.toString() << "\",";
-                s << "        \"sequences\": [";
+                s << "\"command\": \"" << sc.command.toString() << "\", ";
+                s << " \"sequences\": [";
                 for (size_t i = 0; i < sc.sequences.size(); ++i) {
                     s << "\"" << escapeSeq(sc.sequences.at(i)) << "\"";
                     if (i < sc.sequences.size() - 1) {
@@ -380,10 +380,10 @@ bool CommandShortcutsRegister::writeToFile(const ShortcutList& shortcuts, const 
                     }
                 }
                 s << "]";
-                if (sc.autoRepeat) {
-                    s << ", \"autorepeat\": true";
+                if (!sc.autoRepeat) {
+                    s << ", \"autorepeat\": false";
                 }
-                s << "      }";
+                s << "}";
                 if (++ci < scope.shortcuts.size()) {
                     s << ",";
                 }

@@ -181,6 +181,15 @@ std::string muse::strings::toLower(const std::string& source)
     return str;
 }
 
+std::string muse::strings::toUpper(const std::string& source)
+{
+    std::string str = source;
+    std::for_each(str.begin(), str.end(), [](char& c) {
+        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    });
+    return str;
+}
+
 bool muse::strings::startsWith(const std::string& str, const std::string& start)
 {
     if (str.size() < start.size()) {

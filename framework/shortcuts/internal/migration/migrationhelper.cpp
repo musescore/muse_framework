@@ -27,6 +27,7 @@
 #include "io/file.h"
 #include "rcommand/commandtypes.h"
 #include "serialization/textstream.h"
+#include "global/stringutils.h"
 #include "shortcutstypes.h"
 
 #include "log.h"
@@ -93,6 +94,7 @@ void MigrationHelper::onCommand(const rcommand::Command& command)
     ScInfo scInfo;
     scInfo.command = command;
     scInfo.action = m_currentIt->action;
+    scInfo.autoRepeat = m_currentIt->autoRepeat;
     scInfo.sequences = shortcut.sequences;
 
     m_resultInfos.push_back(std::move(scInfo));
@@ -100,29 +102,74 @@ void MigrationHelper::onCommand(const rcommand::Command& command)
 
 void MigrationHelper::onFinished()
 {
+    // group shortcuts by scope
+    //! NOTE This isn't the same scope as the one in the v2 shortcuts file, but many of them match, making migration easier.
+    struct Scope {
+        std::string scope;
+        std::vector<ScInfo> shortcuts;
+    };
+
+    std::vector<Scope> scopes;
+    for (const ScInfo& sc : m_resultInfos) {
+        const auto scscope = muse::strings::toUpper(sc.command.pathSegments().at(0));
+        auto it = std::find_if(scopes.begin(), scopes.end(), [&scscope](const Scope& scope) {
+            return scope.scope == scscope;
+        });
+        if (it == scopes.end()) {
+            scopes.push_back({ scscope, { sc } });
+        } else {
+            it->shortcuts.push_back(sc);
+        }
+    }
+
+    // serialize scopes
     //! NOTE Json doesn't format very nicely and adds unnecessary escape characters, so we serialize manually.
 
     io::Buffer buf;
     buf.open(io::IODevice::ReadWrite);
     TextStream s(&buf);
 
+    auto escapeSeq = [](const std::string& seq) {
+        std::string escaped = seq;
+        muse::strings::replace(escaped, "\\", "\\\\");
+        muse::strings::replace(escaped, "\"", "\\\"");
+        return escaped;
+    };
     s << "[\n";
-    for (const auto& scInfo : m_resultInfos) {
+    for (size_t si = 0; si < scopes.size(); ++si) {
+        const Scope& scope = scopes.at(si);
         s << "  {\n";
-        s << "    \"command\": \"" << scInfo.command.toString() << "\",\n";
-        s << "    \"sequences\": [";
-        for (size_t i = 0; i < scInfo.sequences.size(); ++i) {
-            s << "\"" << scInfo.sequences.at(i) << "\"";
-            if (i < scInfo.sequences.size() - 1) {
+        s << "    \"scope\": \"" << scope.scope << "\",\n";
+        s << "    \"shortcuts\": [\n";
+        size_t ci = 0;
+        for (const ScInfo& sc : scope.shortcuts) {
+            s << "      {";
+            s << "\"command\": \"" << sc.command.toString() << "\", ";
+            s << " \"sequences\": [";
+            for (size_t i = 0; i < sc.sequences.size(); ++i) {
+                s << "\"" << escapeSeq(sc.sequences.at(i)) << "\"";
+                if (i < sc.sequences.size() - 1) {
+                    s << ",";
+                }
+            }
+            s << "]";
+            if (!sc.autoRepeat) {
+                s << ", \"autorepeat\": false";
+            }
+            s << "}";
+            if (++ci < scope.shortcuts.size()) {
                 s << ",";
             }
+            s << "\n";
         }
-        s << "]\n";
-        s << "  },\n";
+        s << "    ]\n";
+        s << "  }";
+        if (si < scopes.size() - 1) {
+            s << ",";
+        }
+        s << "\n";
     }
-    s << "]\n";
-
-    s.flush();
+    s << "]";
 
     io::path_t filePath = io::dirpath(configuration()->shortcutsUserAppDataPath()) + "/migration.json";
     Ret ret = io::File::writeFile(filePath, buf.data());
