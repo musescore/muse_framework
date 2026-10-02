@@ -26,9 +26,6 @@
 
 #include "updateerrors.h"
 
-#include "async/async.h"
-#include "global/concurrency/concurrent.h"
-#include "runtime.h"
 #include "types/val.h"
 #include "translation.h"
 #include "log.h"
@@ -38,7 +35,7 @@ using namespace muse::update;
 using namespace muse::actions;
 using namespace muse::async;
 
-void AppUpdateScenario::init()
+void AppUpdateScenario::delayedInit()
 {
     const std::string installing = configuration()->installingReleaseVersion();
     if (installing.empty()) {
@@ -48,7 +45,11 @@ void AppUpdateScenario::init()
     configuration()->setInstallingReleaseVersion(std::string());
 
     //! NOTE: The version differs if the user canceled the installer or it failed.
-    m_hasCompletedUpdate = Version(installing) == application()->fullVersion();
+    bool hasCompletedUpdate = Version(installing) == application()->fullVersion();
+
+    if (hasCompletedUpdate) {
+        showUpdateCompletedToast();
+    }
 }
 
 bool AppUpdateScenario::needCheckForUpdate() const
@@ -73,7 +74,7 @@ void AppUpdateScenario::checkForUpdate(bool manual)
             } else if (!res.ret) {
                 showServerErrorMsg();
             } else {
-                showReleaseInfo(res.val);
+                showReleaseInfo(res.val, service()->isReleaseReadyToInstall());
             }
         } else if (!res.ret && !noUpdate) {
             LOGE() << res.ret.toString();
@@ -81,8 +82,12 @@ void AppUpdateScenario::checkForUpdate(bool manual)
 
         m_checkInProgress = false;
 
-        if (!manual && res.ret) {
-            downloadUpdateInBackground();
+        if (!manual && res.ret && hasUpdate()) {
+            if (configuration()->autoUpdateEnabled()) {
+                downloadUpdateInBackground();
+            } else {
+                showUpdateAvailableToast(res.val, /*downloaded*/ false);
+            }
         }
     });
 }
@@ -107,11 +112,17 @@ bool AppUpdateScenario::hasUpdate() const
 
 Promise<Ret> AppUpdateScenario::processUpdateError(const Ret& error)
 {
+    const int errorCode = error.code();
+    if (errorCode == static_cast<int>(Ret::Code::Cancel)) {
+        return async::make_promise<Ret>([](auto resolve, auto) {
+            return resolve(muse::make_ret(Ret::Code::Cancel));
+        });
+    }
+
     const auto unknownError = async::make_promise<Ret>([](auto resolve, auto) {
         return resolve(muse::make_ret(Ret::Code::UnknownError));
     });
 
-    const int errorCode = error.code();
     IF_ASSERT_FAILED(errorCode >= static_cast<int>(Ret::Code::UpdateFirst)
                      && errorCode <= static_cast<int>(Ret::Code::UpdateLast)) {
         return unknownError;
@@ -144,15 +155,18 @@ Promise<IInteractive::Result> AppUpdateScenario::showNoUpdateMsg()
                                IInteractive::Option::WithIcon);
 }
 
-Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info)
+Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool readyToInstall)
 {
     UriQuery query("muse://update/appreleaseinfo");
     query.addParam("appName", Val(application()->title().toStdString()));
+    query.addParam("version", Val(info.version));
     query.addParam("notes", Val(info.notes));
     query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
+    query.addParam("readyToInstall", Val(readyToInstall));
+    query.addParam("autoUpdateEnabled", Val(configuration()->autoUpdateEnabled()));
 
     return interactive()->open(query).then<Ret>(this, [this, info](const Val& val, auto resolve) {
-        const QString actionCode = val.toQString();
+        const std::string actionCode = applyReleaseInfoResult(val);
         if (actionCode == "remindLater") {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
@@ -167,6 +181,54 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info)
         });
 
         return Promise<Ret>::dummy_result();
+    });
+}
+
+std::string AppUpdateScenario::applyReleaseInfoResult(const Val& result)
+{
+    const ValMap map = result.toMap();
+
+    const auto autoUpdate = map.find("autoUpdateEnabled");
+    if (autoUpdate != map.end()) {
+        configuration()->setAutoUpdateEnabled(autoUpdate->second.toBool());
+    }
+
+    const auto action = map.find("action");
+    return action != map.end() ? action->second.toString() : std::string();
+}
+
+void AppUpdateScenario::showUpdateCompletedToast()
+{
+    const std::string title = muse::qtrc("update", "Updated to %1 %2")
+                              .arg(application()->title().toQString(), application()->fullVersion().toString().toQString())
+                              .toStdString();
+
+    toastService()->showWithTimeout(title, std::string(), std::chrono::seconds(10), muse::ui::IconCode::Code::TICK_FILLED);
+}
+
+void AppUpdateScenario::showUpdateAvailableToast(const ReleaseInfo& info, bool downloaded)
+{
+    constexpr int seeDetailsBtn = int(toast::ToastActionCode::Custom) + 1;
+    constexpr int installBtn = int(toast::ToastActionCode::Custom) + 2;
+
+    const std::string msg = muse::qtrc("update", "%1 %2 is now ready to install.")
+                            .arg(application()->title().toQString(), QString::fromStdString(info.version)).toStdString();
+
+    toastService()->show(muse::trc("update", "New update available"), msg,
+                         muse::ui::IconCode::Code::INFO_FILLED, true,
+    {
+        { muse::trc("update", "See details"), seeDetailsBtn },
+        { downloaded ? muse::trc("update", "Restart & update") : muse::trc("update", "Install update"), installBtn, /*accent*/ true },
+    }).onResolve(this, [this, info, downloaded](const toast::ToastResult& result) {
+        if (result.isCode(seeDetailsBtn)) {
+            showReleaseInfo(info, downloaded).onResolve(this, [](const Ret&) {});
+        } else if (result.isCode(installBtn)) {
+            if (downloaded) {
+                askToCloseAppAndCompleteInstall();
+            } else {
+                downloadRelease().onResolve(this, [](const Ret&) {});
+            }
+        }
     });
 }
 
@@ -203,9 +265,7 @@ Promise<Ret> AppUpdateScenario::askToRetryOnNotEnoughDiskSpace(const Ret& error,
 
 Promise<Ret> AppUpdateScenario::downloadRelease()
 {
-    io::path_t packagePath = service()->downloadedReleasePath();
-
-    if (packagePath.empty()) {
+    if (!service()->isReleaseReadyToInstall()) {
         RetVal<Val> rv = interactive()->openSync("muse://update/app?mode=download");
         if (rv.ret.code() == static_cast<int>(Err::NotEnoughDiskSpace)) {
             return askToRetryOnNotEnoughDiskSpace(rv.ret, [this]() { return downloadRelease(); });
@@ -214,105 +274,30 @@ Promise<Ret> AppUpdateScenario::downloadRelease()
         if (!rv.ret) {
             return processUpdateError(rv.ret);
         }
-        packagePath = rv.val.toString();
     }
 
-    //! NOTE: In-place auto-install currently supports a single window only;
-    //! otherwise fall back to handing the installer to the user.
-    if (service()->canAutoInstall() && multiwindowsProvider()->windowCount() == 1) {
-        return prepareAndInstall(packagePath);
-    }
-
-    return askToCloseAppAndCompleteInstall(packagePath);
+    return askToCloseAppAndCompleteInstall();
 }
 
-Promise<Ret> AppUpdateScenario::prepareAndInstall(const io::path_t& packagePath)
+Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall()
 {
-    //! NOTE: The heavy phase (unpacking and verification) runs in the
-    //! background while the app keeps running, so failures can still fall
-    //! back to the manual flow; the confirmation dialog is shown once
-    //! everything is staged, making the restart itself instant.
-    return make_promise<Ret>([this, packagePath](auto resolve, auto) {
-        auto service = this->service();
-
-        Concurrent::run([this, service, packagePath, resolve]() {
-            const RetVal<io::path_t> prepared = service->prepareUpdate(packagePath);
-            async::Async::call(this, [this, packagePath, prepared, resolve]() {
-                auto complete = [resolve](const Ret& ret) { (void)resolve(ret); };
-                if (!prepared.ret) {
-                    if (prepared.ret.code() == static_cast<int>(Err::NotEnoughDiskSpace)) {
-                        askToRetryOnNotEnoughDiskSpace(prepared.ret, [this, packagePath]() {
-                            return prepareAndInstall(packagePath);
-                        }).onResolve(this, complete);
-                        return;
-                    }
-
-                    LOGE() << "failed to prepare update, falling back to manual install: " << prepared.ret.toString();
-                    askToCloseAppAndCompleteInstall(packagePath).onResolve(this, complete);
-                    return;
-                }
-
-                askToRestartAndInstall(packagePath, prepared.val).onResolve(this, complete);
-            }, runtime::mainThreadId());
-        });
-
-        return Promise<Ret>::dummy_result();
-    });
-}
-
-Promise<Ret> AppUpdateScenario::askToRestartAndInstall(const io::path_t& packagePath, const io::path_t& preparedPath)
-{
-    const std::string info = muse::qtrc("update", "%1 has downloaded an update and is ready to install it. "
-                                                  "%1 will restart to complete the installation. "
-                                                  "If you have any unsaved changes, you will be prompted to save them first.")
+    const std::string title = muse::trc("update", "Restart to finish updating");
+    const std::string info = muse::qtrc("update", "%1 needs to close to complete the installation. "
+                                                  "If you have any unsaved changes, you will be prompted to save them before %1 closes.")
                              .arg(application()->title().toQString()).toStdString();
-    const int restartBtn = int(IInteractive::Button::CustomButton) + 1;
+    const int restartBtn = int(IInteractive::Button::Apply);
     const IInteractive::ButtonDatas buttons = {
         interactive()->buttonData(IInteractive::Button::Cancel),
         IInteractive::ButtonData(restartBtn, muse::trc("update", "Restart"), true)
     };
 
-    return interactive()->info("", info, buttons, restartBtn)
-           .then<Ret>(this, [this, packagePath, preparedPath](const IInteractive::Result& res, auto resolve) {
+    return interactive()->info(title, info, buttons, restartBtn)
+           .then<Ret>(this, [this](const IInteractive::Result& res, auto resolve) {
         if (res.isButton(IInteractive::Button::Cancel)) {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
-        const Ret ret = service()->finalizeUpdate(preparedPath);
-        if (!ret) {
-            LOGE() << "failed to finalize update, falling back to manual install: " << ret.toString();
-            askToCloseAppAndCompleteInstall(packagePath).onResolve(this, [resolve](const Ret& r) {
-                (void)resolve(r);
-            });
-            return Promise<Ret>::dummy_result();
-        }
-
-        configuration()->setInstallingReleaseVersion(service()->lastCheckResult().val.version);
-
-        //! NOTE: The helper has been spawned and will replace the app and
-        //! relaunch once we quit. Quit without an installer path so the
-        //! legacy "open installer" path is not taken.
-        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, std::string()));
-        return resolve(muse::make_ok());
-    });
-}
-
-Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall(const io::path_t& packagePath)
-{
-    const std::string info = muse::qtrc("update", "%1 needs to close to complete the installation. "
-                                                  "If you have any unsaved changes, you will be prompted to save them before %1 closes.")
-                             .arg(application()->title().toQString()).toStdString();
-    const int closeBtn = int(IInteractive::Button::CustomButton) + 1;
-    const IInteractive::ButtonDatas buttons = {
-        interactive()->buttonData(IInteractive::Button::Cancel),
-        IInteractive::ButtonData(closeBtn, muse::trc("update", "Close"), true)
-    };
-
-    return interactive()->info("", info, buttons, closeBtn)
-           .then<Ret>(this, [this, packagePath](const IInteractive::Result& res, auto resolve) {
-        if (res.isButton(IInteractive::Button::Cancel)) {
-            return resolve(muse::make_ret(Ret::Code::Cancel));
-        }
+        io::path_t packagePath = service()->downloadedReleasePath();
 
         configuration()->setInstallingReleaseVersion(service()->lastCheckResult().val.version);
 
@@ -332,30 +317,11 @@ bool AppUpdateScenario::shouldIgnoreUpdate(const ReleaseInfo& info) const
 
 void AppUpdateScenario::downloadUpdateInBackground()
 {
-    if (m_bgDownloadInProgress || !m_readyPackagePath.empty()) {
+    if (m_bgDownloadInProgress) {
         return;
     }
 
-    if (!hasUpdate()) {
-        return;
-    }
-
-    if (!configuration()->autoDownloadEnabled()) {
-        LOGI() << "background update download skipped: user has disabled";
-        return;
-    }
-
-    //! NOTE: This release was already downloaded in a previous session and is
-    //! waiting to be installed - surface it without downloading again.
-    if (service()->isReleaseDownloaded()) {
-        m_readyPackagePath = service()->downloadedReleasePath();
-        m_readyUpdateVersion = service()->lastCheckResult().val.version;
-        m_readyUpdateDismissed = false;
-        m_hasReadyUpdateChanged.notify();
-        return;
-    }
-
-    if (networkInformation()->isMetered()) {
+    if (!service()->isReleaseReadyToInstall() && networkInformation()->isMetered()) {
         LOGI() << "background update download skipped: metered network connection";
         return;
     }
@@ -371,20 +337,14 @@ void AppUpdateScenario::downloadUpdateInBackground()
     progress.val.finished().onReceive(this, [this](const ProgressResult& res) {
         m_bgDownloadInProgress = false;
 
-        if (!res.ret) {
-            LOGE() << res.ret.toString();
-            return;
-        }
-
         //! NOTE: The release may have been skipped while the download was running.
         if (!hasUpdate()) {
             return;
         }
 
-        m_readyPackagePath = res.val.toString();
-        m_readyUpdateVersion = service()->lastCheckResult().val.version;
-        m_readyUpdateDismissed = false;
-        m_hasReadyUpdateChanged.notify();
+        if (res.ret) {
+            showUpdateAvailableToast(service()->lastCheckResult().val, /*downloaded*/ true);
+        }
     }, Asyncable::Mode::SetReplace);
 }
 
@@ -392,95 +352,4 @@ void AppUpdateScenario::skipRelease(const std::string& version)
 {
     configuration()->setSkippedReleaseVersion(version);
     service()->removeDownloadedRelease();
-
-    m_readyPackagePath = io::path_t();
-    m_hasReadyUpdateChanged.notify();
-}
-
-bool AppUpdateScenario::hasCompletedUpdate() const
-{
-    return m_hasCompletedUpdate;
-}
-
-async::Notification AppUpdateScenario::hasCompletedUpdateChanged() const
-{
-    return m_hasCompletedUpdateChanged;
-}
-
-void AppUpdateScenario::dismissCompletedUpdate()
-{
-    if (!m_hasCompletedUpdate) {
-        return;
-    }
-
-    m_hasCompletedUpdate = false;
-    m_hasCompletedUpdateChanged.notify();
-}
-
-bool AppUpdateScenario::hasReadyUpdate() const
-{
-    return !m_readyPackagePath.empty() && !m_readyUpdateDismissed;
-}
-
-async::Notification AppUpdateScenario::hasReadyUpdateChanged() const
-{
-    return m_hasReadyUpdateChanged;
-}
-
-std::string AppUpdateScenario::readyUpdateVersion() const
-{
-    return m_readyUpdateVersion;
-}
-
-void AppUpdateScenario::installReadyUpdate()
-{
-    if (m_readyPackagePath.empty()) {
-        return;
-    }
-
-    if (!service()->canAutoInstall() || multiwindowsProvider()->windowCount() != 1) {
-        askToCloseAppAndCompleteInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
-        return;
-    }
-
-    prepareAndInstall(m_readyPackagePath).onResolve(this, [](const Ret&) {});
-}
-
-void AppUpdateScenario::showReadyUpdateInfo()
-{
-    if (m_readyPackagePath.empty()) {
-        return;
-    }
-
-    const ReleaseInfo& info = service()->lastCheckResult().val;
-
-    UriQuery query("muse://update/appreleaseinfo");
-    query.addParam("appName", Val(application()->title().toStdString()));
-    query.addParam("notes", Val(info.notes));
-    query.addParam("previousReleasesNotes", Val(releasesNotesToValList(info.previousReleasesNotes)));
-    query.addParam("version", Val(m_readyUpdateVersion));
-    query.addParam("readyToInstall", Val(true));
-
-    interactive()->open(query).onResolve(this, [this](const Val& val) {
-        const QString actionCode = val.toQString();
-
-        if (actionCode == "skip") {
-            skipRelease(m_readyUpdateVersion);
-            return;
-        }
-
-        if (actionCode == "install") {
-            installReadyUpdate();
-        }
-    });
-}
-
-void AppUpdateScenario::dismissReadyUpdate()
-{
-    if (m_readyPackagePath.empty() || m_readyUpdateDismissed) {
-        return;
-    }
-
-    m_readyUpdateDismissed = true;
-    m_hasReadyUpdateChanged.notify();
 }

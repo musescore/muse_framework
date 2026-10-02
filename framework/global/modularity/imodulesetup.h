@@ -46,6 +46,7 @@ public:
     virtual void onPreInit(const IApplication::RunMode& mode) { (void)mode; }
     virtual void onInit(const IApplication::RunMode& mode) { (void)mode; }
     virtual void onAllInited(const IApplication::RunMode& mode) { (void)mode; }
+    virtual void onDelayedInit() {}
     virtual void onDeinit() {}
     virtual void onDestroy() {}
 
