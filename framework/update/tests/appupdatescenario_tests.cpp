@@ -26,6 +26,7 @@
 #include <QThreadPool>
 
 #include "global/tests/mocks/applicationmock.h"
+#include "actions/tests/mocks/actionsdispatchermock.h"
 #include "network/tests/mocks/networkinformationmock.h"
 #include "interactive/tests/mocks/interactivemock.h"
 #include "multiwindows/tests/mocks/multiwindowsprovidermock.h"
@@ -83,6 +84,9 @@ public:
         m_application = std::make_shared<NiceMock<ApplicationMock> >();
         m_scenario->application.set(m_application);
 
+        m_dispatcher = std::make_shared<NiceMock<actions::ActionsDispatcherMock> >();
+        m_scenario->dispatcher.set(m_dispatcher);
+
         ON_CALL(*m_application, fullVersion())
         .WillByDefault(Return(Version(CURRENT_VERSION)));
         ON_CALL(*m_application, title())
@@ -96,7 +100,7 @@ public:
         ON_CALL(*m_service, lastCheckResult())
         .WillByDefault(ReturnRef(m_lastCheckResult));
 
-        ON_CALL(*m_service, isReleaseDownloaded())
+        ON_CALL(*m_service, isReleaseReadyToInstall())
         .WillByDefault(Return(false));
 
         ON_CALL(*m_configuration, autoUpdateEnabled())
@@ -118,16 +122,6 @@ public:
         m_scenario->delayedInit();
     }
 
-    bool hasReadyUpdate() const
-    {
-        return !m_scenario->m_readyPackagePath.empty();
-    }
-
-    void installReadyUpdate()
-    {
-        m_scenario->installReadyUpdate();
-    }
-
     void skipRelease(const std::string& version)
     {
         m_scenario->skipRelease(version);
@@ -136,11 +130,6 @@ public:
     async::Promise<Ret> downloadRelease()
     {
         return m_scenario->downloadRelease();
-    }
-
-    async::Promise<Ret> prepareAndInstall(const io::path_t& packagePath)
-    {
-        return m_scenario->prepareAndInstall(packagePath);
     }
 
     //! A dialog action: the promise is created at call time (so the caller can
@@ -218,6 +207,46 @@ public:
         });
     }
 
+    //! The install prompt: checks its title, then resolves with the given button
+    static auto installPrompt(IInteractive::Button btn)
+    {
+        return Invoke([btn](const std::string& title, const IInteractive::Text&, const IInteractive::ButtonDatas&,
+                            int, const IInteractive::Options&, const std::string&) {
+            EXPECT_EQ(title, "Restart to finish updating");
+            return async::make_promise<IInteractive::Result>([btn](auto resolve) {
+                return resolve(IInteractive::Result(static_cast<int>(btn)));
+            });
+        });
+    }
+
+    //! [GIVEN] The update was downloaded in the background and is ready to install;
+    //! the "ready to install" toast is resolved with the given button
+    void givenDownloadedUpdate(int clickedButton = NO_CLICK)
+    {
+        ON_CALL(*m_networkInformation, isMetered())
+        .WillByDefault(Return(false));
+        ON_CALL(*m_multiwindowsProvider, windowCount())
+        .WillByDefault(Return(1));
+        EXPECT_CALL(*m_service, downloadRelease())
+        .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
+        EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+        .WillOnce(toast(DOWNLOADED_TOAST, clickedButton));
+
+        downloadUpdateInBackground();
+
+        ON_CALL(*m_service, isReleaseReadyToInstall())
+        .WillByDefault(Return(true));
+        ON_CALL(*m_service, isReleaseReadyToInstall())
+        .WillByDefault(Return(true));
+        ON_CALL(*m_service, downloadedReleasePath())
+        .WillByDefault(Return(PACKAGE));
+    }
+
+    void finishDownload()
+    {
+        m_downloadProgress.finish(ProgressResult::make_ok(Val(PACKAGE.toStdString())));
+    }
+
     static RetVal<Val> notEnoughDiskSpace()
     {
         return RetVal<Val>(make_ret(Err::NotEnoughDiskSpace, "Free up 250 MB"));
@@ -238,11 +267,14 @@ public:
     static constexpr int SEE_DETAILS = 0;
     static constexpr int INSTALL = 1;
 
+    inline static const io::path_t PACKAGE = io::path_t("upd/MuseScore.dmg");
+
     inline static const std::vector<std::string> AVAILABLE_TOAST = { "See details", "Install update" };
     inline static const std::vector<std::string> DOWNLOADED_TOAST = { "See details", "Restart & update" };
 
     AppUpdateScenario* m_scenario = nullptr;
     std::shared_ptr<ApplicationMock> m_application;
+    std::shared_ptr<actions::ActionsDispatcherMock> m_dispatcher;
     std::shared_ptr<UpdateConfigurationMock> m_configuration;
     std::shared_ptr<AppUpdateServiceMock> m_service;
     std::shared_ptr<network::NetworkInformationMock> m_networkInformation;
@@ -273,27 +305,6 @@ TEST_F(AppUpdateScenarioTests, BgDownload_UnmeteredNetwork_StartsDownload)
 
     //! [WHEN] The download finishes successfully
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-
-    //! [THEN] The update is surfaced as ready to install
-    EXPECT_TRUE(hasReadyUpdate());
-}
-
-TEST_F(AppUpdateScenarioTests, BgDownload_AutoUpdateDisabled_SkipsDownload)
-{
-    //! [GIVEN] The user turned automatic download off
-    ON_CALL(*m_configuration, autoUpdateEnabled())
-    .WillByDefault(Return(false));
-    ON_CALL(*m_networkInformation, isMetered())
-    .WillByDefault(Return(false));
-
-    //! [THEN] No download is started
-    EXPECT_CALL(*m_service, downloadRelease())
-    .Times(0);
-
-    //! [WHEN] A background download is requested
-    downloadUpdateInBackground();
-
-    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, BgDownload_MeteredNetwork_SkipsDownload)
@@ -308,9 +319,6 @@ TEST_F(AppUpdateScenarioTests, BgDownload_MeteredNetwork_SkipsDownload)
 
     //! [WHEN] A background download is requested
     downloadUpdateInBackground();
-
-    //! [THEN] No update is surfaced as ready
-    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, BgDownload_MeteredThenUnmetered_DownloadsOnRetry)
@@ -330,33 +338,49 @@ TEST_F(AppUpdateScenarioTests, BgDownload_MeteredThenUnmetered_DownloadsOnRetry)
     downloadUpdateInBackground();
 }
 
-TEST_F(AppUpdateScenarioTests, BgDownload_AlreadyDownloaded_SurfacedEvenOnMetered)
+TEST_F(AppUpdateScenarioTests, BgDownload_AlreadyDownloaded_GetsReadyEvenOnMetered)
 {
     //! [GIVEN] The release was already downloaded in a previous session
-    ON_CALL(*m_service, isReleaseDownloaded())
+    ON_CALL(*m_service, isReleaseReadyToInstall())
     .WillByDefault(Return(true));
-    ON_CALL(*m_service, downloadedReleasePath())
-    .WillByDefault(Return(io::path_t("upd/MuseScore.dmg")));
 
     //! [GIVEN] The network connection is metered
     ON_CALL(*m_networkInformation, isMetered())
     .WillByDefault(Return(true));
 
-    //! [THEN] No download is started
+    //! [THEN] The service is asked for the release, which only gets it ready again
     EXPECT_CALL(*m_service, downloadRelease())
-    .Times(0);
-
-    //! [THEN] The "ready to install" toast is shown
-    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
-    .WillOnce(toast(DOWNLOADED_TOAST));
+    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
 
     //! [WHEN] A background download is requested
     downloadUpdateInBackground();
 
-    //! [THEN] The downloaded update is still surfaced as ready to install
-    EXPECT_TRUE(hasReadyUpdate());
+    //! [THEN] The "ready to install" toast is shown once it is ready
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .WillOnce(toast(DOWNLOADED_TOAST));
+
+    m_downloadProgress.finish(ProgressResult::make_ok(Val(PACKAGE.toStdString())));
 }
 
+TEST_F(AppUpdateScenarioTests, BgDownload_Failed_NoToast)
+{
+    //! [GIVEN] A background download is running
+    ON_CALL(*m_networkInformation, isMetered())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, downloadRelease())
+    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
+
+    downloadUpdateInBackground();
+
+    //! [THEN] Nothing is shown in the background
+    EXPECT_CALL(*m_interactive, error(_, _, _, _, _, _))
+    .Times(0);
+    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
+    .Times(0);
+
+    //! [WHEN] The download finishes with an error
+    m_downloadProgress.finish(ProgressResult::make_ret(make_ret(Err::NotEnoughDiskSpace)));
+}
 TEST_F(AppUpdateScenarioTests, BgDownload_NotEnoughDiskSpace_SkipsSilently)
 {
     //! [GIVEN] The network connection is not metered
@@ -370,9 +394,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_NotEnoughDiskSpace_SkipsSilently)
     //! [WHEN] A background download is requested
     downloadUpdateInBackground();
 
-    //! [THEN] No update is surfaced as ready and a later retry is allowed
-    EXPECT_FALSE(hasReadyUpdate());
-
+    //! [THEN] A later retry is allowed
     EXPECT_CALL(*m_service, downloadRelease())
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
     downloadUpdateInBackground();
@@ -449,29 +471,132 @@ TEST_F(AppUpdateScenarioTests, ManualDownload_NotEnoughDiskSpace_RetrySucceeds_P
     EXPECT_EQ(result.code(), static_cast<int>(Ret::Code::Cancel));
 }
 
-TEST_F(AppUpdateScenarioTests, PrepareAndInstall_NotEnoughDiskSpace_Retry_PreparesAgain)
+TEST_F(AppUpdateScenarioTests, ManualDownload_ReadyToInstall_GoesStraightToInstallPrompt)
 {
-    //! [GIVEN] Staging fails for lack of space the first time and succeeds after a retry
-    const io::path_t package("upd/MuseScore.dmg");
-    EXPECT_CALL(*m_service, prepareUpdate(package))
-    .WillOnce(Return(RetVal<io::path_t>(make_ret(Err::NotEnoughDiskSpace, "Free up 250 MB"))))
-    .WillOnce(Return(RetVal<io::path_t>::make_ok(io::path_t("upd/staging/MuseScore.app"))));
+    //! [GIVEN] The release is already downloaded and ready to install
+    ON_CALL(*m_service, isReleaseReadyToInstall())
+    .WillByDefault(Return(true));
 
-    EXPECT_CALL(*m_interactive, error(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Retry));
-
-    //! [THEN] The restart prompt is shown; no fallback to the manual install prompt
+    //! [THEN] The download dialog is not opened; the install prompt is shown
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
     EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Cancel));
+    .WillOnce(installPrompt(IInteractive::Button::Cancel));
 
-    //! [WHEN] The downloaded package is installed
+    //! [WHEN] A manual download is requested
     Ret result;
-    prepareAndInstall(package).onResolve(m_scenario, [&result](const Ret& ret) { result = ret; });
+    downloadRelease().onResolve(m_scenario, [&result](const Ret& ret) { result = ret; });
+    pump();
+
+    EXPECT_EQ(result.code(), static_cast<int>(Ret::Code::Cancel));
+}
+TEST_F(AppUpdateScenarioTests, ManualDownload_NotReady_OpensDownloadDialog_ThenInstallPrompt)
+{
+    //! [GIVEN] The release is not ready to install (not downloaded, or downloaded but not ready)
+    ON_CALL(*m_service, isReleaseReadyToInstall())
+    .WillByDefault(Return(false));
+
+    //! [THEN] The download dialog gets it ready
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Invoke([](const UriQuery& query) {
+        EXPECT_EQ(query.uri(), Uri("muse://update/app"));
+        EXPECT_EQ(query.param("mode").toString(), "download");
+        return RetVal<Val>::make_ok(Val(PACKAGE.toStdString()));
+    }));
+
+    //! [THEN] The install prompt follows
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(installPrompt(IInteractive::Button::Cancel));
+
+    //! [WHEN] A manual download is requested
+    downloadRelease().onResolve(m_scenario, [](const Ret&) {});
+    pump();
+}
+TEST_F(AppUpdateScenarioTests, ManualDownload_Canceled_EndsWithCancel)
+{
+    //! [GIVEN] The user closes the download dialog
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Return(RetVal<Val>(make_ret(Ret::Code::Cancel))));
+
+    //! [THEN] No error is shown
+    EXPECT_CALL(*m_interactive, error(_, _, _, _, _, _))
+    .Times(0);
+
+    //! [WHEN] A manual download is requested
+    Ret result;
+    downloadRelease().onResolve(m_scenario, [&result](const Ret& ret) { result = ret; });
     pump();
 
     EXPECT_EQ(result.code(), static_cast<int>(Ret::Code::Cancel));
 }
 
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_ShowsInstallPrompt)
+{
+    //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
+    givenDownloadedUpdate(INSTALL);
+
+    //! [THEN] Nothing is downloaded again, no release info is opened; the install prompt follows right away
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, open(_))
+    .Times(0);
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(installPrompt(IInteractive::Button::Cancel));
+
+    //! [THEN] Cancelling the prompt does not quit
+    EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(_))
+    .Times(0);
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
+    .Times(0);
+
+    //! [WHEN] The download finishes
+    finishDownload();
+    pump();
+}
+TEST_F(AppUpdateScenarioTests, InstallPrompt_Restart_QuitsToInstall)
+{
+    //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
+    givenDownloadedUpdate(INSTALL);
+
+    //! [GIVEN] The user confirms the restart
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(installPrompt(IInteractive::Button::Apply));
+
+    //! [THEN] The installing version is remembered and the app quits with the downloaded package
+    EXPECT_CALL(*m_configuration, setInstallingReleaseVersion("1000.0"));
+    EXPECT_CALL(*m_multiwindowsProvider, quitAllAndRunInstallation(_))
+    .Times(0);
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
+    .WillOnce(Invoke([](const actions::ActionCode&, const actions::ActionData& data) {
+        EXPECT_FALSE(data.arg<bool>(0));
+        EXPECT_EQ(data.arg<std::string>(1), PACKAGE.toStdString());
+    }));
+
+    //! [WHEN] The download finishes
+    finishDownload();
+    pump();
+}
+TEST_F(AppUpdateScenarioTests, InstallPrompt_Restart_SeveralWindows_QuitsAllWindows)
+{
+    //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
+    givenDownloadedUpdate(INSTALL);
+
+    //! [GIVEN] Several windows are open
+    ON_CALL(*m_multiwindowsProvider, windowCount())
+    .WillByDefault(Return(2));
+
+    //! [GIVEN] The user confirms the restart
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(installPrompt(IInteractive::Button::Apply));
+
+    //! [THEN] All windows quit to install the downloaded package
+    EXPECT_CALL(*m_multiwindowsProvider, quitAllAndRunInstallation(PACKAGE));
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+
+    //! [WHEN] The download finishes
+    finishDownload();
+    pump();
+}
 TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
 {
     //! [GIVEN] The release was downloaded in the background and is ready to install
@@ -485,7 +610,6 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
 
     downloadUpdateInBackground();
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-    ASSERT_TRUE(hasReadyUpdate());
 
     //! [THEN] The version is remembered as skipped and the package is deleted
     EXPECT_CALL(*m_configuration, setSkippedReleaseVersion("1000.0"));
@@ -493,9 +617,6 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
 
     //! [WHEN] The user skips the release
     skipRelease("1000.0");
-
-    //! [THEN] Nothing is left to install
-    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, SkipRelease_WhileDownloading_DoesNotSurfaceUpdate)
@@ -519,9 +640,6 @@ TEST_F(AppUpdateScenarioTests, SkipRelease_WhileDownloading_DoesNotSurfaceUpdate
 
     //! [WHEN] The (not yet canceled) download still reports success
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-
-    //! [THEN] The skipped release is not surfaced as ready to install
-    EXPECT_FALSE(hasReadyUpdate());
 }
 
 TEST_F(AppUpdateScenarioTests, DelayedInit_LaunchedWithInstalledVersion_ReportsCompletedUpdate)
@@ -580,63 +698,6 @@ TEST_F(AppUpdateScenarioTests, DelayedInit_NothingWasInstalling_NoCompletedUpdat
     delayedInit();
 }
 
-TEST_F(AppUpdateScenarioTests, InstallReadyUpdate_GoesStraightToInstall)
-{
-    //! [GIVEN] A ready update and no in-place install support
-    ON_CALL(*m_networkInformation, isMetered())
-    .WillByDefault(Return(false));
-    EXPECT_CALL(*m_service, downloadRelease())
-    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
-
-    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
-    .WillOnce(toast(DOWNLOADED_TOAST));
-
-    downloadUpdateInBackground();
-    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-
-    ON_CALL(*m_service, canAutoInstall())
-    .WillByDefault(Return(false));
-
-    //! [THEN] No release info dialog is opened; the install prompt follows directly
-    EXPECT_CALL(*m_interactive, open(_))
-    .Times(0);
-    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Cancel));
-
-    //! [WHEN] The user chooses "Restart and update"
-    installReadyUpdate();
-    pump();
-}
-
-TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_Installs)
-{
-    //! [GIVEN] A background download is running and in-place install is not available
-    ON_CALL(*m_networkInformation, isMetered())
-    .WillByDefault(Return(false));
-    EXPECT_CALL(*m_service, downloadRelease())
-    .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
-    ON_CALL(*m_service, canAutoInstall())
-    .WillByDefault(Return(false));
-
-    downloadUpdateInBackground();
-
-    //! [GIVEN] The user clicks "Restart & update" on the toast
-    EXPECT_CALL(*m_toastService, show(_, _, _, _, _))
-    .WillOnce(toast(DOWNLOADED_TOAST, INSTALL));
-
-    //! [THEN] The downloaded package is installed: no new download, no release info dialog
-    EXPECT_CALL(*m_interactive, openSync(_))
-    .Times(0);
-    EXPECT_CALL(*m_interactive, open(_))
-    .Times(0);
-    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Cancel));
-
-    //! [WHEN] The download finishes
-    m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
-    pump();
-}
-
 TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_InstallUsesDownloadedPackage)
 {
     //! [GIVEN] A background download is running and in-place install is not available
@@ -646,6 +707,8 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_InstallUsesDownloa
     .WillOnce(Return(RetVal<Progress>::make_ok(m_downloadProgress)));
     ON_CALL(*m_service, canAutoInstall())
     .WillByDefault(Return(false));
+    ON_CALL(*m_service, isReleaseReadyToInstall())
+    .WillByDefault(Return(true));
 
     downloadUpdateInBackground();
 
@@ -750,7 +813,7 @@ TEST_F(AppUpdateScenarioTests, AutoCheck_AutoUpdateDisabled_SkippedRelease_NoToa
 TEST_F(AppUpdateScenarioTests, ManualCheck_ReleaseAlreadyDownloaded_OpensReadyToInstallInfo)
 {
     //! [GIVEN] The available release was already downloaded
-    ON_CALL(*m_service, isReleaseDownloaded())
+    ON_CALL(*m_service, isReleaseReadyToInstall())
     .WillByDefault(Return(true));
     EXPECT_CALL(*m_service, checkForUpdate())
     .WillOnce(checkForUpdateResolves(m_lastCheckResult));
@@ -861,6 +924,8 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_AppliesAutoUpdateT
     .WillByDefault(Return(io::path_t("upd/MuseScore.dmg")));
     ON_CALL(*m_service, canAutoInstall())
     .WillByDefault(Return(false));
+    ON_CALL(*m_service, isReleaseReadyToInstall())
+    .WillByDefault(Return(true));
 
     downloadUpdateInBackground();
 
