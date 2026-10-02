@@ -58,7 +58,6 @@ ValueList {
                 enabled: Boolean(fuzzyPattern)
                 fuzzyPattern: root.searchText
                 roleName: "searchKey"
-                caseSensitivity: Qt.CaseInsensitive
             }
         ]
         sorters: [
