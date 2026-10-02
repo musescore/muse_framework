@@ -74,21 +74,12 @@ private:
     void downloadUpdateInBackground();
 
     muse::async::Promise<Ret> downloadRelease();
-    muse::async::Promise<Ret> askToCloseAppAndCompleteInstall(const io::path_t& installerPath);
-    muse::async::Promise<Ret> prepareAndInstall(const io::path_t& packagePath);
-    muse::async::Promise<Ret> askToRestartAndInstall(const io::path_t& packagePath, const io::path_t& preparedPath);
-
-    void installReadyUpdate();
+    muse::async::Promise<Ret> askToCloseAppAndCompleteInstall();
 
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
     void skipRelease(const std::string& version);
 
     bool m_checkInProgress = false;
-
     bool m_bgDownloadInProgress = false;
-    io::path_t m_readyPackagePath;
-
-    bool m_hasCompletedUpdate = false;
-    async::Notification m_hasCompletedUpdateChanged;
 };
 }
