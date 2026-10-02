@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <algorithm>
+#include <iterator>
 #include <unordered_map>
 #include <unordered_set>
 #include <map>
@@ -428,6 +429,40 @@ constexpr inline dynamic_level_t dynamicLevelFromType(const DynamicType type)
     }
 
     return static_cast<dynamic_level_t>(type);
+}
+
+// Backend-agnostic "how loud does this dynamic level actually sound" curve (0.0-1.0), shared by
+// audio backends and by any UI that needs to show a musically-coherent baseline for a dynamic
+// level without owning its own copy of the mapping. Deliberately non-linear: the raw 0-10000
+// dynamic_level_t scale is even/linear per named step, but perceived loudness compresses heavily
+// at the quiet end and saturates near the loud end.
+inline double dynamicLevelToVelocityRatio(const dynamic_level_t level)
+{
+    static const std::vector<std::pair<dynamic_level_t, double> > conversionMap = {
+        { dynamicLevelFromType(DynamicType::ppppppppp), 0.0 },
+        { dynamicLevelFromType(DynamicType::ppppp), 1.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::pppp), 2.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::ppp), 4.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::pp), 8.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::p), 16.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::mp), 32.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::mf), 64.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::f), 96.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::ff), 120.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::fff), 127.0 / 127.0 },
+        { dynamicLevelFromType(DynamicType::fffffffff), 127.0 / 127.0 }
+    };
+
+    auto prevIt = conversionMap.begin();
+    for (auto it = std::next(prevIt); it != conversionMap.end(); ++it) {
+        if (level >= prevIt->first && level <= it->first) {
+            const double alpha = static_cast<double>(level - prevIt->first) / static_cast<double>(it->first - prevIt->first);
+            return alpha * it->second + (1.0 - alpha) * prevIt->second;
+        }
+        prevIt = it;
+    }
+
+    return level < dynamicLevelFromType(DynamicType::ppppppppp) ? 0.0 : 1.0;
 }
 
 struct ArrangementPattern

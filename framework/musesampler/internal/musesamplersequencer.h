@@ -83,12 +83,24 @@ private:
 
     void parseAuditionParams(const mpe::PlaybackEvent& event, AuditionParams& out) const;
 
+    // Accumulates every note's velocity override sharing the same onset (e.g. a chord), so the
+    // mean can be computed once, on read, rather than folding samples into a running two-value
+    // average that skews toward the most recently added note as more than two notes share an
+    // onset.
+    struct VelocityOverrideAccumulator {
+        double sum = 0.0;
+        int count = 0;
+
+        double mean() const { return count > 0 ? sum / count : 0.0; }
+    };
+
     MuseSamplerLibHandlerPtr m_samplerLib = nullptr;
     ms_MuseSampler m_sampler = nullptr;
     IMuseSamplerTracks* m_tracks = nullptr;
 
     std::unordered_map<mpe::layer_idx_t, track_idx_t> m_layerIdxToTrackIdx;
     std::unordered_map<ms_Track, std::map<long long /*startUs*/, ms_PresetChange> > m_presetChangesByTrack;
+    std::unordered_map<mpe::layer_idx_t, std::map<long long /*startUs*/, VelocityOverrideAccumulator> > m_velocityOverridesByLayer;
 
     std::string m_defaultPresetCode;
     AuditionParams m_auditionParamsCache;
