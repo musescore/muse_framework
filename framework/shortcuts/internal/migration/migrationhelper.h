@@ -57,6 +57,7 @@ private:
     struct ScInfo {
         rcommand::Command command;
         actions::ActionCode action;
+        bool autoRepeat = true;
         std::vector<std::string> sequences;
     };
 
