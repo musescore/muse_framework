@@ -127,3 +127,18 @@ QQmlEngine* ExtensionsUiEngine::qmlEngineApiV1() const
 {
     return const_cast<ExtensionsUiEngine*>(this)->engineV1();
 }
+
+void ExtensionsUiEngine::clearComponentCache()
+{
+    //! NOTE The engines cache every QML component they have compiled, so a plugin
+    //! edited on disk keeps running its old code until the cache is dropped.
+    //! The engines themselves stay: a plugin window left open was built by one of
+    //! them, and outlives the reload.
+    if (m_engine) {
+        m_engine->clearComponentCache();
+    }
+
+    if (m_engineV1) {
+        m_engineV1->clearComponentCache();
+    }
+}
