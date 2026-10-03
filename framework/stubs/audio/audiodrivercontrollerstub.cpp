@@ -69,6 +69,10 @@ bool AudioDriverControllerStub::isOpened() const
     return false;
 }
 
+void AudioDriverControllerStub::setLivePlaybackOngoing(bool)
+{
+}
+
 const IAudioDriver::Spec& AudioDriverControllerStub::activeSpec() const
 {
     static IAudioDriver::Spec spec;

@@ -29,15 +29,19 @@
 
 #include "modularity/ioc.h"
 #include "audio/common/rpc/irpcchannel.h"
+#include "audio/iaudiodrivercontroller.h"
 
 namespace muse::audio {
 class Player : public IPlayer, public Contextable, public async::Asyncable
 {
     GlobalInject<rpc::IRpcChannel> channel;
+    GlobalInject<IAudioDriverController> audioDriverController;
 
 public:
     Player(const muse::modularity::ContextPtr& ctx)
         : Contextable(ctx) {}
+
+    ~Player() override;
 
     void init();
 
@@ -62,6 +66,8 @@ public:
 private:
 
     rpc::CtxId ctxId() const;
+
+    void updateLivePlaybackOngoing();
 
     PlaybackStatus m_playbackStatus = PlaybackStatus::Stopped;
     async::Channel<PlaybackStatus> m_playbackStatusChanged;

@@ -53,6 +53,8 @@ public:
     void close() override;
     bool isOpened() const override;
 
+    void setLivePlaybackOngoing(bool ongoing) override;
+
     const Spec& activeSpec() const override;
     async::Channel<Spec> activeSpecChanged() const override;
 
@@ -88,6 +90,7 @@ private:
 
     AudioWorkGroup m_audioWorkGroup;
     bool m_deviceMapListenerRegistered = false;
+    bool m_livePlaybackOngoing = false;
 };
 }
 #endif // MUSE_AUDIO_OSXDIRECTAUDIODRIVER_H
