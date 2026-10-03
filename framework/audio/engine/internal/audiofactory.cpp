@@ -69,11 +69,12 @@ void AudioFactory::clearSynthSources()
     synthResolver()->clearSources();
 }
 
-RetVal<AudioSourceNodePtr> AudioFactory::makeEventSource(const TrackId trackId, const mpe::PlaybackData& playbackData,
+RetVal<AudioSourceNodePtr> AudioFactory::makeEventSource(const TrackId trackId, const std::string& trackName,
+                                                         const mpe::PlaybackData& playbackData,
                                                          const AudioInputParams& params,
                                                          const std::function<void()> onOffStreamReceived) const
 {
-    EventAudioNodePtr source = std::make_shared<EventAudioNode>(trackId, playbackData, onOffStreamReceived);
+    EventAudioNodePtr source = std::make_shared<EventAudioNode>(trackId, trackName, playbackData, onOffStreamReceived);
     source->setOutputSpec(audioEngine()->outputSpec());
     source->applyInputParams(params);
     return RetVal<AudioSourceNodePtr>::make_ok(source);
