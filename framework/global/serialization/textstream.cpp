@@ -64,10 +64,10 @@ TextStream& TextStream::operator<<(char ch)
     return *this;
 }
 
-TextStream& TextStream::operator<<(const int32_t val)
+template<size_t MaxDigits, typename T>
+TextStream& TextStream::writeInt(T val)
 {
-    // ceil(log_10(2^31)) = 10 (+ sign)
-    std::array<char, 11> buf{};
+    std::array<char, MaxDigits> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
     IF_ASSERT_FAILED(ec == std::errc {}) {
         return *this;
@@ -78,18 +78,10 @@ TextStream& TextStream::operator<<(const int32_t val)
     return *this;
 }
 
-TextStream& TextStream::operator<<(const uint32_t val)
-{
-    // ceil(log_10(2^32)) = 10
-    std::array<char, 10> buf{};
-    const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
-
-    write(buf.data(), static_cast<size_t>(last - buf.data()));
-    return *this;
-}
+template TextStream& TextStream::writeInt<11, int32_t>(int32_t val);
+template TextStream& TextStream::writeInt<10, uint32_t>(uint32_t val);
+template TextStream& TextStream::writeInt<21, int64_t>(int64_t val);
+template TextStream& TextStream::writeInt<20, uint64_t>(uint64_t val);
 
 TextStream& TextStream::operator<<(double val)
 {
@@ -116,34 +108,6 @@ TextStream& TextStream::operator<<(double val)
     std::string buf = ss.str();
     write(buf.data(), buf.size());
 #endif
-
-    return *this;
-}
-
-TextStream& TextStream::operator<<(const int64_t val)
-{
-    // ceil(log_10(2^63)) = 20 (+ sign)
-    std::array<char, 21> buf{};
-    const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
-
-    write(buf.data(), static_cast<size_t>(last - buf.data()));
-
-    return *this;
-}
-
-TextStream& TextStream::operator<<(const uint64_t val)
-{
-    // ceil(log_10(2^64)) = 20
-    std::array<char, 20> buf{};
-    const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
-
-    write(buf.data(), static_cast<size_t>(last - buf.data()));
 
     return *this;
 }
