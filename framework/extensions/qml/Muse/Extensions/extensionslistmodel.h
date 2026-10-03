@@ -33,6 +33,7 @@
 #include "interactive/iinteractive.h"
 #include "extensions/iextensioninstaller.h"
 #include "extensions/iextensionsconfiguration.h"
+#include "extensions/iextensionsprovider.h"
 #include "extensions/iextensionsregister.h"
 #include "shortcuts/ishortcutsregister.h"
 
@@ -46,6 +47,7 @@ class ExtensionsListModel : public QAbstractListModel, public QQmlParserStatus, 
 
     GlobalInject<IExtensionsConfiguration> configuration;
     GlobalInject<IExtensionsRegister> extensionsRegister;
+    ContextInject<IExtensionsProvider> provider = { this };
     ContextInject<IExtensionInstaller> installer = { this };
     ContextInject<IInteractive> interactive = { this };
     ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
