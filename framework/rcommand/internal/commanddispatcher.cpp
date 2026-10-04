@@ -125,7 +125,7 @@ void CommandDispatcher::onRequest(Commandable* client, const Command& command, c
 
 void CommandDispatcher::reg(Commandable* client, const Command& command, const Client& c)
 {
-    IF_ASSERT_FAILED(m_clients.find(command) == m_clients.end()) {
+    if (m_clients.find(command) != m_clients.end()) {
         LOGW() << "command already registered: " << command;
         return;
     }
