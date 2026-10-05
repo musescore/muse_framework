@@ -30,6 +30,7 @@
 #include "global/types/mnemonicstring.h"
 #include "global/types/translatablestring.h"
 #include "global/types/color.h"
+#include "global/types/flags.h"
 #include "global/logstream.h"
 #include "ui/uitypes.h"
 
@@ -127,6 +128,18 @@ struct Decoration {
         : checkable(checkable) {}
 };
 
+enum class Availability {
+    Disabled = 0,
+    Dispatch = 1 << 0,  // If only dispatch is available, then the command is essentially internal.
+    Shortcut = 1 << 1,
+    API = 1 << 2,
+    MCP = 1 << 3,
+
+    All = Dispatch | Shortcut | API | MCP
+};
+DECLARE_FLAGS(Availabilities, Availability)
+DECLARE_OPERATORS_FOR_FLAGS(Availabilities)
+
 struct CommandInfo
 {
     Command command;
@@ -134,6 +147,7 @@ struct CommandInfo
     TranslatableString description;
     InputSchema inputSchema;
     Decoration decoration;
+    Availabilities availabilities = Availability::Disabled;
 
     bool isValid() const { return command.isValid(); }
 };
