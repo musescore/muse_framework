@@ -530,37 +530,18 @@ TEST_F(AppUpdateScenarioTests, ManualDownload_Canceled_EndsWithCancel)
     EXPECT_EQ(result.code(), static_cast<int>(Ret::Code::Cancel));
 }
 
-TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_ShowsInstallPrompt)
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_QuitsWithoutPrompt)
 {
     //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
     givenDownloadedUpdate(INSTALL);
 
-    //! [THEN] Nothing is downloaded again, no release info is opened; the install prompt follows right away
+    //! [THEN] Nothing is downloaded again, and no prompt is shown: the button already says that the app restarts
     EXPECT_CALL(*m_interactive, openSync(_))
     .Times(0);
     EXPECT_CALL(*m_interactive, open(_))
     .Times(0);
     EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(installPrompt(IInteractive::Button::Cancel));
-
-    //! [THEN] Cancelling the prompt does not quit
-    EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(_))
     .Times(0);
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
-    .Times(0);
-
-    //! [WHEN] The download finishes
-    finishDownload();
-    pump();
-}
-TEST_F(AppUpdateScenarioTests, InstallPrompt_Restart_QuitsToInstall)
-{
-    //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
-    givenDownloadedUpdate(INSTALL);
-
-    //! [GIVEN] The user confirms the restart
-    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(installPrompt(IInteractive::Button::Apply));
 
     //! [THEN] The installing version is remembered and the app quits with the downloaded package
     EXPECT_CALL(*m_configuration, setInstallingReleaseVersion("1000.0"));
@@ -576,7 +557,29 @@ TEST_F(AppUpdateScenarioTests, InstallPrompt_Restart_QuitsToInstall)
     finishDownload();
     pump();
 }
-TEST_F(AppUpdateScenarioTests, InstallPrompt_Restart_SeveralWindows_QuitsAllWindows)
+TEST_F(AppUpdateScenarioTests, BgDownload_NotReadyAnymore_RestartAndUpdate_GetsReadyAndQuitsWithoutPrompt)
+{
+    //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
+    givenDownloadedUpdate(INSTALL);
+
+    //! [GIVEN] It is not ready to install anymore (e.g. getting it ready failed)
+    ON_CALL(*m_service, isReleaseReadyToInstall())
+    .WillByDefault(Return(false));
+
+    //! [THEN] The download dialog gets it ready again
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Return(RetVal<Val>::make_ok(Val(PACKAGE.toStdString()))));
+
+    //! [THEN] Then the app quits to install it, without a prompt
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .Times(0);
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+
+    //! [WHEN] The download finishes
+    finishDownload();
+    pump();
+}
+TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_SeveralWindows_QuitsAllWindows)
 {
     //! [GIVEN] The update was downloaded in the background, and the user clicks "Restart & update"
     givenDownloadedUpdate(INSTALL);
@@ -585,16 +588,59 @@ TEST_F(AppUpdateScenarioTests, InstallPrompt_Restart_SeveralWindows_QuitsAllWind
     ON_CALL(*m_multiwindowsProvider, windowCount())
     .WillByDefault(Return(2));
 
-    //! [GIVEN] The user confirms the restart
-    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(installPrompt(IInteractive::Button::Apply));
-
     //! [THEN] All windows quit to install the downloaded package
     EXPECT_CALL(*m_multiwindowsProvider, quitAllAndRunInstallation(PACKAGE));
     EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
 
     //! [WHEN] The download finishes
     finishDownload();
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ReleaseInfo_InstallUpdate_Downloads_ThenAsksToRestart)
+{
+    //! [GIVEN] The available release is not downloaded yet
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user clicks "Install update" in the release info
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "install"));
+
+    //! [THEN] The release is downloaded
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Return(RetVal<Val>::make_ok(Val(PACKAGE.toStdString()))));
+
+    //! [THEN] The user is asked to restart, and confirms it
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(installPrompt(IInteractive::Button::Apply));
+
+    //! [THEN] The app quits to install it
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, InstallPrompt_Cancel_DoesNotQuit)
+{
+    //! [GIVEN] The release is not ready to install, and the download dialog gets it ready
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Return(RetVal<Val>::make_ok(Val(PACKAGE.toStdString()))));
+
+    //! [GIVEN] The user cancels the restart prompt
+    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
+    .WillOnce(installPrompt(IInteractive::Button::Cancel));
+
+    //! [THEN] The app does not quit
+    EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(_))
+    .Times(0);
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
+    .Times(0);
+
+    //! [WHEN] A manual download is requested
+    downloadRelease().onResolve(m_scenario, [](const Ret&) {});
     pump();
 }
 TEST_F(AppUpdateScenarioTests, SkipRelease_RemovesPackage_AndClearsReadyUpdate)
@@ -720,13 +766,17 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_InstallUsesDownloa
     EXPECT_CALL(*m_interactive, open(_))
     .WillOnce(releaseInfoDialog(/*readyToInstall*/ true, "install"));
 
-    //! [THEN] The downloaded package is installed without downloading it again
+    //! [THEN] The downloaded package is installed without downloading it again and without a prompt
     ON_CALL(*m_service, downloadedReleasePath())
-    .WillByDefault(Return(io::path_t("upd/MuseScore.dmg")));
+    .WillByDefault(Return(PACKAGE));
     EXPECT_CALL(*m_interactive, openSync(_))
     .Times(0);
     EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Cancel));
+    .Times(0);
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
+    .WillOnce(Invoke([](const actions::ActionCode&, const actions::ActionData& data) {
+        EXPECT_EQ(data.arg<std::string>(1), PACKAGE.toStdString());
+    }));
 
     //! [WHEN] The download finishes
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
@@ -1025,10 +1075,9 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_AppliesAutoUpdateT
     EXPECT_CALL(*m_interactive, open(_))
     .WillOnce(releaseInfoDialog(/*readyToInstall*/ true, "install", /*autoUpdateEnabled*/ false));
 
-    //! [THEN] The setting is saved and the install prompt follows
+    //! [THEN] The setting is saved and the app quits to install the update
     EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(false));
-    EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
-    .WillOnce(dialog(IInteractive::Button::Cancel));
+    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
 
     //! [WHEN] The download finishes
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));

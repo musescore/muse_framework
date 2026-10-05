@@ -165,7 +165,7 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool re
     query.addParam("readyToInstall", Val(readyToInstall));
     query.addParam("autoUpdateEnabled", Val(configuration()->autoUpdateEnabled()));
 
-    return interactive()->open(query).then<Ret>(this, [this, info](const Val& val, auto resolve) {
+    return interactive()->open(query).then<Ret>(this, [this, info, readyToInstall](const Val& val, auto resolve) {
         const std::string actionCode = applyReleaseInfoResult(val);
         if (actionCode == "close") {
             return resolve(muse::make_ret(Ret::Code::Cancel));
@@ -183,7 +183,8 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool re
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
-        downloadRelease().onResolve(this, [resolve](const Ret& ret) {
+        //! NOTE: "Restart & update" already tells that the app restarts, no need to ask again
+        downloadRelease(/*confirmRestart*/ !readyToInstall).onResolve(this, [resolve](const Ret& ret) {
             (void)resolve(ret);
         });
 
@@ -230,11 +231,8 @@ void AppUpdateScenario::showUpdateAvailableToast(const ReleaseInfo& info, bool d
         if (result.isCode(seeDetailsBtn)) {
             showReleaseInfo(info, downloaded).onResolve(this, [](const Ret&) {});
         } else if (result.isCode(installBtn)) {
-            if (downloaded) {
-                askToCloseAppAndCompleteInstall();
-            } else {
-                downloadRelease().onResolve(this, [](const Ret&) {});
-            }
+            //! NOTE: "Restart & update" already tells that the app restarts, no need to ask again
+            downloadRelease(/*confirmRestart*/ !downloaded).onResolve(this, [](const Ret&) {});
         }
     });
 }
@@ -270,12 +268,12 @@ Promise<Ret> AppUpdateScenario::askToRetryOnNotEnoughDiskSpace(const Ret& error,
     });
 }
 
-Promise<Ret> AppUpdateScenario::downloadRelease()
+Promise<Ret> AppUpdateScenario::downloadRelease(bool confirmRestart)
 {
     if (!service()->isReleaseReadyToInstall()) {
         RetVal<Val> rv = interactive()->openSync("muse://update/app?mode=download");
         if (rv.ret.code() == static_cast<int>(Err::NotEnoughDiskSpace)) {
-            return askToRetryOnNotEnoughDiskSpace(rv.ret, [this]() { return downloadRelease(); });
+            return askToRetryOnNotEnoughDiskSpace(rv.ret, [this, confirmRestart]() { return downloadRelease(confirmRestart); });
         }
 
         if (!rv.ret) {
@@ -283,7 +281,15 @@ Promise<Ret> AppUpdateScenario::downloadRelease()
         }
     }
 
-    return askToCloseAppAndCompleteInstall();
+    if (confirmRestart) {
+        return askToCloseAppAndCompleteInstall();
+    }
+
+    closeAppAndCompleteInstall();
+
+    return async::make_promise<Ret>([](auto resolve, auto) {
+        return resolve(muse::make_ok());
+    });
 }
 
 Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall()
@@ -304,17 +310,22 @@ Promise<Ret> AppUpdateScenario::askToCloseAppAndCompleteInstall()
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
-        io::path_t packagePath = service()->downloadedReleasePath();
-
-        configuration()->setInstallingReleaseVersion(service()->lastCheckResult().val.version);
-
-        if (multiwindowsProvider()->windowCount() != 1) {
-            multiwindowsProvider()->quitAllAndRunInstallation(packagePath);
-        }
-
-        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, packagePath.toStdString()));
+        closeAppAndCompleteInstall();
         return resolve(muse::make_ok());
     });
+}
+
+void AppUpdateScenario::closeAppAndCompleteInstall()
+{
+    const io::path_t packagePath = service()->downloadedReleasePath();
+
+    configuration()->setInstallingReleaseVersion(service()->lastCheckResult().val.version);
+
+    if (multiwindowsProvider()->windowCount() != 1) {
+        multiwindowsProvider()->quitAllAndRunInstallation(packagePath);
+    }
+
+    dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, packagePath.toStdString()));
 }
 
 bool AppUpdateScenario::shouldIgnoreUpdate(const ReleaseInfo& info) const

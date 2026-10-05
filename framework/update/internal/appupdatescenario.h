@@ -73,8 +73,9 @@ private:
 
     void downloadUpdateInBackground();
 
-    muse::async::Promise<Ret> downloadRelease();
+    muse::async::Promise<Ret> downloadRelease(bool confirmRestart = true);
     muse::async::Promise<Ret> askToCloseAppAndCompleteInstall();
+    void closeAppAndCompleteInstall();
 
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
     void skipRelease(const std::string& version);
