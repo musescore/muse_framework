@@ -30,6 +30,7 @@ RowLayout {
 
     property string defaultButtonName: installButton.text
     property bool readyToInstall: false
+    property alias isRemindMeLaterButtonEnabled: remindMeLaterButton.enabled
 
     property NavigationPanel navigationPanel: NavigationPanel {
         name: "UpdateBottomPanel"
@@ -66,11 +67,11 @@ RowLayout {
     }
 
     FlatButton {
+        id: remindMeLaterButton
+
         Layout.alignment: Qt.AlignVCenter
 
         text: qsTrc("update", "Remind me later")
-
-        visible: !root.readyToInstall
 
         navigation.name: "RemindMeLaterButton"
         navigation.panel: root.navigationPanel

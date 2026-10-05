@@ -145,6 +145,8 @@ StyledDialogView {
             Layout.preferredHeight: childrenRect.height
             Layout.alignment: Qt.AlignBottom
 
+            isRemindMeLaterButtonEnabled: !root.autoUpdateEnabled
+
             navigationPanel.section: root.navigationSection
             navigationPanel.order: 1
 
