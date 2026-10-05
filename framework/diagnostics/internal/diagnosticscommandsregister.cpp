@@ -23,6 +23,7 @@
 #include "diagnosticscommandsregister.h"
 
 #include "../diagnosticscommands.h"
+#include "rcommand/commandtypes.h"
 
 using namespace muse;
 using namespace muse::rcommand;
@@ -34,84 +35,96 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Save diagnostic files"),
         TranslatableString("diagnostics", "Save diagnostic files"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_PATHS_COMMAND,
         TranslatableString("diagnostics", "Show paths…"),
         TranslatableString("diagnostics", "Show paths"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_PROFILER_COMMAND,
         TranslatableString("diagnostics", "Show profiler…"),
         TranslatableString("diagnostics", "Show profiler"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_GRAPHICSINFO_COMMAND,
         TranslatableString("diagnostics", "Show graphics info…"),
         TranslatableString("diagnostics", "Show graphics info"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_NAVIGATION_TREE_COMMAND,
         TranslatableString("diagnostics", "Show navigation tree…"),
         TranslatableString("diagnostics", "Show navigation tree"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ACCESSIBLE_TREE_COMMAND,
         TranslatableString("diagnostics", "Show accessibility tree…"),
         TranslatableString("diagnostics", "Show accessibility tree"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_DUMP_ACCESSIBLE_TREE_COMMAND,
         TranslatableString("diagnostics", "Dump accessibility tree to console"),
         TranslatableString("diagnostics", "Dump accessibility tree to console"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ENGRAVING_ELEMENTS_COMMAND,
         TranslatableString("diagnostics", "Show engraving elements"),
         TranslatableString("diagnostics", "Show engraving elements"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ENGRAVING_UNDOSTACK_COMMAND,
         TranslatableString("diagnostics", "Show engraving undo stack"),
         TranslatableString("diagnostics", "Show engraving undo stack"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ENGRAVING_STYLE_COMMAND,
         TranslatableString("diagnostics", "Show engraving style options list"),
         TranslatableString("diagnostics", "Show engraving style options list"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ACTIONS_COMMAND,
         TranslatableString("diagnostics", "Show actions list"),
         TranslatableString("diagnostics", "Show actions list"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND,
         TranslatableString("diagnostics", "Show commands list"),
         TranslatableString("diagnostics", "Show commands list"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
 };
 

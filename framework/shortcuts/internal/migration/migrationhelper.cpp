@@ -170,6 +170,7 @@ void MigrationHelper::onFinished()
         s << "\n";
     }
     s << "]";
+    s.flush();
 
     io::path_t filePath = io::dirpath(configuration()->shortcutsUserAppDataPath()) + "/migration.json";
     Ret ret = io::File::writeFile(filePath, buf.data());
