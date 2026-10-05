@@ -1,6 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * MuseScore-Studio-CLA-applies
+ * MuseScore-CLA-applies
  *
  * MuseScore Studio
  * Music Composition & Notation
@@ -25,55 +25,42 @@ import QtQuick.Layouts
 import Muse.Ui
 import Muse.UiComponents
 
-RowLayout {
+ColumnLayout {
     id: root
 
-    signal dismissRequested()
+    property string appName: ""
+    property alias checked: toggle.checked
 
-    spacing: 12
-
-    Timer {
-        interval: 10000
-        running: true
-
-        onTriggered: {
-            root.dismissRequested()
-        }
+    property NavigationPanel navigationPanel: NavigationPanel {
+        name: "AutoUpdatePanel"
+        direction: NavigationPanel.Vertical
     }
 
-    Rectangle {
-        Layout.preferredWidth: 24
-        Layout.preferredHeight: 24
+    spacing: 8
 
-        radius: width / 2
-        color: "#46A955"
+    ToggleButton {
+        id: toggle
 
-        StyledIconLabel {
-            anchors.centerIn: parent
+        Layout.fillWidth: true
 
-            iconCode: IconCode.TICK_RIGHT_ANGLE_THICK
-            color: "white"
+        text: qsTrc("update", "Download and install future %1 updates automatically").arg(root.appName)
+
+        navigation.name: "AutoUpdateToggle"
+        navigation.panel: root.navigationPanel
+        navigation.row: 0
+
+        onToggled: {
+            checked = !checked
         }
     }
 
     StyledTextLabel {
         Layout.fillWidth: true
 
-        horizontalAlignment: Text.AlignLeft
+        text: qsTrc("update", "You can change this anytime in <b>Preferences > General</b>.")
+
+        horizontalAlignment: Qt.AlignLeft
         wrapMode: Text.WordWrap
-
-        text: qsTrc("update", "Updated successfully")
-        font: ui.theme.bodyBoldFont
-    }
-
-    FlatButton {
-        icon: IconCode.CLOSE_X_ROUNDED
-        transparent: true
-
-        navigation.accessible.name: qsTrc("global", "Dismiss")
-
-        onClicked: {
-            root.dismissRequested()
-        }
+        opacity: 0.7
     }
 }

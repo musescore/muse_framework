@@ -33,10 +33,9 @@ public:
     RetVal<Progress> downloadRelease() override;
 
     bool canAutoInstall() const override;
-    RetVal<muse::io::path_t> prepareUpdate(const muse::io::path_t& packagePath) override;
-    Ret finalizeUpdate(const muse::io::path_t& preparedPath) override;
+    Ret installUpdate() override;
 
-    bool isReleaseDownloaded() const override;
+    bool isReleaseReadyToInstall() const override;
     muse::io::path_t downloadedReleasePath() const override;
     void removeDownloadedRelease() override;
 };

@@ -44,6 +44,7 @@ protected:
     void setupGraphicsApi();
 
     void startupScenario(const muse::modularity::ContextPtr& ctxId) override;
+    void contextDelayedInit(const muse::modularity::ContextPtr& ctxId);
 
     virtual QString mainWindowQmlPath(const QString& platform) const = 0;
     virtual bool loadMainWindow(const muse::modularity::ContextPtr& ctxId);
