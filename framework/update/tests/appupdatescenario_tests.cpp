@@ -918,6 +918,71 @@ TEST_F(AppUpdateScenarioTests, ReleaseInfo_Closed_AppliesAutoUpdateToggle)
     pump();
 }
 
+TEST_F(AppUpdateScenarioTests, ManualCheck_SkippedRelease_RemindLater_UnskipsRelease)
+{
+    //! [GIVEN] The user skipped the available release earlier
+    ON_CALL(*m_configuration, skippedReleaseVersion())
+    .WillByDefault(Return("1000.0"));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user checks for updates manually and chooses "Remind me later"
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "remindLater"));
+
+    //! [THEN] The release is no longer skipped, so it is offered again later
+    EXPECT_CALL(*m_configuration, setSkippedReleaseVersion(""));
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ManualCheck_SkippedRelease_Install_UnskipsRelease)
+{
+    //! [GIVEN] The user skipped the available release earlier
+    ON_CALL(*m_configuration, skippedReleaseVersion())
+    .WillByDefault(Return("1000.0"));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user checks for updates manually and chooses to install
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "install"));
+
+    //! [THEN] The release is no longer skipped
+    EXPECT_CALL(*m_configuration, setSkippedReleaseVersion(""));
+
+    //! [GIVEN] The download dialog is closed
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .WillOnce(Return(RetVal<Val>(make_ret(Ret::Code::Cancel))));
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ManualCheck_SkippedRelease_Closed_KeepsReleaseSkipped)
+{
+    //! [GIVEN] The user skipped the available release earlier
+    ON_CALL(*m_configuration, skippedReleaseVersion())
+    .WillByDefault(Return("1000.0"));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user checks for updates manually and just closes the dialog
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "close"));
+
+    //! [THEN] The release stays skipped
+    EXPECT_CALL(*m_configuration, setSkippedReleaseVersion(_))
+    .Times(0);
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
 TEST_F(AppUpdateScenarioTests, ReleaseInfo_Skip_AppliesAutoUpdateToggle)
 {
     //! [GIVEN] Automatic update is on

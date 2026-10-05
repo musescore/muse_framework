@@ -167,12 +167,19 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool re
 
     return interactive()->open(query).then<Ret>(this, [this, info](const Val& val, auto resolve) {
         const std::string actionCode = applyReleaseInfoResult(val);
-        if (actionCode == "remindLater" || actionCode == "close") {
+        if (actionCode == "close") {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
         if (actionCode == "skip") {
             skipRelease(info.version);
+            return resolve(muse::make_ret(Ret::Code::Cancel));
+        }
+
+        //! NOTE: The user wants this release after all (e.g. chose it in a manual check after skipping it)
+        unskipRelease(info.version);
+
+        if (actionCode == "remindLater") {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 
@@ -352,4 +359,11 @@ void AppUpdateScenario::skipRelease(const std::string& version)
 {
     configuration()->setSkippedReleaseVersion(version);
     service()->removeDownloadedRelease();
+}
+
+void AppUpdateScenario::unskipRelease(const std::string& version)
+{
+    if (configuration()->skippedReleaseVersion() == version) {
+        configuration()->setSkippedReleaseVersion(std::string());
+    }
 }

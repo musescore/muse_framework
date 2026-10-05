@@ -78,6 +78,7 @@ private:
 
     bool shouldIgnoreUpdate(const ReleaseInfo& info) const;
     void skipRelease(const std::string& version);
+    void unskipRelease(const std::string& version);
 
     bool m_checkInProgress = false;
     bool m_bgDownloadInProgress = false;
