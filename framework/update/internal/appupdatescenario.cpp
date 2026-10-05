@@ -167,7 +167,7 @@ Promise<Ret> AppUpdateScenario::showReleaseInfo(const ReleaseInfo& info, bool re
 
     return interactive()->open(query).then<Ret>(this, [this, info](const Val& val, auto resolve) {
         const std::string actionCode = applyReleaseInfoResult(val);
-        if (actionCode == "remindLater") {
+        if (actionCode == "remindLater" || actionCode == "close") {
             return resolve(muse::make_ret(Ret::Code::Cancel));
         }
 

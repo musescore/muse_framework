@@ -184,7 +184,7 @@ public:
     }
 
     //! The release info dialog: checks the query, then resolves with the given action
-    //! ("install", "skip", "remindLater") and the auto-update toggle state once messages are processed
+    //! ("install", "skip", "remindLater", "close") and the auto-update toggle state once messages are processed
     static auto releaseInfoDialog(bool expectedReadyToInstall, const std::string& action,
                                   std::optional<bool> autoUpdateEnabled = std::nullopt)
     {
@@ -887,6 +887,30 @@ TEST_F(AppUpdateScenarioTests, ReleaseInfo_RemindLater_AppliesAutoUpdateToggle)
     //! [THEN] The setting is saved, and nothing is downloaded
     EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(true));
     EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+
+    //! [WHEN] The user checks for updates manually
+    m_scenario->checkForUpdate(/*manual*/ true);
+    pump();
+}
+
+TEST_F(AppUpdateScenarioTests, ReleaseInfo_Closed_AppliesAutoUpdateToggle)
+{
+    //! [GIVEN] Automatic update is off
+    ON_CALL(*m_configuration, autoUpdateEnabled())
+    .WillByDefault(Return(false));
+    EXPECT_CALL(*m_service, checkForUpdate())
+    .WillOnce(checkForUpdateResolves(m_lastCheckResult));
+
+    //! [GIVEN] The user turns the toggle on and closes the dialog (close button or Escape)
+    EXPECT_CALL(*m_interactive, open(_))
+    .WillOnce(releaseInfoDialog(/*readyToInstall*/ false, "close", /*autoUpdateEnabled*/ true));
+
+    //! [THEN] The setting is saved, and nothing is downloaded or skipped
+    EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(true));
+    EXPECT_CALL(*m_interactive, openSync(_))
+    .Times(0);
+    EXPECT_CALL(*m_configuration, setSkippedReleaseVersion(_))
     .Times(0);
 
     //! [WHEN] The user checks for updates manually

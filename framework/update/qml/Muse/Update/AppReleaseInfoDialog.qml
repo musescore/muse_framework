@@ -42,7 +42,10 @@ StyledDialogView {
 
     margins: 22
 
-    function finish(action) {
+    property bool isFinished: false
+
+    function setResult(action) {
+        root.isFinished = true
         root.ret = {
             errcode: 0,
             value: {
@@ -50,7 +53,17 @@ StyledDialogView {
                 autoUpdateEnabled: root.autoUpdateEnabled
             }
         }
+    }
+
+    function finish(action) {
+        root.setResult(action)
         root.hide()
+    }
+
+    onAboutToClose: {
+        if (!root.isFinished) {
+            root.setResult("close")
+        }
     }
 
     onNavigationActivateRequested: {
