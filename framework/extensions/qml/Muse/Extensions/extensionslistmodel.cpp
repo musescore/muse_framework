@@ -186,7 +186,9 @@ void ExtensionsListModel::editShortcut(const QString& extensionUri)
 
 void ExtensionsListModel::reloadPlugins()
 {
-    extensionsRegister()->reload();
+    //! NOTE Through the provider: reloading the register alone leaves the QML
+    //! engines holding the code they compiled the first time
+    provider()->reloadExtensions();
 }
 
 void ExtensionsListModel::removeExtension(const QString& uri)
