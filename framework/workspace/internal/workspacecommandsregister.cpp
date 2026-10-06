@@ -40,7 +40,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
     },
     CommandInfo{
         WORKSPACES_CONFIGURE_COMMAND,
-        TranslatableString("workspace", "Edit workspaces..."),
+        TranslatableString("workspace", "Edit workspaces…"),
         TranslatableString("workspace", "Edit workspaces"),
         InputSchema(),
         Decoration(ui::IconCode::Code::EDIT)
