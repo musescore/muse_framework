@@ -32,6 +32,7 @@
 #include "rcommand/commandtypes.h"
 
 #include "log.h"
+#include "thirdparty/kors_logger/src/log_base.h"
 
 using namespace muse;
 using namespace muse::shortcuts;
@@ -95,6 +96,27 @@ void CommandShortcutsRegister::reload(bool onlyDef)
         }
     }
 
+    //! NOTE Add the remaining available commands to the shortcuts
+    if (ok) {
+        std::set<Command> shortcutCommands;
+        for (const Shortcut& sc : m_defaultShortcuts) {
+            shortcutCommands.insert(sc.command);
+        }
+        std::vector<CommandInfo> commandInfos = commandsRegister()->commandInfoList();
+        for (const CommandInfo& commandInfo : commandInfos) {
+            if (!commandInfo.availabilities.testFlag(rcommand::Availability::Shortcut)) {
+                continue;
+            }
+
+            if (shortcutCommands.find(commandInfo.command) == shortcutCommands.end()) {
+                Shortcut sc;
+                sc.command = commandInfo.command;
+                sc.scope = makeScope(commandInfo.command);
+                m_defaultShortcuts.push_back(std::move(sc));
+            }
+        }
+    }
+
     if (ok) {
         if (!onlyDef) {
             if (!io::File::exists(userPath)) {
@@ -113,15 +135,40 @@ void CommandShortcutsRegister::reload(bool onlyDef)
         } else {
             mergeShortcuts(m_shortcuts, m_defaultShortcuts);
             mergeAdditionalShortcuts(m_shortcuts);
+            removeNotAvailableCommands(m_shortcuts);
+            makeUnique(m_shortcuts);
         }
 
         ok = true;
     }
 
+    {
+        //! NOTE Checking command availability.
+        //! If a command is not available in the user file, it should have been filtered out earlier in the code.
+        //! If a command is not available in the default shortcuts, the configuration file needs to be edited.
+        for (const Shortcut& sc : m_defaultShortcuts) {
+            const CommandInfo& info = commandsRegister()->commandInfo(sc.command);
+            DO_ASSERT(info.availabilities.testFlag(rcommand::Availability::Shortcut));
+        }
+
+        for (const Shortcut& sc : m_shortcuts) {
+            const CommandInfo& info = commandsRegister()->commandInfo(sc.command);
+            DO_ASSERT(info.availabilities.testFlag(rcommand::Availability::Shortcut));
+        }
+    }
+
     if (ok) {
-        makeUnique(m_shortcuts);
         m_shortcutsChanged.notify();
     }
+}
+
+std::string CommandShortcutsRegister::makeScope(const rcommand::Command& command) const
+{
+    auto segments = command.pathSegments();
+    IF_ASSERT_FAILED(!segments.empty()) {
+        return {};
+    }
+    return strings::toUpper(segments.at(0));
 }
 
 std::string CommandShortcutsRegister::activeShortcutsName() const
@@ -216,7 +263,7 @@ void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const Sho
     }
 
     if (!needadd.empty()) {
-        shortcuts.splice(shortcuts.end(), needadd);
+        shortcuts.insert(shortcuts.end(), needadd.begin(), needadd.end());
     }
 }
 
@@ -225,6 +272,18 @@ void CommandShortcutsRegister::mergeAdditionalShortcuts(ShortcutList& shortcuts)
     for (const auto& [context, additionalShortcuts] : m_additionalShortcutsMap) {
         mergeShortcuts(shortcuts, additionalShortcuts);
     }
+}
+
+void CommandShortcutsRegister::removeNotAvailableCommands(ShortcutList& shortcuts)
+{
+    ShortcutList availableShortcuts;
+    for (const Shortcut& sc : shortcuts) {
+        const CommandInfo& commandInfo = commandsRegister()->commandInfo(sc.command);
+        if (commandInfo.availabilities.testFlag(rcommand::Availability::Shortcut)) {
+            availableShortcuts.push_back(sc);
+        }
+    }
+    shortcuts = availableShortcuts;
 }
 
 void CommandShortcutsRegister::makeUnique(ShortcutList& shortcuts)
@@ -268,7 +327,7 @@ ShortcutList CommandShortcutsRegister::filterAndUpdateAdditionalShortcuts(const 
             });
             if (it != shortcuts.end()) {
                 shortcut = *it;
-                noAdditionalShortcuts.remove(shortcut);
+                muse::remove(noAdditionalShortcuts, shortcut);
             }
         }
     }
@@ -420,15 +479,20 @@ const ShortcutList& CommandShortcutsRegister::shortcuts() const
     return m_shortcuts;
 }
 
-Ret CommandShortcutsRegister::setShortcuts(const ShortcutList& shortcuts)
+Ret CommandShortcutsRegister::updateShortcuts(const ShortcutList& shortcuts)
 {
     TRACEFUNC;
 
-    if (shortcuts == m_shortcuts) {
-        return true;
+    for (const Shortcut& sc : shortcuts) {
+        auto it = std::find_if(m_shortcuts.begin(), m_shortcuts.end(), [&sc](const Shortcut& candidate) {
+            return candidate.command == sc.command;
+        });
+        if (it != m_shortcuts.end()) {
+            *it = sc;
+        }
     }
 
-    ShortcutList needToWrite = filterAndUpdateAdditionalShortcuts(shortcuts);
+    ShortcutList needToWrite = filterAndUpdateAdditionalShortcuts(m_shortcuts);
     ShortcutList diff = makeDiff(needToWrite, m_defaultShortcuts);
 
     bool ok = false;

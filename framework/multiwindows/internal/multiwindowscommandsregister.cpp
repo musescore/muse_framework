@@ -34,7 +34,8 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("multiwindows", "Multiinstances"),
         TranslatableString("multiwindows", "Show multiwindows info"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
 };
 

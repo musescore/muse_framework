@@ -285,7 +285,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, SetShortcutsWritesOnlyDiff)
         }
     }
 
-    ASSERT_TRUE(m_register->setShortcuts(modified));
+    ASSERT_TRUE(m_register->updateShortcuts(modified));
 
     //! [THEN] The user file contains only the modified shortcut
     ByteArray data;
@@ -327,11 +327,11 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, RevertingAllChangesRemovesUserFi
         }
     }
 
-    ASSERT_TRUE(m_register->setShortcuts(modified));
+    ASSERT_TRUE(m_register->updateShortcuts(modified));
     ASSERT_TRUE(io::File::exists(userPath("shortcuts")));
 
     //! [WHEN] The shortcut is reverted back to the default value
-    ASSERT_TRUE(m_register->setShortcuts(defaultShortcuts));
+    ASSERT_TRUE(m_register->updateShortcuts(defaultShortcuts));
 
     //! [THEN] The user file is removed
     EXPECT_FALSE(io::File::exists(userPath("shortcuts")));
@@ -351,7 +351,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, ClearedShortcutIsSaved)
         }
     }
 
-    ASSERT_TRUE(m_register->setShortcuts(modified));
+    ASSERT_TRUE(m_register->updateShortcuts(modified));
 
     //! [THEN] The explicit clear survives reload
     m_register->reload();
@@ -368,7 +368,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, ResetShortcutsRemovesUserFile)
 
     ShortcutList modified = m_register->shortcuts();
     modified.front().sequences = seqs({ "Y" });
-    ASSERT_TRUE(m_register->setShortcuts(modified));
+    ASSERT_TRUE(m_register->updateShortcuts(modified));
     ASSERT_TRUE(io::File::exists(userPath("shortcuts")));
 
     //! [WHEN] The shortcuts are reset
@@ -425,7 +425,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, UserDiffIsWrittenForActivePreset
         }
     }
 
-    ASSERT_TRUE(m_register->setShortcuts(modified));
+    ASSERT_TRUE(m_register->updateShortcuts(modified));
 
     //! [THEN] The user diff is written for the preset, not for the default shortcuts
     EXPECT_TRUE(io::File::exists(userPath("shortcuts_azerty")));
@@ -452,7 +452,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, IsPresetEditedReflectsUserFile)
     //! [WHEN] One shortcut is modified
     ShortcutList modified = m_register->shortcuts();
     modified.front().sequences = seqs({ "Y" });
-    ASSERT_TRUE(m_register->setShortcuts(modified));
+    ASSERT_TRUE(m_register->updateShortcuts(modified));
 
     //! [THEN] The active set is edited
     EXPECT_TRUE(m_register->isPresetEdited(""));

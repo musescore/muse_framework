@@ -28,7 +28,8 @@
 #include <QList>
 
 #include "modularity/ioc.h"
-#include "icommandshortcutsregister.h"
+#include "../../../icommandshortcutsregister.h"
+#include "../../../ishortcutsresolver.h"
 #include "async/asyncable.h"
 #include "interactive/iinteractive.h"
 #include "iglobalconfiguration.h"
@@ -55,7 +56,7 @@ class ShortcutsModel : public QAbstractListModel, public Contextable, public asy
     GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
     ContextInject<IInteractive> interactive = { this };
-
+    ContextInject<IShortcutsResolver> shortcutsResolver = { this };
 public:
     explicit ShortcutsModel(QObject* parent = nullptr);
 
@@ -104,8 +105,6 @@ private:
     bool isPresetEditedOrHasUnsavedChanges(const std::string& presetName) const;
     void markUnsavedChanges();
 
-    QString commandText(const rcommand::Command& command) const;
-
     QModelIndex currentShortcutIndex() const;
     void notifyAboutShortcutChanged(const QModelIndex& index);
 
@@ -133,5 +132,6 @@ private:
     QList<Item> m_items;
     QItemSelection m_selection;
     bool m_hasUnsavedChanges = false;
+    std::map<rcommand::Command, Shortcut> m_modifiedShortcuts;
 };
 }
