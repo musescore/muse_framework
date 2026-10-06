@@ -23,6 +23,7 @@ set(MODULE_TEST muse_draw_tests)
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/painter_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/fontfacext_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/fontsdatabase_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/pen_tests.cpp
 )
 

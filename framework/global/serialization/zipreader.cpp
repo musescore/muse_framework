@@ -21,6 +21,8 @@
  */
 #include "zipreader.h"
 
+#include <cstring>
+
 #include "global/io/file.h"
 #include "global/io/dir.h"
 #include "internal/zipcontainer.h"
@@ -34,6 +36,12 @@ struct ZipReader::Impl
     IODevice* device = nullptr;
     bool isSelfDevice = false;
 };
+
+bool ZipReader::isZip(const ByteArray& data)
+{
+    static const char LOCAL_FILE_HEADER_SIGNATURE[4] = { 'P', 'K', 3, 4 };
+    return data.size() >= 4 && std::memcmp(data.constData(), LOCAL_FILE_HEADER_SIGNATURE, 4) == 0;
+}
 
 ZipReader::ZipReader(const io::path_t& filePath)
     : m_filePath(filePath)

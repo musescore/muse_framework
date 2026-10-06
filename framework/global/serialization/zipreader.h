@@ -44,6 +44,8 @@ public:
         bool isValid() const { return isDir || isFile || isSymLink; }
     };
 
+    static bool isZip(const ByteArray& data);
+
     explicit ZipReader(const io::path_t& filePath);
     explicit ZipReader(io::IODevice* device);
     ~ZipReader();
