@@ -212,7 +212,18 @@ bool DockPageView::isDockOpen(const QString& dockName) const
 
 void DockPageView::toggleDock(const QString& dockName)
 {
-    setDockOpen(dockName, !isDockOpen(dockName));
+    DockBase* dock = dockByName(dockName);
+    if (!dock) {
+        return;
+    }
+
+    DockPanelView* panel = dynamic_cast<DockPanelView*>(dock);
+    if (panel && panel->isOpen() && !panel->isCurrentTab()) {
+        panel->makeCurrentTab();
+        return;
+    }
+
+    setDockOpen(dockName, !dock->isOpen());
 }
 
 void DockPageView::setDockOpen(const QString& dockName, bool open)

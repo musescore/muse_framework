@@ -58,6 +58,8 @@ public:
     bool isTabAllowed(const DockPanelView* tab) const;
     void addPanelAsTab(DockPanelView* tab);
     void setCurrentTabIndex(int index);
+    bool isCurrentTab() const;
+    void makeCurrentTab();
 
 public slots:
     void setGroupName(const QString& name);
