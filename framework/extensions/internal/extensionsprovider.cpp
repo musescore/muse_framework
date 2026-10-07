@@ -41,7 +41,12 @@ void ExtensionsProvider::reloadExtensions()
     //! NOTE Without this, reloading picks up a plugin's manifest but keeps
     //! running the code the engine compiled the first time, so edits to a
     //! plugin only take effect after a restart.
-    extensionsUiEngine()->clearComponentCache();
+    //! A provider created with the global context (e.g. to scan manifests before
+    //! any window exists) has no UI engine, so there is nothing to clear.
+    const modularity::ContextPtr& ctx = iocContext();
+    if (ctx && ctx->id > 0) {
+        extensionsUiEngine()->clearComponentCache();
+    }
 
     extensionsRegister()->reload();
 }
