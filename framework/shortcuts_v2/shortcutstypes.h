@@ -24,7 +24,7 @@
 
 #include <set>
 #include <string>
-#include <list>
+#include <vector>
 #include <utility>
 #include <vector>
 
@@ -79,7 +79,7 @@ struct Shortcut
     }
 };
 
-using ShortcutList = std::list<Shortcut>;
+using ShortcutList = std::vector<Shortcut>;
 
 inline bool needIgnoreKey(Qt::Key key)
 {

@@ -147,7 +147,7 @@ struct CommandInfo
     TranslatableString description;
     InputSchema inputSchema;
     Decoration decoration;
-    Availabilities availabilities = Availability::Disabled;
+    Availabilities availabilities = Availability::All; // All temporarily, when we set the flag for all commands, it needs to be replaced with Availability::Disabled;
 
     bool isValid() const { return command.isValid(); }
 };
