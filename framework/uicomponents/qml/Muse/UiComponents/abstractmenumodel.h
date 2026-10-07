@@ -21,6 +21,9 @@
  */
 #pragma once
 
+#include <optional>
+#include <vector>
+
 #include <qqmlintegration.h>
 
 #include <QAbstractListModel>
@@ -46,6 +49,9 @@
 #endif
 
 namespace muse::uicomponents {
+using MenuCommandList = std::vector<std::optional<rcommand::Command> >;
+inline constexpr std::optional<rcommand::Command> MENU_SEPARATOR = std::nullopt;
+
 class AbstractMenuModel : public QAbstractListModel, public muse::Contextable, public async::Asyncable
 {
     Q_OBJECT
@@ -131,6 +137,7 @@ protected:
 #endif
 
     MenuItem* makeSeparator();
+    MenuItemList makeItems(const MenuCommandList& commands);
 
     bool isIndexValid(int index) const;
 
