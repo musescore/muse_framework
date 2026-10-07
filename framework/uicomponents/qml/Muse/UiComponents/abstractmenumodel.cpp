@@ -337,6 +337,21 @@ MenuItem* AbstractMenuModel::makeSeparator()
     return item;
 }
 
+MenuItemList AbstractMenuModel::makeItems(const MenuCommandList& commands)
+{
+    MenuItemList list;
+    for (const auto& command : commands) {
+        if (command.has_value()) {
+            if (MenuItem* item = makeMenuItem(command.value())) {
+                list.append(item);
+            }
+        } else {
+            list.append(makeSeparator());
+        }
+    }
+    return list;
+}
+
 void AbstractMenuModel::subscribeOnChanges()
 {
     if (m_subscribedOnChanges) {
