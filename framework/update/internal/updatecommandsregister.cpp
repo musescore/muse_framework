@@ -34,7 +34,8 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("update", "Check for update"),
         TranslatableString("update", "Check for update"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
 };
 

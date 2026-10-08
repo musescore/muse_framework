@@ -34,7 +34,8 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("testflow", "Show scripts"),
         TranslatableString("testflow", "Show scripts…"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
 };
 
