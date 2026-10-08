@@ -19,8 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef MUSE_AUDIO_AUDIOENGINE_H
-#define MUSE_AUDIO_AUDIOENGINE_H
+
+#pragma once
 
 #include <memory>
 #include <atomic>
@@ -32,6 +32,7 @@
 #include "global/types/ret.h"
 
 #include "nodes/mixernode.h"
+#include "nodes/sanitizernode.h"
 
 namespace muse::audio::engine {
 class AudioContext;
@@ -68,11 +69,10 @@ private:
 
     std::map<AudioCtxId, std::shared_ptr<AudioContext> > m_contexts;
     std::shared_ptr<MixerNode> m_mixer;
+    std::shared_ptr<SanitizerNode> m_outputNode;
 
     std::atomic<bool> m_processing = false;
     std::atomic<OperationType> m_operationType = OperationType::Undefined;
     std::mutex m_quickOperationWaitMutex;
 };
 }
-
-#endif // MUSE_AUDIO_AUDIOENGINE_H
