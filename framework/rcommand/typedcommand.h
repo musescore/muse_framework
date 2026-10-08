@@ -43,7 +43,9 @@
 //! are derived from it, so they cannot drift apart.
 //!
 //!   struct ChangePlayRegion {
-//!       static inline const Command& id = PLAYBACK_CHANGE_PLAY_REGION_COMMAND;
+//!       static inline const Command id { "command://playback/play-region/change" };
+//!       static inline const TranslatableString title = TranslatableString("action", "Change play region");
+//!       static inline const TranslatableString description = TranslatableString("action_description", "Change play region");
 //!
 //!       double start = 0.0;
 //!       double end = 0.0;
@@ -57,7 +59,7 @@
 //!       }
 //!   };
 //!
-//!   register:  CommandInfo { ChangePlayRegion::id, title, description, inputSchema<ChangePlayRegion>(), ... }
+//!   register:  makeCommandInfo<ChangePlayRegion>()
 //!   send:      dispatcher()->dispatch(ChangePlayRegion { 1.0, 5.0 });
 //!   receive:   dispatcher()->onRequest<ChangePlayRegion>(this, [this](const ChangePlayRegion& c) { ... });
 //!
@@ -94,6 +96,13 @@ struct IsTypedCommand : std::false_type {};
 
 template<typename C>
 struct IsTypedCommand<C, std::void_t<decltype(C::id), decltype(C::fields())> > : std::true_type {};
+
+//! A command may also carry a static `decoration`; without it the default is used
+template<typename C, typename = void>
+struct HasDecoration : std::false_type {};
+
+template<typename C>
+struct HasDecoration<C, std::void_t<decltype(C::decoration)> > : std::true_type {};
 
 // =========================================================================
 // ParamTraits: how one C++ type maps to DataType and to/from Val.
@@ -337,6 +346,20 @@ InputSchema inputSchema()
         (args.emplace(f.key, detail::makeArg(f)), ...);
     }, C::fields());
     return InputSchema(std::move(args));
+}
+
+//! The CommandInfo of a typed command, entirely from the struct:
+//! `id`, `title`, `description`, the schema from `fields()` and an optional `decoration`
+template<typename C>
+CommandInfo makeCommandInfo()
+{
+    static_assert(IsTypedCommand<C>::value, "C must have a static `id` and a static `fields()`");
+
+    Decoration decoration;
+    if constexpr (HasDecoration<C>::value) {
+        decoration = C::decoration;
+    }
+    return CommandInfo { C::id, C::title, C::description, inputSchema<C>(), decoration };
 }
 
 template<typename C>
