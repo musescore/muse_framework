@@ -1255,11 +1255,21 @@ void Interactive::onOpen(const QVariant& type, const QVariant& objectId, QObject
     }
 
     if (ContainerMeta::PrimaryPage == containerMeta) {
-        // Replace bottom item of the stack, because that always reflects the current PrimaryPage
-        if (m_stack.empty()) {
+        //! NOTE The stack holds a single primary page, and the new one replaces it.
+        //! It is not necessarily at the bottom: raiseWindowInStack reorders the
+        //! stack by activation, so an open dialog can sit below it.
+        int primaryPageIdx = -1;
+        for (int i = 0; i < m_stack.size(); ++i) {
+            if (uriRegister()->meta(m_stack.at(i).query.uri()).type == ContainerMeta::PrimaryPage) {
+                primaryPageIdx = i;
+                break;
+            }
+        }
+
+        if (primaryPageIdx < 0) {
             m_stack.push(m_openingObject);
         } else {
-            m_stack[0] = m_openingObject;
+            m_stack[primaryPageIdx] = m_openingObject;
         }
     } else if (ContainerMeta::QmlDialog == containerMeta) {
         m_stack.push(m_openingObject);
