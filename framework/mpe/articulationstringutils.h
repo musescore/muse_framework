@@ -28,7 +28,7 @@
 #include "mpe/mpetypes.h"
 
 namespace muse::mpe {
-static const std::unordered_map<ArticulationFamily, QString> ARTICULATION_FAMILY_NAMES {
+inline const std::unordered_map<ArticulationFamily, QString> ARTICULATION_FAMILY_NAMES {
     { ArticulationFamily::Undefined, "Undefined" },
     { ArticulationFamily::Keyboards, "KeyboardsArticulation" },
     { ArticulationFamily::Strings, "StringsArticulation" },
@@ -37,7 +37,7 @@ static const std::unordered_map<ArticulationFamily, QString> ARTICULATION_FAMILY
     { ArticulationFamily::Voices, "VoicesArticulation" },
 };
 
-static const std::unordered_map<ArticulationType, QString> ARTICULATION_TYPE_NAMES {
+inline const std::unordered_map<ArticulationType, QString> ARTICULATION_TYPE_NAMES {
     { ArticulationType::Undefined, "Undefined" },
     { ArticulationType::Standard, "Standard" },
     { ArticulationType::Staccato, "Staccato" },
