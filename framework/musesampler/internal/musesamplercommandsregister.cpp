@@ -34,14 +34,16 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("musesampler", "Check"),
         TranslatableString("musesampler", "Check MuseSampler"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         MUSESAMPLER_RELOAD_COMMAND,
         TranslatableString("musesampler", "Reload"),
         TranslatableString("musesampler", "Reload MuseSampler"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
 };
 

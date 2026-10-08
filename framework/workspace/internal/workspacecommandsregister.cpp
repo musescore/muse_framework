@@ -36,21 +36,24 @@ static const std::vector<CommandInfo> s_commandInfos = {
         InputSchema({
             { "name", Arg(DataType::String, u"Workspace name") }
         }),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
     CommandInfo{
         WORKSPACES_CONFIGURE_COMMAND,
         TranslatableString("workspace", "Edit workspaces…"),
         TranslatableString("workspace", "Edit workspaces"),
         InputSchema(),
-        Decoration(ui::IconCode::Code::EDIT)
+        Decoration(ui::IconCode::Code::EDIT),
+        Availability::All
     },
     CommandInfo{
         WORKSPACE_CREATE_COMMAND,
         TranslatableString("workspace", "Create new workspace"),
         TranslatableString("workspace", "Create new workspace"),
         InputSchema(),
-        Decoration(ui::IconCode::Code::PLUS)
+        Decoration(ui::IconCode::Code::PLUS),
+        Availability::All
     },
 };
 

@@ -33,6 +33,8 @@
 #include "global/stringutils.h"
 #include "rcommand/commandtypes.h"
 
+#include "global/logstream.h"
+
 namespace muse::shortcuts {
 struct Shortcut
 {
@@ -125,4 +127,23 @@ inline bool canShortcutsConflict(const std::string& scope1, const std::string& s
 {
     return scope1 == scope2;
 }
+}
+
+inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::shortcuts::Shortcut& sc)
+{
+    s << "{" << sc.scope << ", " << sc.command.toString() << ", " << sc.sequencesAsString() << "}";
+    return s;
+}
+
+inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const std::vector<muse::shortcuts::Shortcut>& v)
+{
+    s << '[';
+    for (size_t i = 0; i < v.size(); ++i) {
+        s << v.at(i);
+        if (i < v.size() - 1) {
+            s << ',';
+        }
+    }
+    s << ']';
+    return s;
 }
