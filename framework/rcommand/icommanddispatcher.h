@@ -26,6 +26,7 @@
 #include "global/types/ret.h"
 
 #include "commandtypes.h"
+#include "typedcommand.h"
 
 namespace muse::rcommand {
 class Commandable;
@@ -86,6 +87,29 @@ public:
     {
         onRequest(client, command, AsyncCallBack([callback](const Request& request, const OnResponse& onResponse) {
             answerWhenResolved(request, callback(request.params), onResponse);
+        }));
+    }
+
+    // Typed commands (see typedcommand.h): the struct is the parameter list
+
+    template<typename C, std::enable_if_t<IsTypedCommand<C>::value, int> = 0>
+    async::Promise<Response> dispatch(const C& command)
+    {
+        return dispatch(make_request(C::id, toParams(command)));
+    }
+
+    //! The callback receives the command struct; Params that do not match it
+    //! (missing, mistyped or unknown parameters) are answered with BadArgs
+    template<typename C, std::enable_if_t<IsTypedCommand<C>::value, int> = 0>
+    void onRequest(Commandable* client, std::function<Ret(const C&)> callback)
+    {
+        onRequest(client, C::id, CallBack([callback](const Request& request) {
+            C command;
+            std::string err;
+            if (!fromParams(request.params, command, err)) {
+                return make_response(request, make_ret(Ret::Code::BadArgs, err));
+            }
+            return make_response(request, callback(command));
         }));
     }
 
