@@ -107,6 +107,12 @@ template<typename C>
 concept HasDecoration = requires {
     { C::decoration } -> std::convertible_to<const Decoration&>;
 };
+
+//! A command may also carry its static `availabilities` (see ADR 00107)
+template<typename C>
+concept HasAvailabilities = requires {
+    { C::availabilities } -> std::convertible_to<const Availabilities&>;
+};
 // *INDENT-ON*
 
 // =========================================================================
@@ -351,16 +357,19 @@ InputSchema inputSchema()
     return InputSchema(std::move(args));
 }
 
-//! The CommandInfo of a typed command, entirely from the struct:
-//! `id`, `title`, `description`, the schema from `fields()` and an optional `decoration`
+//! The CommandInfo of a typed command, entirely from the struct: `id`, `title`,
+//! `description`, the schema from `fields()`, and `decoration` / `availabilities` when declared
 template<TypedCommand C>
 CommandInfo makeCommandInfo()
 {
-    Decoration decoration;
+    CommandInfo info { C::id, C::title, C::description, inputSchema<C>() };
     if constexpr (HasDecoration<C>) {
-        decoration = C::decoration;
+        info.decoration = C::decoration;
     }
-    return CommandInfo { C::id, C::title, C::description, inputSchema<C>(), decoration };
+    if constexpr (HasAvailabilities<C>) {
+        info.availabilities = C::availabilities;
+    }
+    return info;
 }
 
 template<TypedCommand C>

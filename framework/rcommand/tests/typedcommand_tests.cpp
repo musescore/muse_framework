@@ -87,6 +87,16 @@ struct Seek {
     }
 };
 
+struct Internal {
+    static inline const Command id { "command://test/internal" };
+    static inline const TranslatableString title = TranslatableString::untranslatable("Internal");
+    static inline const TranslatableString description = TranslatableString::untranslatable("Dispatch only");
+    static inline const Decoration decoration { Checkable::Yes };
+    static inline const Availabilities availabilities = Availability::Dispatch;
+
+    static constexpr auto fields() { return std::tuple {}; }
+};
+
 struct NoFields {
     static inline const Command id { "command://test/no-fields" };
     static inline const TranslatableString title;
@@ -99,6 +109,21 @@ TEST(RCommand_TypedCommandTests, TypedCommand_ConceptRequiresIdTextsAndFields)
     static_assert(TypedCommand<Seek>);
     static_assert(!TypedCommand<NoFields>);
     static_assert(!TypedCommand<Command>);
+}
+
+TEST(RCommand_TypedCommandTests, MakeCommandInfo_TakesEverythingFromTheStruct)
+{
+    const CommandInfo seek = makeCommandInfo<Seek>();
+    EXPECT_EQ(seek.command, SEEK_COMMAND);
+    EXPECT_EQ(seek.inputSchema.args.size(), 6u);
+    EXPECT_EQ(seek.decoration.checkable, Checkable::No);
+    EXPECT_TRUE(seek.availabilities.testFlag(Availability::MCP));
+
+    const CommandInfo internal = makeCommandInfo<Internal>();
+    EXPECT_TRUE(internal.inputSchema.args.empty());
+    EXPECT_EQ(internal.decoration.checkable, Checkable::Yes);
+    EXPECT_TRUE(internal.availabilities.testFlag(Availability::Dispatch));
+    EXPECT_FALSE(internal.availabilities.testFlag(Availability::MCP));
 }
 
 TEST(RCommand_TypedCommandTests, InputSchema_IsGeneratedFromTheFieldList)
