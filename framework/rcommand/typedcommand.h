@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <limits>
 #include <locale>
@@ -38,9 +39,9 @@
 
 //! Typed commands
 //!
-//! One struct per command is the single source of truth for its parameters.
-//! The input schema, the Params (de)serialization and the handler signature
-//! are derived from it, so they cannot drift apart.
+//! One struct per command is the single source of truth for its id, its texts
+//! and its parameters. The input schema, the Params (de)serialization and the
+//! handler signature are derived from it, so they cannot drift apart.
 //!
 //!   struct ChangePlayRegion {
 //!       static inline const Command id { "command://playback/play-region/change" };
@@ -61,6 +62,7 @@
 //!
 //!   register:  makeCommandInfo<ChangePlayRegion>()
 //!   send:      dispatcher()->dispatch(ChangePlayRegion { 1.0, 5.0 });
+//!   menu item: makeMenuItem(ChangePlayRegion { 1.0, 5.0 })
 //!   receive:   dispatcher()->onRequest<ChangePlayRegion>(this, [this](const ChangePlayRegion& c) { ... });
 //!
 //! The untyped API keeps working for the same command: Params that arrive
@@ -89,20 +91,23 @@ Field(const char*, T S::*, const char16_t*)->Field<S, T>;
 template<typename S, typename T>
 Field(const char*, T S::*, const char16_t*, double, double)->Field<S, T>;
 
-//! A typed command is a struct with a static `id` (its Command)
-//! and a static `fields()` returning a std::tuple of Field.
-template<typename C, typename = void>
-struct IsTypedCommand : std::false_type {};
-
+//! A typed command is a struct with a static `id` (its Command), a static `title`
+//! and `description`, and a static `fields()` returning a std::tuple of Field.
+// *INDENT-OFF* // Uncrustify doesn't understand `requires`
 template<typename C>
-struct IsTypedCommand<C, std::void_t<decltype(C::id), decltype(C::fields())> > : std::true_type {};
+concept TypedCommand = requires {
+    { C::id } -> std::convertible_to<const Command&>;
+    { C::title } -> std::convertible_to<const TranslatableString&>;
+    { C::description } -> std::convertible_to<const TranslatableString&>;
+    C::fields();
+};
 
 //! A command may also carry a static `decoration`; without it the default is used
-template<typename C, typename = void>
-struct HasDecoration : std::false_type {};
-
 template<typename C>
-struct HasDecoration<C, std::void_t<decltype(C::decoration)> > : std::true_type {};
+concept HasDecoration = requires {
+    { C::decoration } -> std::convertible_to<const Decoration&>;
+};
+// *INDENT-ON*
 
 // =========================================================================
 // ParamTraits: how one C++ type maps to DataType and to/from Val.
@@ -336,11 +341,9 @@ bool readField(const Params& in, S& obj, const Field<S, T>& f, size_t& matched, 
 }
 
 //! The schema for CommandInfo, generated instead of hand-written
-template<typename C>
+template<TypedCommand C>
 InputSchema inputSchema()
 {
-    static_assert(IsTypedCommand<C>::value, "C must have a static `id` and a static `fields()`");
-
     std::map<std::string, Arg> args;
     std::apply([&](const auto&... f) {
         (args.emplace(f.key, detail::makeArg(f)), ...);
@@ -350,23 +353,19 @@ InputSchema inputSchema()
 
 //! The CommandInfo of a typed command, entirely from the struct:
 //! `id`, `title`, `description`, the schema from `fields()` and an optional `decoration`
-template<typename C>
+template<TypedCommand C>
 CommandInfo makeCommandInfo()
 {
-    static_assert(IsTypedCommand<C>::value, "C must have a static `id` and a static `fields()`");
-
     Decoration decoration;
-    if constexpr (HasDecoration<C>::value) {
+    if constexpr (HasDecoration<C>) {
         decoration = C::decoration;
     }
     return CommandInfo { C::id, C::title, C::description, inputSchema<C>(), decoration };
 }
 
-template<typename C>
+template<TypedCommand C>
 Params toParams(const C& c)
 {
-    static_assert(IsTypedCommand<C>::value, "C must have a static `id` and a static `fields()`");
-
     Params out;
     std::apply([&](const auto&... f) {
         (detail::writeField(out, c, f), ...);
@@ -376,11 +375,9 @@ Params toParams(const C& c)
 
 //! The single runtime validation point for Params that arrive untyped.
 //! Rejects missing keys, wrong types and keys the command does not declare.
-template<typename C>
+template<TypedCommand C>
 bool fromParams(const Params& in, C& out, std::string& err)
 {
-    static_assert(IsTypedCommand<C>::value, "C must have a static `id` and a static `fields()`");
-
     //! NOTE: a comma fold rather than `return (... && ...)`: the code style
     //! checker strips the parentheses a fold expression requires in a return.
     size_t matched = 0;

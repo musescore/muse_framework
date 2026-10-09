@@ -64,6 +64,8 @@ inline const Command SEEK_COMMAND("command://test/seek");
 
 struct Seek {
     static inline const Command& id = SEEK_COMMAND;
+    static inline const TranslatableString title = TranslatableString::untranslatable("Seek");
+    static inline const TranslatableString description = TranslatableString::untranslatable("Seek to a position");
 
     double time = 0.0;
     bool play = false;
@@ -84,6 +86,19 @@ struct Seek {
         };
     }
 };
+
+struct NoFields {
+    static inline const Command id { "command://test/no-fields" };
+    static inline const TranslatableString title;
+    static inline const TranslatableString description;
+};
+}
+
+TEST(RCommand_TypedCommandTests, TypedCommand_ConceptRequiresIdTextsAndFields)
+{
+    static_assert(TypedCommand<Seek>);
+    static_assert(!TypedCommand<NoFields>);
+    static_assert(!TypedCommand<Command>);
 }
 
 TEST(RCommand_TypedCommandTests, InputSchema_IsGeneratedFromTheFieldList)

@@ -92,7 +92,7 @@ public:
 
     // Typed commands (see typedcommand.h): the struct is the parameter list
 
-    template<typename C, std::enable_if_t<IsTypedCommand<C>::value, int> = 0>
+    template<TypedCommand C>
     async::Promise<Response> dispatch(const C& command)
     {
         return dispatch(make_request(C::id, toParams(command)));
@@ -100,7 +100,7 @@ public:
 
     //! The callback receives the command struct; Params that do not match it
     //! (missing, mistyped or unknown parameters) are answered with BadArgs
-    template<typename C, std::enable_if_t<IsTypedCommand<C>::value, int> = 0>
+    template<TypedCommand C>
     void onRequest(Commandable* client, std::function<Ret(const C&)> callback)
     {
         onRequest(client, C::id, CallBack([callback](const Request& request) {
