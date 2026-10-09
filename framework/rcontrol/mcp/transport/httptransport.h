@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QHash>
 #include <QObject>
 #include <QByteArray>
 
@@ -27,31 +28,53 @@
 class QTcpServer;
 class QTcpSocket;
 
-//! NOTE Used in conjunction with an stdio bridge.
+//! NOTE Streamable HTTP endpoint: POST http://127.0.0.1:2212/mcp
 
 namespace muse::rcontrol::mcp {
-class TcpConnection : public QObject
+class HttpConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit TcpConnection(QTcpSocket* socket, const ITransport::RequestHandler& onRequest, QObject* parent = nullptr);
+    explicit HttpConnection(QTcpSocket* socket, const ITransport::RequestHandler& onRequest, QObject* parent = nullptr);
 
 private slots:
     void onReadyRead();
 
 private:
-    void processMessage(const QByteArray& message);
+    struct HttpMessage {
+        QByteArray method;
+        QByteArray path;
+        QByteArray version;
+        QHash<QByteArray, QByteArray> headers;
+        QByteArray body;
+    };
+
+    enum class TakeStatus {
+        NeedMore,
+        Ready,
+        Error
+    };
+
+    void processAvailable();
+    TakeStatus takeMessage(HttpMessage& message, int& errorStatus, const char*& errorReason);
+    bool dispatch(const HttpMessage& message);
+    void reply(int status, const char* reason, const QByteArray& contentType, const QByteArray& body, bool closeConnection);
+    void fail(int status, const char* reason);
+    void finishRpc(const ByteArray& response);
 
     QTcpSocket* m_socket = nullptr;
     QByteArray m_buffer;
+    QByteArray m_origin;
+    bool m_busy = false;
+    bool m_closeAfterResponse = false;
+    bool m_sse = false;
     ITransport::RequestHandler m_onRequest = nullptr;
 };
 
-class TcpTransport : public ITransport
+class HttpTransport : public ITransport
 {
 public:
-
-    ~TcpTransport();
+    ~HttpTransport();
 
     bool start() override;
     void stop() override;
@@ -60,7 +83,6 @@ public:
 
 private:
     QTcpServer* m_server = nullptr;
-    TcpConnection* m_connection = nullptr;
     RequestHandler m_onRequest = nullptr;
 };
 }
