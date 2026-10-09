@@ -924,7 +924,11 @@ Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackForm
 #ifdef MUSE_MODULE_AUDIO_EXPORT
     using namespace muse::audio::soundtrack;
 
-    const secs_t totalDuration = options.hasTimeRange ? options.endTime - options.startTime : m_player->duration();
+    //! NOTE The export seek rounds the selected start down to a sample boundary.
+    // Measure the render duration from that actual position so the end is not shifted earlier.
+    const secs_t totalDuration = options.hasTimeRange
+                                 ? options.endTime - m_player->currentPosition().time()
+                                 : m_player->duration();
     auto writer = std::make_shared<SoundTrackWriter>(dstDevice, format, totalDuration,
                                                      options.fadeInDuration, options.fadeOutDuration, m_mixer);
 
