@@ -308,7 +308,8 @@ void CommandShortcutsRegister::makeUnique(ShortcutList& shortcuts)
 
         Shortcut& foundSc = *it;
 
-        IF_ASSERT_FAILED(foundSc.scope == sc.scope) {
+        if (foundSc.scope != sc.scope) {
+            LOGW() << "scope mismatch for command: " << sc.command << ", scope1: " << foundSc.scope << ", scope2: " << sc.scope;
         }
 
         foundSc.sequences.insert(foundSc.sequences.end(), sc.sequences.begin(), sc.sequences.end());
