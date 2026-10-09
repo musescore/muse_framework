@@ -27,6 +27,7 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/mainwindowmock.h
 
     ${CMAKE_CURRENT_LIST_DIR}/navigationcontroller_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/qmlaccessible_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/themeconverter_tests.cpp
     )
 
