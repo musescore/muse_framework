@@ -36,6 +36,7 @@
 #include "rcommand/icommanddispatcher.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
+#include "rcommand/typedcommand.h"
 
 #include "muse_framework_config.h"
 
@@ -126,6 +127,16 @@ protected:
 
     MenuItem* makeMenuItem(const muse::rcommand::Command& command, const TranslatableString& title = {});
     MenuItem* makeMenuItem(const muse::rcommand::CommandQuery& query, const TranslatableString& title = {});
+    MenuItem* makeMenuItem(const muse::rcommand::Command& command, const muse::rcommand::Params& params,
+                           const TranslatableString& title = {});
+
+    //! A typed command with its parameters, e.g. makeMenuItem(ChangePlayRegion { 1.0, 5.0 })
+    template<muse::rcommand::TypedCommand C>
+    MenuItem* makeMenuItem(const C& command, const TranslatableString& title = {})
+    {
+        return makeMenuItem(C::id, muse::rcommand::toParams(command), title);
+    }
+
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     MenuItem* makeMenuItem(const muse::actions::ActionCode& actionCode, const TranslatableString& title = {});
 #endif
