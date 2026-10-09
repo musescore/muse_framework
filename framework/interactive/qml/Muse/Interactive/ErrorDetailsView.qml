@@ -60,8 +60,8 @@ Column {
             anchors.fill: parent
             anchors.margins: 1
 
-            contentWidth: contentItem.childrenRect.width
-            flickableDirection: Flickable.AutoFlickDirection
+            contentWidth: width
+            flickableDirection: Flickable.VerticalFlick
 
             spacing: 0
 
@@ -91,8 +91,8 @@ Column {
                 background.color: model.index % 2 === 0 ? ui.theme.backgroundSecondaryColor : "transparent"
                 mouseArea.enabled: false
 
-                implicitWidth: label.implicitWidth + 2 * 30
-                width: Math.max(ListView.view.width, implicitWidth)
+                implicitHeight: Math.max(30, label.implicitHeight + 12)
+                width: ListView.view.width
 
                 StyledTextLabel {
                     id: label
@@ -104,6 +104,7 @@ Column {
                     horizontalAlignment: Text.AlignLeft
 
                     width: parent.width
+                    wrapMode: Text.WrapAnywhere
 
                     textFormat: Qt.RichText
                     text: model.errorText
