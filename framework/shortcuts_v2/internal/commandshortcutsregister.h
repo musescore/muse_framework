@@ -47,7 +47,7 @@ public:
     void init();
 
     const ShortcutList& shortcuts() const override;
-    Ret setShortcuts(const ShortcutList& shortcuts) override;
+    Ret updateShortcuts(const ShortcutList& shortcuts) override;
     void resetShortcuts() override;
     async::Notification shortcutsChanged() const override;
 
@@ -78,6 +78,8 @@ private:
     std::string activeShortcutsName() const;
     io::path_t userShortcutsPath() const;
 
+    std::string makeScope(const rcommand::Command& command) const;
+
     void applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const;
     ShortcutList makeDiff(const ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const;
 
@@ -89,6 +91,7 @@ private:
     void mergeShortcuts(ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const;
     void mergeAdditionalShortcuts(ShortcutList& shortcuts);
 
+    void removeNotAvailableCommands(ShortcutList& shortcuts);
     void makeUnique(ShortcutList& shortcuts);
 
     ShortcutList filterAndUpdateAdditionalShortcuts(const ShortcutList& shortcuts);

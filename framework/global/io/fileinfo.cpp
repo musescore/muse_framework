@@ -178,6 +178,16 @@ bool FileInfo::isAbsolute() const
 #endif
 }
 
+bool FileInfo::isSymLink() const
+{
+    return fileSystem()->isSymLink(m_filePath);
+}
+
+path_t FileInfo::symLinkTarget() const
+{
+    return fileSystem()->symLinkTarget(m_filePath);
+}
+
 bool FileInfo::exists() const
 {
     return fileSystem()->exists(m_filePath);

@@ -34,5 +34,7 @@ public:
     MOCK_METHOD(void, onRequest, (Commandable * client, const Command& command, const CallBack& callback), (override));
     MOCK_METHOD(void, onRequest, (Commandable * client, const Command& command, const AsyncCallBack& callback), (override));
     MOCK_METHOD(void, unreg, (Commandable * client), (override));
+    MOCK_METHOD((async::Channel<Command, bool*>), preDispatch, (), (const, override));
+    MOCK_METHOD(async::Channel<Command>, postDispatch, (), (const, override));
 };
 }

@@ -34,13 +34,12 @@ public:
     MOCK_METHOD(const RetVal<ReleaseInfo>&, lastCheckResult, (), (const, override));
     MOCK_METHOD(RetVal<Progress>, downloadRelease, (), (override));
 
-    MOCK_METHOD(bool, isReleaseDownloaded, (), (const, override));
+    MOCK_METHOD(bool, isReleaseReadyToInstall, (), (const, override));
     MOCK_METHOD(muse::io::path_t, downloadedReleasePath, (), (const, override));
     MOCK_METHOD(void, removeDownloadedRelease, (), (override));
 
     MOCK_METHOD(bool, canAutoInstall, (), (const, override));
 
-    MOCK_METHOD(RetVal<muse::io::path_t>, prepareUpdate, (const muse::io::path_t&), (override));
-    MOCK_METHOD(Ret, finalizeUpdate, (const muse::io::path_t&), (override));
+    MOCK_METHOD(Ret, installUpdate, (), (override));
 };
 }

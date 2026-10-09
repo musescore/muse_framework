@@ -54,17 +54,32 @@ async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
 
     Client client = it->second;
 
-    return async::make_promise<Response>([request, client](auto resolve) {
+    return async::make_promise<Response>([this, request, client](auto resolve) {
         if (client.asyncCallback) {
-            client.asyncCallback(request, [resolve](const Response& response) {
+            bool allowDispatch = true;
+            m_preDispatch.send(request.command, &allowDispatch);
+            if (!allowDispatch) {
+                return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+            }
+
+            client.asyncCallback(request, [this, request, resolve](const Response& response) {
                 (void)resolve(response);
+                m_postDispatch.send(request.command);
             });
 
             return async::Promise<Response>::dummy_result();
         }
 
         if (client.callback) {
-            return resolve(client.callback(request));
+            bool allowDispatch = true;
+            m_preDispatch.send(request.command, &allowDispatch);
+            if (!allowDispatch) {
+                return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+            }
+
+            auto res = resolve(client.callback(request));
+            m_postDispatch.send(request.command);
+            return res;
         }
 
         UNREACHABLE;
@@ -110,7 +125,7 @@ void CommandDispatcher::onRequest(Commandable* client, const Command& command, c
 
 void CommandDispatcher::reg(Commandable* client, const Command& command, const Client& c)
 {
-    IF_ASSERT_FAILED(m_clients.find(command) == m_clients.end()) {
+    if (m_clients.find(command) != m_clients.end()) {
         LOGW() << "command already registered: " << command;
         return;
     }
@@ -134,4 +149,14 @@ void CommandDispatcher::unreg(Commandable* client)
     }
 
     client->setDispatcher(nullptr);
+}
+
+async::Channel<Command, bool*> CommandDispatcher::preDispatch() const
+{
+    return m_preDispatch;
+}
+
+async::Channel<Command> CommandDispatcher::postDispatch() const
+{
+    return m_postDispatch;
 }

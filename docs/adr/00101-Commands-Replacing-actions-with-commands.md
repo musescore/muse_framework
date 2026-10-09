@@ -1,4 +1,4 @@
-# 00101 Replacing actions with commands
+# 00101 Commands: Replacing actions with commands
 
 Date: 2026-06-12  
 Tags: actions, commands, mcp   

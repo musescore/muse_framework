@@ -60,6 +60,7 @@ static JsonObject toObj(const Pen& pen)
     obj["style"] = static_cast<int>(pen.style());
     obj["capStyle"] = static_cast<int>(pen.capStyle());
     obj["joinStyle"] = static_cast<int>(pen.joinStyle());
+    obj["miterLimit"] = pen.miterLimit();
     obj["color"] = pen.color().toString();
     obj["width"] = pen.widthF();
     obj["dashPattern"] = toArr(pen.dashPattern());
@@ -71,6 +72,9 @@ static void fromObj(const JsonObject& obj, Pen& pen)
     pen.setStyle(static_cast<PenStyle>(obj.value("style").toInt()));
     pen.setCapStyle(static_cast<PenCapStyle>(obj.value("capStyle").toInt()));
     pen.setJoinStyle(static_cast<PenJoinStyle>(obj.value("joinStyle").toInt()));
+    if (obj.contains("miterLimit")) {
+        pen.setMiterLimit(obj.value("miterLimit").toDouble());
+    }
     pen.setColor(Color(obj.value("color").toStdString().c_str()));
     pen.setWidthF(obj.value("width").toDouble());
 

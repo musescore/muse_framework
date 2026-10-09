@@ -19,11 +19,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick
 
-Item {
-    readonly property bool hasReadyUpdate: false
-    readonly property string updateVersion: ""
+#pragma once
 
-    visible: false
+#include "modularity/imoduleinterface.h"
+
+#include "global/io/path.h"
+#include "global/types/ret.h"
+
+namespace muse::api {
+class IFileSystemApiRestriction : MODULE_GLOBAL_INTERFACE
+{
+    INTERFACE_ID(IFileSystemApiRestriction)
+public:
+    virtual ~IFileSystemApiRestriction() = default;
+
+    virtual void addAllowedPathBase(const std::string& key, const io::path_t& path) = 0;
+    virtual void removeAllowedPathBase(const std::string& key) = 0;
+    virtual void clearAllowedPathBases() = 0;
+
+    virtual Ret isPathAllowed(const io::path_t& path) const = 0;
+};
 }

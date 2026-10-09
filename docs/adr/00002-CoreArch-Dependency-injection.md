@@ -1,4 +1,4 @@
-# 00002 Dependency injection
+# 00002 Core Architecture: Dependency injection
 
 Date: 2020-05-30   
 Tags: modularity, ioc, injection      

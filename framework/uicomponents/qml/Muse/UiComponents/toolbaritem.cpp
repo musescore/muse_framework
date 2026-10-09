@@ -48,7 +48,7 @@ QString ToolBarItem::id() const
 
 QString ToolBarItem::translatedTitle() const
 {
-    return m_title.qTranslatedWithoutMnemonic();
+    return m_title.qTranslatedPlain();
 }
 
 bool ToolBarItem::enabled() const

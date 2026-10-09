@@ -32,14 +32,39 @@ StyledDialogView {
 
     property string appName: ""
     property string version: ""
-    property bool readyToInstall: false
+    property alias readyToInstall: buttons.readyToInstall
     property alias notes: view.notes
     property alias previousReleasesNotes: view.previousReleasesNotes
+    property alias autoUpdateEnabled: autoUpdateSetting.checked
 
     contentWidth: 644
     contentHeight: 474
 
     margins: 22
+
+    property bool isFinished: false
+
+    function setResult(action) {
+        root.isFinished = true
+        root.ret = {
+            errcode: 0,
+            value: {
+                action: action,
+                autoUpdateEnabled: root.autoUpdateEnabled
+            }
+        }
+    }
+
+    function finish(action) {
+        root.setResult(action)
+        root.hide()
+    }
+
+    onAboutToClose: {
+        if (!root.isFinished) {
+            root.setResult("close")
+        }
+    }
 
     onNavigationActivateRequested: {
         buttons.focusOnFirst()
@@ -56,61 +81,28 @@ StyledDialogView {
         spacing: 24
 
         AccessibleItem {
-             id: accessibleInfo
+            id: accessibleInfo
 
-             visualItem: content
-             role: MUAccessible.Button
-             name: releaseTitleLabel.text + " " + view.notes + " " + buttons.defaultButtonName
+            visualItem: content
+            role: MUAccessible.Button
+            name: releaseTitleLabel.text + " " + view.notes + " " + buttons.defaultButtonName
 
-             function readInfo() {
-                 accessibleInfo.ignored = false
-                 accessibleInfo.focused = true
-             }
-
-             function resetFocus() {
-                 accessibleInfo.ignored = true
-                 accessibleInfo.focused = false
-             }
-         }
-
-        Column {
-            Layout.alignment: Qt.AlignTop
-
-            spacing: 8
-
-            StyledTextLabel {
-                id: releaseTitleLabel
-
-                text: root.readyToInstall
-                      ? qsTrc("update", "A new update is ready to install")
-                      : qsTrc("update", "A new version of %1 is available!").arg(root.appName)
-                font: ui.theme.headerBoldFont
+            function readInfo() {
+                accessibleInfo.ignored = false
+                accessibleInfo.focused = true
             }
 
-            StyledTextLabel {
-                id: releaseDescriptionLabel
-
-                width: content.width
-
-                visible: root.readyToInstall
-
-                text: qsTrc("update", "%1 has downloaded an update and is ready to install. "
-                                      + "%1 will restart to complete the installation. "
-                                      + "If you have any unsaved changes, you will be prompted to save them first.")
-                      .arg(root.appName)
-                horizontalAlignment: Qt.AlignLeft
-                wrapMode: Text.WordWrap
+            function resetFocus() {
+                accessibleInfo.ignored = true
+                accessibleInfo.focused = false
             }
+        }
 
-            StyledTextLabel {
-                id: releaseNotesLabel
+        StyledTextLabel {
+            id: releaseTitleLabel
 
-                visible: !root.readyToInstall
-
-                text: qsTrc("update", "Release notes")
-                font: ui.theme.largeBodyBoldFont
-                horizontalAlignment: Qt.AlignLeft
-            }
+            text: qsTrc("update", "%1 %2 is available!").arg(root.appName).arg(root.version)
+            font: ui.theme.headerBoldFont
         }
 
         SeparatorLine {
@@ -125,11 +117,7 @@ StyledDialogView {
             spacing: 12
 
             StyledTextLabel {
-                visible: root.readyToInstall
-
-                text: root.version.length > 0
-                      ? qsTrc("update", "%1 Release notes").arg(root.version)
-                      : qsTrc("update", "Release notes")
+                text: qsTrc("update", "Release notes")
                 font: ui.theme.largeBodyBoldFont
                 horizontalAlignment: Qt.AlignLeft
             }
@@ -147,6 +135,22 @@ StyledDialogView {
             Layout.rightMargin: -root.margins
         }
 
+        AutoUpdateSetting {
+            id: autoUpdateSetting
+
+            Layout.fillWidth: true
+
+            appName: root.appName
+
+            navigationPanel.section: root.navigationSection
+            navigationPanel.order: 2
+        }
+
+        SeparatorLine {
+            Layout.leftMargin: -root.margins
+            Layout.rightMargin: -root.margins
+        }
+
         AppReleaseInfoBottomPanel {
             id: buttons
 
@@ -154,22 +158,21 @@ StyledDialogView {
             Layout.preferredHeight: childrenRect.height
             Layout.alignment: Qt.AlignBottom
 
+            isRemindMeLaterButtonEnabled: !root.autoUpdateEnabled
+
             navigationPanel.section: root.navigationSection
             navigationPanel.order: 1
 
             onRemindLaterRequested: {
-                root.ret = { errcode: 0, value: "remindLater" }
-                root.hide()
+                root.finish("remindLater")
             }
 
             onInstallRequested: {
-                root.ret = { errcode: 0, value: "install" }
-                root.hide()
+                root.finish("install")
             }
 
             onSkipRequested: {
-                root.ret = { errcode: 0, value: "skip" }
-                root.hide()
+                root.finish("skip")
             }
         }
     }

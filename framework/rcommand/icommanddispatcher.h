@@ -22,9 +22,10 @@
 #include "modularity/imoduleinterface.h"
 
 #include "global/async/promise.h"
+#include "global/async/channel.h"
+#include "global/types/ret.h"
 
 #include "commandtypes.h"
-#include "types/ret.h"
 
 namespace muse::rcommand {
 class Commandable;
@@ -47,6 +48,9 @@ public:
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) = 0;
     virtual void unreg(Commandable* client) = 0;
+
+    virtual async::Channel<Command, bool* /*allow dispatch*/> preDispatch() const = 0;
+    virtual async::Channel<Command> postDispatch() const = 0;
 
     // Helpers for convenience
     async::Promise<Response> dispatch(const Command& command)

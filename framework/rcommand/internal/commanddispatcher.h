@@ -32,6 +32,9 @@ public:
     void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) override;
     void unreg(Commandable* client) override;
 
+    async::Channel<Command, bool* /*allow dispatch*/> preDispatch() const override;
+    async::Channel<Command> postDispatch() const override;
+
     // for utests
     Response dispatch(const Command& command, const Params& params = {});
     Response dispatch(const CommandQuery& query);
@@ -48,5 +51,7 @@ private:
     void reg(Commandable* client, const Command& command, const Client& c);
 
     std::map<Command, Client> m_clients;
+    async::Channel<Command, bool* /*allow dispatch*/> m_preDispatch;
+    async::Channel<Command> m_postDispatch;
 };
 }

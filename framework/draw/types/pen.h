@@ -54,6 +54,7 @@ public:
                && m_style == o.m_style
                && m_capStyle == o.m_capStyle
                && m_joinStyle == o.m_joinStyle
+               && RealIsEqual(m_miterLimit, o.m_miterLimit)
                && RealIsEqual(m_dashPattern, o.m_dashPattern);
     }
 
@@ -153,12 +154,23 @@ public:
         m_joinStyle = pcs;
     }
 
+    double miterLimit() const
+    {
+        return m_miterLimit;
+    }
+
+    void setMiterLimit(double limit)
+    {
+        m_miterLimit = limit;
+    }
+
 #ifndef NO_QT_SUPPORT
     static QPen toQPen(const Pen& pen)
     {
         QPen p(pen.m_color.toQColor(), pen.m_width, static_cast<Qt::PenStyle>(pen.m_style),
                static_cast<Qt::PenCapStyle>(pen.m_capStyle),
                static_cast<Qt::PenJoinStyle>(pen.m_joinStyle));
+        p.setMiterLimit(pen.m_miterLimit);
         p.setDashPattern(QVector<double>(pen.m_dashPattern.cbegin(), pen.m_dashPattern.cend()));
         return p;
     }
@@ -168,6 +180,7 @@ public:
         Pen p(pen.color(), pen.widthF(), static_cast<PenStyle>(pen.style()),
               static_cast<PenCapStyle>(pen.capStyle()),
               static_cast<PenJoinStyle>(pen.joinStyle()));
+        p.m_miterLimit = pen.miterLimit();
 
         QVector<double> dp = pen.dashPattern();
         p.m_dashPattern = std::vector<double>(dp.cbegin(), dp.cend());
@@ -183,6 +196,7 @@ private:
     PenStyle m_style = PenStyle::SolidLine;
     PenCapStyle m_capStyle = PenCapStyle::SquareCap;
     PenJoinStyle m_joinStyle = PenJoinStyle::BevelJoin;
+    double m_miterLimit = 2.0;
     mutable std::vector<double> m_dashPattern;
 };
 } // namespace muse::draw

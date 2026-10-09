@@ -38,6 +38,11 @@ static Uri VIEWER_URI = Uri("muse://extensions/viewer");
 
 void ExtensionsProvider::reloadExtensions()
 {
+    //! NOTE Without this, reloading picks up a plugin's manifest but keeps
+    //! running the code the engine compiled the first time, so edits to a
+    //! plugin only take effect after a restart.
+    extensionsUiEngine()->clearComponentCache();
+
     extensionsRegister()->reload();
 }
 

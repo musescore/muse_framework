@@ -1,4 +1,4 @@
-# 00004 MVVM
+# 00004 Core Architecture: MVVM
 
 Date: 2020-05-30    
 Tags: structure, layers  

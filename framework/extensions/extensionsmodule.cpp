@@ -37,6 +37,7 @@
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
 
+#include "global/api/ifilesystemapirestriction.h"
 #include "api/v1/extapiv1.h"
 
 #include "muse_framework_config.h"
@@ -82,6 +83,13 @@ void ExtensionsModule::resolveImports()
 void ExtensionsModule::registerApi()
 {
     apiv1::ExtApiV1::registerQmlTypes();
+
+    // added fs restrictions
+    auto fsRestriction = globalIoc()->resolve<muse::api::IFileSystemApiRestriction>(moduleName());
+    if (fsRestriction) {
+        fsRestriction->addAllowedPathBase("extensions: userPath", m_configuration->userPath());
+        fsRestriction->addAllowedPathBase("plugins (legacy): userPath", m_configuration->pluginsUserPath());
+    }
 }
 
 void ExtensionsModule::onInit(const IApplication::RunMode&)

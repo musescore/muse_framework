@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-only
-# MuseScore-Studio-CLA-applies
+# MuseScore-CLA-applies
 #
 # MuseScore Studio
 # Music Composition & Notation
 #
-# Copyright (C) 2026 MuseScore Limited and others
+# Copyright (C) 2021 MuseScore Limited and others
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -16,15 +16,21 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-muse_create_qml_module(muse_update_qml ALIAS muse::update_qml FOR muse_update STUB)
+muse_create_module(muse_shortcuts ALIAS muse::shortcuts STUB)
 
-qt_add_qml_module(muse_update_qml
-    URI Muse.Update
-    VERSION 1.0
-    QML_FILES
-        UpdateBanner.qml
+target_sources(muse_shortcuts PRIVATE
+    shortcutsstubmodule.cpp
+    shortcutsstubmodule.h
+    shortcutsregisterstub.cpp
+    shortcutsregisterstub.h
+    shortcutscontrollerstub.cpp
+    shortcutscontrollerstub.h
+    shortcutsconfigurationstub.cpp
+    shortcutsconfigurationstub.h
 )
 
-fixup_qml_module_dependencies(muse_update_qml)
+if (MUSE_MODULE_SHORTCUTS_QML)
+    add_subdirectory(qml/Muse/Shortcuts)
+endif()
