@@ -202,8 +202,12 @@ endif() # End of real engine
 
 if (MUSE_MODULE_AUDIO_EXPORT)
     target_sources(muse_audio_engine PRIVATE
+        internal/export/encoderfactory.cpp
+        internal/export/encoderfactory.h
         internal/export/soundtrackwriter.cpp
         internal/export/soundtrackwriter.h
+        internal/export/parallelsoundtrackwriter.cpp
+        internal/export/parallelsoundtrackwriter.h
 
         # Encoders
         internal/export/abstractaudioencoder.h

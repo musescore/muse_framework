@@ -47,6 +47,10 @@ public:
 
     bool shouldProcessDuringSilence() const;
 
+    //! NOTE See IFxProcessor::isReady() / resetState()
+    bool isReady() const;
+    void resetState();
+
 protected:
 
     void onModeChanged(const ProcessMode mode) override;
