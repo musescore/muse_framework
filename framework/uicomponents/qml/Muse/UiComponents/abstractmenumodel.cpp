@@ -279,6 +279,16 @@ MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::Command& command, cons
     return makeMenuItem(rcommand::CommandQuery(command), title);
 }
 
+MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::Command& command, const rcommand::Params& params,
+                                          const TranslatableString& title)
+{
+    MenuItem* item = makeMenuItem(command, title);
+    if (item) {
+        item->setParams(params);
+    }
+    return item;
+}
+
 MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::CommandQuery& query, const TranslatableString& title)
 {
     const rcommand::CommandInfo& info = commandsRegister()->commandInfo(query.uri());

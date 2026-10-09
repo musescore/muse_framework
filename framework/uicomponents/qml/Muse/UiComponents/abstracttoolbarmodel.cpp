@@ -174,6 +174,16 @@ ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, co
     return item;
 }
 
+ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, const rcommand::Params& params,
+                                            const TranslatableString& title)
+{
+    ToolBarItem* item = makeItem(command, title);
+    if (item) {
+        item->setParams(params);
+    }
+    return item;
+}
+
 ToolBarItem& AbstractToolBarModel::findItem(const rcommand::Command& command) const
 {
     if (ToolBarItem* toolBarItem = findItemPtr(command)) {
