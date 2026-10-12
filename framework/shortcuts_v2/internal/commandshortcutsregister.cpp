@@ -246,7 +246,7 @@ void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const Sho
                 sc.scope = defSc.scope;
                 sc.autoRepeat = defSc.autoRepeat;
                 found = true;
-            } else if (sc.scope == defSc.scope) {
+            } else if (sc.scope == defSc.scope && defSc.command != rcommand::NONE_COMMAND) {
                 for (const std::string& seq : sc.sequences) {
                     //! NOTE If user shortcut has sequence from default shortcut, remove the sequence from default shortcut
                     muse::remove_if(scForAdd.sequences, [&seq](const std::string& cmp){
@@ -504,9 +504,6 @@ Ret CommandShortcutsRegister::updateShortcuts(const ShortcutList& shortcuts)
     }
 
     if (ok) {
-        m_shortcuts = diff;
-        mergeShortcuts(m_shortcuts, m_defaultShortcuts);
-        mergeAdditionalShortcuts(m_shortcuts);
         m_shortcutsChanged.notify();
     }
 

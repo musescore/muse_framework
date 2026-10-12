@@ -46,7 +46,6 @@ void EditShortcutModel::load(const QVariant& originShortcut, const QVariantList&
 
     QVariantMap originShortcutMap = originShortcut.toMap();
     std::string originScope = originShortcutMap.value("scope").toString().toStdString();
-    std::string originCtx = originShortcutMap.value("context").toString().toStdString();
 
     for (const QVariant& shortcut : allShortcuts) {
         if (shortcut == originShortcut) {

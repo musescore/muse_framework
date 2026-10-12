@@ -96,6 +96,10 @@ void ShortcutsModel::load()
     m_modifiedShortcuts.clear();
 
     for (const Shortcut& shortcut : commandShortcutsRegister()->shortcuts()) {
+        if (shortcut.command == NONE_COMMAND) {
+            continue;
+        }
+
         const CommandInfo& info = commandsRegister()->commandInfo(shortcut.command);
 
         Item item;
