@@ -493,7 +493,7 @@ async::Promise<io::path_t> Interactive::selectSavingFile(const std::string& titl
         dlg->open();
 
         return async::Promise<io::path_t>::Result::unchecked();
-    }, async::PromiseType::AsyncByBody);
+    });
 
 #else
 
