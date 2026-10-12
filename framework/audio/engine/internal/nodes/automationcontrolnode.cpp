@@ -94,7 +94,8 @@ void AutomationControlNode::updateChannelGains(secs_t pos)
 
     m_lastGainsPos = pos;
 
-    if (m_volume.hasAutomation() || m_pan.hasAutomation()) {
+    //! NOTE No UI updates while rendering offline (export), see SignalNode::notifyAboutChanges()
+    if (m_mode != ProcessMode::PlayingOffline && (m_volume.hasAutomation() || m_pan.hasAutomation())) {
         //! NOTE Avoid flooding m_automatedControlParamsChanges with updates the UI couldn't display anyway
         constexpr volume_db_t VOLUME_MINIMAL_VALUABLE_DIFF = volume_db_t::make(0.1f);
         constexpr balance_t PAN_MINIMAL_VALUABLE_DIFF = balance_t::make(0.01f);

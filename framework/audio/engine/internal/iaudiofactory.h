@@ -60,6 +60,11 @@ public:
     virtual FxChainPtr makeMasterFxChain(const AudioFxChain& fxChain) const = 0;
     virtual FxChainPtr makeTrackFxChain(const TrackId trackId, const AudioFxChain& fxChain) const = 0;
 
+    //! NOTE A new chain with new effect instances and the same settings (see IFxResolver::createFxListCopy)
+    virtual FxChainPtr makeFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const = 0;
+    //! NOTE Releases the effect instances of a chain made by makeFxChainCopy()
+    virtual void releaseFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const = 0;
+
     //! NOTE For internal purposes,
     // created effect instances are registered in an internal registry (see VST).
     // This method clears this registry.

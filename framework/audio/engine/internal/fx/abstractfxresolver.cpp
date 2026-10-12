@@ -53,6 +53,33 @@ std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const Audio
     return muse::values(m_masterFxMap);
 }
 
+//! New effect instances for `fxChain`, bypassing the per-track cache used by resolveFxList().
+std::vector<IFxProcessorPtr> AbstractFxResolver::createFxListCopy(const TrackId copyId, const AudioFxChain& fxChain,
+                                                                  const OutputSpec& outputSpec)
+{
+    std::vector<IFxProcessorPtr> result;
+
+    for (const auto& pair : fxChain) {
+        if (!pair.second.isValid()) {
+            continue;
+        }
+
+        if (IFxProcessorPtr fx = createTrackFx(copyId, pair.second, outputSpec)) {
+            result.push_back(std::move(fx));
+        }
+    }
+
+    return result;
+}
+
+//! Releases instances created by createFxListCopy().
+void AbstractFxResolver::releaseFxListCopy(const TrackId copyId, const AudioFxChain& fxChain)
+{
+    for (const auto& pair : fxChain) {
+        removeTrackFx(copyId, pair.second.resourceMeta.id, pair.second.chainOrder);
+    }
+}
+
 void AbstractFxResolver::refresh()
 {
 }
