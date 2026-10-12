@@ -22,10 +22,11 @@
 
 #include "filteredflyoutmodel.h"
 
+#include <algorithm>
+
 #include "global/translation.h"
 
-using namespace muse::uicomponents;
-
+namespace muse::uicomponents {
 // Recursively traverse a flyout tree, collect all "leaves" (items without a sub item)...
 static void flattenTreeModel(const QVariant& treeModel, const QString& categoryTitle, QVariantList& result, QVariant& alwaysAppend)
 {
@@ -67,6 +68,25 @@ static void flattenTreeModel(const QVariant& treeModel, const QString& categoryT
     }
 }
 
+static bool containsFuzzy(FuzzyMatcher& matcher, const std::u32string_view text, const std::vector<std::u32string>& patternTokens)
+{
+    return std::all_of(patternTokens.begin(), patternTokens.end(), [&](const std::u32string& patternToken) {
+        const std::size_t tokenSize = patternToken.size();
+        if (tokenSize == 0) {
+            return true;
+        }
+
+        constexpr std::size_t MIN_TOKEN_SIZE_FOR_FUZZY_MATCH = 4;
+        constexpr std::size_t CHARS_PER_ERROR = 8;
+        const std::size_t maxDistance = tokenSize >= MIN_TOKEN_SIZE_FOR_FUZZY_MATCH
+                                        ? 1 + (tokenSize / CHARS_PER_ERROR)
+                                        : 0;
+
+        matcher.match(text, patternToken, maxDistance);
+        return !matcher.empty();
+    });
+}
+
 FilteredFlyoutModel::FilteredFlyoutModel(QObject* parent)
     : QObject(parent)
 {
@@ -105,6 +125,15 @@ void FilteredFlyoutModel::setFilterText(const QString& filterText)
     }
     m_filterText = filterText;
 
+    const QString caseAdjustedPattern = m_filterText.simplified().toLower();
+    const QStringList tokens = caseAdjustedPattern.split(u' ');
+
+    m_patternTokens.clear();
+    m_patternTokens.reserve(tokens.size());
+    for (const auto& token : tokens) {
+        m_patternTokens.push_back(token.toStdU32String());
+    }
+
     QVariantList newModel;
     newModel.reserve(m_flattenedModel.toList().size());
 
@@ -113,7 +142,7 @@ void FilteredFlyoutModel::setFilterText(const QString& filterText)
     for (const QVariant& item : m_flattenedModel.toList()) {
         QVariantMap itemMap = item.toMap();
         const QString title = itemMap.value("title").toString();
-        if (!title.contains(m_filterText, Qt::CaseInsensitive)) {
+        if (!containsFuzzy(m_matcher, title.toLower().toStdU32String(), m_patternTokens)) {
             continue;
         }
         const QString prefix = title.section("-", 0, 0);
@@ -139,4 +168,5 @@ void FilteredFlyoutModel::setFilterText(const QString& filterText)
     m_filteredModel = newModel;
 
     emit modelChanged();
+}
 }
