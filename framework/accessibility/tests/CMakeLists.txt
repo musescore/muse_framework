@@ -23,6 +23,7 @@ set(MODULE_TEST muse_accessibility_tests)
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/environment.cpp
     ${CMAKE_CURRENT_LIST_DIR}/accessibilitycontroller_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/accessibleiteminterface_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/mocks/accessibleapprootobjectmock.h
     )
 
