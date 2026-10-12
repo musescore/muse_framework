@@ -53,8 +53,8 @@ public:
     // This method clears this registry.
     virtual void clearSynthSources() = 0;
 
-    virtual RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const mpe::PlaybackData& playbackData,
-                                                       const AudioInputParams& params,
+    virtual RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const std::string& trackName,
+                                                       const mpe::PlaybackData& playbackData, const AudioInputParams& params,
                                                        const std::function<void()> onOffStreamReceived = nullptr) const = 0;
     // Make FX
     virtual FxChainPtr makeMasterFxChain(const AudioFxChain& fxChain) const = 0;

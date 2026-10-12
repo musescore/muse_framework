@@ -94,3 +94,7 @@ target_no_warning(muse_vst -Wno-deprecated-declarations)
 if (MUSE_MODULE_VST_QML)
     add_subdirectory(qml/Muse/Vst)
 endif()
+
+if (MUSE_MODULE_VST_TESTS)
+    add_subdirectory(tests)
+endif()
