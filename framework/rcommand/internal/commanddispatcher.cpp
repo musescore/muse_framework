@@ -42,6 +42,12 @@ CommandDispatcher::~CommandDispatcher()
 
 async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
 {
+    if (request.command == NONE_COMMAND) {
+        return async::make_promise<Response>([request](auto resolve) {
+            return resolve(make_response(request, make_ret(Ret::Code::Ok)));
+        });
+    }
+
     auto it = m_clients.find(request.command);
     if (it == m_clients.end()) {
         LOGW() << "command not registered: " << request.command;

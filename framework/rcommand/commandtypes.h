@@ -39,6 +39,9 @@ constexpr std::string_view COMMAND_SCHEME = "command";
 using Command = Uri;
 using CommandQuery = UriQuery;
 
+//! NOTE This is a valid command that does nothing.
+inline static const Command NONE_COMMAND = Command("command://none");
+
 struct Params : public std::map<std::string, Val>
 {
     Params() = default;

@@ -96,6 +96,10 @@ void ShortcutsModel::load()
     m_modifiedShortcuts.clear();
 
     for (const Shortcut& shortcut : commandShortcutsRegister()->shortcuts()) {
+        if (shortcut.command == NONE_COMMAND) {
+            continue;
+        }
+
         const CommandInfo& info = commandsRegister()->commandInfo(shortcut.command);
 
         Item item;
@@ -269,6 +273,7 @@ void ShortcutsModel::clearSelectedShortcuts()
         Item& item = m_items[index.row()];
         item.shortcut.clear();
         item.sequence = "";
+        m_modifiedShortcuts[item.shortcut.command] = item.shortcut;
         notifyAboutShortcutChanged(index);
     }
 
@@ -310,6 +315,8 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
                     sc.clear();
                 }
 
+                m_modifiedShortcuts[sc.command] = sc;
+
                 item.sequence = sequencesToNativeText(sc.sequences);
                 notifyAboutShortcutChanged(index(i));
             }
@@ -326,6 +333,8 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
         } else {
             shortcut.sequences = {};
         }
+
+        m_modifiedShortcuts[shortcut.command] = shortcut;
 
         item.sequence = sequencesToNativeText(shortcut.sequences);
 

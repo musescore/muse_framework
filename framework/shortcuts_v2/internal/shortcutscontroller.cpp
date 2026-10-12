@@ -50,6 +50,7 @@ void ShortcutsController::activate(const std::string& sequence)
 
     ShortcutList allowedShortcuts;
     const ShortcutList& commandShortcuts = commandShortcutsRegister()->shortcutsForSequence(sequence);
+    SC_LOG() << sequence << ": commandShortcuts: " << commandShortcuts.size() << ": " << commandShortcuts;
     for (const Shortcut& sc : commandShortcuts) {
         if (commandsState()->commandState(sc.command).enabled) {
             allowedShortcuts.push_back(sc);
