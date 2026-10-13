@@ -23,21 +23,31 @@
 #ifndef MUSE_DOCK_DOCKWINDOWACTIONSCONTROLLER_H
 #define MUSE_DOCK_DOCKWINDOWACTIONSCONTROLLER_H
 
-#include "actions/actionable.h"
+#include "rcommand/commandable.h"
+#include "global/types/ret.h"
 
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
-#include "rcommand/commandable.h"
 #include "rcommand/icommanddispatcher.h"
 #include "../idockwindowprovider.h"
-#include "types/ret.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "actions/actionable.h"
+#include "actions/iactionsdispatcher.h"
+#endif
 
 namespace muse::dock {
-class DockWindowActionsController : public muse::Contextable, public muse::actions::Actionable, public muse::rcommand::Commandable
+class DockWindowActionsController : public muse::Contextable, public muse::rcommand::Commandable
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    , public muse::actions::Actionable
+#endif
 {
     muse::ContextInject<IDockWindowProvider> dockWindowProvider = { this };
-    muse::ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     muse::ContextInject<rcommand::ICommandDispatcher> commandsDispatcher = { this };
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    muse::ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+#endif
 
 public:
     DockWindowActionsController(const muse::modularity::ContextPtr& iocCtx)
