@@ -559,6 +559,9 @@ enum class Code : char16_t {
 
     INFO_FILLED = 0xF4CC,
 
+    FADE_HANDLE_IN = 0xF4CD,
+    FADE_HANDLE_OUT = 0xF4CE,
+
     NONE = 0xFFFF
 };
 
