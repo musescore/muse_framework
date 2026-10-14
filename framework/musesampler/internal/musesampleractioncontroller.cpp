@@ -35,7 +35,7 @@ void MuseSamplerActionController::init(std::weak_ptr<MuseSamplerResolver> resolv
 {
     m_museSamplerResolver = resolver;
 
-    commandDispatcher()->onRequest(this, MUSESAMPLER_CHECK_COMMAND, [this]() { checkLibraryIsDetected(); return muse::make_ok(); });
+    commandDispatcher()->onRequest(this, MUSESAMPLER_CHECK_COMMAND, [this]() { checkMuseSampler(); return muse::make_ok(); });
     commandDispatcher()->onRequest(this, MUSESAMPLER_RELOAD_COMMAND, [this]() { reloadMuseSampler(); return muse::make_ok(); });
 
     // compat
@@ -50,7 +50,7 @@ void MuseSamplerActionController::init(std::weak_ptr<MuseSamplerResolver> resolv
     }
 }
 
-void MuseSamplerActionController::checkLibraryIsDetected()
+void MuseSamplerActionController::checkMuseSampler()
 {
     std::shared_ptr<MuseSamplerResolver> resolver = m_museSamplerResolver.lock();
     if (!resolver) {
@@ -68,6 +68,9 @@ void MuseSamplerActionController::checkLibraryIsDetected()
 
     if (resolver->isLoaded()) {
         status = muse::mtrc("musesampler", "MuseSampler library is detected, version %1")
+                 .arg(libVersionStr);
+    } else if (resolver->initFailed()) {
+        status = muse::mtrc("musesampler", "MuseSampler library could not be initialized, version %1")
                  .arg(libVersionStr);
     } else if (!libVersion.isNull() && libVersion < configuration()->minSupportedVersion()) {
         status = muse::mtrc("musesampler", "Installed MuseSampler library is not supported, version %1")
