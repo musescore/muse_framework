@@ -178,6 +178,9 @@ void AudioDriverController::setNewDriver(IAudioDriverPtr newDriver)
     m_audioDriver = newDriver;
 
     if (m_audioDriver) {
+        //! NOTE The new driver doesn't know yet what is going on
+        m_audioDriver->setLivePlaybackOngoing(m_livePlaybackOngoing);
+
         // subscribe
         m_audioDriver->availableOutputDevicesChanged().onNotify(this, [this]() {
             async::Async::call(this, [this]() {
@@ -315,6 +318,19 @@ bool AudioDriverController::isOpened() const
         return false;
     }
     return m_audioDriver->isOpened();
+}
+
+void AudioDriverController::setLivePlaybackOngoing(bool ongoing)
+{
+    if (m_livePlaybackOngoing == ongoing) {
+        return;
+    }
+
+    m_livePlaybackOngoing = ongoing;
+
+    if (m_audioDriver) {
+        m_audioDriver->setLivePlaybackOngoing(ongoing);
+    }
 }
 
 const IAudioDriver::Spec& AudioDriverController::activeSpec() const
