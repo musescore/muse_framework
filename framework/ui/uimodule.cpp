@@ -26,18 +26,17 @@
 
 #include "modularity/ioc.h"
 
-#include "rcommand/imodulecommandsregister.h"
+#include "rcommand/icommandsregister.h"
+#include "rcommand/icommandsstate.h"
+
 #include "internal/navigationcommandsregister.h"
 #include "internal/navigationcommandsstate.h"
-
 #include "internal/uiengine.h"
 #include "internal/mainwindow.h"
 #include "internal/uiconfiguration.h"
 #include "internal/uicontextconfiguration.h"
 #include "internal/uistate.h"
-#include "internal/uiactionsregister.h"
 #include "internal/navigationcontroller.h"
-#include "internal/navigationuiactions.h"
 #include "internal/dragcontroller.h"
 #include "view/iconcodes.h"
 #include "view/widgetstyle.h"
@@ -62,6 +61,10 @@
 #include "api/themeapi.h"
 
 #include "muse_framework_config.h"
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "internal/uiactionsregister.h"
+#include "internal/navigationuiactions.h"
+#endif
 
 #include "log.h"
 
@@ -162,7 +165,6 @@ void UiModuleContext::registerExports()
 {
     m_uistate = std::make_shared<UiState>(iocContext());
     m_uiengine = std::make_shared<UiEngine>(iocContext());
-    m_uiactionsRegister = std::make_shared<UiActionsRegister>(iocContext());
     m_keyNavigationController = std::make_shared<NavigationController>(iocContext());
 
     #ifdef Q_OS_MAC
@@ -178,11 +180,15 @@ void UiModuleContext::registerExports()
     ioc()->registerExport<IUiContextConfiguration>(module_name, new UiContextConfiguration(iocContext()));
     ioc()->registerExport<IUiState>(module_name, m_uistate);
     ioc()->registerExport<IUiEngine>(module_name, m_uiengine);
-    ioc()->registerExport<IUiActionsRegister>(module_name, m_uiactionsRegister);
     ioc()->registerExport<INavigationController>(module_name, m_keyNavigationController);
     ioc()->registerExport<IDragController>(module_name, new DragController());
     ioc()->registerExport<IWindowsController>(module_name, m_windowsController);
     ioc()->registerExport<IMainWindow>(module_name, new MainWindow());
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    m_uiactionsRegister = std::make_shared<UiActionsRegister>(iocContext());
+    ioc()->registerExport<IUiActionsRegister>(module_name, m_uiactionsRegister);
+#endif
 }
 
 void UiModuleContext::resolveImports()
@@ -191,11 +197,12 @@ void UiModuleContext::resolveImports()
     if (cs) {
         cs->reg(std::make_shared<NavigationCommandsState>(iocContext()));
     }
-
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     auto ar = ioc()->resolve<IUiActionsRegister>(module_name);
     if (ar) {
         ar->reg(std::make_shared<NavigationUiActions>());
     }
+#endif
 }
 
 void UiModuleContext::onInit(const IApplication::RunMode& mode)
@@ -214,10 +221,12 @@ void UiModuleContext::onAllInited(const IApplication::RunMode&)
     //! So, we loads these settings on onStartApp
     m_uistate->init();
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     //! NOTE UIActions are collected from many modules, and these modules determine the state of their UIActions.
     //! All modules need to be initialized in order to get the correct state of UIActions.
     //! So, we do init on onStartApp
     m_uiactionsRegister->init();
+#endif
 
     auto api = globalIoc()->resolve<api::IApiRegister>(module_name);
     if (api) {

@@ -27,11 +27,15 @@
 #include <QObject>
 #include <QString>
 
-#include "actions/actiontypes.h"
 #include "global/async/asyncable.h"
 
-#include "ui/uiaction.h"
 #include "rcommand/commandtypes.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "actions/actiontypes.h"
+#include "ui/uiaction.h"
+#endif
 
 namespace muse::uicomponents {
 // This must be in sync with QAction::MenuRole
@@ -85,6 +89,7 @@ public:
     void setTitle(const MnemonicString& title);
     QString translatedTitle() const;
     QString titleWithMnemonicUnderline() const;
+    QString titleWithMnemonicAmpersand() const;
     void setDescription(const TranslatableString& description);
     QString translatedDescription() const;
     void setShortcuts(const std::vector<std::string>& shortcuts);
@@ -130,6 +135,7 @@ public:
     void setCommandState(const rcommand::CommandState& state);
     rcommand::CommandState commandState() const;
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     // action support
     MenuItem(const ui::UiAction& action, QObject* parent = nullptr);
     void setActionCode(const actions::ActionCode& code);
@@ -142,6 +148,7 @@ public:
     muse::actions::ActionData args() const;
     void setQuery(const muse::actions::ActionQuery& query);
     muse::actions::ActionQuery query() const;
+#endif
 
 signals:
     void idChanged(QString id);
@@ -177,7 +184,9 @@ private:
     MenuItemList m_subitems;
 
     rcommand::Params m_params;
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     muse::actions::ActionData m_args;
+#endif
 };
 
 inline QVariantList menuItemListToVariantList(const uicomponents::MenuItemList& list)
