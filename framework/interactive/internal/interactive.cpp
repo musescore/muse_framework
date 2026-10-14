@@ -608,7 +608,11 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
 
     return async::make_promise<Color>([this, color, title, allowAlpha](auto resolve, auto reject) {
         //! FIX https://github.com/musescore/MuseScore/issues/23208
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        shortcutsController()->setActive(false);
+#else
         shortcutsRegister()->setActive(false);
+#endif
 
         QColorDialog* dlg = new QColorDialog();
         if (!title.empty()) {
@@ -634,7 +638,11 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
             uiConfiguration()->setColorDialogCustomColors(getCustomColors());
 
             m_isSelectColorOpened = false;
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+            shortcutsController()->setActive(true);
+#else
             shortcutsRegister()->setActive(true);
+#endif
 
             if (result != QDialog::Accepted) {
                 Ret ret = muse::make_ret(Ret::Code::Cancel);
