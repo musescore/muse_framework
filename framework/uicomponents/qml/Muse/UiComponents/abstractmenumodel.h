@@ -31,13 +31,16 @@
 #include "modularity/ioc.h"
 #include "rcommand/commandtypes.h"
 #include "types/uri.h"
-#include "ui/iuiactionsregister.h"
-#include "actions/iactionsdispatcher.h"
 #include "rcommand/icommanddispatcher.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
 
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "ui/iuiactionsregister.h"
+#include "actions/iactionsdispatcher.h"
+#endif
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
 #include "shortcuts_v2/icommandshortcutsregister.h"
