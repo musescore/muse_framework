@@ -29,13 +29,15 @@
 #include "async/asyncable.h"
 
 #include "modularity/ioc.h"
-#include "ui/iuiactionsregister.h"
-
-#include "actions/iactionsdispatcher.h"
 #include "rcommand/icommandsstate.h"
 #include "rcommand/icommandsregister.h"
 
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "ui/iuiactionsregister.h"
+#include "actions/iactionsdispatcher.h"
+#endif
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
 #include "shortcuts_v2/icommandshortcutsregister.h"
@@ -89,8 +91,6 @@ public:
 
 public:
     explicit AbstractToolBarModel(QObject* parent = nullptr);
-
-    const actions::ActionCode SEPARATOR_ID = "";
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;

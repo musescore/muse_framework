@@ -25,13 +25,11 @@
 #include "interactive/iinteractiveuriregister.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
-#include "ui/iuiactionsregister.h"
 
 #include "internal/testflow.h"
 #include "internal/testflowconfiguration.h"
 
 #include "internal/testflowactionscontroller.h"
-#include "internal/testflowactions.h"
 #include "internal/testflowcommandsregister.h"
 #include "internal/testflowcommandsstate.h"
 #include "internal/testflowscriptsrepository.h"
@@ -115,11 +113,6 @@ void TestflowContext::registerExports()
 
 void TestflowContext::resolveImports()
 {
-    auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
-    if (ar) {
-        ar->reg(std::make_shared<TestflowActions>());
-    }
-
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {
         cs->reg(std::make_shared<TestflowCommandsState>(iocContext()));
