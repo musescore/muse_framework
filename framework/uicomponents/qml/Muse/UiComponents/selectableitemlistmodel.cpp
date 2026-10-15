@@ -26,7 +26,7 @@
 
 using namespace muse::uicomponents;
 
-SelectableItemListModel::Item::Item(QObject* parent)
+SelectableItem::SelectableItem(QObject* parent)
     : QObject(parent)
 {
 }

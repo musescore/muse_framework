@@ -28,6 +28,14 @@
 #include "itemmultiselectionmodel.h"
 
 namespace muse::uicomponents {
+class SelectableItem : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit SelectableItem(QObject* parent = nullptr);
+};
+
 class SelectableItemListModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -42,14 +50,7 @@ class SelectableItemListModel : public QAbstractListModel
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
 
 public:
-    class Item : public QObject
-    {
-    public:
-        virtual ~Item() = default;
-
-        explicit Item(QObject* parent = nullptr);
-    };
-
+    using Item = SelectableItem;
     using ItemList = QList<Item*>;
 
     explicit SelectableItemListModel(QObject* parent = nullptr);
