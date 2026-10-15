@@ -413,6 +413,17 @@ TEST_F(Global_Types_StringTests, String_Trimmed_NonLatin1)
         EXPECT_EQ(newStr, u"奇異恩典 5");
     }
 
+    {
+        //! GIVEN String surrounded by a whitespace character which is only
+        //! recognised as such by a Unicode-aware check
+        String str = u"\u3000奇異恩典\u3000";
+        //! DO
+        String newStr = str.trimmed();
+        //! CHECK
+        SCOPED_TRACE(muPrintable(newStr));
+        EXPECT_EQ(newStr, u"奇異恩典");
+    }
+
     std::setlocale(LC_CTYPE, savedLocale.c_str());
 }
 

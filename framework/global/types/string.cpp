@@ -135,11 +135,22 @@ bool Char::isLetter(char16_t c)
 
 bool Char::isSpace(char16_t c)
 {
-    //! TODO
 #ifndef NO_QT_SUPPORT
     return QChar::isSpace(c);
 #else
-    return std::isspace(static_cast<unsigned char>(c));
+    //! Mirrors the code points QChar::isSpace() accepts above ASCII; keeping the
+    //! set here explicit avoids narrowing c to unsigned char, which would alias
+    //! non-Latin1 code points onto ASCII ones (u'\u4f20' onto a space, for instance).
+    static constexpr char16_t NON_ASCII_SPACES[] {
+        u'\u0085', u'\u00A0', u'\u1680', u'\u2000', u'\u2001', u'\u2002', u'\u2003', u'\u2004',
+        u'\u2005', u'\u2006', u'\u2007', u'\u2008', u'\u2009', u'\u200A', u'\u2028', u'\u2029',
+        u'\u202F', u'\u205F', u'\u3000'
+    };
+
+    if (c <= 0x7F) {
+        return c == u' ' || (c >= u'\t' && c <= u'\r');
+    }
+    return std::binary_search(std::begin(NON_ASCII_SPACES), std::end(NON_ASCII_SPACES), c);
 #endif
 }
 
