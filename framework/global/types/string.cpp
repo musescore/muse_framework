@@ -88,14 +88,14 @@ static double toDouble_helper(const char* str, bool* ok)
 static void ltrim_helper(std::u16string& s)
 {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](char16_t ch) {
-        return !std::isspace(ch);
+        return !Char::isSpace(ch);
     }));
 }
 
 static void rtrim_helper(std::u16string& s)
 {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](char16_t ch) {
-        return !std::isspace(ch);
+        return !Char::isSpace(ch);
     }).base(), s.end());
 }
 
