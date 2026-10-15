@@ -40,7 +40,6 @@ using namespace muse;
 using namespace muse::dock;
 using namespace muse::ui;
 using namespace muse::uicomponents;
-using namespace muse::actions;
 
 class DockPanelView::DockPanelMenuModel : public muse::uicomponents::AbstractMenuModel
 {

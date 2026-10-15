@@ -28,7 +28,9 @@
 
 using namespace muse::uicomponents;
 using namespace muse::ui;
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 using namespace muse::actions;
+#endif
 
 const int AbstractMenuModel::INVALID_ITEM_INDEX = -1;
 
