@@ -22,19 +22,22 @@
 
 #pragma once
 
-#include "common/iaudiotaskscheduler.h"
+#include "audio/common/iaudiotaskscheduler.h"
 #include "global/async/asyncable.h"
 
 #include "audio/iaudiodrivercontroller.h"
 
 #include "modularity/ioc.h"
 #include "audio/main/iaudioconfiguration.h"
+#include "audio/main/internal/iaudiodriverfactory.h"
 #include "audio/common/rpc/irpcchannel.h"
 
 namespace muse::audio {
 class AudioDriverController : public IAudioDriverController, public async::Asyncable
 {
+public:
     GlobalInject<IAudioConfiguration> configuration;
+    GlobalInject<IAudioDriverFactory> audioDriverFactory;
     GlobalInject<rpc::IRpcChannel> rpcChannel;
 
 public:
@@ -72,7 +75,6 @@ public:
     IAudioTaskSchedulerPtr getAudioTaskScheduler() const;
 
 private:
-    IAudioDriverPtr createDriver(const std::string& name) const;
     void setNewDriver(IAudioDriverPtr newDriver);
 
     void handleOutputDeviceChange();
