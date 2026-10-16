@@ -21,13 +21,10 @@
  */
 #include <gtest/gtest.h>
 
-// pragma-pack matches rpcpacker_tests.cpp to avoid an ODR segfault at static init.
-#pragma pack(push, 1)
 #include "audio/common/audiotypes.h"
 #include "audioplugins/audiopluginstypes.h"
 #include "musesampler/musesamplertypes.h"
 #include "vst/vstpluginattrs.h"
-#pragma pack(pop)
 
 using namespace muse;
 
