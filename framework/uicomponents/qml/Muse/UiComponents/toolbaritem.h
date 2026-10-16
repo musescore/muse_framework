@@ -34,8 +34,11 @@
 
 #include "modularity/ioc.h"
 
+#include "global/iapplication.h"
+
 #include "rcommand/commandtypes.h"
 #include "rcommand/icommanddispatcher.h"
+#include "rcommand/icommandsstate.h"
 
 #include "muse_framework_config.h"
 
@@ -77,7 +80,9 @@ class ToolBarItem : public QObject, public Contextable, public async::Asyncable
     Q_PROPERTY(QList<MenuItem*> menuItems READ menuItems NOTIFY menuItemsChanged)
     Q_PROPERTY(bool isMenuSecondary READ isMenuSecondary NOTIFY isMenuSecondaryChanged)
 
+    GlobalInject<IApplication> application;
     ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
+    ContextInject<muse::rcommand::ICommandsState> commandsState = { this };
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
 #endif
@@ -125,6 +130,10 @@ public:
     void setCommandState(const rcommand::CommandState& state);
     rcommand::CommandState commandState() const;
 
+    using ModifierCommands = std::vector<std::pair<Qt::KeyboardModifiers, rcommand::Command> >;
+    void setModifierCommands(const ModifierCommands& commands);
+    const ModifierCommands& modifierCommands() const;
+
     // action support
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     ToolBarItem(const ui::UiAction& action, ToolBarItemType::Type type, QObject* parent = nullptr);
@@ -170,6 +179,8 @@ private:
     bool selected_property() const;
     int type_property() const;
 
+    const rcommand::Command* modifierCommand(Qt::KeyboardModifiers modifiers) const;
+
     ToolBarItemType::Type m_type = ToolBarItemType::ACTION;
 
     QString m_id;
@@ -193,6 +204,7 @@ private:
     bool m_isTransparent = true;
 
     rcommand::Params m_params;
+    ModifierCommands m_modifierCommands;
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     muse::actions::ActionData m_args;
 #endif
