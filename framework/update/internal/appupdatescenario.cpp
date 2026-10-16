@@ -24,6 +24,7 @@
 
 #include <QUrl>
 
+#include "rcommand/commandtypes.h"
 #include "updateerrors.h"
 
 #include "types/val.h"
@@ -32,7 +33,6 @@
 
 using namespace muse;
 using namespace muse::update;
-using namespace muse::actions;
 using namespace muse::async;
 
 void AppUpdateScenario::delayedInit()
@@ -325,7 +325,9 @@ void AppUpdateScenario::closeAppAndCompleteInstall()
         multiwindowsProvider()->quitAllAndRunInstallation(packagePath);
     }
 
-    dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, packagePath.toStdString()));
+    commandDispatcher()->dispatch(rcommand::Command("command://app/quit"), {
+        { "all_instances", Val(false) },
+        { "installer_path", Val(packagePath.toStdString()) } });
 }
 
 bool AppUpdateScenario::shouldIgnoreUpdate(const ReleaseInfo& info) const

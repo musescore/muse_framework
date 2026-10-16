@@ -26,4 +26,8 @@
 
 namespace muse::mi {
 inline static const muse::rcommand::Command MULTIWINDOWS_DEV_SHOW_INFO_COMMAND("command://multiwindows/dev/show-info");
+
+//! NOTE These are commands from the application; the mi module does not register or process them, but it does send them.
+inline static const muse::rcommand::Command APP_QUIT_COMMAND("command://app/quit");
+inline static const muse::rcommand::Command APP_RESTART_COMMAND("command://app/restart");
 }
