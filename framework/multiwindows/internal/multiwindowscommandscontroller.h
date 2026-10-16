@@ -22,18 +22,14 @@
 
 #pragma once
 
-#include "actions/actionable.h"
-
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
 #include "rcommand/commandable.h"
 #include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
 
 namespace muse::mi {
-class MultiWindowsCommandsController : public Contextable, public actions::Actionable, public rcommand::Commandable
+class MultiWindowsCommandsController : public Contextable, public rcommand::Commandable
 {
-    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
 

@@ -26,8 +26,9 @@
 
  #include "../../iprojectprovider.h"
  #include "ui/imainwindow.h"
- #include "actions/iactionsdispatcher.h"
  #include "rcommand/icommanddispatcher.h"
+
+ #include "multiwindowscommands.h"
 
  #include "log.h"
 
@@ -35,9 +36,6 @@ using namespace muse;
 using namespace muse::mi;
 
 static const std::string pname = "mi";
-
-//! NOTE The command is implemented by the application
-static const rcommand::Command APP_QUIT_COMMAND("command://app/quit");
 
 size_t SingleProcessProvider::windowCount() const
 {
@@ -57,11 +55,6 @@ std::shared_ptr<IProjectProvider> SingleProcessProvider::projectProvider(const m
 std::shared_ptr<ui::IMainWindow> SingleProcessProvider::mainWindow(const modularity::ContextPtr& ctx) const
 {
     return modularity::ioc(ctx)->resolve<ui::IMainWindow>(pname);
-}
-
-std::shared_ptr<actions::IActionsDispatcher> SingleProcessProvider::dispatcher(const modularity::ContextPtr& ctx) const
-{
-    return modularity::ioc(ctx)->resolve<actions::IActionsDispatcher>(pname);
 }
 
 std::shared_ptr<rcommand::ICommandDispatcher> SingleProcessProvider::commandDispatcher(const modularity::ContextPtr& ctx) const
@@ -144,11 +137,11 @@ void SingleProcessProvider::activateWindowWithoutProject(const QStringList& args
 
         w->requestShowOnFront();
         if (args.count() > 0 && !args.at(0).isEmpty()) {
-            std::shared_ptr<actions::IActionsDispatcher> d = dispatcher(ctx);
+            std::shared_ptr<rcommand::ICommandDispatcher> d = commandDispatcher(ctx);
             IF_ASSERT_FAILED(d) {
                 break;
             }
-            d->dispatch(args.at(0).toStdString(), actions::ActionData::make_arg1<bool>(false));
+            d->dispatch(rcommand::CommandQuery(args.at(0).toStdString()));
         }
 
         break;
