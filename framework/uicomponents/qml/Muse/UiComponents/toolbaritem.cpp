@@ -68,6 +68,13 @@ void ToolBarItem::setEnabled(bool enabled)
 
 void ToolBarItem::activate()
 {
+    if (const rcommand::Command* modified = modifierCommand(application()->keyboardModifiers())) {
+        if (commandsState()->commandState(*modified).enabled) {
+            commandDispatcher()->dispatch(*modified);
+        }
+        return;
+    }
+
     if (strings::startsWith(m_intent, "command://")) {
         commandDispatcher()->dispatch(command(), m_params);
     } else {
@@ -320,6 +327,34 @@ void ToolBarItem::setCommand(const rcommand::Command& command)
 muse::rcommand::Command ToolBarItem::command() const
 {
     return rcommand::Command(m_intent);
+}
+
+void ToolBarItem::setModifierCommands(const ModifierCommands& commands)
+{
+    m_modifierCommands = commands;
+}
+
+const ToolBarItem::ModifierCommands& ToolBarItem::modifierCommands() const
+{
+    return m_modifierCommands;
+}
+
+const muse::rcommand::Command* ToolBarItem::modifierCommand(Qt::KeyboardModifiers modifiers) const
+{
+    static constexpr Qt::KeyboardModifiers relevant = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+    modifiers &= relevant;
+
+    if (modifiers == Qt::NoModifier) {
+        return nullptr;
+    }
+
+    for (const auto& [commandModifiers, command] : m_modifierCommands) {
+        if (commandModifiers == modifiers && command.isValid()) {
+            return &command;
+        }
+    }
+
+    return nullptr;
 }
 
 void ToolBarItem::setParams(const rcommand::Params& params)
