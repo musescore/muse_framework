@@ -159,8 +159,12 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         });
 
         //! NOTE For version 1 plugins we need to call run
-        async::Async::call(this, [this, a, uri]() {
-            auto plugin = dynamic_cast<apiv1::IPluginApiV1*>(m_contentItem.data());
+        const QPointer<QQuickItem> contentItem = m_contentItem;
+        async::Async::call(this, [this, contentItem, a, uri]() {
+            if (!contentItem || contentItem != m_contentItem) {
+                return;
+            }
+            auto plugin = dynamic_cast<apiv1::IPluginApiV1*>(contentItem.data());
             if (!plugin) {
                 LOGE() << "Qml Object not MuseScore plugin: " << a.path
                        << ", from extension: " << uri;
