@@ -119,13 +119,13 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         }
     }
 
-    if (qmlObj) {
-        qmlObj->setParent(this);
-    }
     m_contentItem = qobject_cast<QQuickItem*>(qmlObj);
     if (!m_contentItem) {
         LOGE() << "Component not QuickItem, file: " << a.path << ", from extension: " << uri;
+        delete qmlObj;
+        return;
     }
+    qmlObj->setParent(this);
 
     if (m_contentItem) {
         if (muse::is_zero(m_contentItem->implicitHeight())) {

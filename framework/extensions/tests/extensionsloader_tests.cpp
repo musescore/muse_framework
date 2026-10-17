@@ -41,7 +41,7 @@ TEST(ExtensionsLoaderTests, LegacyDockPresentation)
         QFile file(directory.filePath("plugin.qml"));
         ASSERT_TRUE(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
         const QByteArray qml = QString("import MuseScore 3.0\nMuseScore {\n"
-                                       "title: \"Test\"\npluginType: \"%1\"\n}\n").arg(type).toUtf8();
+                                       "title: \"Test\"\npluginType: \"%1\"\nrequiresScore: false\n}\n").arg(type).toUtf8();
         ASSERT_EQ(file.write(qml), qml.size());
         file.close();
         const auto manifests = legacy::ExtPluginsLoader().loadManifestList(
@@ -50,6 +50,7 @@ TEST(ExtensionsLoaderTests, LegacyDockPresentation)
         ASSERT_EQ(manifests.front().actions.size(), 1u);
         const Action& action = manifests.front().actions.front();
         EXPECT_EQ(action.docked, type == "dock");
+        EXPECT_EQ(action.context, type == "dock" ? PROJECT_OPENED_CONTEXT : ANY_CONTEXT);
         EXPECT_EQ(action.type, type == "dock" || type == "dialog" ? Type::Form : Type::Macros);
     }
 }
