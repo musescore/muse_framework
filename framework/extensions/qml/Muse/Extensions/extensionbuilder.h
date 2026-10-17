@@ -23,6 +23,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointer>
 #include <QQmlComponent>
 #include <QQuickItem>
 #include <qqmlintegration.h>
@@ -53,6 +54,7 @@ public:
     QQuickItem* contentItem() const;
 
     Q_INVOKABLE void load(const QString& extension, const QString& action, QObject* itemParent);
+    Q_INVOKABLE void unload();
 
 signals:
     void titleChanged();
@@ -67,6 +69,6 @@ private:
     QString validateImports(const io::path_t& qmlFilePath) const;
 
     QString m_title;
-    QQuickItem* m_contentItem = nullptr;
+    QPointer<QQuickItem> m_contentItem;
 };
 }

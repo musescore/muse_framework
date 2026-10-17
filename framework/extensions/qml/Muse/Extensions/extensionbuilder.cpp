@@ -61,6 +61,7 @@ QString ExtensionBuilder::validateImports(const io::path_t& qmlFilePath) const
 
 void ExtensionBuilder::load(const QString& extension, const QString& action, QObject* itemParent)
 {
+    unload();
     const ExtensionUri uri = ExtensionUri(extension.toStdString());
     const Manifest& manifest = provider()->manifest(uri);
     IF_ASSERT_FAILED(manifest.isValid()) {
@@ -118,6 +119,9 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         }
     }
 
+    if (qmlObj) {
+        qmlObj->setParent(this);
+    }
     m_contentItem = qobject_cast<QQuickItem*>(qmlObj);
     if (!m_contentItem) {
         LOGE() << "Component not QuickItem, file: " << a.path << ", from extension: " << uri;
@@ -142,7 +146,11 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
     emit contentItemChanged();
 
     if (a.apiversion == 1) {
-        apiv1::IPluginApiV1* plugin = dynamic_cast<apiv1::IPluginApiV1*>(m_contentItem);
+        apiv1::IPluginApiV1* plugin = dynamic_cast<apiv1::IPluginApiV1*>(m_contentItem.data());
+
+        if (!plugin) {
+            return;
+        }
 
         plugin->setup(engin);
 
@@ -151,7 +159,8 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         });
 
         //! NOTE For version 1 plugins we need to call run
-        async::Async::call(this, [plugin, a, uri]() {
+        async::Async::call(this, [this, a, uri]() {
+            auto plugin = dynamic_cast<apiv1::IPluginApiV1*>(m_contentItem.data());
             if (!plugin) {
                 LOGE() << "Qml Object not MuseScore plugin: " << a.path
                        << ", from extension: " << uri;
@@ -160,6 +169,15 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
             plugin->runPlugin();
         });
     }
+}
+
+//! Destroy the plug-in synchronously when its dock closes or the active score changes.
+void ExtensionBuilder::unload()
+{
+    auto item = m_contentItem.data();
+    m_contentItem = nullptr;
+    emit contentItemChanged();
+    delete item;
 }
 
 QQuickItem* ExtensionBuilder::contentItem() const
