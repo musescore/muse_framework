@@ -155,6 +155,24 @@ Rectangle {
             onHandleContextMenuItemRequested: function(itemId) {
                 root.handleContextMenuItemRequested(itemId)
             }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.MiddleButton
+
+                onClicked: {
+                    const closingCurrent = model.index === root.currentIndex
+                    const previous = Math.max(0, model.index - 1)
+
+                    model.contextMenu.handleMenuItem("command://dock/set-open")
+
+                    if (closingCurrent) {
+                        Qt.callLater(function() {
+                            root.tabClicked(previous)
+                        })
+                    }
+                }
+            }
         }
     }
 
