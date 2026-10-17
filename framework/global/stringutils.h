@@ -39,6 +39,7 @@ void rtrim(std::string& s);
 void trim(std::string& s);
 
 std::string toLower(const std::string& source);
+std::string toUpper(const std::string& source);
 bool startsWith(const std::string& str, const std::string& start);
 bool startsWith(const std::string& str, const std::string_view& start);
 bool startsWith(const std::string& str, const char* start);

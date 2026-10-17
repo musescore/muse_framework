@@ -24,6 +24,7 @@
 
 #include "modularity/imoduleinterface.h"
 #include "shortcutstypes.h"
+#include "types/translatablestring.h"
 
 namespace muse::shortcuts {
 class IShortcutsResolver : MODULE_CONTEXT_INTERFACE
@@ -33,5 +34,7 @@ public:
     virtual ~IShortcutsResolver() = default;
 
     virtual Shortcut selectOne(const ShortcutList& list) const = 0;
+
+    virtual TranslatableString scopeTitle(const std::string& scopeCode) const = 0;
 };
 }

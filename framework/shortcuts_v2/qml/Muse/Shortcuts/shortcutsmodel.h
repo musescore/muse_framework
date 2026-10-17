@@ -28,9 +28,8 @@
 #include <QList>
 
 #include "modularity/ioc.h"
-#include "ishortcutsregister.h"
-#include "icommandshortcutsregister.h"
-#include "ui/iuiactionsregister.h"
+#include "../../../icommandshortcutsregister.h"
+#include "../../../ishortcutsresolver.h"
 #include "async/asyncable.h"
 #include "interactive/iinteractive.h"
 #include "iglobalconfiguration.h"
@@ -56,10 +55,8 @@ class ShortcutsModel : public QAbstractListModel, public Contextable, public asy
     GlobalInject<IGlobalConfiguration> globalConfiguration;
     GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     GlobalInject<ICommandShortcutsRegister> commandShortcutsRegister;
-    ContextInject<IShortcutsRegister> shortcutsRegister = { this };
-    ContextInject<ui::IUiActionsRegister> uiactionsRegister = { this };
     ContextInject<IInteractive> interactive = { this };
-
+    ContextInject<IShortcutsResolver> shortcutsResolver = { this };
 public:
     explicit ShortcutsModel(QObject* parent = nullptr);
 
@@ -108,9 +105,6 @@ private:
     bool isPresetEditedOrHasUnsavedChanges(const std::string& presetName) const;
     void markUnsavedChanges();
 
-    const muse::ui::UiAction& action(const std::string& actionCode) const;
-    QString actionText(const std::string& actionCode) const;
-
     QModelIndex currentShortcutIndex() const;
     void notifyAboutShortcutChanged(const QModelIndex& index);
 
@@ -138,5 +132,6 @@ private:
     QList<Item> m_items;
     QItemSelection m_selection;
     bool m_hasUnsavedChanges = false;
+    std::map<rcommand::Command, Shortcut> m_modifiedShortcuts;
 };
 }

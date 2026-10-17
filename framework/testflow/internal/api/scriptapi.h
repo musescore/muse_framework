@@ -63,7 +63,7 @@ public:
     QJSValue keyboard() const { return api("MuseInternal.Keyboard"); }
     QJSValue accessibility() const { return api("MuseInternal.Accessibility"); }
     QJSValue process() const { return api("api.process"); }
-    QJSValue filesystem() const { return api("api.filesystem"); }
+    QJSValue filesystem() const { return api("MuseApi.FS"); }
 
 private:
 

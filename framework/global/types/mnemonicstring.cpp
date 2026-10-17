@@ -21,6 +21,10 @@
  */
 #include "mnemonicstring.h"
 
+#ifndef NO_QT_SUPPORT
+#include <QRegularExpression>
+#endif
+
 using namespace muse;
 
 #ifndef NO_QT_SUPPORT
@@ -67,6 +71,16 @@ QString MnemonicString::qTranslatedWithMnemonicUnderline() const
 QString MnemonicString::qTranslatedWithoutMnemonic() const
 {
     return processMnemonic(m_raw.qTranslated(), false);
+}
+
+QString MnemonicString::qTranslatedPlain() const
+{
+    static const QRegularExpression ellipsis(QStringLiteral("\\s*(?:…|\\.\\.\\.)+"));
+
+    QString str = qTranslatedWithoutMnemonic();
+    str.remove(ellipsis);
+
+    return str.trimmed();
 }
 
 #endif

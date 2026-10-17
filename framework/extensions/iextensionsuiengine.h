@@ -35,5 +35,9 @@ public:
 
     virtual QQmlEngine* qmlEngine() const = 0;
     virtual QQmlEngine* qmlEngineApiV1() const = 0;
+
+    //! NOTE Drops what the engines have cached of the plugins on disk, so that
+    //! the next run of a plugin reads it again
+    virtual void clearComponentCache() = 0;
 };
 }

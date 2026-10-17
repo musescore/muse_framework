@@ -21,7 +21,12 @@
 set(MODULE_TEST muse_interactive_tests)
 
 set(MODULE_TEST_SRC
+    ${CMAKE_CURRENT_LIST_DIR}/filedialogfilters_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/mocks/interactivemock.h
+)
+
+set(MODULE_TEST_LINK
+    muse_interactive
 )
 
 include(SetupGTest)

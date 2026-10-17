@@ -204,10 +204,25 @@ public:
         return engine.newArray(static_cast<uint>(length));
     }
 
+    QJSValue newArrayBuffer(const QByteArray& data) override
+    {
+        return engine.toScriptValue(data);
+    }
+
+    JsPromise newPromise() override
+    {
+        return muse::api::JsPromise::make(&engine);
+    }
+
     QJSValue freeze(const QJSValue& val) override
     {
         static QJSValue freezeFn = engine.evaluate("Object.freeze");
         return freezeFn.call({ val });
+    }
+
+    QJSValue evaluate(const QString& code) override
+    {
+        return engine.evaluate(code);
     }
 };
 

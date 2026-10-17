@@ -26,6 +26,7 @@
 #include "internal/shortcutsregister.h"
 #include "internal/shortcutscontroller.h"
 #include "internal/shortcutsconfiguration.h"
+#include "internal/migration/migrationhelper.h"
 
 #include "global/api/iapiregister.h"
 #include "api/shortcutsapi.h"
@@ -86,6 +87,7 @@ void ShortcutsContext::registerExports()
 {
     m_shortcutsController = std::make_shared<ShortcutsController>(iocContext());
     m_shortcutsRegister = std::make_shared<ShortcutsRegister>(iocContext());
+    m_migrationHelper = std::make_shared<MigrationHelper>(iocContext());
 
     ioc()->registerExport<IShortcutsRegister>(mname, m_shortcutsRegister);
     ioc()->registerExport<IShortcutsController>(mname, m_shortcutsController);
@@ -94,6 +96,7 @@ void ShortcutsContext::registerExports()
 void ShortcutsContext::onInit(const IApplication::RunMode&)
 {
     m_shortcutsController->init();
+    m_migrationHelper->init();
 }
 
 void ShortcutsContext::onAllInited(const IApplication::RunMode&)

@@ -27,10 +27,19 @@ ExtensionSession::ExtensionSession(const modularity::ContextPtr& iocContext, con
     : m_engine(iocContext, muse::api::ApiContext {
     manifest.apiversion,
     io::dirpath(manifest.path),
-    manifest.uri.toString(),
-})
+    manifest.uri.toString() })
 {
     m_engine.setScriptPath(scriptPath);
+
+    static int index = 0;
+    m_fsKey = std::to_string(index++) + "_" + manifest.uri.toString();
+
+    fsRestriction()->addAllowedPathBase(m_fsKey, io::dirpath(manifest.path));
+}
+
+ExtensionSession::~ExtensionSession()
+{
+    fsRestriction()->removeAllowedPathBase(m_fsKey);
 }
 
 Ret ExtensionSession::evaluate()

@@ -20,13 +20,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// Crashpad headers first: some transitively include mini_chromium's base/logging.h,
+// which defines a LOG_STREAM macro that clashes with the muse logger's.
+#include <client/crashpad_client.h>
+#include <client/crashpad_info.h>
+#include <client/crash_report_database.h>
+#include <client/settings.h>
+#undef LOG_STREAM
+
 #include "crashhandler.h"
 
 #include <QDir>
-
-#include <client/crashpad_client.h>
-#include <client/crash_report_database.h>
-#include <client/settings.h>
 
 #include "log.h"
 
@@ -38,18 +42,21 @@ CrashHandler::~CrashHandler()
     delete m_client;
 }
 
-bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io::path_t& dumpsDir, const std::string& serverUrl)
+bool CrashHandler::start(const muse::io::path_t& handlerFilePath)
 {
     if (!fileSystem()->exists(handlerFilePath)) {
         LOGE() << "crash handler not exists, path: " << handlerFilePath;
         return false;
     }
 
+    const CrashDumpConfig dumpConfig = configuration()->crashDumpConfig();
+    fileSystem()->makePath(dumpConfig.directory);
+
     // Cache directory that will store crashpad information and minidumps
 #ifdef _MSC_VER
-    base::FilePath database(dumpsDir.toStdWString());
+    base::FilePath database(dumpConfig.directory.toStdWString());
 #else
-    base::FilePath database(dumpsDir.toStdString());
+    base::FilePath database(dumpConfig.directory.toStdString());
 #endif
 
     // Path to the out-of-process handler executable
@@ -63,6 +70,9 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
     std::map<std::string, std::string> annotations = {
         { "sentry[release]", application()->fullVersion().toStdString() + "." + application()->build().toStdString() }
     };
+    for (const auto& [tag, value] : configuration()->crashReportTags()) {
+        annotations[muse::String{ "sentry[tags][%1]" }.arg(tag).toStdString()] = value.toStdString();
+    }
     // Optional arguments to pass to the handler
     std::vector<std::string> arguments;
     arguments.push_back("--no-rate-limit");
@@ -73,7 +83,18 @@ bool CrashHandler::start(const muse::io::path_t& handlerFilePath, const muse::io
         db->GetSettings()->SetUploadsEnabled(true);
     }
 
-    removePendingLockFiles(dumpsDir);
+    removePendingLockFiles(dumpConfig.directory);
+
+    CrashpadInfo::GetCrashpadInfo()->set_system_crash_reporter_forwarding(
+        configuration()->systemCrashReporterForwardingEnabled() ? TriState::kEnabled : TriState::kDisabled);
+
+    std::string serverUrl;
+    if (configuration()->isDumpUploadAllowed()) {
+        serverUrl = dumpConfig.serverUrl.toStdString();
+        LOGD() << "crash server url: " << serverUrl;
+    } else {
+        LOGD() << "not allowed dump upload";
+    }
 
     m_client = new CrashpadClient();
     bool success = m_client->StartHandler(

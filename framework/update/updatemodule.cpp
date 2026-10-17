@@ -28,13 +28,11 @@
 #include "interactive/iinteractiveuriregister.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
-#include "ui/iuiactionsregister.h"
 
 #include "internal/updateconfiguration.h"
 #include "internal/updateactioncontroller.h"
 #include "internal/updatecommandsregister.h"
 #include "internal/updatecommandsstate.h"
-#include "internal/updateuiactions.h"
 
 #include "internal/appupdatescenario.h"
 #include "internal/appupdateservice.h"
@@ -48,6 +46,12 @@
 #include "internal/platform/linux/linuxupdateinstaller.h"
 #else
 #include "internal/platform/stub/updateinstallerstub.h"
+#endif
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "ui/iuiactionsregister.h"
+#include "internal/updateuiactions.h"
 #endif
 
 using namespace muse::update;
@@ -120,10 +124,12 @@ void UpdateContext::registerExports()
 
 void UpdateContext::resolveImports()
 {
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     auto ar = ioc()->resolve<ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<UpdateUiActions>(m_actionController, iocContext()));
     }
+#endif
 
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {
@@ -134,6 +140,10 @@ void UpdateContext::resolveImports()
 void UpdateContext::onInit(const IApplication::RunMode&)
 {
     m_appUpdateService->init();
-    m_appUpdateScenario->init();
     m_actionController->init();
+}
+
+void UpdateContext::onDelayedInit()
+{
+    m_appUpdateScenario->delayedInit();
 }

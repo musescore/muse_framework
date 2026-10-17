@@ -72,7 +72,7 @@ struct ReleaseInfo {
     }
 };
 
-static ValList releasesNotesToValList(const PrevReleasesNotesList& list)
+static inline ValList releasesNotesToValList(const PrevReleasesNotesList& list)
 {
     ValList valList;
     for (const PrevReleaseNotes& release : list) {

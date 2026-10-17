@@ -22,6 +22,8 @@
 #ifndef MUSE_DIAGNOSTICS_DIAGNOSTICSCONFIGURATION_H
 #define MUSE_DIAGNOSTICS_DIAGNOSTICSCONFIGURATION_H
 
+#include <optional>
+
 #include "../idiagnosticsconfiguration.h"
 
 #include "modularity/ioc.h"
@@ -45,6 +47,20 @@ public:
     void setShouldWarnBeforeSavingDiagnosticFiles(bool val) override;
 
     muse::io::path_t diagnosticFilesDefaultSavingPath() const override;
+
+    CrashDumpConfig crashDumpConfig() const override;
+    void setCrashDumpConfig(const CrashDumpConfig& config) override;
+
+    std::map<String, String> crashReportTags() const override;
+    void setCrashReportTags(std::map<String, String> tags) override;
+
+    bool systemCrashReporterForwardingEnabled() const override;
+    void setSystemCrashReporterForwardingEnabled(bool val) override;
+
+private:
+    std::optional<CrashDumpConfig> m_crashDumpConfig;
+    std::map<String, String> m_crashReportTags;
+    bool m_systemCrashReporterForwardingEnabled = true;
 };
 }
 

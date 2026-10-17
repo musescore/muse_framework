@@ -63,6 +63,9 @@ public:
     muse::io::path_t canonicalFilePath(const muse::io::path_t& filePath) const override;
     muse::io::path_t absolutePath(const muse::io::path_t& filePath) const override;
     muse::io::path_t absoluteFilePath(const muse::io::path_t& filePath) const override;
+    muse::io::path_t cleanPath(const muse::io::path_t& filePath) const override;
+    bool isSymLink(const muse::io::path_t& filePath) const override;
+    muse::io::path_t symLinkTarget(const muse::io::path_t& filePath) const override;
     muse::DateTime birthTime(const muse::io::path_t& filePath) const override;
     muse::DateTime lastModified(const muse::io::path_t& filePath) const override;
     muse::Ret isWritable(const muse::io::path_t& filePath) const override;

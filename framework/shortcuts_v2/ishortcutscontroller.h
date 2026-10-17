@@ -25,7 +25,8 @@
 #include <string>
 
 #include "modularity/imoduleinterface.h"
-#include "shortcutstypes.h"
+
+#include "global/async/notification.h"
 
 namespace muse::shortcuts {
 class IShortcutsController : MODULE_CONTEXT_INTERFACE
@@ -35,8 +36,11 @@ class IShortcutsController : MODULE_CONTEXT_INTERFACE
 public:
     virtual ~IShortcutsController() = default;
 
+    virtual bool active() = 0;
+    virtual void setActive(bool active) = 0;
+    virtual async::Notification activeChanged() const = 0;
+
     virtual void activate(const std::string& sequence) = 0;
-    virtual bool isRegistered(const std::string& sequence) const = 0;
 };
 }
 

@@ -20,8 +20,9 @@
  #include "mcpserver.h"
 
  #include "serialization/json.h"
- #include "thirdparty/kors_logger/src/log_base.h"
+
  #include "transport/tcptransport.h"
+ #include "transport/httptransport.h"
 
  #include "log.h"
 
@@ -35,7 +36,7 @@ McpServer::McpServer(const std::string& version, ITransport* transport)
     m_transport(transport)
 {
     if (!m_transport) {
-        m_transport = new TcpTransport();
+        m_transport = new HttpTransport();
     }
 }
 

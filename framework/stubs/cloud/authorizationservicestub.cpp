@@ -53,7 +53,9 @@ CloudInfo muse::cloud::AuthorizationServiceStub::cloudInfo() const
     return CloudInfo();
 }
 
-Ret AuthorizationServiceStub::checkCloudIsAvailable() const
+async::Promise<Ret> AuthorizationServiceStub::checkCloudIsAvailable() const
 {
-    return muse::make_ret(Ret::Code::NotSupported);
+    return async::make_promise<Ret>([](auto resolve) {
+        return resolve(muse::make_ret(Ret::Code::NotSupported));
+    });
 }

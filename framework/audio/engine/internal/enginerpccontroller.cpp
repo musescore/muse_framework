@@ -470,6 +470,14 @@ void EngineRpcController::init()
             channel()->send(rpc::make_notification(ctxId, MsgCode::SourceParamsChanged, RpcPacker::pack(trackId, params)));
         });
 
+        acontext->controlParamsChanged().onReceive(this, [this, ctxId](TrackId trackId, const ControlParams& params) {
+            channel()->send(rpc::make_notification(ctxId, MsgCode::ControlParamsChanged, RpcPacker::pack(trackId, params)));
+        });
+
+        acontext->auxSendsParamsChanged().onReceive(this, [this, ctxId](TrackId trackId, const AuxSendsParams& params) {
+            channel()->send(rpc::make_notification(ctxId, MsgCode::AuxSendsParamsChanged, RpcPacker::pack(trackId, params)));
+        });
+
         // Input processing
         onLongRequest(ctxId, MsgCode::ProcessInput, [this](const Msg& msg) {
             ONLY_AUDIO_RPC_THREAD;

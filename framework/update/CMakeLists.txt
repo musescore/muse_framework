@@ -36,8 +36,6 @@ target_sources(muse_update PRIVATE
 
     internal/updateconfiguration.cpp
     internal/updateconfiguration.h
-    internal/updateuiactions.cpp
-    internal/updateuiactions.h
     internal/updateactioncontroller.cpp
     internal/updateactioncontroller.h
     internal/updatecommandsregister.cpp
@@ -51,6 +49,13 @@ target_sources(muse_update PRIVATE
     internal/downloadfiledevice.cpp
     internal/downloadfiledevice.h
 )
+
+if (MUSE_MODULE_ACTIONS_SUPPORT)
+    target_sources(muse_update PRIVATE
+        internal/updateuiactions.cpp
+        internal/updateuiactions.h
+    )
+endif()
 
 if (OS_IS_MAC)
     target_sources(muse_update PRIVATE

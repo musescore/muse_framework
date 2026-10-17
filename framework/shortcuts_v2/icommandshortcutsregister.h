@@ -40,14 +40,15 @@ public:
     virtual ~ICommandShortcutsRegister() = default;
 
     virtual const ShortcutList& shortcuts() const = 0;
-    virtual Ret setShortcuts(const ShortcutList& shortcuts) = 0;
+    virtual Ret updateShortcuts(const ShortcutList& shortcuts) = 0;
     virtual void resetShortcuts() = 0;
     virtual async::Notification shortcutsChanged() const = 0;
 
     virtual Ret setAdditionalShortcuts(const std::string& context, const ShortcutList& shortcuts) = 0;
 
     virtual ShortcutList shortcutsForSequence(const std::string& sequence) const = 0;
-    virtual const Shortcut& defaultShortcut(const std::string& command) const = 0;
+    virtual const Shortcut& shortcut(const rcommand::Command& command) const = 0;
+    virtual const Shortcut& defaultShortcut(const rcommand::Command& command) const = 0;
 
     virtual Ret importFromFile(const io::path_t& filePath) = 0;
     virtual Ret exportToFile(const io::path_t& filePath) const = 0;

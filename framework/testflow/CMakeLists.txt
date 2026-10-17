@@ -43,8 +43,6 @@ target_sources(muse_testflow PRIVATE
     internal/testcaserunner.h
     internal/testcasereport.cpp
     internal/testcasereport.h
-    internal/testflowactions.cpp
-    internal/testflowactions.h
     internal/testflowactionscontroller.cpp
     internal/testflowactionscontroller.h
     internal/testflowcommandsregister.cpp

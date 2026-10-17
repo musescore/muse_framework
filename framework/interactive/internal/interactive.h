@@ -30,13 +30,19 @@
 #include "async/asyncable.h"
 
 #include "modularity/ioc.h"
-#include "shortcuts/ishortcutsregister.h"
 #include "ui/imainwindow.h"
 #include "ui/iuiconfiguration.h"
 
 #include "../iinteractive.h"
 #include "iinteractiveprovider.h"
 #include "iinteractiveuriregister.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/ishortcutscontroller.h"
+#else
+#include "shortcuts/ishortcutsregister.h"
+#endif
 
 namespace muse::interactive {
 class Interactive : public QObject, public IInteractive, public IInteractiveProvider, public Contextable, public async::Asyncable
@@ -45,7 +51,11 @@ class Interactive : public QObject, public IInteractive, public IInteractiveProv
 
     GlobalInject<ui::IUiConfiguration> uiConfiguration;
     GlobalInject<interactive::IInteractiveUriRegister> uriRegister;
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    ContextInject<shortcuts::IShortcutsController> shortcutsController = { this };
+#else
     ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+#endif
     ContextInject<ui::IMainWindow> mainWindow = { this };
 
 public:
@@ -95,6 +105,8 @@ public:
                                      const int options) override;
     io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
                                        const int options) override;
+    async::Promise<io::path_t> selectSavingFile(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
+                                                bool confirmOverwrite = true) override;
     io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
                                     bool confirmOverwrite = true) override;
 
@@ -118,6 +130,7 @@ public:
     async::Promise<Ret> close(const UriQuery& uri) override;
     async::Promise<Ret> close(const Uri& uri) override;
     Ret closeSync(const UriQuery& uri) override;
+    async::Promise<Ret> closeAllDialogs() override;
     Ret closeAllDialogsSync() override;
 
     // state
@@ -179,6 +192,7 @@ private:
 
     std::vector<ObjectInfo> allOpenObjects() const;
     std::vector<ObjectInfo> collectOpenObjects(std::function<bool(const ObjectInfo&)> accepted) const;
+    std::vector<ObjectInfo> openDialogs() const;
 
     void notifyAboutCurrentUriChanged();
     void notifyAboutCurrentUriWillBeChanged();

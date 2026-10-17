@@ -21,13 +21,19 @@
 #include "../iextensionsession.h"
 #include "scriptengine.h"
 
+#include "global/modularity/ioc.h"
+#include "global/api/ifilesystemapirestriction.h"
+
 namespace muse::extensions {
 struct Manifest;
 
 class ExtensionSession final : public IExtensionSession
 {
+    GlobalInject<muse::api::IFileSystemApiRestriction> fsRestriction;
+
 public:
     ExtensionSession(const modularity::ContextPtr& iocContext, const Manifest& manifest, const io::path_t& scriptPath);
+    ~ExtensionSession();
 
     Ret evaluate() override;
     Ret call(const QString& function, const QJSValueList& arguments = {}, QJSValue* result = nullptr) override;
@@ -37,6 +43,7 @@ public:
     QJSValue wrapQObject(QObject* object) override;
 
 private:
+    std::string m_fsKey;
     ScriptEngine m_engine;
 };
 } // namespace muse::extensions

@@ -33,112 +33,128 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("navigation", "Escape"),
         TranslatableString("navigation", "Navigate escape"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         NEXT_SECTION_COMMAND,
         TranslatableString("navigation", "Next section"),
         TranslatableString("navigation", "Navigate next section"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         PREV_SECTION_COMMAND,
         TranslatableString("navigation", "Previous section"),
         TranslatableString("navigation", "Navigate previous section"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         NEXT_PANEL_COMMAND,
         TranslatableString("navigation", "Next panel"),
         TranslatableString("navigation", "Navigate next panel"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         PREV_PANEL_COMMAND,
         TranslatableString("navigation", "Previous panel"),
         TranslatableString("navigation", "Navigate previous panel"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         NEXT_TAB_COMMAND,
         TranslatableString("navigation", "Next tab"),
         TranslatableString("navigation", "Navigate next tab"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         PREV_TAB_COMMAND,
         TranslatableString("navigation", "Previous tab"),
         TranslatableString("navigation", "Navigate previous tab"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         RIGHT_COMMAND,
         TranslatableString("navigation", "Right"),
         TranslatableString("navigation", "Navigate right"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         LEFT_COMMAND,
         TranslatableString("navigation", "Left"),
         TranslatableString("navigation", "Navigate left"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         UP_COMMAND,
         TranslatableString("navigation", "Up"),
         TranslatableString("navigation", "Navigate up"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         DOWN_COMMAND,
         TranslatableString("navigation", "Down"),
         TranslatableString("navigation", "Navigate down"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         FIRST_CONTROL_COMMAND,
         TranslatableString("navigation", "First control"),
         TranslatableString("navigation", "Navigate first control"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         LAST_CONTROL_COMMAND,
         TranslatableString("navigation", "Last control"),
         TranslatableString("navigation", "Navigate last control"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         NEXTROW_CONTROL_COMMAND,
         TranslatableString("navigation", "Next row control"),
         TranslatableString("navigation", "Navigate next row control"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         PREVROW_CONTROL_COMMAND,
         TranslatableString("navigation", "Previous row control"),
         TranslatableString("navigation", "Navigate previous row control"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     },
     CommandInfo{
         TRIGGER_CONTROL_COMMAND,
         TranslatableString("navigation", "Trigger control"),
         TranslatableString("navigation", "Navigate trigger control"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::All
     }
 };
 

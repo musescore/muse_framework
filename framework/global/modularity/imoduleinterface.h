@@ -19,15 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef MU_MODULARITY_IMODULEINTERFACE_H
-#define MU_MODULARITY_IMODULEINTERFACE_H
+#pragma once
 
 #include "../thirdparty/kors_modularity/modularity/imoduleinterface.h" // IWYU pragma: export
-
-namespace muse::modularity {
-//! TODO Remove?
-// using IModuleExportInterface = kors::modularity::IModuleExportInterface;
-// using IModuleExportCreator = kors::modularity::IModuleExportCreator;
-}
-
-#endif // MU_MODULARITY_IMODULEINTERFACE_H

@@ -24,11 +24,10 @@
 
 #include "midiremote/imidiremote.h"
 #include "async/asyncable.h"
-#include "modularity/ioc.h"
 
+#include "modularity/ioc.h"
 #include "midiremote/imidiremoteconfiguration.h"
 #include "io/ifilesystem.h"
-#include "actions/iactionsdispatcher.h"
 #include "multiwindows/imultiwindowsprovider.h"
 #include "rcommand/icommanddispatcher.h"
 
@@ -46,7 +45,6 @@ class MidiRemote : public IMidiRemote, public Contextable, public async::Asyncab
     GlobalInject<io::IFileSystem> fileSystem;
     GlobalInject<mi::IMultiWindowsProvider> multiwindowsProvider;
     GlobalInject<IMMCDecoderFactory> mmcDecoderFactory;
-    ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
 public:
     MidiRemote(const modularity::ContextPtr& iocCtx)
@@ -77,7 +75,7 @@ private:
 
     bool needIgnoreEvent(const muse::midi::Event& event) const;
 
-    RemoteEvent remoteEvent(const std::string& action) const;
+    RemoteEvent remoteEvent(const rcommand::Command& command) const;
 
     void processMMC(const MMCMessage& msg);
 

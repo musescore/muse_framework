@@ -49,8 +49,9 @@ public:
 
     ~ExtensionsUiEngine();
 
-    QQmlEngine* qmlEngine() const;
-    QQmlEngine* qmlEngineApiV1() const;
+    QQmlEngine* qmlEngine() const override;
+    QQmlEngine* qmlEngineApiV1() const override;
+    void clearComponentCache() override;
 
 private:
 

@@ -63,7 +63,11 @@ void AppUpdateModel::load(const QString& mode)
     setProgressTitle(muse::qtrc("update", "Downloading %1 %2")
                      .arg(application()->title().toQString(), QString::fromStdString(info.val.version)));
 
-    m_progress.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string&) {
+    m_progress.progressChanged().onReceive(this, [this](int64_t current, int64_t total, const std::string& msg) {
+        if (!msg.empty()) {
+            setProgressTitle(QString::fromStdString(msg));
+        }
+
         setCurrentProgress(current);
         setTotalProgress(total);
     });

@@ -23,12 +23,12 @@
 #ifndef MUSE_DIAGNOSTICS_CRASHHANDLER_H
 #define MUSE_DIAGNOSTICS_CRASHHANDLER_H
 
-#include <string>
-
 #include "io/path.h"
 #include "modularity/ioc.h"
 #include "global/iapplication.h"
 #include "global/io/ifilesystem.h"
+
+#include "diagnostics/idiagnosticsconfiguration.h"
 
 namespace crashpad {
 class CrashpadClient;
@@ -39,12 +39,13 @@ class CrashHandler
 {
     GlobalInject<muse::io::IFileSystem> fileSystem;
     GlobalInject<muse::IApplication> application;
+    GlobalInject<IDiagnosticsConfiguration> configuration;
 
 public:
     CrashHandler() = default;
     ~CrashHandler();
 
-    bool start(const muse::io::path_t& handlerFilePath, const muse::io::path_t& dumpsDir, const std::string& serverUrl);
+    bool start(const muse::io::path_t& handlerFilePath);
 
 private:
     void removePendingLockFiles(const muse::io::path_t& dumpsDir);

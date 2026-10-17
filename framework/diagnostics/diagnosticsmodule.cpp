@@ -26,10 +26,8 @@
 #include "interactive/iinteractiveuriregister.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
-#include "ui/iuiactionsregister.h"
 
 #include "internal/diagnosticsconfiguration.h"
-#include "internal/diagnosticsactions.h"
 #include "internal/diagnosticsactionscontroller.h"
 #include "internal/diagnosticscommandsregister.h"
 #include "internal/diagnosticscommandsstate.h"
@@ -60,6 +58,10 @@ void DiagnosticsModule::registerExports()
     m_configuration = std::make_shared<DiagnosticsConfiguration>(globalCtx());
     globalIoc()->registerExport<IDiagnosticsConfiguration>(mname, m_configuration);
     globalIoc()->registerExport<IDiagnosticsPathsRegister>(mname, new DiagnosticsPathsRegister());
+
+#ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
+    m_crashHandler = std::make_shared<CrashHandler>();
+#endif
 }
 
 void DiagnosticsModule::resolveImports()
@@ -84,14 +86,12 @@ void DiagnosticsModule::onInit(const IApplication::RunMode&)
 {
     m_configuration->init();
 
+#ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
+
     auto globalConf = globalIoc()->resolve<IGlobalConfiguration>(mname);
     IF_ASSERT_FAILED(globalConf) {
         return;
     }
-
-#ifdef MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT
-
-    static CrashHandler s_crashHandler;
 
 #ifdef Q_OS_WIN
     const muse::io::path_t handlerFile("crashpad_handler.exe");
@@ -100,18 +100,8 @@ void DiagnosticsModule::onInit(const IApplication::RunMode&)
 #endif
 
     const muse::io::path_t handlerPath = globalConf->appBinDirPath() + "/" + handlerFile;
-    const muse::io::path_t dumpsDir = globalConf->userAppDataPath() + "/logs/dumps";
-    fileSystem()->makePath(dumpsDir);
 
-    std::string serverUrl { MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL };
-    if (!m_configuration->isDumpUploadAllowed()) {
-        serverUrl.clear();
-        LOGD() << "not allowed dump upload";
-    } else {
-        LOGD() << "crash server url: " << serverUrl;
-    }
-
-    bool ok = s_crashHandler.start(handlerPath, dumpsDir, serverUrl);
+    const bool ok = m_crashHandler->start(handlerPath);
     if (!ok) {
         LOGE() << "failed start crash handler";
     } else {
@@ -137,11 +127,6 @@ void DiagnosticsContext::registerExports()
 
 void DiagnosticsContext::resolveImports()
 {
-    auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
-    if (ar) {
-        ar->reg(std::make_shared<DiagnosticsActions>());
-    }
-
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {
         cs->reg(std::make_shared<DiagnosticsCommandsState>(iocContext()));

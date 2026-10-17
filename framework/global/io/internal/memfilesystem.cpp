@@ -279,6 +279,21 @@ muse::io::path_t MemFileSystem::absoluteFilePath(const muse::io::path_t& path) c
     return path;
 }
 
+muse::io::path_t MemFileSystem::cleanPath(const muse::io::path_t& path) const
+{
+    return path;
+}
+
+bool MemFileSystem::isSymLink(const muse::io::path_t&) const
+{
+    return false;
+}
+
+muse::io::path_t MemFileSystem::symLinkTarget(const muse::io::path_t& filePath) const
+{
+    return filePath;
+}
+
 muse::DateTime MemFileSystem::birthTime(const muse::io::path_t& /*path*/) const
 {
     NOT_IMPLEMENTED;

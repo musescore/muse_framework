@@ -70,6 +70,7 @@ void ActionsDispatcher::dispatch(const ActionCode& actionCode, const ActionData&
     auto it = m_clients.find(actionCode);
     if (it == m_clients.end()) {
         LOGW() << "not a registered action: " << actionCode;
+        m_notRegistered.send(actionCode);
         return;
     }
 
@@ -93,6 +94,7 @@ void ActionsDispatcher::dispatch(const ActionQuery& actionQuery)
         it = m_clients.find(code);
         if (it == m_clients.end()) {
             LOGW() << "not a registered action: '" << code << "'";
+            m_notRegistered.send(code);
             //dump();
             return;
         }
@@ -157,6 +159,11 @@ Channel<ActionCode> ActionsDispatcher::preDispatch() const
 Channel<ActionCode> ActionsDispatcher::postDispatch() const
 {
     return m_postDispatch;
+}
+
+Channel<ActionCode> ActionsDispatcher::notRegistered() const
+{
+    return m_notRegistered;
 }
 
 void ActionsDispatcher::unReg(Actionable* client)

@@ -372,9 +372,6 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
     };
 
     ShortcutList shortcuts = commandShortcutsRegister()->shortcuts();
-    const ShortcutList& actionsShortcuts = shortcutsRegister()->shortcuts();
-
-    shortcuts.insert(shortcuts.end(), actionsShortcuts.begin(), actionsShortcuts.end());
 
     for (const Shortcut& sc : shortcuts) {
         for (const std::string& seq : sc.sequences) {

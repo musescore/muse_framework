@@ -22,17 +22,14 @@
 #pragma once
 
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
-#include "actions/actionable.h"
 #include "rcommand/commandable.h"
 #include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
 #include "isavediagnosticfilesscenario.h"
 
 namespace muse::diagnostics {
-class DiagnosticsActionsController : public Contextable, public actions::Actionable, public rcommand::Commandable
+class DiagnosticsActionsController : public Contextable, public rcommand::Commandable
 {
-    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
     ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };
     ContextInject<diagnostics::ISaveDiagnosticFilesScenario> saveDiagnosticsScenario = { this };

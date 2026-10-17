@@ -24,7 +24,6 @@
 
 #include "types/ret.h"
 #include "async/promise.h"
-#include "async/notification.h"
 
 #include "modularity/imoduleinterface.h"
 
@@ -38,24 +37,5 @@ public:
 
     virtual bool needCheckForUpdate() const = 0;
     virtual void checkForUpdate(bool manual) = 0;
-
-    virtual bool hasUpdate() const = 0;
-
-    //! A downloaded update is ready to be installed in-place.
-    virtual bool hasReadyUpdate() const = 0;
-    virtual async::Notification hasReadyUpdateChanged() const = 0;
-    virtual std::string readyUpdateVersion() const = 0;
-
-    //! Install the already-downloaded update (asks to restart, then applies it).
-    virtual void installReadyUpdate() = 0;
-    //! Show the release notes of the ready update, with install/skip actions.
-    virtual void showReadyUpdateInfo() = 0;
-    //! Hide the ready update banner for this session (the package is kept).
-    virtual void dismissReadyUpdate() = 0;
-
-    //! This launch is the first one after an update was installed.
-    virtual bool hasCompletedUpdate() const = 0;
-    virtual async::Notification hasCompletedUpdateChanged() const = 0;
-    virtual void dismissCompletedUpdate() = 0;
 };
 }

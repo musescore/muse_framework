@@ -80,6 +80,11 @@ QString MenuItem::titleWithMnemonicUnderline() const
     return m_title.qTranslatedWithMnemonicUnderline();
 }
 
+QString MenuItem::titleWithMnemonicAmpersand() const
+{
+    return m_title.qTranslatedWithMnemonicAmpersand();
+}
+
 void MenuItem::setDescription(const TranslatableString& description)
 {
     if (m_description == description) {
@@ -319,6 +324,16 @@ muse::rcommand::Command MenuItem::command() const
     return rcommand::Command(m_intent);
 }
 
+void MenuItem::setParams(const rcommand::Params& params)
+{
+    m_params = params;
+}
+
+muse::rcommand::Params MenuItem::params() const
+{
+    return m_params;
+}
+
 void MenuItem::setCommandQuery(const rcommand::CommandQuery& query)
 {
     m_intent = query.toString();
@@ -345,6 +360,7 @@ muse::rcommand::CommandState MenuItem::commandState() const
     return rcommand::CommandState(m_enabled, m_checked);
 }
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
 // action support
 MenuItem::MenuItem(const UiAction& action, QObject* parent)
     : QObject(parent)
@@ -422,3 +438,5 @@ muse::actions::ActionQuery MenuItem::query() const
 {
     return muse::actions::ActionQuery(m_intent);
 }
+
+#endif

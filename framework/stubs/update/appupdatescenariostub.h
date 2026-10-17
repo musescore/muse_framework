@@ -30,19 +30,5 @@ class AppUpdateScenarioStub : public IAppUpdateScenario
 public:
     bool needCheckForUpdate() const override;
     void checkForUpdate(bool manual) override;
-
-    bool hasUpdate() const override;
-
-    bool hasReadyUpdate() const override;
-    async::Notification hasReadyUpdateChanged() const override;
-    std::string readyUpdateVersion() const override;
-
-    void installReadyUpdate() override;
-    void showReadyUpdateInfo() override;
-    void dismissReadyUpdate() override;
-
-    bool hasCompletedUpdate() const override;
-    async::Notification hasCompletedUpdateChanged() const override;
-    void dismissCompletedUpdate() override;
 };
 }

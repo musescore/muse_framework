@@ -21,8 +21,6 @@
  */
 #include "diagnosticsactionscontroller.h"
 
-#include "rcommand/actiontocommand.h"
-
 #include "../diagnosticscommands.h"
 
 #include "rcommand/commandtypes.h"
@@ -70,27 +68,11 @@ void DiagnosticsActionsController::init()
         return muse::make_ok();
     });
     cd->onRequest(this, DIAGNOSTICS_SHOW_ACTIONS_COMMAND, [this]() { openUri(ACTIONS_LIST_URI); return muse::make_ok(); });
-    cd->onRequest(this, DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, [this]() { openUri(RCOMMAND_LIST_URI); return muse::make_ok(); });
-
-    // compat
-    {
-        static const std::vector<ActionToCommand> actionToCommands = {
-            { "diagnostic-save-diagnostic-files", DIAGNOSTICS_SAVE_FILES_COMMAND, {} },
-            { "diagnostic-show-paths", DIAGNOSTICS_SHOW_PATHS_COMMAND, {} },
-            { "diagnostic-show-graphicsinfo", DIAGNOSTICS_SHOW_GRAPHICSINFO_COMMAND, {} },
-            { "diagnostic-show-profiler", DIAGNOSTICS_SHOW_PROFILER_COMMAND, {} },
-            { "diagnostic-show-navigation-tree", DIAGNOSTICS_SHOW_NAVIGATION_TREE_COMMAND, {} },
-            { "diagnostic-show-accessible-tree", DIAGNOSTICS_SHOW_ACCESSIBLE_TREE_COMMAND, {} },
-            { "diagnostic-accessible-tree-dump", DIAGNOSTICS_DUMP_ACCESSIBLE_TREE_COMMAND, {} },
-            { "diagnostic-show-engraving-elements", DIAGNOSTICS_SHOW_ENGRAVING_ELEMENTS_COMMAND, {} },
-            { "diagnostic-show-engraving-undostack", DIAGNOSTICS_SHOW_ENGRAVING_UNDOSTACK_COMMAND, {} },
-            { "diagnostic-show-engraving-style", DIAGNOSTICS_SHOW_ENGRAVING_STYLE_COMMAND, {} },
-            { "diagnostic-show-actions", DIAGNOSTICS_SHOW_ACTIONS_COMMAND, {} },
-            { "diagnostic-show-rcommands", DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, {} },
-        };
-
-        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
-    }
+    cd->onRequest(this, DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND, [this]() {
+        openUri(RCOMMAND_LIST_URI);
+        commandDispatcher()->dispatch(rcommand::Command("command://shortcuts/migrate")); // TODO: remove this after migration
+        return muse::make_ok();
+    });
 }
 
 void DiagnosticsActionsController::openUri(const UriQuery& uri, bool isSingle)

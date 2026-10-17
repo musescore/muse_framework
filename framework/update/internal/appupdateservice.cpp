@@ -35,6 +35,9 @@
 
 #include "downloadfiledevice.h"
 
+#include "async/async.h"
+#include "global/concurrency/concurrent.h"
+#include "runtime.h"
 #include "defer.h"
 #include "translation.h"
 #include "log.h"
@@ -56,6 +59,11 @@ static constexpr uint64_t UNPACK_SIZE_FACTOR = 2;
 static constexpr uint64_t DISK_SPACE_RESERVE = 100ull * 1024 * 1024;
 
 static constexpr uint64_t MAX_PACKAGE_SIZE = 500ull * 1024 * 1024;
+
+//! NOTE: The download takes the first 90% of the progress, the preparation
+//! for in-place install takes the rest.
+static constexpr int64_t PROGRESS_TOTAL = 1000;
+static constexpr int64_t PROGRESS_DOWNLOAD_PART = 900;
 
 static QDate calculateWeekBeginForDate(const QDate& date)
 {
@@ -246,9 +254,19 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         return RetVal<Progress>::make_ret(make_ret(Err::NoUpdate));
     }
 
-    const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
-
     const path_t finalPath = packagesDir() + "/" + info.fileName;
+
+    m_updateProgress.canceled().disconnect(this);
+
+    //! NOTE: Already downloaded (e.g. in a previous session), only the preparation is left
+    if (fileSystem()->exists(finalPath)) {
+        m_downloadInProgress = true;
+        m_updateProgress.start();
+        prepareUpdate(finalPath);
+        return RetVal<Progress>::make_ok(m_updateProgress);
+    }
+
+    const QUrl fileUrl = QUrl::fromUserInput(QString::fromStdString(info.fileUrl));
     const path_t partialPath = finalPath + PARTIAL_SUFFIX;
     fileSystem()->makePath(muse::io::absoluteDirpath(partialPath));
 
@@ -293,14 +311,19 @@ RetVal<Progress> AppUpdateService::downloadRelease()
     }, Asyncable::Mode::SetReplace);
 
     downloadProgress.val.progressChanged().onReceive(this, [this, offset](int64_t current, int64_t total, const std::string& msg) {
-        m_updateProgress.progress(static_cast<int64_t>(offset) + current, static_cast<int64_t>(offset) + total, msg);
+        const int64_t downloaded = static_cast<int64_t>(offset) + current;
+        const int64_t size = static_cast<int64_t>(offset) + total;
+        if (size <= 0) {
+            return;
+        }
+
+        m_updateProgress.progress(downloaded * PROGRESS_DOWNLOAD_PART / size, PROGRESS_TOTAL, msg);
     }, Asyncable::Mode::SetReplace);
 
     downloadProgress.val.finished().onReceive(this, [this, finalPath, partialPath, offset](const ProgressResult& res) {
-        m_downloadInProgress = false;
-
         if (!res.ret) {
             //! NOTE: Keep the partial file so the next attempt can resume from it.
+            m_downloadInProgress = false;
             m_updateProgress.finish(ProgressResult::make_ret(res.ret));
             return;
         }
@@ -312,6 +335,7 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         //! it so the next attempt starts clean.
         if (offset > 0 && (status == 200 || status == 416)) {
             fileSystem()->remove(partialPath);
+            m_downloadInProgress = false;
             m_updateProgress.finish(ProgressResult::make_ret(make_ret(Err::NetworkError, "range request not honoured")));
             return;
         }
@@ -320,14 +344,96 @@ RetVal<Progress> AppUpdateService::downloadRelease()
         //! to the final package name.
         const Ret ret = fileSystem()->move(partialPath, finalPath, /*replace*/ true);
         if (!ret) {
+            m_downloadInProgress = false;
             m_updateProgress.finish(ProgressResult::make_ret(ret));
             return;
         }
 
-        m_updateProgress.finish(ProgressResult::make_ok(Val(finalPath)));
+        m_updateProgress.canceled().disconnect(this);
+        prepareUpdate(finalPath);
     }, Asyncable::Mode::SetReplace);
 
     return RetVal<Progress>::make_ok(m_updateProgress);
+}
+
+void AppUpdateService::prepareUpdate(const muse::io::path_t& packagePath)
+{
+    resetPreparedUpdate();
+
+    async::Async::call(this, [this, packagePath]() {
+        if (m_updateProgress.isCanceled()) {
+            m_downloadInProgress = false;
+            return;
+        }
+
+        if (!canAutoInstall()) {
+            m_downloadInProgress = false;
+            m_updateProgress.progress(PROGRESS_TOTAL, PROGRESS_TOTAL);
+            m_updateProgress.finish(ProgressResult::make_ok(Val(packagePath)));
+            return;
+        }
+
+        m_updateProgress.progress(PROGRESS_DOWNLOAD_PART, PROGRESS_TOTAL,
+                                  muse::qtrc("update", "Preparing %1 %2")
+                                  .arg(application()->title().toQString(), QString::fromStdString(m_lastCheckResult.val.version))
+                                  .toStdString());
+
+        RetVal<uint64_t> packageSize = fileSystem()->fileSize(packagePath);
+        const Ret spaceRet = checkDiskSpace(DiskSpaceFor::Unpack, packageSize.ret ? packageSize.val : 0);
+        if (!spaceRet) {
+            m_downloadInProgress = false;
+            m_updateProgress.finish(ProgressResult::make_ret(spaceRet));
+            return;
+        }
+
+        auto installer = updateInstaller();
+
+        Concurrent::run([this, installer, packagePath]() {
+            const RetVal<io::path_t> prepared = installer->prepareUpdate(packagePath);
+
+            async::Async::call(this, [this, packagePath, prepared]() {
+                m_downloadInProgress = false;
+
+                if (m_updateProgress.isCanceled()) {
+                    if (prepared.ret && prepared.val != packagePath) {
+                        fileSystem()->remove(prepared.val);
+                    }
+                    return;
+                }
+
+                if (prepared.ret) {
+                    m_preparedPackagePath = packagePath;
+                    m_preparedPath = prepared.val;
+                } else {
+                    //! NOTE: The package is downloaded anyway, so it can still be installed manually
+                    LOGE() << "failed to prepare update: " << prepared.ret.toString();
+                }
+
+                m_updateProgress.progress(PROGRESS_TOTAL, PROGRESS_TOTAL);
+                m_updateProgress.finish(ProgressResult::make_ok(Val(packagePath)));
+            }, runtime::mainThreadId());
+        });
+    });
+}
+
+muse::io::path_t AppUpdateService::preparedUpdatePath() const
+{
+    if (m_preparedPath.empty() || m_preparedPackagePath != downloadedReleasePath()) {
+        return {};
+    }
+
+    //! NOTE: The prepared files may have been removed since
+    if (!fileSystem()->exists(m_preparedPath)) {
+        return {};
+    }
+
+    return m_preparedPath;
+}
+
+void AppUpdateService::resetPreparedUpdate()
+{
+    m_preparedPackagePath = io::path_t();
+    m_preparedPath = io::path_t();
 }
 
 Ret AppUpdateService::checkDiskSpace(DiskSpaceFor purpose, uint64_t packageSize, uint64_t downloadedBytes) const
@@ -518,19 +624,14 @@ bool AppUpdateService::canAutoInstall() const
     return updateInstaller()->isInPlaceUpdateSupported();
 }
 
-RetVal<muse::io::path_t> AppUpdateService::prepareUpdate(const muse::io::path_t& packagePath)
+Ret AppUpdateService::installUpdate()
 {
-    RetVal<uint64_t> packageSize = fileSystem()->fileSize(packagePath);
-    Ret ret = checkDiskSpace(DiskSpaceFor::Unpack, packageSize.ret ? packageSize.val : 0);
-    if (!ret) {
-        return RetVal<muse::io::path_t>(ret);
+    const io::path_t preparedPath = preparedUpdatePath();
+    if (preparedPath.empty()) {
+        LOGE() << "the update is not ready to install";
+        return make_ret(Err::UnknownError);
     }
 
-    return updateInstaller()->prepareUpdate(packagePath);
-}
-
-Ret AppUpdateService::finalizeUpdate(const muse::io::path_t& preparedPath)
-{
     return updateInstaller()->finalizeUpdate(preparedPath, makeInstallProgressUi());
 }
 
@@ -634,6 +735,10 @@ void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
         configuration()->setLastDownloadedPackagePath(io::path_t());
     }
 
+    if (io::filename(m_preparedPackagePath).toStdString() != keepFileName) {
+        resetPreparedUpdate();
+    }
+
     const io::path_t dir = configuration()->updateDataPath();
     if (!fileSystem()->exists(dir)) {
         return;
@@ -648,17 +753,29 @@ void AppUpdateService::cleanupStalePackages(const std::string& keepFileName)
     //! interrupted download of the current release can still be resumed.
     const std::string keepPartial = keepFileName + PARTIAL_SUFFIX;
 
+    //! NOTE: Also keep the update prepared for the kept package
+    const std::string prepared = m_preparedPath.toStdString();
+    auto isPrepared = [&prepared](const io::path_t& entry) {
+        const std::string path = entry.toStdString();
+        return !prepared.empty() && (prepared == path || prepared.rfind(path + "/", 0) == 0);
+    };
+
     for (const io::path_t& entry : entries.val) {
         const std::string name = io::filename(entry).toStdString();
-        if (name != keepFileName && name != keepPartial) {
+        if (name != keepFileName && name != keepPartial && !isPrepared(entry)) {
             fileSystem()->remove(entry);
         }
     }
 }
 
-bool AppUpdateService::isReleaseDownloaded() const
+bool AppUpdateService::isReleaseReadyToInstall() const
 {
-    return !downloadedReleasePath().empty();
+    if (downloadedReleasePath().empty()) {
+        return false;
+    }
+
+    //! NOTE: In-place install also needs the downloaded release to be prepared
+    return !canAutoInstall() || !preparedUpdatePath().empty();
 }
 
 io::path_t AppUpdateService::downloadedReleasePath() const

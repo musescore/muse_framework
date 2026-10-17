@@ -40,6 +40,9 @@ target_sources(muse_shortcuts PRIVATE
     internal/shortcutscontroller.h
     internal/shortcutsconfiguration.cpp
     internal/shortcutsconfiguration.h
+
+    internal/migration/migrationhelper.cpp
+    internal/migration/migrationhelper.h
 )
 
 target_link_libraries(muse_shortcuts PRIVATE Qt::Gui)

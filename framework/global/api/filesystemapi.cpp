@@ -48,24 +48,49 @@ QString FileSystemApi::baseName(const QString& path) const
 
 JSRet FileSystemApi::remove(const QString& path)
 {
-    Ret ret = fileSystem()->remove(path);
+    Ret ret = fsRestriction()->isPathAllowed(path);
+    if (!ret) {
+        return retToJs(ret);
+    }
+
+    ret = fileSystem()->remove(path);
     return retToJs(ret);
 }
 
 JSRet FileSystemApi::clear(const QString& path)
 {
-    Ret ret = fileSystem()->clear(path);
+    Ret ret = fsRestriction()->isPathAllowed(path);
+    if (!ret) {
+        return retToJs(ret);
+    }
+
+    ret = fileSystem()->clear(path);
     return retToJs(ret);
 }
 
 JSRet FileSystemApi::copy(const QString& src, const QString& dst, bool replace)
 {
-    Ret ret = fileSystem()->copy(src, dst, replace);
+    Ret ret = fsRestriction()->isPathAllowed(src);
+    if (!ret) {
+        return retToJs(ret);
+    }
+
+    ret = fsRestriction()->isPathAllowed(dst);
+    if (!ret) {
+        return retToJs(ret);
+    }
+
+    ret = fileSystem()->copy(src, dst, replace);
     return retToJs(ret);
 }
 
 JSRetVal FileSystemApi::scanFiles(const QString& rootDir, const QStringList& filters,  const QString& mode) const
 {
+    Ret ret = fsRestriction()->isPathAllowed(rootDir);
+    if (!ret) {
+        return retValToJs(RetVal<io::paths_t>::make_ret(ret));
+    }
+
     auto toIoScanMode = [](const QString& m)
     {
         if (m == "FilesInCurrentDir") {
@@ -87,13 +112,23 @@ JSRetVal FileSystemApi::scanFiles(const QString& rootDir, const QStringList& fil
 
 JSRet FileSystemApi::writeTextFile(const QString& filePath, const QString& str) const
 {
+    Ret ret = fsRestriction()->isPathAllowed(filePath);
+    if (!ret) {
+        return retToJs(ret);
+    }
+
     QByteArray data = str.toUtf8();
-    Ret ret = fileSystem()->writeFile(filePath, ByteArray::fromQByteArrayNoCopy(data));
+    ret = fileSystem()->writeFile(filePath, ByteArray::fromQByteArrayNoCopy(data));
     return retToJs(ret);
 }
 
 JSRetVal FileSystemApi::readTextFile(const QString& filePath) const
 {
+    Ret ret = fsRestriction()->isPathAllowed(filePath);
+    if (!ret) {
+        return retValToJs(RetVal<QString>::make_ret(ret));
+    }
+
     RetVal<ByteArray> data = fileSystem()->readFile(filePath);
     RetVal<QString> sr;
     sr.ret = data.ret;

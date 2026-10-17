@@ -47,6 +47,7 @@ public:
 
     async::Channel<ActionCode> preDispatch() const override;
     async::Channel<ActionCode> postDispatch() const override;
+    async::Channel<ActionCode> notRegistered() const override;
 
     void unReg(Actionable* client) override;
     void reg(Actionable* client, const ActionCode& actionCode, const ActionCallBackWithNameAndData& call) override;
@@ -67,6 +68,7 @@ private:
 
     async::Channel<ActionCode> m_preDispatch;
     async::Channel<ActionCode> m_postDispatch;
+    async::Channel<ActionCode> m_notRegistered;
 };
 }
 

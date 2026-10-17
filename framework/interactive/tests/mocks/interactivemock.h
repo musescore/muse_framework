@@ -62,6 +62,9 @@ public:
                 (override));
     MOCK_METHOD(io::paths_t, selectOpeningFilesSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, const int),
                 (override));
+    MOCK_METHOD(async::Promise<io::path_t>, selectSavingFile, (const std::string& title, const io::path_t& path,
+                                                               const std::vector<std::string>& filter, bool confirmOverwrite),
+                (override));
     MOCK_METHOD(io::path_t, selectSavingFileSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, bool),
                 (override));
     MOCK_METHOD(io::path_t, selectDirectory, (const std::string&, const io::path_t&), (override));
@@ -81,6 +84,7 @@ public:
     MOCK_METHOD(async::Promise<Ret>, close, (const UriQuery&), (override));
     MOCK_METHOD(async::Promise<Ret>, close, (const Uri&), (override));
     MOCK_METHOD(Ret, closeSync, (const UriQuery&), (override));
+    MOCK_METHOD(async::Promise<Ret>, closeAllDialogs, (), (override));
     MOCK_METHOD(Ret, closeAllDialogsSync, (), (override));
 
     MOCK_METHOD(ValCh<Uri>, currentUri, (), (const, override));

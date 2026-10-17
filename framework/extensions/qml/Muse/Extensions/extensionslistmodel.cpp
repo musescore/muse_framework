@@ -124,13 +124,13 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
             return muse::qtrc("extensions", "Not defined");
         }
 
-        //! TODO add actions support
-        std::string code = makeCommand(manifest.uri, manifest.actions.at(0).code).toString();
-        shortcuts::Shortcut shortcut = shortcutsRegister()->shortcut(code);
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        rcommand::Command command = makeCommand(manifest.uri, manifest.actions.at(0).code);
+        shortcuts::Shortcut shortcut = commandShortcutsRegister()->shortcut(command);
         return shortcuts::sequencesToNativeText(shortcut.sequences);
-
-        //: No keyboard shortcut is assigned to this plugin.
+#else
         return muse::qtrc("extensions", "Not defined");
+#endif
     }
     case rIsRemovable: {
         return manifest.isRemovable;
@@ -186,7 +186,9 @@ void ExtensionsListModel::editShortcut(const QString& extensionUri)
 
 void ExtensionsListModel::reloadPlugins()
 {
-    extensionsRegister()->reload();
+    //! NOTE Through the provider: reloading the register alone leaves the QML
+    //! engines holding the code they compiled the first time
+    provider()->reloadExtensions();
 }
 
 void ExtensionsListModel::removeExtension(const QString& uri)

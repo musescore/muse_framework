@@ -30,8 +30,6 @@ target_sources(muse_diagnostics PRIVATE
 
     internal/diagnosticsconfiguration.cpp
     internal/diagnosticsconfiguration.h
-    internal/diagnosticsactions.cpp
-    internal/diagnosticsactions.h
     internal/diagnosticsactionscontroller.cpp
     internal/diagnosticsactionscontroller.h
     internal/diagnosticscommandsregister.cpp
@@ -46,6 +44,10 @@ target_sources(muse_diagnostics PRIVATE
     internal/savediagnosticfilesscenario.h
     internal/diagnosticfileswriter.cpp
     internal/diagnosticfileswriter.h
+)
+
+target_compile_definitions(muse_diagnostics PUBLIC
+    MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL="${MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL}"
 )
 
 # --- Crashpad ---
@@ -66,10 +68,6 @@ if (MUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT)
         internal/crashhandler/crashhandler.cpp
         PROPERTIES
         SKIP_UNITY_BUILD_INCLUSION ON
-    )
-
-    target_compile_definitions(muse_diagnostics PRIVATE
-        MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL="${MUSE_MODULE_DIAGNOSTICS_CRASHREPORT_URL}"
     )
 
     # gcrashpad is built from the muse_deps crashpad_client source dep;

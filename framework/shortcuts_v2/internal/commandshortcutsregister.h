@@ -29,6 +29,7 @@
 
 #include "modularity/ioc.h"
 #include "ishortcutsconfiguration.h"
+#include "rcommand/commandtypes.h"
 #include "rcommand/icommandsregister.h"
 #include "multiwindows/imultiwindowsprovider.h"
 
@@ -46,14 +47,15 @@ public:
     void init();
 
     const ShortcutList& shortcuts() const override;
-    Ret setShortcuts(const ShortcutList& shortcuts) override;
+    Ret updateShortcuts(const ShortcutList& shortcuts) override;
     void resetShortcuts() override;
     async::Notification shortcutsChanged() const override;
 
     Ret setAdditionalShortcuts(const std::string& context, const ShortcutList& shortcuts) override;
 
     ShortcutList shortcutsForSequence(const std::string& sequence) const override;
-    const Shortcut& defaultShortcut(const std::string& command) const override;
+    const Shortcut& shortcut(const rcommand::Command& command) const override;
+    const Shortcut& defaultShortcut(const rcommand::Command& command) const override;
 
     Ret importFromFile(const io::path_t& filePath) override;
     Ret exportToFile(const io::path_t& filePath) const override;
@@ -76,6 +78,8 @@ private:
     std::string activeShortcutsName() const;
     io::path_t userShortcutsPath() const;
 
+    std::string makeScope(const rcommand::Command& command) const;
+
     void applyShortcutsDiff(const std::string& shortcutsName, ShortcutList& shortcuts) const;
     ShortcutList makeDiff(const ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const;
 
@@ -87,6 +91,7 @@ private:
     void mergeShortcuts(ShortcutList& shortcuts, const ShortcutList& defaultShortcuts) const;
     void mergeAdditionalShortcuts(ShortcutList& shortcuts);
 
+    void removeNotAvailableCommands(ShortcutList& shortcuts);
     void makeUnique(ShortcutList& shortcuts);
 
     ShortcutList filterAndUpdateAdditionalShortcuts(const ShortcutList& shortcuts);

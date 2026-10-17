@@ -77,6 +77,9 @@ public:
     virtual io::path_t canonicalFilePath(const io::path_t& filePath) const = 0;
     virtual io::path_t absolutePath(const io::path_t& filePath) const = 0;
     virtual io::path_t absoluteFilePath(const io::path_t& filePath) const = 0;
+    virtual io::path_t cleanPath(const io::path_t& filePath) const = 0;
+    virtual bool isSymLink(const io::path_t& filePath) const = 0;
+    virtual io::path_t symLinkTarget(const io::path_t& filePath) const = 0;
     virtual DateTime birthTime(const io::path_t& filePath) const = 0;
     virtual DateTime lastModified(const io::path_t& filePath) const = 0;
     virtual Ret isWritable(const io::path_t& filePath) const = 0;

@@ -34,7 +34,8 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("extensions", "Show API dump"),
         TranslatableString("extensions", "Show API dump"),
         InputSchema(),
-        Decoration()
+        Decoration(),
+        Availability::Dispatch
     },
 };
 

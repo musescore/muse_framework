@@ -24,45 +24,36 @@
 
 #include <set>
 #include <string>
-#include <string_view>
-#include <list>
+#include <vector>
 #include <utility>
 #include <vector>
 
 #include <QKeySequence>
 
 #include "global/stringutils.h"
+#include "rcommand/commandtypes.h"
+
+#include "global/logstream.h"
 
 namespace muse::shortcuts {
 struct Shortcut
 {
-    // actions
-    std::string action;
-    std::string context;
-
-    // commands
-    std::string command;
+    rcommand::Command command;
     std::string scope;
-
-    // common
     std::vector<std::string> sequences;
     QKeySequence::StandardKey standardKey = QKeySequence::UnknownKey;
     bool autoRepeat = true;
 
     Shortcut() = default;
-    Shortcut(const std::string& a)
-        : action(a) {}
 
     bool isValid() const
     {
-        return !action.empty() || !command.empty();
+        return command.isValid();
     }
 
     bool operator ==(const Shortcut& sc) const
     {
-        return action == sc.action
-               && context == sc.context
-               && command == sc.command
+        return command == sc.command
                && scope == sc.scope
                && sequences == sc.sequences
                && standardKey == sc.standardKey
@@ -90,7 +81,7 @@ struct Shortcut
     }
 };
 
-using ShortcutList = std::list<Shortcut>;
+using ShortcutList = std::vector<Shortcut>;
 
 inline bool needIgnoreKey(Qt::Key key)
 {
@@ -136,4 +127,23 @@ inline bool canShortcutsConflict(const std::string& scope1, const std::string& s
 {
     return scope1 == scope2;
 }
+}
+
+inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::shortcuts::Shortcut& sc)
+{
+    s << "{" << sc.scope << ", " << sc.command.toString() << ", " << sc.sequencesAsString() << "}";
+    return s;
+}
+
+inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const std::vector<muse::shortcuts::Shortcut>& v)
+{
+    s << '[';
+    for (size_t i = 0; i < v.size(); ++i) {
+        s << v.at(i);
+        if (i < v.size() - 1) {
+            s << ',';
+        }
+    }
+    s << ']';
+    return s;
 }

@@ -104,8 +104,11 @@ void MultiWindowsStubProvider::notifyAboutWindowWasQuited()
 {
 }
 
-void MultiWindowsStubProvider::quitForAll()
+async::Promise<Ret> MultiWindowsStubProvider::quitForAll(const modularity::ContextPtr&)
 {
+    return async::make_promise<Ret>([](auto resolve) {
+        return resolve(make_ok());
+    });
 }
 
 void MultiWindowsStubProvider::quitWindow(const modularity::ContextPtr&)

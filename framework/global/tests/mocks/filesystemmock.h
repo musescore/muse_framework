@@ -61,6 +61,9 @@ public:
     MOCK_METHOD(io::path_t, absolutePath, (const io::path_t& filePath), (const, override));
     MOCK_METHOD(io::path_t, absoluteFilePath, (const io::path_t& filePath), (const, override));
     MOCK_METHOD(io::path_t, temporaryDirectoryPath, (), (const, override));
+    MOCK_METHOD(io::path_t, cleanPath, (const io::path_t& filePath), (const, override));
+    MOCK_METHOD(bool, isSymLink, (const io::path_t& filePath), (const, override));
+    MOCK_METHOD(io::path_t, symLinkTarget, (const io::path_t& filePath), (const, override));
     MOCK_METHOD(DateTime, birthTime, (const io::path_t& filePath), (const, override));
     MOCK_METHOD(DateTime, lastModified, (const io::path_t& filePath), (const, override));
     MOCK_METHOD(Ret, isWritable, (const io::path_t& filePath), (const, override));

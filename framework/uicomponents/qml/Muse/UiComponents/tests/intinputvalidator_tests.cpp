@@ -94,13 +94,13 @@ TEST_F(IntInputValidatorTests, ValidateCommaLocale) {
             { "1000", QValidator::Acceptable, "1,000" },
             { "1,0000", QValidator::Acceptable, "10,000" },
             { "48,000", QValidator::Acceptable },
-            { "48,001", QValidator::Invalid },
+            { "48,001", QValidator::Intermediate, "48,000" },
             { "-100", QValidator::Acceptable },
             { "-1,000", QValidator::Acceptable },
             { "-1000", QValidator::Acceptable, "-1,000" },
             { "-1,0000", QValidator::Acceptable, "-10,000" },
             { "-48,000", QValidator::Acceptable },
-            { "-48,001", QValidator::Invalid },
+            { "-48,001", QValidator::Intermediate, "-48,000" },
             { "2147483647", QValidator::Invalid },
             { "-2147483648", QValidator::Invalid },
             { "abc", QValidator::Invalid },
@@ -111,9 +111,41 @@ TEST_F(IntInputValidatorTests, ValidateCommaLocale) {
     m_validator->setBottom(1);
 
     runInputTests({
-            { "0", QValidator::Invalid },
-            { "", QValidator::Invalid },
+            { "0", QValidator::Intermediate, "1" },
+            { "", QValidator::Intermediate, "1" },
             { "1", QValidator::Acceptable }
+        });
+
+    QLocale::setDefault(prev);
+}
+
+TEST_F(IntInputValidatorTests, PartialInputStaysTypeable) {
+    QLocale prev = QLocale();
+    QLocale::setDefault(QLocale("en_US"));
+
+    // A minimum above 9 must not reject every single-digit prefix: "4" has to
+    // survive so it can become "40"
+    m_validator->setTop(240);
+    m_validator->setBottom(10);
+
+    runInputTests({
+            { "4", QValidator::Intermediate, "10" },
+            { "40", QValidator::Acceptable },
+            { "240", QValidator::Acceptable },
+            { "241", QValidator::Intermediate, "240" },
+            { "", QValidator::Intermediate, "10" }
+        });
+
+    // A minimum above 0 must not make the empty field invalid, or the text
+    // can never be cleared and retyped
+    m_validator->setTop(30);
+    m_validator->setBottom(1);
+
+    runInputTests({
+            { "", QValidator::Intermediate, "1" },
+            { "0", QValidator::Intermediate, "1" },
+            { "5", QValidator::Acceptable },
+            { "58", QValidator::Intermediate, "30" }
         });
 
     QLocale::setDefault(prev);
@@ -134,13 +166,13 @@ TEST_F(IntInputValidatorTests, ValidateDotLocale) {
             { "1000", QValidator::Acceptable, "1.000" },
             { "1.0000", QValidator::Acceptable, "10.000" },
             { "48.000", QValidator::Acceptable },
-            { "48.001", QValidator::Invalid },
+            { "48.001", QValidator::Intermediate, "48.000" },
             { "-100", QValidator::Acceptable },
             { "-1.000", QValidator::Acceptable },
             { "-1000", QValidator::Acceptable, "-1.000" },
             { "-1.0000", QValidator::Acceptable, "-10.000" },
             { "-48.000", QValidator::Acceptable },
-            { "-48.001", QValidator::Invalid },
+            { "-48.001", QValidator::Intermediate, "-48.000" },
             { "abc", QValidator::Invalid },
             { "", QValidator::Intermediate, "0" }
         });

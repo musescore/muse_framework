@@ -53,6 +53,9 @@ public:
     bool isRelative() const;
     bool isAbsolute() const;
 
+    bool isSymLink() const;
+    path_t symLinkTarget() const;
+
     bool exists() const;
     static bool exists(const path_t& filePath);
 

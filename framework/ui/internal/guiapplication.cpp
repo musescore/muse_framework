@@ -22,6 +22,8 @@
 
 #include "guiapplication.h"
 
+#include <algorithm>
+
 #include <QTimer>
 #include <QQuickWindow>
 #include <QQmlApplicationEngine>
@@ -38,6 +40,8 @@
 using namespace muse;
 using namespace muse::ui;
 
+static constexpr int DELAYED_INIT_INTERVAL_MS = 5000;
+
 GuiApplication::GuiApplication(const std::shared_ptr<CmdOptions>& options)
     : BaseApplication(options)
 {
@@ -51,7 +55,7 @@ void GuiApplication::doSetup(const std::shared_ptr<CmdOptions>& options)
     // Setup modules: onDelayedInit
     // ====================================================
     m_delayedInitTimer.setSingleShot(true);
-    m_delayedInitTimer.setInterval(5000);
+    m_delayedInitTimer.setInterval(DELAYED_INIT_INTERVAL_MS);
     QObject::connect(&m_delayedInitTimer, &QTimer::timeout, [this]() {
         m_globalModule->onDelayedInit();
         for (modularity::IModuleSetup* m : m_modules) {
@@ -123,9 +127,29 @@ void GuiApplication::startupScenario(const muse::modularity::ContextPtr& ctxId)
         if (ok) {
             QMetaObject::invokeMethod(qApp, [this, ctxId]() {
                 doStartupScenario(ctxId);
+
+                QTimer::singleShot(DELAYED_INIT_INTERVAL_MS, qApp, [this, ctxId]() {
+                    contextDelayedInit(ctxId);
+                });
             }, Qt::QueuedConnection);
         }
     }, Qt::QueuedConnection);
+}
+
+void GuiApplication::contextDelayedInit(const muse::modularity::ContextPtr& ctxId)
+{
+    //! NOTE: The context may have been destroyed (its window closed) in the meantime
+    auto it = std::find_if(m_contexts.begin(), m_contexts.end(), [&ctxId](const ContextData& c) {
+        return c.ctxId->id == ctxId->id;
+    });
+
+    if (it == m_contexts.end()) {
+        return;
+    }
+
+    for (modularity::IContextSetup* s : it->setups) {
+        s->onDelayedInit();
+    }
 }
 
 bool GuiApplication::loadMainWindow(const muse::modularity::ContextPtr& ctxId)

@@ -45,8 +45,8 @@ public:
     virtual void setNeedCheckForUpdate(bool needCheck) = 0;
     virtual muse::async::Notification needCheckForUpdateChanged() const = 0;
 
-    virtual bool autoDownloadEnabled() const = 0;
-    virtual void setAutoDownloadEnabled(bool enabled) = 0;
+    virtual bool autoUpdateEnabled() const = 0;
+    virtual void setAutoUpdateEnabled(bool enabled) = 0;
 
     virtual std::string skippedReleaseVersion() const = 0;
     virtual void setSkippedReleaseVersion(const std::string& version) = 0;

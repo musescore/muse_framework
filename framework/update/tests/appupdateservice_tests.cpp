@@ -21,7 +21,10 @@
  */
 #include <gmock/gmock.h>
 
+#include <optional>
+
 #include <QIODevice>
+#include <QThreadPool>
 
 using ::testing::_;
 using ::testing::NiceMock;
@@ -34,6 +37,7 @@ using ::testing::Return;
 #include "global/tests/mocks/applicationmock.h"
 #include "network/tests/mocks/networkmanagercreatormock.h"
 #include "network/tests/mocks/networkmanagermock.h"
+#include "ui/tests/mocks/uiconfigurationmock.h"
 #include "mocks/updateconfigurationmock.h"
 #include "mocks/updateinstallermock.h"
 
@@ -80,6 +84,11 @@ public:
         m_application = std::make_shared<NiceMock<ApplicationMock> >();
         m_service->application.set(m_application);
 
+        m_uiConfiguration = std::make_shared<NiceMock<ui::UiConfigurationMock> >();
+        m_service->uiConfiguration.set(m_uiConfiguration);
+        ON_CALL(*m_uiConfiguration, currentTheme())
+        .WillByDefault(testing::ReturnRef(m_theme));
+
         ON_CALL(*m_application, fullVersion())
         .WillByDefault(Return(Version(CURRENT_VERSION)));
         ON_CALL(*m_application, title())
@@ -89,6 +98,10 @@ public:
     void TearDown() override
     {
         delete m_service;
+
+        //! NOTE: Drop the calls queued for the deleted service, so that they do
+        //! not reach the next test's service if it is allocated at the same address
+        pump();
     }
 
     void makeReleaseInfo()
@@ -171,7 +184,52 @@ public:
         .WillByDefault(Return(muse::make_ok()));
     }
 
+    //! [GIVEN] The release can be installed in-place and nothing is downloaded yet
+    void givenInPlaceInstall(uint64_t fileSize = 0)
+    {
+        givenAvailableRelease("MuseScore.dmg", "upd", fileSize);
+
+        ON_CALL(*m_updateInstaller, isInPlaceUpdateSupported())
+        .WillByDefault(Return(true));
+        ON_CALL(*m_fileSystem, exists(_))
+        .WillByDefault(Return(Ret(false)));
+        ON_CALL(*m_fileSystem, move(_, _, _))
+        .WillByDefault(Return(muse::make_ok()));
+    }
+
+    void expectDownloadRequest()
+    {
+        EXPECT_CALL(*m_networkManager, get(_, _, _))
+        .WillOnce(testing::Invoke([this](const QUrl&, IncomingDevicePtr, const RequestHeaders&) {
+            return RetVal<Progress>::make_ok(m_downloadProgress);
+        }));
+    }
+
+    void finishDownload()
+    {
+        ProgressResult res = ProgressResult::make_ok(Val());
+        res.ret.setData("status", 200);
+        m_downloadProgress.finish(res);
+    }
+
+    void cleanupStalePackages(const std::string& keepFileName)
+    {
+        m_service->cleanupStalePackages(keepFileName);
+    }
+
+    //! Drain background work and queued async calls
+    static void pump()
+    {
+        for (int i = 0; i < 10; ++i) {
+            QThreadPool::globalInstance()->waitForDone();
+            async::processMessages();
+        }
+    }
+
     static constexpr const char* CURRENT_VERSION = "4.0.0";
+
+    inline static const io::path_t PACKAGE = io::path_t("upd/MuseScore.dmg");
+    inline static const io::path_t STAGED = io::path_t("upd/staging/MuseScore.app");
 
     AppUpdateService* m_service = nullptr;
     std::shared_ptr<UpdateConfigurationMock> m_configuration;
@@ -181,6 +239,8 @@ public:
     std::shared_ptr<io::FileSystemMock> m_fileSystem;
     std::shared_ptr<UpdateInstallerMock> m_updateInstaller;
     std::shared_ptr<ApplicationMock> m_application;
+    std::shared_ptr<ui::UiConfigurationMock> m_uiConfiguration;
+    ui::ThemeInfo m_theme;
     Progress m_getReleaseInfoProgress;
     Progress m_getPrevReleasesInfoProgress;
     Progress m_downloadProgress;
@@ -445,6 +505,8 @@ TEST_F(AppUpdateServiceTests, DownloadRelease_ResumesFromPartial_SendsRangeHeade
     givenAvailableRelease();
     ON_CALL(*m_fileSystem, exists(_))
     .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, exists(io::path_t("upd/MuseScore.dmg")))
+    .WillByDefault(Return(Ret(false)));
     ON_CALL(*m_fileSystem, fileSize(_))
     .WillByDefault(Return(RetVal<uint64_t>::make_ok(static_cast<uint64_t>(1000))));
 
@@ -526,6 +588,8 @@ TEST_F(AppUpdateServiceTests, DownloadRelease_RangeNotHonoured_DiscardsPartial)
     givenAvailableRelease();
     ON_CALL(*m_fileSystem, exists(_))
     .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, exists(io::path_t("upd/MuseScore.dmg")))
+    .WillByDefault(Return(Ret(false)));
     ON_CALL(*m_fileSystem, fileSize(_))
     .WillByDefault(Return(RetVal<uint64_t>::make_ok(static_cast<uint64_t>(1000))));
     EXPECT_CALL(*m_networkManager, get(_, _, _))
@@ -638,6 +702,8 @@ TEST_F(AppUpdateServiceTests, DownloadRelease_Resume_OnlyRemainingBytesRequired)
     givenAvailableRelease("MuseScore.dmg", "upd", 100 * mb);
     ON_CALL(*m_fileSystem, exists(_))
     .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, exists(io::path_t("upd/MuseScore.dmg")))
+    .WillByDefault(Return(Ret(false)));
     ON_CALL(*m_fileSystem, fileSize(_))
     .WillByDefault(Return(RetVal<uint64_t>::make_ok(90 * mb)));
     ON_CALL(*m_fileSystem, availableSpace(io::path_t("upd")))
@@ -654,48 +720,273 @@ TEST_F(AppUpdateServiceTests, DownloadRelease_Resume_OnlyRemainingBytesRequired)
     EXPECT_TRUE(rv.ret);
 }
 
-TEST_F(AppUpdateServiceTests, PrepareUpdate_NotEnoughDiskSpace_DoesNotStage)
+TEST_F(AppUpdateServiceTests, DownloadRelease_InPlace_PreparesBeforeFinishing)
+{
+    //! [GIVEN] A download of a release that can be installed in-place
+    givenInPlaceInstall();
+    expectDownloadRequest();
+
+    RetVal<Progress> rv = m_service->downloadRelease();
+    ASSERT_TRUE(rv.ret);
+
+    std::vector<std::pair<int64_t, int64_t> > progress;
+    rv.val.progressChanged().onReceive(this, [&progress](int64_t current, int64_t total, const std::string&) {
+        progress.emplace_back(current, total);
+    });
+
+    std::optional<ProgressResult> result;
+    rv.val.finished().onReceive(this, [&result](const ProgressResult& res) {
+        result = res;
+    });
+
+    //! [THEN] The download takes the first 90% of the progress
+    m_downloadProgress.progress(50, 100);
+    ASSERT_EQ(progress.size(), 1u);
+    EXPECT_EQ(progress.back(), std::make_pair(int64_t(450), int64_t(1000)));
+
+    //! [THEN] The downloaded package is prepared
+    EXPECT_CALL(*m_updateInstaller, prepareUpdate(PACKAGE))
+    .WillOnce(Return(RetVal<io::path_t>::make_ok(STAGED)));
+
+    //! [WHEN] The download finishes
+    finishDownload();
+
+    //! [THEN] Nothing is reported as finished until the update is prepared
+    EXPECT_FALSE(result.has_value());
+
+    pump();
+
+    //! [THEN] The preparation takes the rest of the progress, then the result is reported
+    ASSERT_EQ(progress.size(), 3u);
+    EXPECT_EQ(progress.at(1), std::make_pair(int64_t(900), int64_t(1000)));
+    EXPECT_EQ(progress.at(2), std::make_pair(int64_t(1000), int64_t(1000)));
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(result->ret);
+    EXPECT_EQ(result->val.toString(), PACKAGE.toStdString());
+
+    //! [THEN] The release is ready to install
+    ON_CALL(*m_fileSystem, exists(PACKAGE))
+    .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, exists(STAGED))
+    .WillByDefault(Return(Ret(true)));
+    EXPECT_TRUE(m_service->isReleaseReadyToInstall());
+
+    //! [THEN] Installing it hands the prepared update to the installer
+    EXPECT_CALL(*m_updateInstaller, finalizeUpdate(STAGED, _))
+    .WillOnce(Return(muse::make_ok()));
+    EXPECT_TRUE(m_service->installUpdate());
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_AlreadyDownloaded_OnlyPrepares)
+{
+    //! [GIVEN] The package was downloaded in a previous session
+    givenInPlaceInstall();
+    ON_CALL(*m_fileSystem, exists(PACKAGE))
+    .WillByDefault(Return(Ret(true)));
+
+    //! [THEN] Nothing is downloaded, the package is only prepared
+    EXPECT_CALL(*m_networkManager, get(_, _, _))
+    .Times(0);
+    EXPECT_CALL(*m_updateInstaller, prepareUpdate(PACKAGE))
+    .WillOnce(Return(RetVal<io::path_t>::make_ok(STAGED)));
+
+    //! [WHEN] Download the release
+    RetVal<Progress> rv = m_service->downloadRelease();
+    ASSERT_TRUE(rv.ret);
+
+    //! [THEN] Subscribers attached right after the call get the result
+    std::optional<ProgressResult> result;
+    rv.val.finished().onReceive(this, [&result](const ProgressResult& res) {
+        result = res;
+    });
+
+    pump();
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(result->ret);
+    EXPECT_EQ(result->val.toString(), PACKAGE.toStdString());
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_NotInPlace_FinishesWithoutPreparing)
+{
+    //! [GIVEN] A download of a release that can not be installed in-place
+    givenAvailableRelease();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(false)));
+    ON_CALL(*m_fileSystem, move(_, _, _))
+    .WillByDefault(Return(muse::make_ok()));
+    expectDownloadRequest();
+
+    //! [THEN] Nothing is prepared
+    EXPECT_CALL(*m_updateInstaller, prepareUpdate(_))
+    .Times(0);
+
+    RetVal<Progress> rv = m_service->downloadRelease();
+    ASSERT_TRUE(rv.ret);
+
+    std::optional<ProgressResult> result;
+    rv.val.finished().onReceive(this, [&result](const ProgressResult& res) {
+        result = res;
+    });
+
+    //! [WHEN] The download finishes
+    finishDownload();
+    pump();
+
+    //! [THEN] The downloaded package is reported
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(result->ret);
+    EXPECT_EQ(result->val.toString(), PACKAGE.toStdString());
+
+    //! [THEN] The downloaded release is ready to install as is
+    ON_CALL(*m_fileSystem, exists(PACKAGE))
+    .WillByDefault(Return(Ret(true)));
+    EXPECT_TRUE(m_service->isReleaseReadyToInstall());
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_NoRoomToPrepare_FinishesWithError)
 {
     //! [GIVEN] A downloaded 100 MB package and only 150 MB left in the update data dir
     const uint64_t mb = 1024 * 1024;
-    const io::path_t package("upd/MuseScore.dmg");
-    ON_CALL(*m_configuration, updateDataPath())
-    .WillByDefault(Return(io::path_t("upd")));
-    ON_CALL(*m_fileSystem, fileSize(package))
+    givenInPlaceInstall();
+    ON_CALL(*m_fileSystem, exists(PACKAGE))
+    .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_fileSystem, fileSize(PACKAGE))
     .WillByDefault(Return(RetVal<uint64_t>::make_ok(100 * mb)));
     ON_CALL(*m_fileSystem, availableSpace(io::path_t("upd")))
     .WillByDefault(Return(RetVal<uint64_t>::make_ok(150 * mb)));
 
-    //! [THEN] The installer is not asked to stage anything
+    //! [THEN] The installer is not asked to prepare anything
     EXPECT_CALL(*m_updateInstaller, prepareUpdate(_))
     .Times(0);
 
-    //! [WHEN] Prepare the update
-    RetVal<io::path_t> rv = m_service->prepareUpdate(package);
+    RetVal<Progress> rv = m_service->downloadRelease();
+    ASSERT_TRUE(rv.ret);
+
+    std::optional<ProgressResult> result;
+    rv.val.finished().onReceive(this, [&result](const ProgressResult& res) {
+        result = res;
+    });
+
+    pump();
 
     //! [THEN] It fails with a disk space error
-    EXPECT_EQ(rv.ret.code(), static_cast<int>(Err::NotEnoughDiskSpace));
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->ret.code(), static_cast<int>(Err::NotEnoughDiskSpace));
 }
 
-TEST_F(AppUpdateServiceTests, PrepareUpdate_EnoughDiskSpace_Stages)
+TEST_F(AppUpdateServiceTests, DownloadRelease_PrepareFailed_FinishesWithPackage)
 {
-    //! [GIVEN] A downloaded 100 MB package and plenty of space in the update data dir
-    const uint64_t mb = 1024 * 1024;
-    const io::path_t package("upd/MuseScore.dmg");
-    ON_CALL(*m_configuration, updateDataPath())
-    .WillByDefault(Return(io::path_t("upd")));
-    ON_CALL(*m_fileSystem, fileSize(package))
-    .WillByDefault(Return(RetVal<uint64_t>::make_ok(100 * mb)));
-    ON_CALL(*m_fileSystem, availableSpace(io::path_t("upd")))
-    .WillByDefault(Return(RetVal<uint64_t>::make_ok(10000 * mb)));
+    //! [GIVEN] A download of a release that can be installed in-place
+    givenInPlaceInstall();
+    expectDownloadRequest();
 
-    //! [THEN] The installer stages the package
-    EXPECT_CALL(*m_updateInstaller, prepareUpdate(package))
-    .WillOnce(Return(RetVal<io::path_t>::make_ok(io::path_t("upd/staging/MuseScore.app"))));
+    //! [GIVEN] The package can not be prepared
+    EXPECT_CALL(*m_updateInstaller, prepareUpdate(PACKAGE))
+    .WillOnce(Return(RetVal<io::path_t>(make_ret(Err::UnknownError))));
 
-    //! [WHEN] Prepare the update
-    RetVal<io::path_t> rv = m_service->prepareUpdate(package);
-    EXPECT_TRUE(rv.ret);
+    RetVal<Progress> rv = m_service->downloadRelease();
+    ASSERT_TRUE(rv.ret);
+
+    std::optional<ProgressResult> result;
+    rv.val.finished().onReceive(this, [&result](const ProgressResult& res) {
+        result = res;
+    });
+
+    //! [WHEN] The download finishes
+    finishDownload();
+    pump();
+
+    //! [THEN] The package is still reported, so it can be installed manually
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(result->ret);
+    EXPECT_EQ(result->val.toString(), PACKAGE.toStdString());
+
+    //! [THEN] It is not ready to install in-place
+    ON_CALL(*m_fileSystem, exists(PACKAGE))
+    .WillByDefault(Return(Ret(true)));
+    EXPECT_FALSE(m_service->isReleaseReadyToInstall());
+
+    EXPECT_CALL(*m_updateInstaller, finalizeUpdate(_, _))
+    .Times(0);
+    EXPECT_FALSE(m_service->installUpdate());
+}
+
+TEST_F(AppUpdateServiceTests, DownloadRelease_CanceledWhilePreparing_DropsPreparedUpdate)
+{
+    //! [GIVEN] The package is being prepared
+    givenInPlaceInstall();
+    ON_CALL(*m_fileSystem, exists(PACKAGE))
+    .WillByDefault(Return(Ret(true)));
+    EXPECT_CALL(*m_updateInstaller, prepareUpdate(PACKAGE))
+    .WillOnce(Return(RetVal<io::path_t>::make_ok(STAGED)));
+
+    RetVal<Progress> rv = m_service->downloadRelease();
+    ASSERT_TRUE(rv.ret);
+
+    std::vector<ProgressResult> results;
+    rv.val.finished().onReceive(this, [&results](const ProgressResult& res) {
+        results.push_back(res);
+    });
+
+    //! [THEN] The prepared files are removed
+    EXPECT_CALL(*m_fileSystem, remove(STAGED, false))
+    .WillOnce(Return(muse::make_ok()));
+
+    //! [WHEN] The release is removed while it is being prepared
+    async::processMessages();
+    m_service->removeDownloadedRelease();
+    pump();
+
+    //! [THEN] Only the cancellation is reported, and nothing is prepared
+    ASSERT_EQ(results.size(), 1u);
+    EXPECT_EQ(results.front().ret.code(), static_cast<int>(Ret::Code::Cancel));
+
+    ON_CALL(*m_fileSystem, exists(STAGED))
+    .WillByDefault(Return(Ret(true)));
+    EXPECT_FALSE(m_service->isReleaseReadyToInstall());
+}
+
+TEST_F(AppUpdateServiceTests, CleanupStalePackages_KeepsPreparedUpdateOfKeptPackage)
+{
+    //! [GIVEN] A prepared update
+    givenInPlaceInstall();
+    ON_CALL(*m_fileSystem, exists(_))
+    .WillByDefault(Return(Ret(true)));
+    ON_CALL(*m_updateInstaller, prepareUpdate(PACKAGE))
+    .WillByDefault(Return(RetVal<io::path_t>::make_ok(STAGED)));
+
+    m_service->downloadRelease();
+    pump();
+    ASSERT_TRUE(m_service->isReleaseReadyToInstall());
+
+    ON_CALL(*m_fileSystem, scanFiles(io::path_t("upd"), _, _))
+    .WillByDefault(Return(RetVal<io::paths_t>::make_ok(io::paths_t {
+        PACKAGE, io::path_t("upd/staging"), io::path_t("upd/other")
+    })));
+
+    //! [THEN] Only unrelated files are removed
+    EXPECT_CALL(*m_fileSystem, remove(PACKAGE, false))
+    .Times(1)
+    .WillRepeatedly(Return(muse::make_ok()));
+    EXPECT_CALL(*m_fileSystem, remove(io::path_t("upd/other"), false))
+    .Times(2)
+    .WillRepeatedly(Return(muse::make_ok()));
+    EXPECT_CALL(*m_fileSystem, remove(io::path_t("upd/staging"), false))
+    .Times(0);
+
+    //! [WHEN] The same release is found again
+    cleanupStalePackages("MuseScore.dmg");
+    EXPECT_TRUE(m_service->isReleaseReadyToInstall());
+
+    //! [THEN] Everything is removed for another release
+    EXPECT_CALL(*m_fileSystem, remove(io::path_t("upd/staging"), false))
+    .WillOnce(Return(muse::make_ok()));
+
+    //! [WHEN] Another release is found
+    cleanupStalePackages("MuseScore-new.dmg");
+    EXPECT_FALSE(m_service->isReleaseReadyToInstall());
 }
 
 TEST_F(AppUpdateServiceTests, RemoveDownloadedRelease_RemovesPackageAndPartial)

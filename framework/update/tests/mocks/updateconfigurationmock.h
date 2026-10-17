@@ -39,8 +39,8 @@ public:
     MOCK_METHOD(void, setNeedCheckForUpdate, (bool), (override));
     MOCK_METHOD(muse::async::Notification, needCheckForUpdateChanged, (), (const, override));
 
-    MOCK_METHOD(bool, autoDownloadEnabled, (), (const, override));
-    MOCK_METHOD(void, setAutoDownloadEnabled, (bool), (override));
+    MOCK_METHOD(bool, autoUpdateEnabled, (), (const, override));
+    MOCK_METHOD(void, setAutoUpdateEnabled, (bool), (override));
 
     MOCK_METHOD(std::string, skippedReleaseVersion, (), (const, override));
     MOCK_METHOD(void, setSkippedReleaseVersion, (const std::string&), (override));

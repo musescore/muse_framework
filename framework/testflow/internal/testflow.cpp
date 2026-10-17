@@ -78,7 +78,11 @@ void Testflow::affectOnServices()
         navigation()->setIsHighlight(true);
 
         //! NOTE Only defaults shortcuts
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        commandShortcutsRegister()->reload(true);
+#else
         shortcutsRegister()->reload(true);
+#endif
 
         //! NOTE Change Interactive implementation
         modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
@@ -97,7 +101,11 @@ void Testflow::restoreAffectOnServices()
     IApplication::RunMode runMode = application()->runMode();
     if (runMode == IApplication::RunMode::GuiApp) {
         navigation()->setIsResetOnMousePress(true);
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        commandShortcutsRegister()->reload(false);
+#else
         shortcutsRegister()->reload(false);
+#endif
 
         modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
         auto realInteractive = m_testflowInteractive->realInteractive();

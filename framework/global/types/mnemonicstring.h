@@ -55,6 +55,8 @@ public:
     QString qTranslatedWithMnemonicUnderline() const;
 
     QString qTranslatedWithoutMnemonic() const;
+
+    QString qTranslatedPlain() const;
 #endif
 
     inline bool operator ==(const MnemonicString& other) const

@@ -42,30 +42,76 @@ CommandDispatcher::~CommandDispatcher()
 
 async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
 {
-    return async::make_promise<Response>([this, request](auto resolve) {
-        auto it = m_clients.find(request.command);
-        if (it != m_clients.end()) {
-            LOGI() << "try call command: " << request.command;
-            Response response = it->second.callback(request);
-            return resolve(response);
-        } else {
-            LOGW() << "command not registered: " << request.command;
+    if (request.command == NONE_COMMAND) {
+        return async::make_promise<Response>([request](auto resolve) {
+            return resolve(make_response(request, make_ret(Ret::Code::Ok)));
+        });
+    }
+
+    auto it = m_clients.find(request.command);
+    if (it == m_clients.end()) {
+        LOGW() << "command not registered: " << request.command;
+        return async::make_promise<Response>([request](auto resolve) {
             return resolve(make_response(request, make_ret(Ret::Code::UnknownError)));
+        });
+    }
+
+    LOGI() << "try call command: " << request.command << ", params: " << request.params;
+
+    Client client = it->second;
+
+    return async::make_promise<Response>([this, request, client](auto resolve) {
+        if (client.asyncCallback) {
+            bool allowDispatch = true;
+            m_preDispatch.send(request.command, &allowDispatch);
+            if (!allowDispatch) {
+                return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+            }
+
+            client.asyncCallback(request, [this, request, resolve](const Response& response) {
+                (void)resolve(response);
+                m_postDispatch.send(request.command);
+            });
+
+            return async::Promise<Response>::dummy_result();
         }
+
+        if (client.callback) {
+            bool allowDispatch = true;
+            m_preDispatch.send(request.command, &allowDispatch);
+            if (!allowDispatch) {
+                return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+            }
+
+            auto res = resolve(client.callback(request));
+            m_postDispatch.send(request.command);
+            return res;
+        }
+
+        UNREACHABLE;
+        return resolve(make_response(request, make_ret(Ret::Code::UnknownError)));
     });
 }
 
 Response CommandDispatcher::dispatch(const Command& command, const Params& params)
 {
     Request request = make_request(command, params);
+
     auto it = m_clients.find(command);
-    if (it != m_clients.end()) {
-        LOGI() << "try call command: " << command;
-        Response response = it->second.callback(request);
-        return response;
-    } else {
+    if (it == m_clients.end()) {
+        LOGW() << "command not registered: " << command;
         return make_response(request, make_ret(Ret::Code::UnknownError));
     }
+
+    LOGI() << "try call command: " << command << " with params: " << params;
+
+    CallBack callback = it->second.callback;
+
+    IF_ASSERT_FAILED(callback) {
+        return make_response(request, make_ret(Ret::Code::NotSupported));
+    }
+
+    return callback(request);
 }
 
 Response CommandDispatcher::dispatch(const CommandQuery& query)
@@ -75,12 +121,22 @@ Response CommandDispatcher::dispatch(const CommandQuery& query)
 
 void CommandDispatcher::onRequest(Commandable* client, const Command& command, const CallBack& callback)
 {
-    IF_ASSERT_FAILED(m_clients.find(command) == m_clients.end()) {
+    reg(client, command, { client, callback, nullptr });
+}
+
+void CommandDispatcher::onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback)
+{
+    reg(client, command, { client, nullptr, callback });
+}
+
+void CommandDispatcher::reg(Commandable* client, const Command& command, const Client& c)
+{
+    if (m_clients.find(command) != m_clients.end()) {
         LOGW() << "command already registered: " << command;
         return;
     }
 
-    m_clients[command] = { client, callback };
+    m_clients[command] = c;
     client->setDispatcher(this);
 }
 
@@ -99,4 +155,14 @@ void CommandDispatcher::unreg(Commandable* client)
     }
 
     client->setDispatcher(nullptr);
+}
+
+async::Channel<Command, bool*> CommandDispatcher::preDispatch() const
+{
+    return m_preDispatch;
+}
+
+async::Channel<Command> CommandDispatcher::postDispatch() const
+{
+    return m_postDispatch;
 }

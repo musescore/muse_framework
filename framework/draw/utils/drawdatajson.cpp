@@ -60,6 +60,7 @@ static JsonObject toObj(const Pen& pen)
     obj["style"] = static_cast<int>(pen.style());
     obj["capStyle"] = static_cast<int>(pen.capStyle());
     obj["joinStyle"] = static_cast<int>(pen.joinStyle());
+    obj["miterLimit"] = pen.miterLimit();
     obj["color"] = pen.color().toString();
     obj["width"] = pen.widthF();
     obj["dashPattern"] = toArr(pen.dashPattern());
@@ -71,6 +72,9 @@ static void fromObj(const JsonObject& obj, Pen& pen)
     pen.setStyle(static_cast<PenStyle>(obj.value("style").toInt()));
     pen.setCapStyle(static_cast<PenCapStyle>(obj.value("capStyle").toInt()));
     pen.setJoinStyle(static_cast<PenJoinStyle>(obj.value("joinStyle").toInt()));
+    if (obj.contains("miterLimit")) {
+        pen.setMiterLimit(obj.value("miterLimit").toDouble());
+    }
     pen.setColor(Color(obj.value("color").toStdString().c_str()));
     pen.setWidthF(obj.value("width").toDouble());
 
@@ -100,7 +104,10 @@ static JsonObject toObj(const Font& font)
     obj["type"] = static_cast<int>(font.type());
     obj["pointSize"] = font.pointSizeF();
     obj["weight"] = font.weight();
+    obj["bold"] = font.bold();
     obj["italic"] = font.italic();
+    obj["underline"] = font.underline();
+    obj["strike"] = font.strike();
     obj["hinting"] = static_cast<int>(font.hinting());
     obj["no_merging"] = font.noFontMerging();
     return obj;
@@ -111,7 +118,10 @@ static void fromObj(const JsonObject& obj, Font& font)
     font.setFamily(obj.value("family").toString(), static_cast<Font::Type>(obj.value("type").toInt()));
     font.setPointSizeF(obj.value("pointSize").toDouble());
     font.setWeight(static_cast<Font::Weight>(obj.value("weight").toInt()));
+    font.setBold(obj.value("bold").toBool());
     font.setItalic(obj.value("italic").toBool());
+    font.setUnderline(obj.value("underline").toBool());
+    font.setStrike(obj.value("strike").toBool());
     font.setHinting(static_cast<Font::Hinting>(obj.value("hinting").toInt()));
     font.setNoFontMerging(obj.value("no_merging").toBool());
 }

@@ -32,9 +32,6 @@ target_sources(muse_multiwindows PRIVATE
     multiwindowscommands.h
 
     internal/singleinstance.cpp
-
-    internal/multiwindowsuiactions.cpp
-    internal/multiwindowsuiactions.h
     internal/multiwindowscommandscontroller.cpp
     internal/multiwindowscommandscontroller.h
     internal/multiwindowscommandsregister.cpp

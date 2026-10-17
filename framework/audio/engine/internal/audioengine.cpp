@@ -176,6 +176,8 @@ void AudioEngine::execOperation(OperationType type, const Operation& func)
         std::this_thread::sleep_for(1ms);
     }
 
+    OperationType oldOperationType = m_operationType;
+
     m_operationType = type;
     AudioSanitizer::setOperationType(type);
 
@@ -188,8 +190,9 @@ void AudioEngine::execOperation(OperationType type, const Operation& func)
     if (m_operationType == OperationType::QuickOperation) {
         m_quickOperationWaitMutex.unlock();
     }
-    m_operationType = OperationType::NoOperation;
-    AudioSanitizer::setOperationType(OperationType::NoOperation);
+
+    m_operationType = oldOperationType;
+    AudioSanitizer::setOperationType(oldOperationType);
 }
 
 samples_t AudioEngine::fillSilent(float* buffer, samples_t samplesPerChannel)

@@ -469,6 +469,21 @@ path_t FileSystem::absoluteFilePath(const path_t& filePath) const
     return QFileInfo(filePath.toQString()).absoluteFilePath();
 }
 
+io::path_t FileSystem::cleanPath(const io::path_t& filePath) const
+{
+    return QDir::cleanPath(filePath.toQString());
+}
+
+bool FileSystem::isSymLink(const io::path_t& filePath) const
+{
+    return QFileInfo(filePath.toQString()).isSymLink();
+}
+
+io::path_t FileSystem::symLinkTarget(const io::path_t& filePath) const
+{
+    return QFileInfo(filePath.toQString()).symLinkTarget();
+}
+
 DateTime FileSystem::birthTime(const io::path_t& filePath) const
 {
     return DateTime::fromQDateTime(QFileInfo(filePath.toQString()).birthTime());

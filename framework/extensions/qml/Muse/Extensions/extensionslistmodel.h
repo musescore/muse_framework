@@ -33,8 +33,13 @@
 #include "interactive/iinteractive.h"
 #include "extensions/iextensioninstaller.h"
 #include "extensions/iextensionsconfiguration.h"
+#include "extensions/iextensionsprovider.h"
 #include "extensions/iextensionsregister.h"
-#include "shortcuts/ishortcutsregister.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/icommandshortcutsregister.h"
+#endif
 
 namespace muse::extensions {
 class ExtensionsListModel : public QAbstractListModel, public QQmlParserStatus, public Contextable, public async::Asyncable
@@ -46,9 +51,12 @@ class ExtensionsListModel : public QAbstractListModel, public QQmlParserStatus, 
 
     GlobalInject<IExtensionsConfiguration> configuration;
     GlobalInject<IExtensionsRegister> extensionsRegister;
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    GlobalInject<shortcuts::ICommandShortcutsRegister> commandShortcutsRegister;
+#endif
+    ContextInject<IExtensionsProvider> provider = { this };
     ContextInject<IExtensionInstaller> installer = { this };
     ContextInject<IInteractive> interactive = { this };
-    ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
 
 public:
     explicit ExtensionsListModel(QObject* parent = nullptr);

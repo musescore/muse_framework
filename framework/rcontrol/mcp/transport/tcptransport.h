@@ -27,6 +27,8 @@
 class QTcpServer;
 class QTcpSocket;
 
+//! NOTE Used in conjunction with an stdio bridge.
+
 namespace muse::rcontrol::mcp {
 class TcpConnection : public QObject
 {

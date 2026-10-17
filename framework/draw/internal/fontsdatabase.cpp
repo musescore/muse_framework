@@ -36,11 +36,14 @@
 using namespace muse;
 using namespace muse::draw;
 
+#ifndef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
 static int s_fontID = -1;
+#endif
 
 void FontsDatabase::setDefaultFont(Font::Type type, const FontDataKey& key)
 {
     m_defaults[type] = key;
+    m_changed.notify();
 }
 
 void FontsDatabase::insertSubstitution(const String& familyName, const String& substituteName)
@@ -52,6 +55,39 @@ void FontsDatabase::insertSubstitution(const String& familyName, const String& s
 #ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
     QFont::insertSubstitution(familyName, substituteName);
 #endif
+
+    m_changed.notify();
+}
+
+void FontsDatabase::removeSubstitutions(const String& familyName, const std::vector<String>& substituteNames)
+{
+    auto it = m_familySubstitutions.find(FontDataKey(familyName));
+    if (it == m_familySubstitutions.end()) {
+        return;
+    }
+
+    std::vector<FontDataKey>& substitutes = it->second;
+    size_t removed = 0;
+    for (const String& substituteName : substituteNames) {
+        removed += std::erase(substitutes, FontDataKey(substituteName));
+    }
+
+    if (removed == 0) {
+        return;
+    }
+
+#ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
+    QFont::removeSubstitutions(familyName);
+    for (const FontDataKey& key : substitutes) {
+        QFont::insertSubstitution(familyName, key.family().id().toQString());
+    }
+#endif
+
+    if (substitutes.empty()) {
+        m_familySubstitutions.erase(it);
+    }
+
+    m_changed.notify();
 }
 
 const FontDataKey& FontsDatabase::defaultFont(Font::Type type) const
@@ -71,14 +107,57 @@ const FontDataKey& FontsDatabase::defaultFont(Font::Type type) const
 
 int FontsDatabase::addFont(const FontDataKey& key, const io::path_t& path)
 {
-    s_fontID++;
-    m_fonts.push_back(FontInfo { s_fontID, key, path });
-
 #ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
-    QFontDatabase::addApplicationFont(path.toQString());
+    const int id = QFontDatabase::addApplicationFont(path.toQString());
+    if (id < 0) {
+        LOGW() << "failed register font file: " << path;
+        return id;
+    }
+#else
+    const int id = ++s_fontID;
 #endif
 
-    return s_fontID;
+    auto it = m_fonts.find(key);
+    if (it != m_fonts.end()) {
+        const FontInfo replaced = it->second;
+        m_fonts.erase(it);
+        release(replaced);
+    }
+
+    m_fonts.insert({ key, FontInfo { id, key, path } });
+    m_changed.notify();
+
+    return id;
+}
+
+void FontsDatabase::removeFont(const FontDataKey& key)
+{
+    auto it = m_fonts.find(key);
+    if (it == m_fonts.end()) {
+        return;
+    }
+
+    const FontInfo removed = it->second;
+    m_fonts.erase(it);
+    release(removed);
+    m_changed.notify();
+}
+
+void FontsDatabase::release(const FontInfo& fi)
+{
+#ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
+    if (fi.valid()) {
+        QFontDatabase::removeApplicationFont(fi.id);
+    }
+#endif
+
+    for (const auto& it : m_fonts) {
+        if (it.second.path == fi.path) {
+            return;
+        }
+    }
+
+    m_fileDataCache.erase(fi.path.toStdString());
 }
 
 FontDataKey FontsDatabase::actualFont(const FontDataKey& requireKey, Font::Type type) const
@@ -135,12 +214,16 @@ bool FontsDatabase::isFtxFont(const FontDataKey& requireKey, Font::Type type) co
     return io::FileInfo::suffix(path).toLower() == u"ftx";
 }
 
+async::Notification FontsDatabase::changed() const
+{
+    return m_changed;
+}
+
 const FontsDatabase::FontInfo& FontsDatabase::fontInfo(const FontDataKey& key) const
 {
-    for (const FontInfo& fi : m_fonts) {
-        if (fi.key == key) {
-            return fi;
-        }
+    auto it = m_fonts.find(key);
+    if (it != m_fonts.end()) {
+        return it->second;
     }
 
     static FontInfo null;

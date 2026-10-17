@@ -29,6 +29,7 @@
 
 #include "modularity/ioc.h"
 #include "global/io/ifilesystem.h"
+#include "ifilesystemapirestriction.h"
 
 namespace muse::api {
 class FileSystemApi : public ApiObject
@@ -36,6 +37,7 @@ class FileSystemApi : public ApiObject
     Q_OBJECT
 
     muse::GlobalInject<io::IFileSystem> fileSystem;
+    muse::GlobalInject<api::IFileSystemApiRestriction> fsRestriction;
 
 public:
     FileSystemApi(IApiEngine* e);

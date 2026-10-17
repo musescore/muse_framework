@@ -25,6 +25,7 @@
 
 #include "global/modularity/ioc.h"
 #include "global/iapplication.h"
+#include "global/async/asyncable.h"
 
 //! NOTE Work in progress
 
@@ -36,9 +37,13 @@ namespace muse::actions {
 class IActionsDispatcher;
 }
 
+namespace muse::rcommand {
+class ICommandDispatcher;
+}
+
 namespace muse::mi {
 class IProjectProvider;
-class SingleProcessProvider : public IMultiWindowsProvider
+class SingleProcessProvider : public IMultiWindowsProvider, public async::Asyncable
 {
     GlobalInject<IApplication> application;
 
@@ -74,7 +79,7 @@ public:
 
     // Quit for all
     void notifyAboutWindowWasQuited() override {}
-    void quitForAll() override;
+    async::Promise<Ret> quitForAll(const modularity::ContextPtr& ctx) override;
     void quitWindow(const modularity::ContextPtr& ctx) override;
     void quitAllAndRestartLast() override {}
     void quitAllAndRunInstallation(const muse::io::path_t&) override {}
@@ -83,5 +88,8 @@ private:
     std::shared_ptr<IProjectProvider> projectProvider(const modularity::ContextPtr& ctx) const;
     std::shared_ptr<ui::IMainWindow> mainWindow(const modularity::ContextPtr& ctx) const;
     std::shared_ptr<actions::IActionsDispatcher> dispatcher(const modularity::ContextPtr& ctx) const;
+    std::shared_ptr<rcommand::ICommandDispatcher> commandDispatcher(const modularity::ContextPtr& ctx) const;
+
+    async::Promise<Ret> quitWindows(const std::vector<modularity::ContextPtr>& ctxs);
 };
 }

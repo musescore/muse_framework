@@ -21,6 +21,7 @@
  */
 #include <gtest/gtest.h>
 
+#include <clocale>
 #include <cstring>
 #include <regex>
 #include <string>
@@ -376,6 +377,54 @@ TEST_F(Global_Types_StringTests, String_Trimmed)
         //! CHECK
         EXPECT_EQ(newStr, u"123abc");
     }
+}
+
+TEST_F(Global_Types_StringTests, String_Trimmed_NonLatin1)
+{
+    //! The trim helpers used to hand char16_t code units to std::isspace(), whose
+    //! argument is only defined for EOF and values representable as unsigned char.
+    //! In a UTF-8 locale glibc then reads outside its ctype table, and some CJK
+    //! characters are reported as whitespace and trimmed away.
+    const char* originalLocale = std::setlocale(LC_CTYPE, nullptr);
+    ASSERT_NE(originalLocale, nullptr);
+    const std::string savedLocale = originalLocale;
+
+    if (!std::setlocale(LC_CTYPE, "C.UTF-8")) {
+        GTEST_SKIP() << "C.UTF-8 locale is not available";
+    }
+
+    {
+        //! GIVEN String which consists only of CJK characters
+        String str = u"奇異恩典";
+        //! DO
+        String newStr = str.trimmed();
+        //! CHECK
+        SCOPED_TRACE(muPrintable(newStr));
+        EXPECT_EQ(newStr, u"奇異恩典");
+    }
+
+    {
+        //! GIVEN String with CJK characters surrounded by real spaces
+        String str = u" 奇異恩典 5 ";
+        //! DO
+        String newStr = str.trimmed();
+        //! CHECK
+        SCOPED_TRACE(muPrintable(newStr));
+        EXPECT_EQ(newStr, u"奇異恩典 5");
+    }
+
+    {
+        //! GIVEN String surrounded by a whitespace character which is only
+        //! recognised as such by a Unicode-aware check
+        String str = u"\u3000奇異恩典\u3000";
+        //! DO
+        String newStr = str.trimmed();
+        //! CHECK
+        SCOPED_TRACE(muPrintable(newStr));
+        EXPECT_EQ(newStr, u"奇異恩典");
+    }
+
+    std::setlocale(LC_CTYPE, savedLocale.c_str());
 }
 
 TEST_F(Global_Types_StringTests, String_Split)
