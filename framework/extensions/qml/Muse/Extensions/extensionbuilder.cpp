@@ -138,7 +138,7 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         if (muse::is_zero(m_contentItem->implicitWidth())) {
             m_contentItem->setImplicitWidth(m_contentItem->width());
             if (muse::is_zero(m_contentItem->implicitWidth())) {
-                m_contentItem->setImplicitWidth(600);
+                m_contentItem->setImplicitWidth(a.docked ? 360 : 600);
             }
         }
     }
