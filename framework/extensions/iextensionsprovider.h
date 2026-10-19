@@ -53,6 +53,7 @@ public:
     virtual async::Channel<ExtensionUri> enabledChanged() const = 0;
 
     virtual Ret perform(const ExtensionUri& uri, const ExtensionActionCode& action) = 0;
+    virtual async::Channel<ExtensionUri, ExtensionActionCode> dockRequested() const = 0;
     virtual Ret run(const ExtensionUri& uri, const ExtensionActionCode& action) = 0;
 
     virtual std::unique_ptr<IExtensionSession> newSession(const ExtensionUri& uri, const io::path_t& relativeScriptPath) const = 0;

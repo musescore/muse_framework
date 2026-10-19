@@ -26,9 +26,34 @@
 
 #include "extensions/extensionbundle.h"
 #include "extensions/internal/extensionsloader.h"
+#include "extensions/internal/legacy/extpluginsloader.h"
 
 using namespace muse;
 using namespace muse::extensions;
+
+//! Dock forms retain their presentation without changing ordinary dialogs or macros.
+TEST(ExtensionsLoaderTests, LegacyDockPresentation)
+{
+    QTemporaryDir directory;
+    QTemporaryDir emptyDirectory;
+    ASSERT_TRUE(directory.isValid());
+    for (const QString& type : { QString("dock"), QString("dialog"), QString(""), QString("unknown") }) {
+        QFile file(directory.filePath("plugin.qml"));
+        ASSERT_TRUE(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        const QByteArray qml = QString("import MuseScore 3.0\nMuseScore {\n"
+                                       "title: \"Test\"\npluginType: \"%1\"\nrequiresScore: false\n}\n").arg(type).toUtf8();
+        ASSERT_EQ(file.write(qml), qml.size());
+        file.close();
+        const auto manifests = legacy::ExtPluginsLoader().loadManifestList(
+            io::path_t(directory.path()), io::path_t(emptyDirectory.path()));
+        ASSERT_EQ(manifests.size(), 1u);
+        ASSERT_EQ(manifests.front().actions.size(), 1u);
+        const Action& action = manifests.front().actions.front();
+        EXPECT_EQ(action.docked, type == "dock");
+        EXPECT_EQ(action.context, type == "dock" ? PROJECT_OPENED_CONTEXT : ANY_CONTEXT);
+        EXPECT_EQ(action.type, type == "dock" || type == "dialog" ? Type::Form : Type::Macros);
+    }
+}
 
 TEST(ExtensionBundleTests, ResolvesFileFromBundleDirectory) {
     QTemporaryDir bundle;

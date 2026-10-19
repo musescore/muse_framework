@@ -98,6 +98,7 @@ struct Action {
     ExtensionActionCode code;
     Type type = Type::Undefined;
     bool modal = DEFAULT_MODAL;
+    bool docked = false; // Legacy QML form hosted in the notation page's right panel.
     String title;
     ui::IconCode::Code icon = ui::IconCode::Code::NONE;
     bool showOnToolbar = false;

@@ -58,11 +58,13 @@ public:
     async::Channel<ExtensionUri> enabledChanged() const override;
 
     Ret perform(const ExtensionUri& uri, const ExtensionActionCode& action) override;
+    async::Channel<ExtensionUri, ExtensionActionCode> dockRequested() const override;
     Ret run(const ExtensionUri& uri, const ExtensionActionCode& action) override;
 
     std::unique_ptr<IExtensionSession> newSession(const ExtensionUri& uri, const io::path_t& relativeScriptPath) const override;
 
 private:
+    async::Channel<ExtensionUri, ExtensionActionCode> m_dockRequested;
     Ret run(const Action& action, const Manifest& manifest);
     std::unique_ptr<IExtensionSession> newSession(const Manifest& manifest, const io::path_t& scriptPath) const;
 };
