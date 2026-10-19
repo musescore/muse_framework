@@ -28,12 +28,16 @@
 
 #include "types/uri.h"
 #include "settings.h"
+
+#include "rcommand/commandtypes.h"
+#include "multiwindowscommands.h"
+
 #include "log.h"
 
 using namespace muse;
 using namespace muse::mi;
 using namespace muse::ipc;
-using namespace muse::actions;
+using namespace muse::rcommand;
 
 static const QString METHOD_PROJECT_IS_OPENED("PROJECT_IS_OPENED");
 static const QString METHOD_ACTIVATE_WINDOW_WITH_PROJECT("ACTIVATE_WINDOW_WITH_PROJECT");
@@ -123,7 +127,7 @@ void MultiProcessProvider::onMsg(const Msg& msg)
         if (!isAnyOpened) {
             mainWindow()->requestShowOnFront();
             if (msg.args.count() > 0 && !msg.args.at(0).isEmpty()) {
-                dispatcher()->dispatch(msg.args.at(0).toStdString(), ActionData::make_arg1<bool>(false));
+                commandDispatcher()->dispatch(CommandQuery(msg.args.at(0).toStdString()));
             }
         }
         m_ipcChannel->response(METHOD_ACTIVATE_WINDOW_WITH_PROJECT, { QString::number(!isAnyOpened) }, msg.srcID);
@@ -152,12 +156,14 @@ void MultiProcessProvider::onMsg(const Msg& msg)
         val.setType(static_cast<Val::Type>(msg.args.at(2).toInt()));
         settings()->setLocalValue(key, val);
     } else if (msg.method == METHOD_QUIT) {
-        dispatcher()->dispatch("quit", ActionData::make_arg1<bool>(false));
+        commandDispatcher()->dispatch(APP_QUIT_COMMAND, { { "all_instances", Val(false) } });
     } else if (msg.method == METHOD_QUIT_WITH_RESTART_LAST_INSTANCE) {
-        dispatcher()->dispatch("restart");
+        commandDispatcher()->dispatch(APP_RESTART_COMMAND);
     } else if (msg.method == METHOD_QUIT_WITH_RUNING_INSTALLATION) {
         CHECK_ARGS_COUNT(1);
-        dispatcher()->dispatch("quit", ActionData::make_arg2<bool, std::string>(false, msg.args.at(0).toStdString()));
+        commandDispatcher()->dispatch(APP_QUIT_COMMAND, {
+            { "all_instances", Val(false) },
+            { "installer_path", Val(msg.args.at(0).toStdString()) } });
     } else if (msg.method == METHOD_INSTANCE_CLOSED && msg.type == ipc::MsgType::Request) {
         m_ipcChannel->response(METHOD_INSTANCE_CLOSED, { }, msg.srcID);
     } else if (msg.method == METHOD_RESOURCE_CHANGED) {

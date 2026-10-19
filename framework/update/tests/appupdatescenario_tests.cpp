@@ -26,7 +26,7 @@
 #include <QThreadPool>
 
 #include "global/tests/mocks/applicationmock.h"
-#include "actions/tests/mocks/actionsdispatchermock.h"
+#include "rcommand/tests/mocks/commanddispatchermock.h"
 #include "network/tests/mocks/networkinformationmock.h"
 #include "interactive/tests/mocks/interactivemock.h"
 #include "multiwindows/tests/mocks/multiwindowsprovidermock.h"
@@ -46,6 +46,7 @@ using ::testing::IsEmpty;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::ReturnRef;
+using ::testing::Truly;
 
 using namespace muse;
 using namespace muse::update;
@@ -84,8 +85,14 @@ public:
         m_application = std::make_shared<NiceMock<ApplicationMock> >();
         m_scenario->application.set(m_application);
 
-        m_dispatcher = std::make_shared<NiceMock<actions::ActionsDispatcherMock> >();
-        m_scenario->dispatcher.set(m_dispatcher);
+        m_commandDispatcher = std::make_shared<NiceMock<rcommand::CommandDispatcherMock> >();
+        m_scenario->commandDispatcher.set(m_commandDispatcher);
+        ON_CALL(*m_commandDispatcher, dispatch(_))
+        .WillByDefault([](const rcommand::Request& request) {
+            return async::make_promise<rcommand::Response>([request](auto resolve) {
+                return resolve(rcommand::make_response(request, make_ok()));
+            });
+        });
 
         ON_CALL(*m_application, fullVersion())
         .WillByDefault(Return(Version(CURRENT_VERSION)));
@@ -272,9 +279,29 @@ public:
     inline static const std::vector<std::string> AVAILABLE_TOAST = { "See details", "Install update" };
     inline static const std::vector<std::string> DOWNLOADED_TOAST = { "See details", "Restart & update" };
 
+    static ::testing::Matcher<const rcommand::Request&> IsAppQuit()
+    {
+        return Truly([](const rcommand::Request& request) {
+            return request.command == rcommand::Command("command://app/quit");
+        });
+    }
+
+    static auto quitToInstall()
+    {
+        return Invoke([](const rcommand::Request& request) {
+            EXPECT_EQ(request.command, rcommand::Command("command://app/quit"));
+            EXPECT_FALSE(request.params.at("all_instances").toBool());
+            EXPECT_EQ(request.params.at("installer_path").toString(), PACKAGE.toStdString());
+
+            return async::make_promise<rcommand::Response>([request](auto resolve) {
+                return resolve(rcommand::make_response(request, make_ok()));
+            });
+        });
+    }
+
     AppUpdateScenario* m_scenario = nullptr;
     std::shared_ptr<ApplicationMock> m_application;
-    std::shared_ptr<actions::ActionsDispatcherMock> m_dispatcher;
+    std::shared_ptr<rcommand::CommandDispatcherMock> m_commandDispatcher;
     std::shared_ptr<UpdateConfigurationMock> m_configuration;
     std::shared_ptr<AppUpdateServiceMock> m_service;
     std::shared_ptr<network::NetworkInformationMock> m_networkInformation;
@@ -547,11 +574,8 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_QuitsWithout
     EXPECT_CALL(*m_configuration, setInstallingReleaseVersion("1000.0"));
     EXPECT_CALL(*m_multiwindowsProvider, quitAllAndRunInstallation(_))
     .Times(0);
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
-    .WillOnce(Invoke([](const actions::ActionCode&, const actions::ActionData& data) {
-        EXPECT_FALSE(data.arg<bool>(0));
-        EXPECT_EQ(data.arg<std::string>(1), PACKAGE.toStdString());
-    }));
+    EXPECT_CALL(*m_commandDispatcher, dispatch(_))
+    .WillOnce(quitToInstall());
 
     //! [WHEN] The download finishes
     finishDownload();
@@ -573,7 +597,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_NotReadyAnymore_RestartAndUpdate_GetsR
     //! [THEN] Then the app quits to install it, without a prompt
     EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
     .Times(0);
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+    EXPECT_CALL(*m_commandDispatcher, dispatch(IsAppQuit()));
 
     //! [WHEN] The download finishes
     finishDownload();
@@ -590,7 +614,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_RestartAndUpdate_SeveralWindo
 
     //! [THEN] All windows quit to install the downloaded package
     EXPECT_CALL(*m_multiwindowsProvider, quitAllAndRunInstallation(PACKAGE));
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+    EXPECT_CALL(*m_commandDispatcher, dispatch(IsAppQuit()));
 
     //! [WHEN] The download finishes
     finishDownload();
@@ -616,7 +640,7 @@ TEST_F(AppUpdateScenarioTests, ReleaseInfo_InstallUpdate_Downloads_ThenAsksToRes
     .WillOnce(installPrompt(IInteractive::Button::Apply));
 
     //! [THEN] The app quits to install it
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+    EXPECT_CALL(*m_commandDispatcher, dispatch(IsAppQuit()));
 
     //! [WHEN] The user checks for updates manually
     m_scenario->checkForUpdate(/*manual*/ true);
@@ -636,7 +660,7 @@ TEST_F(AppUpdateScenarioTests, InstallPrompt_Cancel_DoesNotQuit)
     //! [THEN] The app does not quit
     EXPECT_CALL(*m_configuration, setInstallingReleaseVersion(_))
     .Times(0);
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
+    EXPECT_CALL(*m_commandDispatcher, dispatch(IsAppQuit()))
     .Times(0);
 
     //! [WHEN] A manual download is requested
@@ -773,10 +797,8 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_InstallUsesDownloa
     .Times(0);
     EXPECT_CALL(*m_interactive, info(_, _, _, _, _, _))
     .Times(0);
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _))
-    .WillOnce(Invoke([](const actions::ActionCode&, const actions::ActionData& data) {
-        EXPECT_EQ(data.arg<std::string>(1), PACKAGE.toStdString());
-    }));
+    EXPECT_CALL(*m_commandDispatcher, dispatch(_))
+    .WillOnce(quitToInstall());
 
     //! [WHEN] The download finishes
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
@@ -1077,7 +1099,7 @@ TEST_F(AppUpdateScenarioTests, BgDownload_Finished_SeeDetails_AppliesAutoUpdateT
 
     //! [THEN] The setting is saved and the app quits to install the update
     EXPECT_CALL(*m_configuration, setAutoUpdateEnabled(false));
-    EXPECT_CALL(*m_dispatcher, dispatch(actions::ActionCode("quit"), _));
+    EXPECT_CALL(*m_commandDispatcher, dispatch(IsAppQuit()));
 
     //! [WHEN] The download finishes
     m_downloadProgress.finish(ProgressResult::make_ok(Val(std::string("upd/MuseScore.dmg"))));
