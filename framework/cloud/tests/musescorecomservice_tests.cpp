@@ -1409,7 +1409,7 @@ TEST_F(Cloud_MuseScoreComServiceTest, FetchConfig_Failed_ReturnsCloudError)
 // Convert: start
 // =============================================
 
-TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_Success)
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_Success)
 {
     // [GIVEN] The service is initialized
     initService();
@@ -1417,7 +1417,7 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_Success)
     willReply(CONVERT_PATH, CONVERT_RESULT_JSON);
 
     // [WHEN] Start a conversion
-    ProgressPtr progress = m_service->startConvert(makeConvertUploadData());
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
     watch(progress);
     processMessages();
 
@@ -1438,12 +1438,12 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_Success)
     EXPECT_EQ(result["status"].toInt(), static_cast<int>(ConvertStatus::Processing));
 }
 
-TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_ReportsProgress)
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_ReportsProgress)
 {
     // [GIVEN] The service is initialized
     initService();
 
-    ProgressPtr progress = m_service->startConvert(makeConvertUploadData());
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
 
     int64_t current = 0;
     int64_t total = 0;
@@ -1463,7 +1463,46 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_ReportsProgress)
     EXPECT_EQ(total, 10);
 }
 
-TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_Failed_ReturnsServerErrorCode)
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_Canceled_CancelsRequest)
+{
+    // [GIVEN] The service is initialized, and the files are being uploaded
+    initService();
+
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
+    watch(progress);
+    processMessages();
+
+    // [WHEN] The uploading is canceled
+    progress->cancel();
+    processMessages();
+
+    // [THEN] The request is canceled, and the uploading is finished once, as canceled
+    EXPECT_TRUE(pendingRequest(CONVERT_PATH).progress.isCanceled());
+    EXPECT_EQ(progressResult().ret.code(), static_cast<int>(Ret::Code::Cancel));
+}
+
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_CanceledWhileRefreshingTokens_NoRetry)
+{
+    // [GIVEN] The service is initialized, and the access token has expired during the upload
+    initService();
+
+    willReply(REFRESH_TOKENS_PATH, NEW_TOKENS_JSON);
+
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
+    watch(progress);
+    processMessages();
+    finishRequest(CONVERT_PATH, TOKEN_EXPIRED_RET);
+
+    // [WHEN] The uploading is canceled before the tokens are refreshed
+    progress->cancel();
+    finishRequest(REFRESH_TOKENS_PATH);
+
+    // [THEN] The upload is not retried, and the uploading is finished once, as canceled
+    EXPECT_TRUE(findPendingRequest(CONVERT_PATH) == m_pendingRequests.end());
+    EXPECT_EQ(progressResult().ret.code(), static_cast<int>(Ret::Code::Cancel));
+}
+
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_Failed_ReturnsServerErrorCode)
 {
     // [GIVEN] The service is initialized
     initService();
@@ -1471,7 +1510,7 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_Failed_ReturnsServerErrorCode
     willReply(CONVERT_PATH, errorCodeJson("file_too_large"));
 
     // [WHEN] Start a conversion, the server rejects the files
-    ProgressPtr progress = m_service->startConvert(makeConvertUploadData());
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
     watch(progress);
     processMessages();
     finishRequest(CONVERT_PATH, statusRet(422));
@@ -1481,7 +1520,7 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_Failed_ReturnsServerErrorCode
     EXPECT_EQ(convertErrorCode(progressResult().ret), ConvertErrorCode::FileTooLarge);
 }
 
-TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_InvalidReply_Fails)
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_InvalidReply_Fails)
 {
     // [GIVEN] The service is initialized
     initService();
@@ -1489,7 +1528,7 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_InvalidReply_Fails)
     willReply(CONVERT_PATH, "not a json");
 
     // [WHEN] Start a conversion, the server replies with garbage
-    ProgressPtr progress = m_service->startConvert(makeConvertUploadData());
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
     watch(progress);
     processMessages();
     finishRequest(CONVERT_PATH);
@@ -1498,13 +1537,13 @@ TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_InvalidReply_Fails)
     EXPECT_EQ(progressResult().ret.code(), static_cast<int>(Ret::Code::InternalError));
 }
 
-TEST_F(Cloud_MuseScoreComServiceTest, StartConvert_NoAccessToken_Fails)
+TEST_F(Cloud_MuseScoreComServiceTest, UploadToConvert_NoAccessToken_Fails)
 {
     // [GIVEN] The service is initialized without the tokens file
     initServiceWithoutTokens();
 
     // [WHEN] Start a conversion without being signed in
-    ProgressPtr progress = m_service->startConvert(makeConvertUploadData());
+    ProgressPtr progress = m_service->uploadToConvert(makeConvertUploadData());
     watch(progress);
     processMessages();
 
