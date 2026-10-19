@@ -79,6 +79,7 @@ private:
 
     void handleOutputDeviceChange();
     bool switchToDefaultAudioDriver(IAudioDriver::Spec* activeSpec = nullptr);
+    bool reopenWithSpec(const IAudioDriver::Spec& spec);
     void updateOutputSpec();
 
     IAudioDriver::Callback m_callback;
