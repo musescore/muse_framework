@@ -131,7 +131,7 @@ inline bool canShortcutsConflict(const std::string& scope1, const std::string& s
 
 inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::shortcuts::Shortcut& sc)
 {
-    s << "{" << sc.scope << ", " << sc.command.toString() << ", " << sc.sequencesAsString() << "}";
+    s << "{" << sc.scope << ", " << sc.command.toString() << ", `" << sc.sequencesAsString() << "`}";
     return s;
 }
 

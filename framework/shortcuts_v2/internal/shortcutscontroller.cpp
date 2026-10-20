@@ -26,7 +26,7 @@
 #define SHORTCUTS_DEBUG 1
 
 #if SHORTCUTS_DEBUG
-#define SC_LOG() LOGDA() << "[SC] "
+#define SC_LOG() LOGI() << "[SC] "
 #else
 #define SC_LOG() LOGN()
 #endif
@@ -50,13 +50,13 @@ void ShortcutsController::activate(const std::string& sequence)
 
     ShortcutList allowedShortcuts;
     const ShortcutList& commandShortcuts = commandShortcutsRegister()->shortcutsForSequence(sequence);
-    SC_LOG() << sequence << ": commandShortcuts: " << commandShortcuts.size() << ": " << commandShortcuts;
+    SC_LOG() << "'" << sequence << "' : commandShortcuts: " << commandShortcuts.size() << ": " << commandShortcuts;
     for (const Shortcut& sc : commandShortcuts) {
         if (commandsState()->commandState(sc.command).enabled) {
             allowedShortcuts.push_back(sc);
         }
     }
-    SC_LOG() << sequence << ": allowedShortcuts: " << allowedShortcuts.size() << ": " << allowedShortcuts;
+    SC_LOG() << "'" << sequence << "' : allowedShortcuts: " << allowedShortcuts.size() << ": " << allowedShortcuts;
 
     Shortcut selectedShortcut;
     if (allowedShortcuts.size() == 1) {
@@ -68,7 +68,7 @@ void ShortcutsController::activate(const std::string& sequence)
             selectedShortcut = allowedShortcuts.front();
         }
     }
-    SC_LOG() << "selectedShortcut: " << selectedShortcut.command;
+    SC_LOG() << "selectedShortcut: " << (selectedShortcut.command.isValid() ? selectedShortcut.command.toString() : std::string("-"));
     if (selectedShortcut.isValid()) {
         commandDispatcher()->dispatch(selectedShortcut.command);
     }
