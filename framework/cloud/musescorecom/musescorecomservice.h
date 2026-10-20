@@ -25,20 +25,17 @@
 #include <memory>
 
 #include "modularity/ioc.h"
-#include "icloudconfiguration.h"
-#include "network/inetworkmanagercreator.h"
 #include "global/iapplication.h"
 
-#include "internal/abstractcloudservice.h"
+#include "cloud/internal/abstractcloudservice.h"
 
-#include "musescorecom/imusescorecomservice.h"
+#include "cloud/musescorecom/imusescorecomservice.h"
 
 namespace muse::cloud {
 class MuseScoreComService : public IMuseScoreComService, public IMuseScoreComConvertService, public AbstractCloudService,
     public std::enable_shared_from_this<MuseScoreComService>
 {
-    GlobalInject<ICloudConfiguration> configuration;
-    GlobalInject<network::INetworkManagerCreator> networkManagerCreator;
+public:
     GlobalInject<IApplication> application;
 
 public:
@@ -64,10 +61,12 @@ public:
     ProgressPtr downloadScore(int scoreId, DevicePtr scoreData, const QString& hash = QString(),
                               const QString& secret = QString()) override;
 
+    async::Promise<Ret> deleteScore(int scoreId) override;
+
     // IMuseScoreComConvertService
     async::Promise<RetVal<ConvertConfig> > fetchConfig() override;
 
-    ProgressPtr startConvert(const ConvertUploadDataPtr& data) override;
+    ProgressPtr uploadToConvert(const ConvertUploadDataPtr& data) override;
 
     async::Promise<RetVal<ConvertQueueList> > fetchQueue() override;
 
@@ -89,6 +88,8 @@ private:
 
     async::Promise<Ret> doDownloadScore(int scoreId, DevicePtr scoreData, const QString& hash, const QString& secret, ProgressPtr progress);
 
+    async::Promise<Ret> doDeleteScore(int scoreId);
+
     async::Promise<RetVal<bool> > checkScoreAlreadyUploaded(const ID& scoreId);
 
     async::Promise<Ret> doUploadScore(DevicePtr scoreData, const QString& title, Visibility visibility, const QUrl& sourceUrl,
@@ -96,7 +97,7 @@ private:
 
     async::Promise<Ret> doUploadAudio(DevicePtr audioData, const QString& audioFormat, const QUrl& sourceUrl, ProgressPtr progress);
 
-    async::Promise<Ret> doUpload(const ConvertUploadDataPtr& data, ProgressPtr progress);
+    async::Promise<Ret> doUploadToConvert(const ConvertUploadDataPtr& data, ProgressPtr progress);
 
     async::Promise<Ret> doFetchQueue(std::shared_ptr<ConvertQueueList> queue);
 
