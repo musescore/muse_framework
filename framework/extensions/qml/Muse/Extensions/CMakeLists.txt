@@ -38,6 +38,7 @@ qt_add_qml_module(muse_extensions_qml
         extensionstoolbarmodel.h
     QML_FILES
         ExtensionErrorMessage.qml
+        ExtensionPanel.qml
         ExtensionsApiDump.qml
         ExtensionsApiDumpDialog.qml
         ExtensionsListPanel.qml
