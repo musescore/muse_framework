@@ -45,6 +45,7 @@
 #include "internal/startaudiocontroller.h"
 #include "internal/playback.h"
 #include "internal/audiodrivercontroller.h"
+#include "internal/audiodriverfactory.h"
 
 #include "audio/engine/enginesetup.h"
 
@@ -90,6 +91,7 @@ void AudioModule::registerExports()
     globalIoc()->registerExport<IAudioThreadSecurer>(mname, std::make_shared<AudioThreadSecurer>());
     globalIoc()->registerExport<rpc::IRpcChannel>(mname, m_rpcChannel);
     globalIoc()->registerExport<IAudioDriverController>(mname, m_audioDriverController);
+    globalIoc()->registerExport<IAudioDriverFactory>(mname, std::make_shared<AudioDriverFactory>());
     globalIoc()->registerExport<IAudioTaskScheduler>(mname, m_audioDriverController->getAudioTaskScheduler());
     globalIoc()->registerExport<ISoundFontController>(mname, m_soundFontController);
     globalIoc()->registerExport<IStartAudioController>(mname, m_startAudioController);
