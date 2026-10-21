@@ -57,8 +57,14 @@ static FontPaintDevice device;
 
 int QFontProvider::addSymbolFont(const String& family, const io::path_t& path)
 {
-    m_symbolsFonts[family] = path;
+    UNUSED(family);
     return QFontDatabase::addApplicationFont(path.toQString());
+}
+
+int QFontProvider::addSymbolFontFromData(const String& family, const ByteArray& data)
+{
+    UNUSED(family);
+    return QFontDatabase::addApplicationFontFromData(data.toQByteArray());
 }
 
 double QFontProvider::lineSpacing(const Font& f) const
