@@ -31,7 +31,6 @@
 #include "../itestflowconfiguration.h"
 #include "io/ifilesystem.h"
 #include "ui/inavigationcontroller.h"
-#include "shortcuts/ishortcutsregister.h"
 #include "interactive/iinteractive.h"
 #include "ui/imainwindow.h"
 #include "global/iapplication.h"

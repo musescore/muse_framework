@@ -25,7 +25,12 @@
 
 #include "types/color.h"
 #include "types/translatablestring.h"
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/shortcutstypes.h"
+#else
 #include "shortcuts/shortcutstypes.h"
+#endif
 
 using namespace muse::uicomponents;
 using namespace muse::ui;
