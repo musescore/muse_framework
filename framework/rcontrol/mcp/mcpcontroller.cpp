@@ -96,6 +96,9 @@ std::vector<Tool> McpController::makeToolsList() const
     auto commandList = commandsRegister()->commandInfoList();
     tools.reserve(commandList.size());
     for (const auto& info : commandList) {
+        if (!info.availabilities.testFlag(Availability::MCP)) {
+            continue;
+        }
         Tool tool;
         tool.name = commandToToolName(info.command);
         tool.title = info.title.raw().translated().toStdString();
