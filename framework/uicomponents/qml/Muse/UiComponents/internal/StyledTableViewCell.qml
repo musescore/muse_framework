@@ -35,6 +35,9 @@ TableViewDelegate {
     property int cellEditMode: TableViewCellEditMode.StartInEdit
     property int preferredWidth: 0
 
+    //! NOTE; Only effective for String cell types at the moment
+    property bool readOnly: false
+
     property var sourceComponentCallback
 
     property bool isSelected: false
@@ -221,6 +224,7 @@ TableViewDelegate {
                 navigation.row: navigationRow
                 navigation.column: navigationColumnStart
 
+                readOnly: root.readOnly && root.cellType === TableViewCellType.String
                 currentText: valueLoader.val
 
                 onTextEditingFinished: function(newTextValue){

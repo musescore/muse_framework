@@ -260,6 +260,7 @@ Item {
             cellType: hHeaderData.cellType
             cellEditMode: hHeaderData.cellEditMode
             preferredWidth: hHeaderData.preferredWidth
+            readOnly: hHeaderData.readOnly
 
             sourceComponentCallback: root.sourceComponentCallback
             displayTruncatedTextOnHover: root.displayTruncatedTextOnHover
