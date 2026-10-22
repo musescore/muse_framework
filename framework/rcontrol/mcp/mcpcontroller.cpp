@@ -48,17 +48,11 @@ static std::string commandToToolName(const Command& command)
     return path;
 }
 
-static CommandQuery commandQuery(const std::string& name, const muse::JsonObject& args)
+static Command toolNameToCommand(const std::string& name)
 {
-    UNUSED(args); // TODO: implement
     std::string path = name;
     muse::strings::replace(path, "_", "/");
-    Command cmd(std::string(COMMAND_SCHEME), path);
-    CommandQuery q(cmd);
-    // for (const auto& arg : args) {
-    //     q.set(arg.first, arg.second.toString());
-    // }
-    return q;
+    return Command(std::string(COMMAND_SCHEME), path);
 }
 
 void McpController::init()
@@ -75,10 +69,14 @@ void McpController::init()
                                            const McpServer::ToolsCallResultHandler& onResult)
     {
         LOGDA() << "Tools call: " << name;
+        UNUSED(args);
 
-        commandsDispatcher()->dispatch(commandQuery(name, args));
-
-        onResult(ToolResult());
+        async::Promise<Response> promise = commandsDispatcher()->dispatch(toolNameToCommand(name));
+        promise.onResolve(this, [onResult](const Response& response) {
+            ToolResult result;
+            result.ret = response.ret;
+            onResult(result);
+        });
     });
 
     m_mcpServer->init();

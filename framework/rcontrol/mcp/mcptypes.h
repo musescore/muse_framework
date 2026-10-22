@@ -22,6 +22,7 @@
 #include <string>
 
 #include "global/serialization/json.h"
+#include "global/types/ret.h"
 
 namespace muse::rcontrol::mcp {
 enum class DataType {
@@ -70,6 +71,6 @@ struct Tool {
 };
 
 struct ToolResult {
-    bool isError = false;
+    muse::Ret ret;
 };
 }

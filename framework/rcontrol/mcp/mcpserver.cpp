@@ -186,8 +186,21 @@ void McpServer::onToolsCall(const JsonObject& request, const std::function<void(
         response["id"] = id;
 
         JsonObject resObj;
-        resObj["content"] = JsonArray();
-        resObj["isError"] = toolResult.isError;
+        JsonArray content;
+        bool isError = false;
+
+        if (toolResult.ret) {
+            //! TODO
+        } else {
+            isError = true;
+            JsonObject errText;
+            errText["type"] = "text";
+            errText["text"] = toolResult.ret.toString();
+            content.append(errText);
+        }
+
+        resObj["content"] = content;
+        resObj["isError"] = isError;
 
         response["result"] = resObj;
         onResponse(response);
