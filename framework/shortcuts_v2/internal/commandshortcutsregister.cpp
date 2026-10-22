@@ -32,7 +32,6 @@
 #include "rcommand/commandtypes.h"
 
 #include "log.h"
-#include "thirdparty/kors_logger/src/log_base.h"
 
 using namespace muse;
 using namespace muse::shortcuts;
@@ -82,7 +81,6 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     io::path_t userPath = userShortcutsPath();
 
     bool ok = readFromFile(m_defaultShortcuts, defPath);
-
     if (ok) {
         //! NOTE Platform and preset shortcuts files are diffs from the base one
         std::string defaultName = configuration()->defaultShortcutsName();
@@ -354,7 +352,8 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
     }
 
     JsonArray rootArr = doc.rootArray();
-    for (size_t i = 0; i < rootArr.size(); ++i) {
+    const size_t scopesCount = rootArr.size();
+    for (size_t i = 0; i < scopesCount; ++i) {
         JsonValue value = rootArr.at(i);
         if (!value.isObject()) {
             LOGE() << "failed parse json: " << path;
@@ -362,12 +361,13 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
         }
 
         JsonObject obj = value.toObject();
+        std::string scope = obj.value("scope").toStdString();
 
         JsonArray shortcutsArr = obj.value("shortcuts").toArray();
         for (size_t j = 0; j < shortcutsArr.size(); ++j) {
             JsonObject shortcutObj = shortcutsArr.at(j).toObject();
             Shortcut shortcut;
-            shortcut.scope = obj.value("scope").toStdString();
+            shortcut.scope = scope;
             shortcut.command = rcommand::Command(shortcutObj.value("command").toStdString());
             shortcut.autoRepeat = shortcutObj.value("autorepeat", JsonValue(true)).toBool();
             JsonArray sequencesArr = shortcutObj.value("sequences").toArray();
