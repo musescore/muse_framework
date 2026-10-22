@@ -38,17 +38,19 @@
 using namespace muse;
 using namespace muse::draw;
 
+static const muse::modularity::ContextPtr utestCtx = std::make_shared<muse::modularity::Context>(1);
+
 class Draw_FontsProviderQtTests : public ::testing::Test
 {
 public:
     struct Env {
         Env()
-            : xProvider(muse::modularity::globalCtx()),
+            : xProvider(utestCtx),
             fontsDatabase(std::make_shared<FontsDatabase>()),
-            fontsEngine(std::make_shared<FontsEngine>(muse::modularity::globalCtx()))
+            fontsEngine(std::make_shared<FontsEngine>(utestCtx))
         {
-            muse::modularity::globalIoc()->registerExport<IFontsDatabase>("draw", fontsDatabase);
-            muse::modularity::globalIoc()->registerExport<IFontsEngine>("draw", fontsEngine);
+            muse::modularity::ioc(utestCtx)->registerExport<IFontsDatabase>("draw", fontsDatabase);
+            muse::modularity::ioc(utestCtx)->registerExport<IFontsEngine>("draw", fontsEngine);
 
             loadFont("Edwin", edwinPath());
             loadFont("FreeSerif", freeSerifPath());
@@ -71,8 +73,8 @@ public:
 
         ~Env()
         {
-            muse::modularity::globalIoc()->unregister<IFontsEngine>("draw");
-            muse::modularity::globalIoc()->unregister<IFontsDatabase>("draw");
+            muse::modularity::ioc(utestCtx)->unregister<IFontsEngine>("draw");
+            muse::modularity::ioc(utestCtx)->unregister<IFontsDatabase>("draw");
         }
 
         static muse::io::path_t fontRoot()

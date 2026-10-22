@@ -34,7 +34,7 @@
 #include "types/geometry.h"
 
 namespace muse::draw {
-class IFontProvider : MODULE_GLOBAL_INTERFACE
+class IFontProvider : MODULE_CONTEXT_INTERFACE
 {
     INTERFACE_ID(muse::draw::IFontProvider)
 
