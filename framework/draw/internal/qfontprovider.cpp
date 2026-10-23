@@ -61,6 +61,12 @@ int QFontProvider::addSymbolFont(const String& family, const io::path_t& path)
     return QFontDatabase::addApplicationFont(path.toQString());
 }
 
+int QFontProvider::addSymbolFontFromData(const String& family, const ByteArray& data)
+{
+    UNUSED(family);
+    return QFontDatabase::addApplicationFontFromData(data.toQByteArray());
+}
+
 double QFontProvider::lineSpacing(const Font& f) const
 {
     return QFontMetricsF(f.toQFont(), &device).lineSpacing();
