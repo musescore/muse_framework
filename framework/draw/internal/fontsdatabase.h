@@ -21,7 +21,6 @@
  */
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <vector>
 #include <map>
@@ -53,7 +52,7 @@ private:
     struct FontInfo {
         int id = -1;
         FontDataKey key;
-        mutable std::function<ByteArray()> readData;
+        std::shared_ptr<io::IODevice> device;
 
         bool valid() const { return id > -1; }
     };

@@ -104,17 +104,6 @@ const FontDataKey& FontsDatabase::defaultFont(Font::Type type) const
     return it->second;
 }
 
-static ByteArray readAll(io::IODevice& device)
-{
-    if (!device.open(io::IODevice::ReadOnly)) {
-        return ByteArray();
-    }
-
-    ByteArray data = device.readAll();
-    device.close();
-    return data;
-}
-
 int FontsDatabase::addFont(const FontDataKey& key, const io::path_t& path)
 {
     return addFont(key, std::make_shared<io::File>(path));
@@ -130,11 +119,16 @@ int FontsDatabase::addFont(const FontDataKey& key, std::shared_ptr<io::IODevice>
     const std::string filePath = device->meta("file_path");
     ByteArray data;
     if (filePath.empty()) {
-        data = readAll(*device);
+        if (device->open(io::IODevice::ReadOnly)) {
+            data = device->readAll();
+        }
         if (data.empty()) {
             LOGE() << "failed read font: " << key.family().id();
             return -1;
         }
+    } else if (!io::File::exists(filePath)) {
+        LOGW() << "font file not found: " << filePath;
+        return -1;
     }
 
 #ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
@@ -155,15 +149,7 @@ int FontsDatabase::addFont(const FontDataKey& key, std::shared_ptr<io::IODevice>
         m_fonts.erase(it);
     }
 
-    FontInfo info;
-    info.id = id;
-    info.key = key;
-    if (filePath.empty()) {
-        info.readData = [data]() { return data; };
-    } else {
-        info.readData = [device]() { return readAll(*device); };
-    }
-    m_fonts.insert({ key, std::move(info) });
+    m_fonts.insert({ key, FontInfo { id, key, std::move(device) } });
     m_changed.notify();
 
     return id;
@@ -222,13 +208,17 @@ FontData FontsDatabase::fontData(const FontDataKey& requireKey, Font::Type type)
         return FontData();
     }
 
-    ByteArray data = info.readData();
+    if (!info.device->isOpen() && !info.device->open(io::IODevice::ReadOnly)) {
+        LOGE() << "failed open font: " << key.family().id();
+        return FontData();
+    }
+
+    ByteArray data = info.device->readAll();
     if (data.empty()) {
         LOGE() << "failed read font: " << key.family().id();
         return FontData();
     }
 
-    info.readData = [data]() { return data; };
     return FontData { key, data };
 }
 
