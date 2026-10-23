@@ -307,7 +307,7 @@ struct LocalFileHeader
     uint8_t extra_field_length[2];
 };
 
-bool ZipContainer::startsWithEntry(const uint8_t* data, size_t size, std::string_view name)
+bool ZipContainer::startsWithEntry(const uint8_t* data, size_t size, std::span<const uint8_t> name)
 {
     if (size < sizeof(LocalFileHeader) + name.size()) {
         return false;

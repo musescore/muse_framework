@@ -22,6 +22,7 @@
 #include "fontfacext.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <string_view>
 
@@ -48,7 +49,7 @@ static bool isNumber(const std::string& s)
 
 bool FontFaceXT::isFtx(const ByteArray& data)
 {
-    static constexpr std::string_view MARKER = "ftx";
+    static constexpr std::array<uint8_t, 3> MARKER = { 'f', 't', 'x' };
     return ZipReader::startsWithEntry(data, MARKER);
 }
 

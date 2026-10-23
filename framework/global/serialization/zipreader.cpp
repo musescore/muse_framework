@@ -35,7 +35,7 @@ struct ZipReader::Impl
     bool isSelfDevice = false;
 };
 
-bool ZipReader::startsWithEntry(const ByteArray& data, std::string_view name)
+bool ZipReader::startsWithEntry(const ByteArray& data, std::span<const uint8_t> name)
 {
     return ZipContainer::startsWithEntry(data.constData(), data.size(), name);
 }
