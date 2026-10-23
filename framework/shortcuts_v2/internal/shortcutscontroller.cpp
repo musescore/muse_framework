@@ -58,20 +58,23 @@ void ShortcutsController::activate(const std::string& sequence)
     }
     SC_LOG() << "'" << sequence << "' : allowedShortcuts: " << allowedShortcuts.size() << ": " << allowedShortcuts;
 
-    Shortcut selectedShortcut;
-    if (allowedShortcuts.size() == 1) {
-        selectedShortcut = allowedShortcuts.front();
-    } else if (allowedShortcuts.size() > 1) {
-        if (shortcutsResolver()) {
-            selectedShortcut = shortcutsResolver()->selectOne(allowedShortcuts);
-        } else {
-            selectedShortcut = allowedShortcuts.front();
-        }
+    if (allowedShortcuts.empty()) {
+        return;
     }
-    SC_LOG() << "selectedShortcut: " << (selectedShortcut.command.isValid() ? selectedShortcut.command.toString() : std::string("-"));
-    if (selectedShortcut.isValid()) {
-        commandDispatcher()->dispatch(selectedShortcut.command);
+
+    Shortcut activeShortcut;
+    if (shortcutsResolver()) {
+        activeShortcut = shortcutsResolver()->selectActive(allowedShortcuts);
+    } else {
+        activeShortcut = allowedShortcuts.front();
     }
+
+    SC_LOG() << "activeShortcut: " << (activeShortcut.command.isValid() ? activeShortcut.command.toString() : std::string("-"));
+    if (!activeShortcut.isValid()) {
+        return;
+    }
+
+    commandDispatcher()->dispatch(activeShortcut.command);
 }
 
 bool ShortcutsController::active()
