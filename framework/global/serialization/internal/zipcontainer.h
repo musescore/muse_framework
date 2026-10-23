@@ -24,6 +24,7 @@
 
 #include <ctime>
 #include <string>
+#include <string_view>
 
 #include "io/iodevice.h"
 
@@ -31,6 +32,8 @@ namespace muse {
 class ZipContainer
 {
 public:
+    static bool startsWithEntry(const uint8_t* data, size_t size, std::string_view name);
+
     explicit ZipContainer(io::IODevice* device);
     ~ZipContainer();
 

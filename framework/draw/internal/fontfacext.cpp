@@ -46,6 +46,12 @@ static bool isNumber(const std::string& s)
     })));
 }
 
+bool FontFaceXT::isFtx(const ByteArray& data)
+{
+    static constexpr std::string_view MARKER = "ftx";
+    return ZipReader::startsWithEntry(data, MARKER);
+}
+
 FontFaceXT::FontFaceXT()
 {
 }

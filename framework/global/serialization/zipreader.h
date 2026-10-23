@@ -22,6 +22,7 @@
 #ifndef MUSE_GLOBAL_ZIPREADER_H
 #define MUSE_GLOBAL_ZIPREADER_H
 
+#include <string_view>
 #include <vector>
 
 #include "global/types/ret.h"
@@ -43,6 +44,8 @@ public:
 
         bool isValid() const { return isDir || isFile || isSymLink; }
     };
+
+    static bool startsWithEntry(const ByteArray& data, std::string_view name);
 
     explicit ZipReader(const io::path_t& filePath);
     explicit ZipReader(io::IODevice* device);
