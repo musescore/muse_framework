@@ -213,6 +213,7 @@ FontData FontsDatabase::fontData(const FontDataKey& requireKey, Font::Type type)
         return FontData();
     }
 
+    info.device->seek(0);
     ByteArray data = info.device->readAll();
     if (data.empty()) {
         LOGE() << "failed read font: " << key.family().id();
