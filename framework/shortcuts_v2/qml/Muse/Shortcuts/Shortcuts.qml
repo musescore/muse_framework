@@ -56,6 +56,10 @@ QtObject {
             context: Qt.WindowShortcut
             enabled: shortcutsModel.active
             onActivated: shortcutsModel.activate(sequence)
+            onActivatedAmbiguously: {
+                console.error("onActivatedAmbiguously: " + sequence)
+                shortcutsModel.activate(sequence)
+            }
         }
     }
 }
