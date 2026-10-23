@@ -52,6 +52,10 @@ public:
     bool shouldProcessDuringSilence() const;
     async::Channel<bool> shouldProcessDuringSilenceChanged() const;
 
+    //! NOTE See IFxProcessor::isReady() / resetState()
+    bool isReady() const;
+    void resetState();
+
 private:
     void rebuild() override;
     void doSelfProcess(float* buffer, samples_t samplesPerChannel) override;

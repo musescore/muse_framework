@@ -21,17 +21,26 @@
  */
 #include "audiocontext.h"
 
+#include <chrono>
+#include <map>
+#include <thread>
+#include <unordered_set>
+
 #include "audio/common/audiosanitizer.h"
 #include "audio/common/audioerrors.h"
 #include "audio/common/audioutils.h"
 
 #include "nodes/trackchain.h"
+#include "nodes/audiosourcenode.h"
+#include "nodes/signalnode.h"
+#include "nodes/automationcontrolnode.h"
 
 #include "contextplayer.h"
 
 #include "muse_framework_config.h"
 #ifdef MUSE_MODULE_AUDIO_EXPORT
 #include "export/soundtrackwriter.h"
+#include "export/parallelsoundtrackwriter.h"
 #endif
 
 using namespace muse;
@@ -780,6 +789,13 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
         ONLY_AUDIO_ENGINE_THREAD;
 
 #ifdef MUSE_MODULE_AUDIO_EXPORT
+        //! NOTE The engine keeps handling requests while an export waits (e.g. for online sounds),
+        //! so a second export could start meanwhile; it would share this one's state
+        if (m_isSavingSoundTracks) {
+            return resolve(make_ret(Err::ExportInProgress, "another export is in progress"));
+        }
+        m_isSavingSoundTracks = true;
+
         //! NOTE These engine state changes must run inside execOperation so they are
         // synchronized with the audio driver process (see doSaveSoundTrack).
         Operation prepare = [this]() {
@@ -801,11 +817,81 @@ async::Promise<Ret> AudioContext::saveSoundTrack(io::IODevice& dstDevice, const 
             }
 
             configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(lazyProcessingWasEnabled);
+            m_isSavingSoundTracks = false;
             (void)resolve(ret);
         });
 
         return async::Promise<Ret>::dummy_result();
 #else
+        return resolve(make_ret(Err::DisabledAudioExport, "audio export is disabled"));
+#endif
+    });
+}
+
+//! Renders several files at the same time (see export/README.md): waits for online sounds,
+//! validates the targets, prepares the effect copies, then runs the parallel export.
+//! Only one export can run at a time.
+async::Promise<Ret> AudioContext::saveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
+                                                  const SoundTracksExportOptions& options)
+{
+    return async::make_promise<Ret>([this, targets, format, options](auto resolve, auto) {
+        ONLY_AUDIO_ENGINE_THREAD;
+
+#ifdef MUSE_MODULE_AUDIO_EXPORT
+        //! NOTE See saveSoundTrack(): one export at a time
+        if (m_isSavingSoundTracks) {
+            return resolve(make_ret(Err::ExportInProgress, "another export is in progress"));
+        }
+        m_isSavingSoundTracks = true;
+
+        //! NOTE These engine state changes must run inside execOperation so they are
+        // synchronized with the audio driver process (see doSaveSoundTracks).
+        Operation prepare = [this]() {
+            m_player->stop();
+            m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+        };
+        if (m_execOperation) {
+            m_execOperation->execOperation(OperationType::LongOperation, prepare);
+        } else {
+            prepare();
+        }
+
+        const bool lazyProcessingWasEnabled = configuration()->isLazyProcessingOfOnlineSoundsEnabled();
+        configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(false);
+
+        listenInputProcessing([this, targets, format, options, lazyProcessingWasEnabled, resolve](Ret ret) {
+            auto finish = [this, lazyProcessingWasEnabled, resolve](const Ret& ret) {
+                configuration()->setIsLazyProcessingOfOnlineSoundsEnabled(lazyProcessingWasEnabled);
+                m_isSavingSoundTracks = false;
+                (void)resolve(ret);
+            };
+
+            if (ret) {
+                ret = validateSoundTrackTargets(targets);
+            }
+
+            if (!ret) {
+                finish(ret);
+                return;
+            }
+
+            //! NOTE Every worker needs its own copy of the aux channels, and VST copies finish
+            //! loading asynchronously (on the main thread), so wait for them before rendering
+            prepareExportAuxCopies(targets, exportWorkerCount(targets), [this, targets, format, options, finish](Ret ret) {
+                if (ret) {
+                    ret = doSaveSoundTracks(targets, format, options);
+                }
+
+                releaseExportAuxCopies();
+                finish(ret);
+            });
+        });
+
+        return async::Promise<Ret>::dummy_result();
+#else
+        UNUSED(targets);
+        UNUSED(format);
+        UNUSED(options);
         return resolve(make_ret(Err::DisabledAudioExport, "audio export is disabled"));
 #endif
     });
@@ -950,6 +1036,339 @@ Ret AudioContext::doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackForm
 #else
     return make_ret(Err::DisabledAudioExport, "audio export is disabled");
 #endif
+}
+
+//! Builds the writer's track and file lists from the targets (each track once) and runs it
+//! inside execOperation, like the single-file export.
+Ret AudioContext::doSaveSoundTracks(const SoundTrackTargetList& targets, const SoundTrackFormat& format,
+                                    const SoundTracksExportOptions& options)
+{
+#ifdef MUSE_MODULE_AUDIO_EXPORT
+    using namespace muse::audio::soundtrack;
+
+    //! NOTE Estimated relative rendering cost of a track, so the heaviest work starts first
+    auto trackWeight = [](const Track& t) {
+        int weight = 1;
+        switch (resourceTypeFromString(t.params.source.resourceMeta.type)) {
+        // Plugin instruments (e.g. Kontakt) are the slowest to render, then MuseSounds
+        case AudioResourceType::VstPlugin: weight = 8;
+            break;
+        case AudioResourceType::MuseSamplerSoundPack: weight = 4;
+            break;
+        default: break;
+        }
+
+        for (const auto& fx : t.params.fxChain) {
+            if (fx.second.active && resourceTypeFromString(fx.second.resourceMeta.type) == AudioResourceType::VstPlugin) {
+                // Each plugin effect on the track adds to its cost
+                weight += 4;
+            }
+        }
+
+        return weight;
+    };
+
+    std::vector<ParallelSoundTrackWriter::Track> tracks;
+    std::map<TrackId, size_t> trackIndexById;
+    std::vector<ParallelSoundTrackWriter::File> files;
+    files.reserve(targets.size());
+
+    for (const SoundTrackTarget& target : targets) {
+        ParallelSoundTrackWriter::File file;
+        file.dstDevice = target.dstDevice;
+
+        for (const TrackId trackId : target.trackIds) {
+            // A track shared by several targets gets one entry, so it's rendered once
+            auto it = trackIndexById.find(trackId);
+            if (it == trackIndexById.end()) {
+                const Track* t = track(trackId);
+                IF_ASSERT_FAILED(t && t->chain) {
+                    return make_ret(Err::InvalidTrackId);
+                }
+
+                ParallelSoundTrackWriter::Track writerTrack;
+                writerTrack.chain = t->chain;
+                writerTrack.auxSends = t->params.auxSends;
+                writerTrack.weight = trackWeight(*t);
+                if (auto source = std::dynamic_pointer_cast<AudioSourceNode>(t->chain->source())) {
+                    // Read here, on the engine thread, since the workers mustn't touch the source's playback data
+                    writerTrack.firstNoteTime = source->firstNoteTime();
+                }
+
+                it = trackIndexById.emplace(trackId, tracks.size()).first;
+                tracks.push_back(std::move(writerTrack));
+            }
+
+            file.tracks.push_back(it->second);
+        }
+
+        files.push_back(std::move(file));
+    }
+
+    ParallelSoundTrackWriter::Options writerOptions;
+    writerOptions.idleUntilFirstNote = options.idleUntilFirstNote;
+
+    const secs_t totalDuration = m_player->duration();
+    auto writer = std::make_shared<ParallelSoundTrackWriter>(std::move(tracks), std::move(files), m_exportAuxChannels, format,
+                                                             totalDuration, writerOptions);
+
+    writer->progress().progressChanged().onReceive(this, [this](int64_t current, int64_t total, std::string /*title*/) {
+        m_saveSoundTracksProgress.progress.send(current, total, SaveSoundTrackStage::WritingSoundTrack);
+    });
+
+    writer->fileProgressChanged().onReceive(this, [this](size_t fileIdx, int percent) {
+        // This stage reuses the progress arguments: current = percent, total = file index
+        m_saveSoundTracksProgress.progress.send(percent, static_cast<int64_t>(fileIdx), SaveSoundTrackStage::WritingSoundTrackFile);
+    });
+
+    // Weak, so a late abort after the export can't keep the writer alive
+    std::weak_ptr<ParallelSoundTrackWriter> weakPtr = writer;
+    m_saveSoundTracksProgress.aborted.onNotify(this, [weakPtr]() {
+        if (auto writer = weakPtr.lock()) {
+            writer->abort();
+        }
+    });
+
+    //! NOTE See the equivalent comment in doSaveSoundTrack: the offline render and the
+    // source/engine state changes around it must run inside execOperation.
+    Ret ret;
+    Operation func = [this, writer, &ret, &format]() {
+        setMode(ProcessMode::PlayingOffline);
+        //! NOTE The writer processes the tracks itself (not through the mixer),
+        //! the mixer only passes the export output spec on to them
+        m_mixer->setOutputSpec(format.outputSpec);
+        ret = writer->write();
+        m_mixer->setOutputSpec(outputSpec());
+        setMode(ProcessMode::Idle);
+        m_player->seek(TimePosition::zero(m_outputSpec.sampleRate));
+    };
+
+    if (m_execOperation) {
+        m_execOperation->execOperation(OperationType::LongOperation, func);
+    } else {
+        func();
+    }
+
+    m_saveSoundTracksProgress.aborted.disconnect(this);
+
+    return ret;
+#else
+    UNUSED(targets);
+    UNUSED(format);
+    UNUSED(options);
+    return make_ret(Err::DisabledAudioExport, "audio export is disabled");
+#endif
+}
+
+//! Every target needs a destination and at least one existing event/sound track, listed once.
+//! A track may belong to several targets.
+Ret AudioContext::validateSoundTrackTargets(const SoundTrackTargetList& targets) const
+{
+    if (targets.empty()) {
+        return make_ret(Err::NoAudioToExport);
+    }
+
+    //! NOTE A track may belong to several targets (e.g. a part and the full score): it's still
+    //! rendered only once (see ParallelSoundTrackWriter), but it can't be listed twice in one target
+    for (const SoundTrackTarget& target : targets) {
+        if (!target.dstDevice) {
+            return make_ret(Err::ErrorEncode);
+        }
+
+        if (target.trackIds.empty()) {
+            return make_ret(Err::InvalidTrackId);
+        }
+
+        std::unordered_set<TrackId> seenTrackIds;
+        for (const TrackId trackId : target.trackIds) {
+            if (!seenTrackIds.insert(trackId).second) {
+                return make_ret(Err::InvalidTrackId);
+            }
+
+            const Track* t = track(trackId);
+            if (!t || !t->chain || (t->type != TrackType::Sound_track && t->type != TrackType::Event_track)) {
+                return make_ret(Err::InvalidTrackId);
+            }
+        }
+    }
+
+    return make_ok();
+}
+
+//! Hardware threads, capped by the larger of the target count and the number of distinct tracks,
+//! since no job covers less than one track.
+size_t AudioContext::exportWorkerCount(const SoundTrackTargetList& targets) const
+{
+    //! NOTE Render jobs are per file or per track, so there's no use for more workers than tracks
+    std::unordered_set<TrackId> trackIds;
+    for (const SoundTrackTarget& target : targets) {
+        trackIds.insert(target.trackIds.cbegin(), target.trackIds.cend());
+    }
+
+    // hardware_concurrency() may return 0 when unknown
+    const size_t threadCount = std::max<size_t>(1, std::thread::hardware_concurrency());
+    return std::max<size_t>(1, std::min(threadCount, std::max(targets.size(), trackIds.size())));
+}
+
+//! The aux tracks, in the order of the mixer's aux channels (the indices of AuxSendsParams).
+std::vector<const AudioContext::Track*> AudioContext::auxTracks() const
+{
+    //! NOTE Same order as the mixer's aux channels (both are appended in addAuxTrack),
+    //! which is what the indices of AuxSendsParams refer to
+    std::vector<const Track*> result;
+    for (const Track& t : m_tracks) {
+        if (t.type == TrackType::Aux_track) {
+            result.push_back(&t);
+        }
+    }
+
+    return result;
+}
+
+//! Creates each worker's copies of the aux channels that the exported tracks send to, and calls
+//! `completed` once all of them are loaded, after a timeout, or when the export is cancelled.
+void AudioContext::prepareExportAuxCopies(const SoundTrackTargetList& targets, size_t workerCount,
+                                          std::function<void(const Ret&)> completed)
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+
+    releaseExportAuxCopies();
+
+    const std::vector<const Track*> auxes = auxTracks();
+
+    //! NOTE Only aux channels that at least one exported track sends to (active, above 0%)
+    std::vector<bool> auxUsed(auxes.size(), false);
+    for (const SoundTrackTarget& target : targets) {
+        for (const TrackId trackId : target.trackIds) {
+            const Track* t = track(trackId);
+            if (!t) {
+                continue;
+            }
+
+            const AuxSendsParams& sends = t->params.auxSends;
+            for (size_t auxIdx = 0; auxIdx < sends.size() && auxIdx < auxes.size(); ++auxIdx) {
+                // The same rule as the mixer: an active send above 0%
+                if (sends.at(auxIdx).active && !muse::is_zero(sends.at(auxIdx).signalAmount)) {
+                    auxUsed[auxIdx] = true;
+                }
+            }
+        }
+    }
+
+    PlayheadPositionPtr playheadPosition = std::static_pointer_cast<IPlayheadPosition>(m_player);
+
+    m_exportAuxChannels.assign(workerCount, std::vector<TrackChainPtr>(auxes.size()));
+
+    for (size_t worker = 0; worker < workerCount; ++worker) {
+        for (size_t auxIdx = 0; auxIdx < auxes.size(); ++auxIdx) {
+            const Track& aux = *auxes.at(auxIdx);
+
+            //! NOTE The mixer skips aux channels without an fx chain, so no copy is needed either
+            if (!auxUsed[auxIdx] || !aux.chain || !aux.chain->fxChain()) {
+                continue;
+            }
+
+            //! NOTE Same structure and settings as the live aux channel (see addAuxTrack),
+            //! but with its own effect instances
+            const TrackId copyId = newTrackId();
+
+            FxChainPtr fxChain = audioFactory()->makeFxChainCopy(copyId, aux.params.fxChain);
+            fxChain->setPlayheadPosition(playheadPosition);
+
+            AutomationControlNodePtr controlNode = std::make_shared<AutomationControlNode>();
+            controlNode->setPlayheadPosition(playheadPosition);
+
+            TrackChainPtr chain = std::make_shared<TrackChain>(copyId, aux.name + " (export copy)");
+            chain->setOutputSpec(outputSpec());
+            chain->setMode(mode());
+            chain->setFxChain(fxChain);
+            chain->setControl(controlNode);
+            chain->setSignal(std::make_shared<SignalNode>());
+            chain->rebuild();
+
+            controlNode->setVolume(aux.params.control.volume);
+            controlNode->setPan(aux.params.control.balance);
+            controlNode->setMuted(aux.params.control.muted);
+
+            m_exportAuxChannels[worker][auxIdx] = chain;
+            m_exportAuxCopies.push_back({ copyId, aux.params.fxChain });
+        }
+    }
+
+    auto allReady = [this]() {
+        for (const auto& auxChannels : m_exportAuxChannels) {
+            for (const TrackChainPtr& chain : auxChannels) {
+                if (chain && chain->fxChain() && !chain->fxChain()->isReady()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    if (allReady()) {
+        completed(make_ok());
+        return;
+    }
+
+    m_saveSoundTracksProgress.progress.send(0, 0, SaveSoundTrackStage::LoadingEffects);
+
+    //! NOTE Not reset here or in releaseExportAuxCopies(): completed() runs the whole export
+    //! from inside this timer's callback. The next prepareExportAuxCopies() replaces it
+    m_exportAuxCopiesTimer = std::make_shared<Timer>(std::chrono::milliseconds(10));
+    std::weak_ptr<Timer> weakTimer = m_exportAuxCopiesTimer;
+
+    //! NOTE The export can be cancelled while it waits
+    m_saveSoundTracksProgress.aborted.onNotify(this, [this, weakTimer, completed]() {
+        m_saveSoundTracksProgress.aborted.disconnect(this);
+
+        std::shared_ptr<Timer> timer = weakTimer.lock();
+        if (!timer || !timer->isActive()) {
+            return;
+        }
+
+        timer->stop();
+        completed(make_ret(Ret::Code::Cancel));
+    });
+
+    m_exportAuxCopiesTimer->onTimeout(this, [this, weakTimer, allReady, completed]() {
+        //! NOTE A tick may still be queued after stop() or after the timer was replaced
+        std::shared_ptr<Timer> timer = weakTimer.lock();
+        if (!timer || !timer->isActive()) {
+            return;
+        }
+
+        if (allReady()) {
+            timer->stop();
+            m_saveSoundTracksProgress.aborted.disconnect(this);
+            completed(make_ok());
+            return;
+        }
+
+        constexpr float LOADING_TIMEOUT_SECS = 60.f;
+        if (timer->secondsSinceStart() > LOADING_TIMEOUT_SECS) {
+            timer->stop();
+            m_saveSoundTracksProgress.aborted.disconnect(this);
+            LOGE() << "Timed out waiting for the export copies of the aux effects to load";
+            completed(make_ret(Err::InvalidFxParams));
+        }
+    });
+
+    m_exportAuxCopiesTimer->start();
+}
+
+//! Releases the effect copies made by prepareExportAuxCopies().
+void AudioContext::releaseExportAuxCopies()
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+
+    m_exportAuxChannels.clear();
+
+    for (const ExportAuxCopy& copy : m_exportAuxCopies) {
+        audioFactory()->releaseFxChainCopy(copy.copyId, copy.fxChain);
+    }
+
+    m_exportAuxCopies.clear();
 }
 
 void AudioContext::abortSavingAllSoundTracks()

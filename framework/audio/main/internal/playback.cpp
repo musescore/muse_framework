@@ -679,6 +679,48 @@ async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io
     }, PromiseType::AsyncByBody);
 }
 
+//! Sends the export to the engine: the targets are flattened into track ids, track counts and
+//! device pointers for the RPC message.
+async::Promise<bool> Playback::saveSoundTracks(const SoundTrackFormat& format, const SoundTrackTargetList& targets,
+                                               const SoundTracksExportOptions& options)
+{
+    ONLY_AUDIO_MAIN_THREAD;
+    return async::make_promise<bool>([this, format, targets, options](auto resolve, auto reject) {
+        ONLY_AUDIO_MAIN_THREAD;
+
+        //! NOTE Flattened for packing: trackCounts[i] consecutive ids of trackIds belong to target i
+        std::vector<TrackId> trackIds;
+        std::vector<uint64_t> trackCounts;
+        std::vector<uint64_t> dstDevicePtrs;
+        trackCounts.reserve(targets.size());
+        dstDevicePtrs.reserve(targets.size());
+        for (const SoundTrackTarget& target : targets) {
+            trackIds.insert(trackIds.end(), target.trackIds.cbegin(), target.trackIds.cend());
+            trackCounts.push_back(target.trackIds.size());
+            // The engine writes to the device directly; only its address is sent, like in saveSoundTrack()
+            dstDevicePtrs.push_back(reinterpret_cast<uint64_t>(target.dstDevice));
+        }
+
+        Msg msg = rpc::make_request(ctxId(), MsgCode::SaveSoundTracks, RpcPacker::pack(format, trackIds, trackCounts, dstDevicePtrs,
+                                                                                       options.idleUntilFirstNote));
+        channel()->send(msg, [resolve, reject](const Msg& res) {
+            ONLY_AUDIO_MAIN_THREAD;
+            Ret ret;
+            IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
+                doReject(MsgCode::SaveSoundTracks, reject, audio::make_ret(Err::InvalidRpcData));
+                return;
+            }
+
+            if (ret) {
+                (void)resolve(true);
+            } else {
+                doReject(MsgCode::SaveSoundTracks, reject, ret);
+            }
+        });
+        return Promise<bool>::dummy_result();
+    }, PromiseType::AsyncByBody);
+}
+
 void Playback::abortSavingAllSoundTracks()
 {
     ONLY_AUDIO_MAIN_THREAD;
