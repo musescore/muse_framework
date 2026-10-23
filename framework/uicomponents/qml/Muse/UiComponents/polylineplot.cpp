@@ -138,7 +138,7 @@ static double valueAtX(const QVector<QPointF>& sortedPoints, double x)
 }
 
 PolylinePlot::PolylinePlot(QQuickItem* parent)
-    : QQuickPaintedItem(parent), muse::Contextable(muse::iocCtxForQmlObject(this))
+    : QQuickPaintedItem(parent)
 {
     setAcceptHoverEvents(true);
     setAcceptedMouseButtons(Qt::LeftButton);
@@ -162,17 +162,10 @@ PolylinePlot::PolylinePlot(QQuickItem* parent)
     });
 }
 
-void PolylinePlot::init()
+void PolylinePlot::cancelEdit()
 {
-    dispatcher()->reg(this, "action://cancel", [this](){
-        // emit signal and let decide model what to do
-        emit dragCancelled();
-        // Qt suppresses hover events while a mouse button is held, so the
-        // ghost-point preview would otherwise stay painted at the press
-        // position until the user releases and moves the mouse.
-        m_hoveredOnLine = false;
-        resetGestureState();
-    });
+    m_hoveredOnLine = false;
+    resetGestureState();
 }
 
 PolylinePointStyle* PolylinePlot::standardPointStyle()
