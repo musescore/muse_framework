@@ -53,9 +53,7 @@ public:
         String,
         List,
         Map,
-#ifndef NO_QT_SUPPORT
         Color
-#endif
     };
 
     Val() = default;

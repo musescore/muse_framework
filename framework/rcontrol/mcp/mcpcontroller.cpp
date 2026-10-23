@@ -30,6 +30,81 @@
 using namespace muse::rcontrol::mcp;
 using namespace muse::rcommand;
 
+static muse::rcontrol::mcp::DataType toMcpDataType(muse::rcommand::DataType type)
+{
+    switch (type) {
+    case muse::rcommand::DataType::Undefined: return muse::rcontrol::mcp::DataType::Undefined;
+    case muse::rcommand::DataType::String: return muse::rcontrol::mcp::DataType::String;
+    case muse::rcommand::DataType::Integer: return muse::rcontrol::mcp::DataType::Integer;
+    case muse::rcommand::DataType::Float: return muse::rcontrol::mcp::DataType::Float;
+    case muse::rcommand::DataType::Boolean: return muse::rcontrol::mcp::DataType::Boolean;
+    case muse::rcommand::DataType::Object: return muse::rcontrol::mcp::DataType::Object;
+    case muse::rcommand::DataType::Array: return muse::rcontrol::mcp::DataType::Array;
+    case muse::rcommand::DataType::Null: return muse::rcontrol::mcp::DataType::Null;
+    }
+    return muse::rcontrol::mcp::DataType::Undefined;
+}
+
+static muse::JsonValue toMcpJsonValue(const muse::Val& val)
+{
+    switch (val.type()) {
+    case muse::Val::Type::Undefined: return muse::JsonValue();
+    case muse::Val::Type::Bool: return muse::JsonValue(val.toBool());
+    case muse::Val::Type::Int: return muse::JsonValue(val.toInt());
+    case muse::Val::Type::Int64: return muse::JsonValue(val.toInt());
+    case muse::Val::Type::Double: return muse::JsonValue(val.toDouble());
+    case muse::Val::Type::String: return muse::JsonValue(val.toString());
+    default: {
+        NOT_SUPPORTED << "data type: " << (int)val.type();
+    }
+    }
+
+    return muse::JsonValue();
+}
+
+static muse::Val toVal(const muse::JsonValue& val)
+{
+    if (val.isNull()) {
+        return muse::Val();
+    }
+    if (val.isBool()) {
+        return muse::Val(val.toBool());
+    }
+    if (val.isNumber()) {
+        return muse::Val(val.toDouble());
+    }
+    if (val.isString()) {
+        return muse::Val(val.toString().toStdString());
+    }
+    if (val.isArray()) {
+        muse::ValList list;
+        const muse::JsonArray array = val.toArray();
+        for (size_t i = 0; i < array.size(); ++i) {
+            list.emplace_back(toVal(array[i]));
+        }
+        return muse::Val(list);
+    }
+    if (val.isObject()) {
+        muse::ValMap map;
+        const muse::JsonObject object = val.toObject();
+        for (const auto& key : object.keys()) {
+            map[key] = toVal(object[key]);
+        }
+        return muse::Val(map);
+    }
+
+    return muse::Val();
+}
+
+static muse::rcommand::Params toParams(const muse::JsonObject& obj)
+{
+    muse::rcommand::Params params;
+    for (const auto& key : obj.keys()) {
+        params[key] = toVal(obj[key]);
+    }
+    return params;
+}
+
 McpController::McpController(const modularity::ContextPtr& iocCtx)
     : Contextable(iocCtx)
 {
@@ -44,21 +119,15 @@ McpController::~McpController()
 static std::string commandToToolName(const Command& command)
 {
     std::string path = command.path();
-    muse::strings::replace(path, "/", "_");
+    std::replace(path.begin(), path.end(), '/', '.');
     return path;
 }
 
-static CommandQuery commandQuery(const std::string& name, const muse::JsonObject& args)
+static Command toolNameToCommand(const std::string& name)
 {
-    UNUSED(args); // TODO: implement
     std::string path = name;
-    muse::strings::replace(path, "_", "/");
-    Command cmd(std::string(COMMAND_SCHEME), path);
-    CommandQuery q(cmd);
-    // for (const auto& arg : args) {
-    //     q.set(arg.first, arg.second.toString());
-    // }
-    return q;
+    std::replace(path.begin(), path.end(), '.', '/');
+    return Command(std::string(COMMAND_SCHEME), path);
 }
 
 void McpController::init()
@@ -76,9 +145,12 @@ void McpController::init()
     {
         LOGDA() << "Tools call: " << name;
 
-        commandsDispatcher()->dispatch(commandQuery(name, args));
-
-        onResult(ToolResult());
+        async::Promise<Response> promise = commandsDispatcher()->dispatch(toolNameToCommand(name), toParams(args));
+        promise.onResolve(this, [onResult](const Response& response) {
+            ToolResult result;
+            result.ret = response.ret;
+            onResult(result);
+        });
     });
 
     m_mcpServer->init();
@@ -98,19 +170,21 @@ std::vector<Tool> McpController::makeToolsList() const
     auto commandList = commandsRegister()->commandInfoList();
     tools.reserve(commandList.size());
     for (const auto& info : commandList) {
+        if (!info.availabilities.testFlag(Availability::MCP)) {
+            continue;
+        }
         Tool tool;
         tool.name = commandToToolName(info.command);
         tool.title = info.title.raw().translated().toStdString();
         tool.description = info.description.translated().toStdString();
-        tool.inputSchema = InputSchema();
-        // for (const auto& arg : info.inputSchema.args) {
-        //     Property property;
-        //     property.name = String::fromStdString(arg.first);
-        //     property.type = String::fromStdString(arg.second.type);
-        //     property.description = String::fromStdString(arg.second.description);
-        //     property.minimum = String::fromStdString(arg.second.minimum);
-        //     property.maximum = String::fromStdString(arg.second.maximum);
-        // }
+        for (const auto& [name, arg] : info.inputSchema.args) {
+            Property property;
+            property.type = toMcpDataType(arg.type);
+            property.description = arg.description.toStdString();
+            property.minimum = toMcpJsonValue(arg.min);
+            property.maximum = toMcpJsonValue(arg.max);
+            tool.inputSchema.properties[name] = property;
+        }
         tools.push_back(std::move(tool));
     }
     return tools;
