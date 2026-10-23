@@ -25,6 +25,7 @@
 
 #include "global/modularity/imoduleinterface.h"
 #include "global/io/path.h"
+#include "global/types/bytearray.h"
 #include "global/types/string.h"
 
 #include "types/font.h"
@@ -39,6 +40,7 @@ public:
     virtual ~IFontProvider() = default;
 
     virtual int addSymbolFont(const String& family, const io::path_t& path) = 0;
+    virtual int addSymbolFontFromData(const String& family, const ByteArray& data) = 0;
 
     virtual double lineSpacing(const Font& f) const = 0;
     virtual double xHeight(const Font& f) const = 0;

@@ -33,6 +33,7 @@ public:
     QFontProvider() = default;
 
     int addSymbolFont(const String& family, const io::path_t& path) override;
+    int addSymbolFontFromData(const String& family, const ByteArray& data) override;
 
     double lineSpacing(const Font& f) const override;
     double xHeight(const Font& f) const override;
