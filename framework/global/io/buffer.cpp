@@ -81,6 +81,16 @@ const ByteArray& Buffer::data() const
     return *m_ref;
 }
 
+ByteArray Buffer::doReadAll()
+{
+    if (!isOpenModeReadable()) {
+        return IODevice::doReadAll();
+    }
+
+    seek(size());
+    return data();
+}
+
 bool Buffer::doOpen(OpenMode)
 {
     return true;
