@@ -25,8 +25,7 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "global/defer.h"
-
+#include "audio/engine/internal/nodes/sanitizernode.h"
 #include "audio/common/audioerrors.h"
 
 #include "mp3encoder.h"
@@ -35,7 +34,8 @@
 #include "wavencoder.h"
 #include "aacencoder.h"
 
-#include "log.h"
+#include "global/defer.h"
+#include "global/log.h"
 
 using namespace muse;
 using namespace muse::audio;
@@ -66,6 +66,10 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
     IF_ASSERT_FAILED(format.isValid()) {
         return;
     }
+
+    auto sanitizer = std::make_shared<engine::SanitizerNode>();
+    m_source->connect(sanitizer);
+    m_outputNode = sanitizer;
 
     const OutputSpec& outputSpec = format.outputSpec;
 
@@ -101,8 +105,8 @@ Ret SoundTrackWriter::write()
         return false;
     }
 
-    m_source->setOutputSpec(m_encoderPtr->format().outputSpec);
-    m_source->setMode(ProcessMode::PlayingOffline);
+    m_outputNode->setOutputSpec(m_encoderPtr->format().outputSpec);
+    m_outputNode->setMode(ProcessMode::PlayingOffline);
 
     DEFER {
         if (!m_isAborted) {
@@ -170,7 +174,7 @@ Ret SoundTrackWriter::writeStreaming()
         //! (real time does this via AudioEngine::fillSilent), so clear it before each block.
         std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
 
-        m_source->process(m_intermBuffer.data(), chunk);
+        m_outputNode->process(m_intermBuffer.data(), chunk);
 
         const size_t encoded = m_encoderPtr->encode(chunk, m_intermBuffer.data());
         if (encoded == 0) {
