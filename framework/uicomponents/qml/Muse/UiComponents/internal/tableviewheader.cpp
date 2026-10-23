@@ -58,6 +58,21 @@ void TableViewHeader::setPreferredWidth(int width)
     emit preferredWidthChanged();
 }
 
+bool TableViewHeader::readOnly() const
+{
+    return m_readOnly;
+}
+
+void TableViewHeader::setReadOnly(bool readOnly)
+{
+    if (m_readOnly == readOnly) {
+        return;
+    }
+
+    m_readOnly = readOnly;
+    emit readOnlyChanged();
+}
+
 TableViewCellType::Type TableViewHeader::cellType() const
 {
     return m_cellType;
