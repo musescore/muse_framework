@@ -25,6 +25,8 @@
 #include <QQuickWindow>
 #include <QTextBoundaryFinder>
 
+#include <algorithm>
+
 #include "log.h"
 
 using namespace muse;
@@ -165,7 +167,9 @@ void AccessibleItem::accessibleSelection(int selectionIndex, int* startOffset, i
 
 int AccessibleItem::accessibleSelectionCount() const
 {
-    return m_selectedText.size();
+    //! NOTE This is the number of selected *ranges*, not the length of the selected text.
+    //! Qt's UIA bridge calls removeSelection() once per range before selecting a new one.
+    return m_selectionStart != m_selectionEnd ? 1 : 0;
 }
 
 int AccessibleItem::accessibleCursorPosition() const
@@ -365,6 +369,45 @@ int AccessibleItem::accessibleCharacterCount() const
     return text().size();
 }
 
+void AccessibleItem::accessibleSetSelection(int selectionIndex, int startOffset, int endOffset)
+{
+    if (selectionIndex != 0 || !m_textItem) {
+        return;
+    }
+
+    //! NOTE `select()` silently does nothing for out of range offsets, so clamp first.
+    const int count = accessibleCharacterCount();
+    const int start = std::clamp(startOffset, 0, count);
+    const int end = std::clamp(endOffset, 0, count);
+
+    //! NOTE Written synchronously, so that the caret has already moved by the time the
+    //! screen reader's call returns. Screen readers may read the caret back immediately
+    //! to confirm it, and the read side of this interface is synchronous too.
+    //! Accessibility calls reach us on the GUI thread on all platforms
+    //! (on Windows the UIA provider is STA and declares ProviderOptions_UseComThreading).
+    if (start == end) {
+        m_textItem->setProperty("cursorPosition", start);
+    } else {
+        QMetaObject::invokeMethod(m_textItem, "select", Q_ARG(int, start), Q_ARG(int, end));
+    }
+}
+
+void AccessibleItem::accessibleRemoveSelection(int selectionIndex)
+{
+    if (selectionIndex != 0 || !m_textItem) {
+        return;
+    }
+
+    //! NOTE Collapse the selection onto the caret, as QAccessibleTextWidget does.
+    const int pos = m_textItem->property("cursorPosition").toInt();
+    QMetaObject::invokeMethod(m_textItem, "select", Q_ARG(int, pos), Q_ARG(int, pos));
+}
+
+void AccessibleItem::accessibleSetCursorPosition(int position)
+{
+    accessibleSetSelection(0, position, position);
+}
+
 async::Channel<IAccessible::Property, Val> AccessibleItem::accessiblePropertyChanged() const
 {
     return m_accessiblePropertyChanged;
@@ -469,6 +512,11 @@ bool AccessibleItem::ignored() const
 QQuickItem* AccessibleItem::visualItem() const
 {
     return m_visualItem;
+}
+
+QQuickItem* AccessibleItem::textItem() const
+{
+    return m_textItem;
 }
 
 QWindow* AccessibleItem::window() const
@@ -670,6 +718,16 @@ void AccessibleItem::setVisualItem(QQuickItem* item)
 
     m_visualItem = item;
     emit visualItemChanged(item);
+}
+
+void AccessibleItem::setTextItem(QQuickItem* item)
+{
+    if (m_textItem == item) {
+        return;
+    }
+
+    m_textItem = item;
+    emit textItemChanged(item);
 }
 
 void AccessibleItem::setWindow(QWindow* window)
