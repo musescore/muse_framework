@@ -141,14 +141,20 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
             const InputSchema& schema = tool.inputSchema;
             JsonObject schemaObj;
             schemaObj["type"] = schema.type;
-            for (const auto& property : schema.properties) {
+            JsonObject properties;
+            for (const auto& [name, property] : schema.properties) {
                 JsonObject propertyObj;
-                propertyObj["type"] = to_string(property.second.type);
-                propertyObj["description"] = property.second.description;
-                propertyObj["minimum"] = property.second.minimum.toString();
-                propertyObj["maximum"] = property.second.maximum.toString();
-                schemaObj[property.first] = propertyObj;
+                propertyObj["type"] = to_string(property.type);
+                propertyObj["description"] = property.description;
+                if (!property.minimum.isNull()) {
+                    propertyObj["minimum"] = property.minimum;
+                }
+                if (!property.maximum.isNull()) {
+                    propertyObj["maximum"] = property.maximum;
+                }
+                properties[name] = propertyObj;
             }
+            schemaObj["properties"] = properties;
             obj["inputSchema"] = schemaObj;
 
             arr << obj;
