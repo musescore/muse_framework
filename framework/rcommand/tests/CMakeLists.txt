@@ -22,6 +22,7 @@ set(MODULE_TEST muse_rcommand_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/commanddispatchermock.h
+    ${CMAKE_CURRENT_LIST_DIR}/typedcommand_tests.cpp
 )
 
 include(SetupGTest)
