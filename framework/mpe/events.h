@@ -92,7 +92,7 @@ struct ExpressionContext
         return articulations == other.articulations
                && nominalDynamicLevel == other.nominalDynamicLevel
                && expressionCurve == other.expressionCurve
-               && velocityOverride == velocityOverride;
+               && velocityOverride == other.velocityOverride;
     }
 };
 
