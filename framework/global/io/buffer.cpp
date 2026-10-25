@@ -83,7 +83,7 @@ const ByteArray& Buffer::data() const
 
 ByteArray Buffer::doReadAll()
 {
-    if (!isOpenModeReadable()) {
+    if (!isOpenModeReadable() || pos() != 0) {
         return IODevice::doReadAll();
     }
 
