@@ -30,6 +30,7 @@ set -euo pipefail # exit on error, error on unset variable, preserve errors in p
 #   CREATE_TAG    'true' when a tag and a release will be made from the result
 # Parameters, as environment variables (the defaults are MuseScore's):
 TAG_PREFIX="${TAG_PREFIX-v}" # tag = <prefix><version>[-<label>], e.g. 'v4.0.0' or 'Audacity-4.0.0'
+TAG_LABEL_SEPARATOR="${TAG_LABEL_SEPARATOR-.}" # between a pre-release type and its number, e.g. 'rc.2' or 'beta-2'
 
 function tag_exists()
 {
@@ -121,9 +122,9 @@ if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
     VERSION_LABEL=""
 else
     label="${RELEASE_TYPE}"
-    if version_exists "${VERSION}" "${label}" || version_exists "${VERSION}" "${label}.1"; then
+    if version_exists "${VERSION}" "${label}" || version_exists "${VERSION}" "${label}${TAG_LABEL_SEPARATOR}1"; then
         while true; do
-            label="${RELEASE_TYPE}.$((++RELEASE_TYPE_COUNT))"
+            label="${RELEASE_TYPE}${TAG_LABEL_SEPARATOR}$((++RELEASE_TYPE_COUNT))"
             version_exists "${VERSION}" "${label}" || break
         done
     fi
