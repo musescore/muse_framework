@@ -31,16 +31,21 @@ CHECKSUMS_FILE=checksums.sha256.txt
 
 mkdir "${RELEASE_DIR}" # error if it already exists (need it to be empty)
 
-# Move artifacts into release directory.
+# Move artifacts into release directory. artifact_name.env holds one file name per
+# line: usually one, but a build may produce several packages (e.g. an installer
+# and an archive on Windows).
 for path in "${ARTIFACTS_DIR}/"*"/env/artifact_name.env"; do
     artifact_dir="$(dirname "$(dirname "${path}")")"
-    artifact_name="$(<"${path}")"
-    artifact_path="${artifact_dir}/${artifact_name}"
+    while IFS= read -r artifact_name || [[ "${artifact_name}" ]]; do
+        artifact_name="${artifact_name%$'\r'}"
+        [[ "${artifact_name}" ]] || continue
+        artifact_path="${artifact_dir}/${artifact_name}"
 
-    mv -v "${artifact_path}" "${RELEASE_DIR}/"
-    if [[ -f "${artifact_path}.zsync" ]]; then
-        mv -v "${artifact_path}.zsync" "${RELEASE_DIR}/"
-    fi
+        mv -v "${artifact_path}" "${RELEASE_DIR}/"
+        if [[ -f "${artifact_path}.zsync" ]]; then
+            mv -v "${artifact_path}.zsync" "${RELEASE_DIR}/"
+        fi
+    done <"${path}"
 done
 
 declare -A old_checksums new_checksums # associative arrays (i.e. maps / dictionaries)
