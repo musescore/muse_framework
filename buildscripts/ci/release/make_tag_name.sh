@@ -71,7 +71,9 @@ else
     fi
 fi
 
-VERSION="$(cmake -P version.cmake | sed -n "s|^-- MUSE_APP_VERSION ||p")"
+version_info="$(cmake -P version.cmake)"
+VERSION="$(sed -n "s|^-- MUSE_APP_VERSION ||p" <<<"${version_info}")"
+VERSION_CMAKE_LABEL="$(sed -n "s|^-- MUSE_APP_VERSION_LABEL ||p" <<<"${version_info}")" # printed only by apps that name the pre-release in version.cmake
 int="(0|[1-9][0-9]*)"
 
 if [[ ! "${VERSION}" =~ ^${int}\.${int}\.${int}$ ]]; then
@@ -120,7 +122,30 @@ fi
 
 RELEASE_TYPE_COUNT=1
 
-if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
+if [[ "${CREATE_TAG}" == 'true' && "${VERSION_CMAKE_LABEL}" ]]; then
+    # version.cmake names the pre-release itself (the app shows that label, and the
+    # package files may carry it), so the tag follows it instead of counting tags.
+    # The label is '<type>' or '<type><separator><number>', with <type> = RELEASE_TYPE.
+    if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
+        echo >&2 "$o: Error: Release type is 'stable' but version.cmake has the pre-release label '${VERSION_CMAKE_LABEL}'."
+        echo >&2 "Clear MUSE_APP_VERSION_LABEL in version.cmake for a stable release."
+        exit 1
+    elif [[ ! "${VERSION_CMAKE_LABEL}" =~ ^${RELEASE_TYPE}([.-]?([1-9][0-9]*))?$ ]]; then
+        echo >&2 "$o: Error: Release type is '${RELEASE_TYPE}' but version.cmake has the pre-release label '${VERSION_CMAKE_LABEL}'."
+        echo >&2 "Expected '${RELEASE_TYPE}' or '${RELEASE_TYPE}.<number>' in MUSE_APP_VERSION_LABEL, or change the release type."
+        exit 1
+    fi
+    VERSION_LABEL="${RELEASE_TYPE}"
+    if [[ "${BASH_REMATCH[2]-}" ]]; then
+        RELEASE_TYPE_COUNT="${BASH_REMATCH[2]}"
+        VERSION_LABEL="${VERSION_LABEL}${TAG_LABEL_SEPARATOR}${RELEASE_TYPE_COUNT}"
+    fi
+    if version_exists "${VERSION}" "${VERSION_LABEL}"; then
+        echo >&2 "$o: Error: A tag already exists for ${TAG_PREFIX}${VERSION}-${VERSION_LABEL}."
+        echo >&2 "You need to bump the number in MUSE_APP_VERSION_LABEL in version.cmake."
+        exit 1
+    fi
+elif [[ "${RELEASE_TYPE}" == 'stable' ]]; then
     VERSION_LABEL=""
 else
     label="${RELEASE_TYPE}"
