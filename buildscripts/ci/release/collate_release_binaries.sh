@@ -27,7 +27,7 @@ set -euo pipefail # exit on error, error on unset variable, preserve errors in p
 
 ARTIFACTS_DIR=build.artifacts
 RELEASE_DIR=release
-CHECKSUMS_FILE=checksums.sha256.txt
+CHECKSUMS_FILE="${CHECKSUMS_FILE-checksums.sha256.txt}" # parameter: the name of the checksums file in the release
 
 mkdir "${RELEASE_DIR}" # error if it already exists (need it to be empty)
 
