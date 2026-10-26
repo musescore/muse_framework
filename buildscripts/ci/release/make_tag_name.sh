@@ -31,6 +31,8 @@ set -euo pipefail # exit on error, error on unset variable, preserve errors in p
 # Parameters, as environment variables (the defaults are MuseScore's):
 TAG_PREFIX="${TAG_PREFIX-v}" # tag = <prefix><version>[-<label>], e.g. 'v4.0.0' or 'Audacity-4.0.0'
 TAG_LABEL_SEPARATOR="${TAG_LABEL_SEPARATOR-.}" # between a pre-release type and its number, e.g. 'rc.2' or 'beta-2'
+APP_DISPLAY_NAME="${APP_DISPLAY_NAME-MuseScore Studio}" # release name = '<app> <version> <label>'
+STABLE_RELEASE_LABEL="${STABLE_RELEASE_LABEL-Release}" # the <label> of a stable release; may be empty
 
 function tag_exists()
 {
@@ -145,7 +147,7 @@ if tag_exists "${TAG_NAME}"; then
 fi
 
 case "${RELEASE_TYPE}" in
-stable) PRETTY_RELEASE_TYPE="Release";;
+stable) PRETTY_RELEASE_TYPE="${STABLE_RELEASE_LABEL}";;
 rc)     PRETTY_RELEASE_TYPE="Release Candidate";;
 beta)   PRETTY_RELEASE_TYPE="Beta";;
 alpha)  PRETTY_RELEASE_TYPE="Alpha";;
@@ -158,5 +160,11 @@ if ((RELEASE_TYPE_COUNT > 1)); then
     RELEASE_LABEL="${RELEASE_LABEL} ${RELEASE_TYPE_COUNT}"
 fi
 
+RELEASE_NAME="${APP_DISPLAY_NAME} ${PRETTY_VERSION}"
+
+if [[ "${RELEASE_LABEL}" ]]; then
+    RELEASE_NAME="${RELEASE_NAME} ${RELEASE_LABEL}"     # e.g. 'MuseScore Studio 4.0.0 Release Candidate 2'
+fi
+
 echo "TAG_NAME=${TAG_NAME}"
-echo "RELEASE_NAME=MuseScore Studio ${PRETTY_VERSION} ${RELEASE_LABEL}"
+echo "RELEASE_NAME=${RELEASE_NAME}"
