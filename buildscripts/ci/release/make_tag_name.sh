@@ -25,6 +25,12 @@ o="$(basename "$0")" # script name
 
 set -euo pipefail # exit on error, error on unset variable, preserve errors in pipelines
 
+# Inputs, as environment variables:
+#   RELEASE_TYPE  alpha, beta, rc or stable; any label when CREATE_TAG is not 'true'
+#   CREATE_TAG    'true' when a tag and a release will be made from the result
+# Parameters, as environment variables (the defaults are MuseScore's):
+TAG_PREFIX="${TAG_PREFIX-v}" # tag = <prefix><version>[-<label>], e.g. 'v4.0.0' or 'Audacity-4.0.0'
+
 function tag_exists()
 {
     local tags="$(git tag --list -- "$@")"
@@ -41,7 +47,7 @@ function version_exists()
     local suffix="${label:+-${label}}" # prepend hyphen if label not empty
     version="${version%.0}" # strip patch number if it's zero
     version="${version%.0}" # strip minor number if it's zero
-    tag_exists "v${version}${suffix}" "v${version}.0${suffix}" "v${version}.0.0${suffix}"
+    tag_exists "${TAG_PREFIX}${version}${suffix}" "${TAG_PREFIX}${version}.0${suffix}" "${TAG_PREFIX}${version}.0.0${suffix}"
 }
 
 if [[ "${CREATE_TAG}" == 'true' ]]; then
@@ -72,16 +78,16 @@ elif version_exists "${VERSION}"; then
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
         echo >&2 "$o: Error: Stable tag already exists for version ${VERSION}."
     else
-        echo >&2 "$o: Error: Creating pre-release for v${VERSION}, which already has a stable tag."
+        echo >&2 "$o: Error: Creating pre-release for ${TAG_PREFIX}${VERSION}, which already has a stable tag."
     fi
     echo >&2 "You need to bump the version numbers in version.cmake (e.g. increase PATCH by 1)."
     exit 1
 elif [[ "${RELEASE_TYPE}" =~ ^(beta|alpha)$ ]] && version_exists "${VERSION}" 'rc*'; then
-    echo >&2 "$o: Error: Release type is '${RELEASE_TYPE}' but v${VERSION} already has a Release Candidate tag."
+    echo >&2 "$o: Error: Release type is '${RELEASE_TYPE}' but ${TAG_PREFIX}${VERSION} already has a Release Candidate tag."
     echo >&2 "Please change the release type to 'rc' or bump the version numbers in version.cmake."
     exit 1
 elif [[ "${RELEASE_TYPE}" == 'alpha' ]] && version_exists "${VERSION}" 'beta*'; then
-    echo >&2 "$o: Error: Release type is '${RELEASE_TYPE}' but v${VERSION} already has a Beta tag."
+    echo >&2 "$o: Error: Release type is '${RELEASE_TYPE}' but ${TAG_PREFIX}${VERSION} already has a Beta tag."
     echo >&2 "Please change the release type to 'beta' or 'rc', or bump the version numbers in version.cmake."
     exit 1
 fi
@@ -125,7 +131,7 @@ else
 fi
 
 PRETTY_VERSION="${MAJOR}.${MINOR}.${PATCH}"     # e.g. '4.0.0'
-TAG_NAME="v${PRETTY_VERSION}"                   # e.g. 'v4.0.0'
+TAG_NAME="${TAG_PREFIX}${PRETTY_VERSION}"       # e.g. 'v4.0.0'
 
 if [[ "${VERSION_LABEL}" ]]; then
     TAG_NAME="${TAG_NAME}-${VERSION_LABEL}"     # e.g. 'v4.0.0-rc.2'
