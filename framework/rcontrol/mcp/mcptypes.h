@@ -21,8 +21,8 @@
 
 #include <string>
 
-#include "global/serialization/json.h"
 #include "global/types/ret.h"
+#include "global/types/val.h"
 
 namespace muse::rcontrol::mcp {
 enum class DataType {
@@ -54,11 +54,16 @@ inline std::string to_string(DataType type)
 struct Property {
     DataType type;
     std::string description;
-    JsonValue minimum;
-    JsonValue maximum;
+    Val minimum;
+    Val maximum;
 };
 
 struct InputSchema {
+    std::string type = "object";
+    std::map<std::string, Property> properties;
+};
+
+struct OutputSchema {
     std::string type = "object";
     std::map<std::string, Property> properties;
 };
@@ -68,9 +73,11 @@ struct Tool {
     std::string title;
     std::string description;
     InputSchema inputSchema;
+    OutputSchema outputSchema;
 };
 
 struct ToolResult {
     muse::Ret ret;
+    std::map<std::string, Val> result;
 };
 }

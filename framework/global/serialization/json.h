@@ -40,6 +40,8 @@ public:
     JsonValue(const String& v);
     JsonValue(const std::string& v);
     JsonValue(const char* v);
+    JsonValue(const JsonArray& v);
+    JsonValue(const JsonObject& v);
     JsonValue(std::shared_ptr<JsonData> d = nullptr);
 
     bool isNull() const;

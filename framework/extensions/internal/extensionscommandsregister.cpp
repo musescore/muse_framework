@@ -65,13 +65,13 @@ void ExtensionsCommandsRegister::reload()
 
     for (const auto& manifest : manifests) {
         for (const auto& action : manifest.actions) {
-            CommandInfo info = {
+            CommandInfo info(
                 makeCommand(manifest.uri, action.code),
                 TranslatableString::untranslatable(action.title.empty() ? manifest.title : action.title),
                 TranslatableString::untranslatable(manifest.description),
                 InputSchema(),
                 Decoration(action.icon)
-            };
+                );
             m_commandInfos.push_back(std::move(info));
         }
     }

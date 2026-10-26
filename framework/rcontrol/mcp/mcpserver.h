@@ -42,7 +42,7 @@ public:
     using ToolsListHandler = std::function<void (ToolsListResultHandler)>;
     using ToolsCallResultHandler = std::function<void (const ToolResult&)>;
     using ToolsCallHandler = std::function<void (const std::string& name,
-                                                 const JsonObject& arguments,
+                                                 const std::map<std::string, Val>& args,
                                                  ToolsCallResultHandler)>;
 
     void onToolsListRequest(const ToolsListHandler& onToolsList);
