@@ -86,27 +86,68 @@ static const std::map<UInt32, QString> specialKeysMap = {
     { kVK_ANSI_KeypadEquals, "=" }
 };
 
-static UCKeyboardLayout* keyboardLayout()
+//! NOTE Returns the current keyboard layout if inputSourceId is empty.
+//! The returned input source owns the layout data and must be released by the caller
+static TISInputSourceRef copyKeyboardLayoutInputSource(const QString& inputSourceId)
 {
     static TISInputSourceRef (* TISCopyCurrentKeyboardLayoutInputSource)(void);
+    static CFArrayRef (* TISCreateInputSourceList)(CFDictionaryRef properties, Boolean includeAllInstalled);
+
+    CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
+
+    if (bundle) {
+        *(void**)& TISCopyCurrentKeyboardLayoutInputSource
+            = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCopyCurrentKeyboardLayoutInputSource"));
+        *(void**)& TISCreateInputSourceList = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCreateInputSourceList"));
+    }
+
+    if (!TISCopyCurrentKeyboardLayoutInputSource || !TISCreateInputSourceList) {
+        LOGE() << "Error getting functions from Carbon framework";
+        return nullptr;
+    }
+
+    if (inputSourceId.isEmpty()) {
+        return TISCopyCurrentKeyboardLayoutInputSource();
+    }
+
+    CFStringRef id = inputSourceId.toCFString();
+    const void* keys[] = { CFSTR("TISPropertyInputSourceID") };
+    const void* values[] = { id };
+    CFDictionaryRef properties = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1,
+                                                    &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+    CFArrayRef sources = TISCreateInputSourceList(properties, true);
+
+    CFRelease(properties);
+    CFRelease(id);
+
+    TISInputSourceRef source = nullptr;
+    if (sources) {
+        if (CFArrayGetCount(sources) > 0) {
+            source = (TISInputSourceRef)CFRetain(CFArrayGetValueAtIndex(sources, 0));
+        }
+        CFRelease(sources);
+    }
+
+    return source;
+}
+
+static UCKeyboardLayout* keyboardLayout(TISInputSourceRef inputSource)
+{
     static void*(* TISGetInputSourceProperty)(TISInputSourceRef inputSource, CFStringRef propertyKey);
 
     CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
 
     if (bundle) {
         *(void**)& TISGetInputSourceProperty = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISGetInputSourceProperty"));
-        *(void**)& TISCopyCurrentKeyboardLayoutInputSource
-            = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCopyCurrentKeyboardLayoutInputSource"));
     }
 
-    if (!TISCopyCurrentKeyboardLayoutInputSource || !TISGetInputSourceProperty) {
+    if (!TISGetInputSourceProperty) {
         LOGE() << "Error getting functions from Carbon framework";
-        return 0;
+        return nullptr;
     }
 
-    TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardLayoutInputSource();
-    CFDataRef uchr = (CFDataRef)TISGetInputSourceProperty(currentKeyboard, CFSTR("TISPropertyUnicodeKeyLayoutData"));
-
+    CFDataRef uchr = (CFDataRef)TISGetInputSourceProperty(inputSource, CFSTR("TISPropertyUnicodeKeyLayoutData"));
     return (UCKeyboardLayout*)CFDataGetBytePtr(uchr);
 }
 
@@ -285,17 +326,15 @@ static QString keyCodeToString(UCKeyboardLayout* keyboard, UInt32 keyNativeCode)
     return "";
 }
 
-static QKeySequence translateToCurrentKeyboardLayout(const QKeySequence& sequence)
+static QKeySequence translateToKeyboardLayout(UCKeyboardLayout* keyboard, const QKeySequence& sequence)
 {
+    if (!keyboard) {
+        return {};
+    }
+
     const QKeyCombination keyCombination = sequence[0];
 
     const Qt::Key qKey = keyCombination.key();
-
-    UCKeyboardLayout* keyboard = keyboardLayout();
-    if (!keyboard) {
-        LOGE() << "The keyboard layout is not valid";
-        return {};
-    }
 
     bool found = false;
     UInt32 keyNativeCode = nativeKeycode(keyboard, qKey, found);
@@ -371,6 +410,12 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
         }
     };
 
+    TISInputSourceRef inputSource = copyKeyboardLayoutInputSource(keyboardLayoutId());
+    UCKeyboardLayout* keyboard = inputSource ? keyboardLayout(inputSource) : nullptr;
+    if (!keyboard) {
+        LOGE() << "The keyboard layout is not valid";
+    }
+
     ShortcutList shortcuts = commandShortcutsRegister()->shortcuts();
 
     for (const Shortcut& sc : shortcuts) {
@@ -382,7 +427,7 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
 
             // Attempt to translate from combination of keys to character, e.g., `Shift+.` becomes `>`, in the case of a QWERTY layout
             QKeySequence translatedSequence
-                = translateToCurrentKeyboardLayout(untranslatedSequence);
+                = translateToKeyboardLayout(keyboard, untranslatedSequence);
             if (translatedSequence.isEmpty() || !(untranslatedSequence[0].key() & 0xff) || untranslatedSequence[0].key() == Qt::Key_A) {
                 QString untranslatedSequenceStrNormalised = untranslatedSequence.toString(QKeySequence::PortableText);
 
@@ -405,9 +450,18 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
         }
     }
 
+    if (inputSource) {
+        CFRelease(inputSource);
+    }
+
     assert(m_shortcuts.size() == m_macSequenceMap.size());
 
     emit shortcutsChanged();
+}
+
+QString MacOSShortcutsInstanceModel::keyboardLayoutId() const
+{
+    return QString();
 }
 
 void MacOSShortcutsInstanceModel::doActivate(const QString& seq)

@@ -37,6 +37,9 @@ class MacOSShortcutsInstanceModel : public ShortcutsInstanceModel
 public:
     explicit MacOSShortcutsInstanceModel(QObject* parent = nullptr);
 
+protected:
+    virtual QString keyboardLayoutId() const;
+
 private:
     void doLoadShortcuts() override;
     void doActivate(const QString& seq) override;
