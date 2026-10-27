@@ -25,6 +25,7 @@
 #include "isavediagnosticfilesscenario.h"
 
 #include "modularity/ioc.h"
+#include "global/iapplication.h"
 #include "idiagnosticsconfiguration.h"
 #include "interactive/iinteractive.h"
 #include "interactive/iplatforminteractive.h"
@@ -32,8 +33,10 @@
 namespace muse::diagnostics {
 class SaveDiagnosticFilesScenario : public ISaveDiagnosticFilesScenario, public Contextable
 {
+    GlobalInject<IApplication> application;
     GlobalInject<diagnostics::IDiagnosticsConfiguration> configuration;
     GlobalInject<muse::IPlatformInteractive> platformInteractive;
+
     ContextInject<muse::IInteractive> interactive = { this };
 
 public:
