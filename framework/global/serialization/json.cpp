@@ -87,6 +87,22 @@ JsonValue::JsonValue(const char* v)
     val_mut(m_data).set<std::string>(std::string(v));
 }
 
+JsonValue::JsonValue(const JsonArray& v)
+    : m_data(v.m_data)
+{
+    if (!m_data) {
+        m_data = std::make_shared<JsonData>();
+    }
+}
+
+JsonValue::JsonValue(const JsonObject& v)
+    : m_data(v.m_data)
+{
+    if (!m_data) {
+        m_data = std::make_shared<JsonData>();
+    }
+}
+
 JsonValue::JsonValue(std::shared_ptr<JsonData> d)
     : m_data(d)
 {

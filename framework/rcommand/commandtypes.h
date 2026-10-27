@@ -108,6 +108,14 @@ struct InputSchema {
     std::map<std::string, Arg> args;
 };
 
+struct OutputSchema {
+    OutputSchema() {}
+    OutputSchema(std::map<std::string, Arg> _args)
+        : args(std::move(_args)) {}
+
+    std::map<std::string, Arg> args;
+};
+
 enum class Checkable {
     No = 0,
     Yes
@@ -149,8 +157,25 @@ struct CommandInfo
     MnemonicString title;
     TranslatableString description;
     InputSchema inputSchema;
+    OutputSchema outputSchema;
     Decoration decoration;
     Availabilities availabilities = Availability::All; // All temporarily, when we set the flag for all commands, it needs to be replaced with Availability::Disabled;
+
+    CommandInfo() = default;
+    CommandInfo(const Command& command, const MnemonicString& title, const TranslatableString& description,
+                const InputSchema& inputSchema, const Decoration& decoration)
+        : command(command), title(title), description(description), inputSchema(inputSchema), decoration(decoration) {}
+
+    CommandInfo(const Command& command, const MnemonicString& title, const TranslatableString& description,
+                const InputSchema& inputSchema, const Decoration& decoration, const Availabilities& availabilities)
+        : command(command), title(title), description(description), inputSchema(inputSchema), decoration(decoration),
+        availabilities(availabilities) {}
+
+    CommandInfo(const Command& command, const MnemonicString& title, const TranslatableString& description,
+                const InputSchema& inputSchema, const OutputSchema& outputSchema, const Decoration& decoration,
+                const Availabilities& availabilities)
+        : command(command), title(title), description(description), inputSchema(inputSchema), outputSchema(outputSchema),
+        decoration(decoration), availabilities(availabilities) {}
 
     bool isValid() const { return command.isValid(); }
 };
@@ -191,13 +216,7 @@ struct Response
 {
     CallId callId = 0;
     Ret ret;
-    std::any data;
-
-    template<typename T>
-    T val() const
-    {
-        return std::any_cast<T>(data);
-    }
+    Params result;
 };
 
 inline CallId new_call_id()
@@ -224,12 +243,12 @@ inline Response make_response(const Request& request, const Ret& ret)
     return response;
 }
 
-inline Response make_response(const Request& request, const Ret& ret, const std::any& data)
+inline Response make_response(const Request& request, const Ret& ret, const Params& result)
 {
     Response response;
     response.callId = request.callId;
     response.ret = ret;
-    response.data = data;
+    response.result = result;
     return response;
 }
 }
