@@ -740,6 +740,10 @@ void DockBase::applySizeConstraints()
         const QRect winRect(window->dragRect().topLeft(), winSize);
         window->view()->setGeometry(winRect);
     }
+
+    //! NOTE: The group derives its minimum size from its dock widgets, so the layout
+    //! picks up the old minimum when the group constraints are applied
+    syncLayoutItemMinSize();
 }
 
 void DockBase::syncLayoutItemMinSize()
