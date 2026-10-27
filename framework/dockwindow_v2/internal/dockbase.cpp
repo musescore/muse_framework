@@ -585,8 +585,9 @@ void DockBase::resize(int width, int height)
         height = std::min(height, std::max(m_maximumHeight, m_minimumHeight));
     }
 
-    const int deltaWidth = width - static_cast<int>(this->width());
-    const int deltaHeight = height - static_cast<int>(this->height());
+    //! NOTE: Use the actual size in the layout, the item size may be overridden from QML
+    const int deltaWidth = width - m_dockWidget->width();
+    const int deltaHeight = height - m_dockWidget->height();
     if (deltaWidth == 0 && deltaHeight == 0) {
         return;
     }
@@ -744,6 +745,52 @@ void DockBase::applySizeConstraints()
     //! NOTE: The group derives its minimum size from its dock widgets, so the layout
     //! picks up the old minimum when the group constraints are applied
     syncLayoutItemMinSize();
+
+    //! NOTE: The layout doesn't shrink the item when the maximum size decreases
+    fitSizeIntoMaximum();
+}
+
+void DockBase::fitSizeIntoMaximum()
+{
+    if (!m_dockWidget || !m_inited) {
+        return;
+    }
+
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+    if (!group || !group->isInMainWindow()) {
+        return;
+    }
+
+    //! NOTE: The layout treats the maximum size only as a hint and doesn't shrink the item
+    //! when it decreases, so shrink it explicitly. The side at the edge of the layout
+    //! isn't changed, so shrink the opposite side if the excess remains
+    auto excessWidth = [this]() {
+        return m_maximumWidth > 0 ? m_dockWidget->width() - std::max(m_maximumWidth, m_minimumWidth) : 0;
+    };
+
+    auto excessHeight = [this]() {
+        return m_maximumHeight > 0 ? m_dockWidget->height() - std::max(m_maximumHeight, m_minimumHeight) : 0;
+    };
+
+    //! NOTE: Left side
+    if (excessWidth() > 0) {
+        m_dockWidget->resizeInLayout(-excessWidth(), 0, 0, 0);
+    }
+
+    //! NOTE: Right side
+    if (excessWidth() > 0) {
+        m_dockWidget->resizeInLayout(0, 0, -excessWidth(), 0);
+    }
+
+    //! NOTE: Top side
+    if (excessHeight() > 0) {
+        m_dockWidget->resizeInLayout(0, -excessHeight(), 0, 0);
+    }
+
+    //! NOTE: Bottom side
+    if (excessHeight() > 0) {
+        m_dockWidget->resizeInLayout(0, 0, 0, -excessHeight());
+    }
 }
 
 void DockBase::syncLayoutItemMinSize()

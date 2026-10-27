@@ -35,6 +35,7 @@
 #include "dockcentralview.h"
 #include "dockpageview.h"
 #include "dockpanelview.h"
+#include "docktoolbarview.h"
 #include "dockwindow.h"
 #include "internal/dockcommandsregister.h"
 #include "internal/dockcommandsstate.h"
@@ -65,6 +66,9 @@ static constexpr int WIDE_WINDOW_WIDTH = 600;
 static constexpr int PANEL_SWITCH_WINDOW_WIDTH = 450;
 static constexpr int NARROW_PANEL_WIDTH = 30;
 static constexpr int WIDE_PANEL_WIDTH = 120;
+
+static constexpr int TOOLBAR_WIDTH = 100;
+static constexpr int TOOLBAR_HEIGHT = 20;
 
 //! NOTE: See Group.qml of KDDockWidgets
 static constexpr int GROUP_CONTENTS_MARGIN = 1;
@@ -168,6 +172,24 @@ public:
         return dock;
     }
 
+    DockToolBarView* createToolBar(const QString& name, DockToolBarAlignment::Type alignment, QObject* owner,
+                                   QQuickItem** content)
+    {
+        DockToolBarView* toolBar = beginItem<DockToolBarView>(owner);
+        toolBar->setObjectName(name);
+        toolBar->setAlignment(static_cast<int>(alignment));
+        toolBar->setContentWidth(TOOLBAR_WIDTH);
+        toolBar->setContentHeight(TOOLBAR_HEIGHT);
+        toolBar->setMinimumHeight(TOOLBAR_HEIGHT);
+        toolBar->setMaximumHeight(TOOLBAR_HEIGHT);
+
+        *content = new QQuickItem(toolBar);
+
+        completeItem(toolBar);
+
+        return toolBar;
+    }
+
     //! NOTE: Emulates the QML bindings of the panel width to the window width
     void updatePanelWidth()
     {
@@ -196,6 +218,15 @@ public:
 
         QQmlListProperty<DockPanelView> panels = page->panelsProperty();
         panels.append(&panels, m_panel);
+
+        //! NOTE: The left toolbar absorbs the free space of the toolbars row
+        DockToolBarView* leftToolBar = createToolBar("a_left", DockToolBarAlignment::Left, m_dockWindow, &m_leftToolBarContent);
+        QQmlListProperty<DockToolBarView> windowToolBars = m_dockWindow->toolBarsProperty();
+        windowToolBars.append(&windowToolBars, leftToolBar);
+
+        m_rightToolBar = createToolBar("a_right", DockToolBarAlignment::Right, page, &m_rightToolBarContent);
+        QQmlListProperty<DockToolBarView> pageToolBars = page->mainToolBarsProperty();
+        pageToolBars.append(&pageToolBars, m_rightToolBar);
 
         completeItem(page);
 
@@ -231,10 +262,15 @@ public:
         QCoreApplication::processEvents();
     }
 
-    int panelWidthInLayout() const
+    static int widthInLayout(const QQuickItem* content)
     {
         //! NOTE: The content fills the dock widget inside the group
-        return m_panelContent->width() + 2 * GROUP_CONTENTS_MARGIN;
+        return content->width() + 2 * GROUP_CONTENTS_MARGIN;
+    }
+
+    int panelWidthInLayout() const
+    {
+        return widthInLayout(m_panelContent);
     }
 
     std::shared_ptr<NiceMock<ui::UiStateMock> > m_uiState;
@@ -245,6 +281,9 @@ public:
     DockWindow* m_dockWindow = nullptr;
     DockPanelView* m_panel = nullptr;
     QQuickItem* m_panelContent = nullptr;
+    DockToolBarView* m_rightToolBar = nullptr;
+    QQuickItem* m_leftToolBarContent = nullptr;
+    QQuickItem* m_rightToolBarContent = nullptr;
 };
 
 TEST_F(Dock_DockWindowTests, PanelGrowsWhenWindowBecomesWide)
@@ -271,4 +310,24 @@ TEST_F(Dock_DockWindowTests, PanelShrinksWhenWindowBecomesNarrow)
 
     //! [THEN] The panel takes the narrow width in the layout
     EXPECT_EQ(panelWidthInLayout(), NARROW_PANEL_WIDTH);
+}
+
+TEST_F(Dock_DockWindowTests, TopToolBarShrinksWhenItsMaximumWidthDecreases)
+{
+    //! [GIVEN] A window with the left and right toolbars on top
+    openWindow(WIDE_WINDOW_WIDTH);
+    ASSERT_EQ(widthInLayout(m_rightToolBarContent), TOOLBAR_WIDTH);
+
+    //! [WHEN] The maximum width of the right toolbar decreases
+    const int newWidth = TOOLBAR_WIDTH / 2;
+    const int leftToolBarWidth = widthInLayout(m_leftToolBarContent);
+
+    m_rightToolBar->setMinimumWidth(newWidth);
+    m_rightToolBar->setMaximumWidth(newWidth);
+
+    QCoreApplication::processEvents();
+
+    //! [THEN] The right toolbar takes the new width, and the left one takes the free space
+    EXPECT_EQ(widthInLayout(m_rightToolBarContent), newWidth);
+    EXPECT_EQ(widthInLayout(m_leftToolBarContent), leftToolBarWidth + TOOLBAR_WIDTH - newWidth);
 }
