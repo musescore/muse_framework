@@ -211,6 +211,11 @@ void GuiApplication::doDestroyContext(const ContextData& data)
     auto wit = m_windows.find(data.ctxId->id);
     if (wit != m_windows.end()) {
         QQuickWindow* window = wit->second;
+
+        for (QWindow* child : window->findChildren<QWindow*>()) {
+            child->setVisible(false);
+        }
+
         window->setVisible(false);
         m_windows.erase(wit);
         delete window;
