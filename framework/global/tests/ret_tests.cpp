@@ -75,7 +75,7 @@ TEST(Global_RetTests, Data_KeyExistsButTypeMismatch_ReturnsDefaultInReleaseANDTr
 #else
     // In debug builds, expect the assertion to trigger
     EXPECT_DEATH({
-        muse::testing::exitOnAbort();
+        muse::testing::exitOnAbortInDebug();
         const auto result = ret.data<std::string>("answer", std::string("0"));
         UNUSED(result);
     }, ".*Assertion.*failed");
@@ -96,7 +96,7 @@ TEST(Global_RetTests, Data_BadAnyCast_ReturnsDefaultInReleaseANDTriggersAssertio
     EXPECT_EQ(result, 999);
 #else
     EXPECT_DEATH({
-        muse::testing::exitOnAbort();
+        muse::testing::exitOnAbortInDebug();
         const auto result = ret.data<int>("value", 999);
         UNUSED(result);
     }, ".*Assertion.*failed");

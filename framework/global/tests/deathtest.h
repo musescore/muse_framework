@@ -26,9 +26,12 @@
 
 namespace muse::testing {
 //! For use in a death test: makes a failed assertion exit the child process instead of
-//! letting it crash, so that the OS does not report the crash (macOS shows a dialog)
-inline void exitOnAbort()
+//! letting it crash, so that the OS does not report the crash (macOS shows a dialog).
+//! Does nothing in Release mode, where EXPECT_DEBUG_DEATH runs its statement in the test process itself.
+inline void exitOnAbortInDebug()
 {
+#ifndef NDEBUG
     std::signal(SIGABRT, [](int) { std::_Exit(1); });
+#endif
 }
 }

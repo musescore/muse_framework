@@ -29,10 +29,6 @@
 
 #include "deathtest.h"
 
-#ifdef NDEBUG
-#include "log.h"
-#endif
-
 using namespace muse;
 using namespace muse::io;
 
@@ -57,20 +53,16 @@ TEST_F(Global_IO_IODeviceTests, Open_ReadOnly)
     //! CHECK
     EXPECT_EQ(rba, ba);
 
-#ifndef NDEBUG
     //! DO Try Write data
     std::string data = " World!";
     ByteArray wrba(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
 
-    //! CHECK Should assert
-    EXPECT_DEATH({
-        muse::testing::exitOnAbort();
+    //! CHECK Should assert, or fail without writing in Release mode
+    EXPECT_DEBUG_DEATH({
+        muse::testing::exitOnAbortInDebug();
         size_t size = buf.write(wrba);
         EXPECT_EQ(size, 0);
     }, ".*isOpenModeWriteable\\(\\).*");
-#else
-    LOGW() << "Cannot check for assertion failure in Release mode; please build in Debug mode instead";
-#endif
 }
 
 TEST_F(Global_IO_IODeviceTests, Open_WriteOnly)
@@ -91,29 +83,27 @@ TEST_F(Global_IO_IODeviceTests, Open_WriteOnly)
     //! CHECK
     EXPECT_EQ(size, wrba.size());
 
-#ifndef NDEBUG
     //! DO Try Read
-    EXPECT_DEATH({
-        muse::testing::exitOnAbort();
+    //! CHECK Should assert, or fail without reading in Release mode
+    buf.seek(0);
+    EXPECT_DEBUG_DEATH({
+        muse::testing::exitOnAbortInDebug();
         ByteArray rba = buf.readAll();
         EXPECT_TRUE(rba.empty());
     }, ".*isOpenModeReadable\\(\\).*");
 
-    EXPECT_DEATH({
-        muse::testing::exitOnAbort();
+    EXPECT_DEBUG_DEATH({
+        muse::testing::exitOnAbortInDebug();
         ByteArray rba = buf.read(4);
         EXPECT_TRUE(rba.empty());
     }, ".*isOpenModeReadable\\(\\).*");
 
-    EXPECT_DEATH({
-        muse::testing::exitOnAbort();
+    EXPECT_DEBUG_DEATH({
+        muse::testing::exitOnAbortInDebug();
         uint8_t d = 0;
         size_t s = buf.read(&d, 1);
         EXPECT_EQ(s, 0);
     }, ".*isOpenModeReadable\\(\\).*");
-#else
-    LOGW() << "Cannot check for assertion failure in Release mode; please build in Debug mode instead";
-#endif
 }
 
 TEST_F(Global_IO_IODeviceTests, Open_ReadWrite)
