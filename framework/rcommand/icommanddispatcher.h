@@ -24,8 +24,9 @@
 #include "global/async/promise.h"
 #include "global/async/channel.h"
 #include "global/types/ret.h"
-
+#include "global/types/retval.h"
 #include "commandtypes.h"
+#include "typedcommand.h"
 
 namespace muse::rcommand {
 class Commandable;
@@ -86,6 +87,46 @@ public:
     {
         onRequest(client, command, AsyncCallBack([callback](const Request& request, const OnResponse& onResponse) {
             answerWhenResolved(request, callback(request.params), onResponse);
+        }));
+    }
+
+    // Typed commands
+    template<TypedCommand C>
+    async::Promise<Response> dispatch(const C& command)
+    {
+        Params params;
+        if constexpr (HasInput<C>) {
+            params = toInputParams(command);
+        }
+        return dispatch(make_request(command.command, params));
+    }
+
+    template<TypedCommand C>
+    void onRequest(Commandable* client, std::function<Ret(const C&)> callback)
+    {
+        onRequest(client, C::command, CallBack([callback](const Request& request) {
+            C command;
+            if constexpr (HasInput<C>) {
+                if (!fromInputParams(request.params, command)) {
+                    return make_response(request, muse::make_ret(Ret::Code::BadArgs));
+                }
+            }
+            return make_response(request, callback(command));
+        }));
+    }
+
+    template<HasOutput C>
+    void onRequest(Commandable* client, std::function<RetVal<typename C::Output>(const C&)> callback)
+    {
+        onRequest(client, C::command, CallBack([callback](const Request& request) {
+            C command;
+            if constexpr (HasInput<C>) {
+                if (!fromInputParams(request.params, command)) {
+                    return make_response(request, muse::make_ret(Ret::Code::BadArgs));
+                }
+            }
+            RetVal<typename C::Output> rv = callback(command);
+            return make_response(request, rv.ret, toOutputParams<C>(rv.val));
         }));
     }
 

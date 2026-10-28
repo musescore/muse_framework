@@ -31,6 +31,7 @@
 #include "modularity/ioc.h"
 #include "rcommand/icommandsstate.h"
 #include "rcommand/icommandsregister.h"
+#include "rcommand/typedcommand.h"
 
 #include "muse_framework_config.h"
 
@@ -141,6 +142,18 @@ protected:
     void updateState(QList<MenuItem*>& items, const rcommand::Command& command, const rcommand::CommandState& state);
 
     ToolBarItem* makeItem(const rcommand::Command& command, const TranslatableString& title = {});
+    ToolBarItem* makeItem(const rcommand::Command& command, const rcommand::Params& params, const TranslatableString& title = {});
+
+    template<rcommand::TypedCommand C>
+    ToolBarItem* makeItem(const C& command, const TranslatableString& title = {})
+    {
+        if constexpr (rcommand::HasInput<C>) {
+            return makeItem(command.id, rcommand::toInputParams(command), title);
+        } else {
+            return makeItem(command.id, title);
+        }
+    }
+
     ToolBarItem& findItem(const rcommand::Command& command) const;
     ToolBarItem* findItemPtr(const rcommand::Command& command) const;
 

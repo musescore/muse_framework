@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include <any>
 #include <map>
 #include <string>
 
@@ -42,18 +41,44 @@ using CommandQuery = UriQuery;
 //! NOTE This is a valid command that does nothing.
 inline static const Command NONE_COMMAND = Command("command://none");
 
-struct Params : public std::map<std::string, Val>
+struct Params : public std::map<std::string, Val, std::less<> >
 {
     Params() = default;
     Params(const std::map<std::string, Val>& params)
-        : std::map<std::string, Val>(params) {}
+        : std::map<std::string, Val, std::less<> >(params.begin(), params.end()) {}
 
     Params(std::initializer_list<value_type> params)
-        : std::map<std::string, Val>(params) {}
+        : std::map<std::string, Val, std::less<> >(params.begin(), params.end()) {}
+
+    operator std::map<std::string, Val>() const
+    {
+        return std::map<std::string, Val>(begin(), end());
+    }
 
     bool contains(const std::string& key) const
     {
         return find(key) != end();
+    }
+
+    Params& set(const std::string& key, const Val& value)
+    {
+        (*this)[key] = value;
+        return *this;
+    }
+
+    Params& set(const std::string_view& key, const Val& value)
+    {
+        return set(std::string(key), value);
+    }
+
+    Params& set(const char* key, const Val& value)
+    {
+        return set(std::string(key), value);
+    }
+
+    Params& set(const std::pair<std::string, Val>& pair)
+    {
+        return set(pair.first, pair.second);
     }
 
     // hides the std::map implementation of at()
@@ -61,6 +86,17 @@ struct Params : public std::map<std::string, Val>
     {
         auto it = find(key);
         return it != end() ? it->second : def;
+    }
+
+    Val at(const std::string_view& key, const Val& def = Val()) const
+    {
+        auto it = find(key);
+        return it != end() ? it->second : def;
+    }
+
+    Val at(const char* key, const Val& def = Val()) const
+    {
+        return at(std::string_view(key), def);
     }
 };
 
@@ -80,13 +116,14 @@ inline CommandQuery make_query(const std::string& command, const Params& params)
 
 enum class DataType {
     Undefined = 0,
-    String,
-    Integer,
+    Bool,
+    Int,
+    Int64,
     Float,
-    Boolean,
-    Object,
-    Array,
-    Null
+    Double,
+    String,
+    List,
+    Map
 };
 
 struct Arg {

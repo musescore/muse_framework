@@ -27,6 +27,7 @@
 #include <type_traits>
 #include <vector>
 #include <map>
+#include <optional>
 
 #include "number.h"
 #include "io/path.h"
@@ -96,6 +97,101 @@ public:
         return static_cast<E>(toInt());
     }
 
+    template<typename T>
+    std::optional<T> toType() const
+    {
+        if constexpr (std::is_same<T, bool>::value) {
+            return doToBool();
+        } else if constexpr (std::is_same<T, int>::value) {
+            return doToInt();
+        } else if constexpr (std::is_same<T, int64_t>::value) {
+            return doToInt64();
+        } else if constexpr (std::is_same<T, double>::value) {
+            return doToDouble();
+        } else if constexpr (std::is_same<T, number_t<T> >::value) {
+            auto value = toType<T>();
+            return value ? number_t<T>(*value) : std::nullopt;
+        } else if constexpr (std::is_same<T, std::string>::value) {
+            return doToString();
+        } else if constexpr (std::is_same<T, io::path_t>::value) {
+            return doToPath();
+        } else if constexpr (std::is_same<T, ValList>::value) {
+            return doToList();
+        } else if constexpr (std::is_same<T, ValMap>::value) {
+            return doToMap();
+        } else if constexpr (std::is_same<T, std::vector<T> >::value) {
+            auto list = doToList();
+            if (!list) {
+                return std::nullopt;
+            }
+            std::vector<T> result;
+            for (const auto& item : *list) {
+                auto value = item.toType<T>();
+                if (!value) {
+                    return std::nullopt;
+                }
+                result.push_back(*value);
+            }
+            return result;
+        } else if constexpr (std::is_same<T, std::map<std::string, T> >::value) {
+            auto map = doToMap();
+            if (!map) {
+                return std::nullopt;
+            }
+            std::map<std::string, T> result;
+            for (const auto& item : *map) {
+                auto value = item.second.toType<T>();
+                if (!value) {
+                    return std::nullopt;
+                }
+                result[item.first] = *value;
+            }
+            return result;
+        } else {
+            static_assert(std::is_same<T, void>::value, "Unsupported type");
+            return std::nullopt;
+        }
+    }
+
+    template<typename T>
+    static Val fromType(const T& value)
+    {
+        if constexpr (std::is_same<T, bool>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, int>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, int64_t>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, double>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, number_t<T> >::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, std::string>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, io::path_t>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, ValList>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, ValMap>::value) {
+            return Val(value);
+        } else if constexpr (std::is_same<T, std::vector<T> >::value) {
+            ValList list;
+            for (const auto& item : value) {
+                list.push_back(fromType(item));
+            }
+            return Val(list);
+        } else if constexpr (std::is_same<T, std::map<std::string, T> >::value) {
+            ValMap map;
+            for (const auto& item : value) {
+                map[item.first] = fromType(item.second);
+            }
+            return Val(map);
+        } else {
+            static_assert(std::is_same<T, void>::value, "Unsupported type");
+            return Val();
+        }
+    }
+
     bool operator ==(const Val& v) const;
     bool operator <(const Val& v) const;
 
@@ -113,6 +209,15 @@ public:
 private:
 
     Type valueType() const;
+
+    std::optional<bool> doToBool() const;
+    std::optional<int> doToInt() const;
+    std::optional<int64_t> doToInt64() const;
+    std::optional<double> doToDouble() const;
+    std::optional<std::string> doToString() const;
+    std::optional<io::path_t> doToPath() const;
+    std::optional<ValList> doToList() const;
+    std::optional<ValMap> doToMap() const;
 
     //! NOTE Should be sync with valueType method
     using Value = std::variant<std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap>;

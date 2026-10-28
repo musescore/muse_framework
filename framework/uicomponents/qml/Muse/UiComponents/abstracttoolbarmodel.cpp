@@ -158,7 +158,9 @@ void AbstractToolBarModel::updateState(QList<MenuItem*>& items, const rcommand::
     }
 }
 
-ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, const TranslatableString& title)
+ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command,
+                                            const rcommand::Params& params,
+                                            const TranslatableString& title)
 {
     const rcommand::CommandInfo& info = commandsRegister()->commandInfo(command);
     if (!info.isValid()) {
@@ -167,6 +169,8 @@ ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, co
     }
 
     ToolBarItem* item = new ToolBarItem(info, ToolBarItemType::ACTION, this);
+    item->setCommand(command);
+    item->setParams(params);
     item->setCommandState(commandsState()->commandState(command));
 
     if (!title.isEmpty()) {
@@ -174,6 +178,11 @@ ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, co
     }
 
     return item;
+}
+
+ToolBarItem* AbstractToolBarModel::makeItem(const rcommand::Command& command, const TranslatableString& title)
+{
+    return makeItem(command, {}, title);
 }
 
 ToolBarItem& AbstractToolBarModel::findItem(const rcommand::Command& command) const

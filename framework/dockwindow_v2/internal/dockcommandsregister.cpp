@@ -36,7 +36,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("dock", "Dock: Set Open"),
         InputSchema({
             { "dock_name", Arg(DataType::String, u"Dock name") },
-            { "open", Arg(DataType::Boolean, u"Open") }
+            { "open", Arg(DataType::Bool, u"Open") }
         }),
         Decoration(),
         Availability::Dispatch

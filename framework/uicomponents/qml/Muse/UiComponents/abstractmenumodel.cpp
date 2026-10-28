@@ -276,28 +276,36 @@ MenuItem* AbstractMenuModel::makeMenu(const TranslatableString& title, const Men
     return item;
 }
 
-MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::Command& command, const TranslatableString& title)
+MenuItem* AbstractMenuModel::makeMenuItem(const muse::rcommand::Command& command,
+                                          const muse::rcommand::Params& params,
+                                          const TranslatableString& title)
 {
-    return makeMenuItem(rcommand::CommandQuery(command), title);
-}
-
-MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::CommandQuery& query, const TranslatableString& title)
-{
-    const rcommand::CommandInfo& info = commandsRegister()->commandInfo(query.uri());
+    const rcommand::CommandInfo& info = commandsRegister()->commandInfo(command);
     if (!info.isValid()) {
-        LOGW() << "not found command: " << query.uri().toString();
+        LOGW() << "not found command: " << command.toString();
         return nullptr;
     }
 
     MenuItem* item = new MenuItem(info, this);
-    item->setCommandQuery(query);
-    item->setCommandState(commandsState()->commandState(query.uri()));
+    item->setCommand(command);
+    item->setParams(params);
+    item->setCommandState(commandsState()->commandState(command));
 
     if (!title.isEmpty()) {
         item->setTitle(title);
     }
 
     return item;
+}
+
+MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::Command& command, const TranslatableString& title)
+{
+    return makeMenuItem(command, {}, title);
+}
+
+MenuItem* AbstractMenuModel::makeMenuItem(const rcommand::CommandQuery& query, const TranslatableString& title)
+{
+    return makeMenuItem(rcommand::Command(query.uri()), query.params(), title);
 }
 
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT

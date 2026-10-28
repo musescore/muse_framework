@@ -37,7 +37,7 @@ static muse::JsonValue toMcpJsonValue(const muse::Val& val)
     case muse::Val::Type::Undefined: return muse::JsonValue();
     case muse::Val::Type::Bool: return muse::JsonValue(val.toBool());
     case muse::Val::Type::Int: return muse::JsonValue(val.toInt());
-    case muse::Val::Type::Int64: return muse::JsonValue(static_cast<double>(val.toInt64()));
+    case muse::Val::Type::Int64: return muse::JsonValue(val.toString()); // as string
     case muse::Val::Type::Double: return muse::JsonValue(val.toDouble());
     case muse::Val::Type::String: return muse::JsonValue(val.toString());
     case muse::Val::Type::List: {
@@ -220,7 +220,10 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
                 JsonObject properties;
                 for (const auto& [name, property] : schema.properties) {
                     JsonObject propertyObj;
-                    propertyObj["type"] = to_string(property.type);
+                    propertyObj["type"] = to_string(property.type.type);
+                    if (property.type.format != Format::Undefined) {
+                        propertyObj["format"] = to_string(property.type.format);
+                    }
                     propertyObj["description"] = property.description;
                     if (!property.minimum.isNull()) {
                         propertyObj["minimum"] = toMcpJsonValue(property.minimum);
@@ -242,7 +245,10 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
                 JsonObject properties;
                 for (const auto& [name, property] : schema.properties) {
                     JsonObject propertyObj;
-                    propertyObj["type"] = to_string(property.type);
+                    propertyObj["type"] = to_string(property.type.type);
+                    if (property.type.format != Format::Undefined) {
+                        propertyObj["format"] = to_string(property.type.format);
+                    }
                     propertyObj["description"] = property.description;
                     properties[name] = propertyObj;
                 }

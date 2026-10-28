@@ -29,11 +29,23 @@ enum class DataType {
     Undefined = 0,
     String,
     Integer,
-    Float,
+    Number,
     Boolean,
     Object,
     Array,
     Null
+};
+
+enum class Format {
+    Undefined = 0,
+    Int64,
+    Float,
+    Double
+};
+
+struct TypeSchema {
+    DataType type = DataType::Undefined;
+    Format format = Format::Undefined;
 };
 
 inline std::string to_string(DataType type)
@@ -42,7 +54,7 @@ inline std::string to_string(DataType type)
     case DataType::Undefined: return "undefined";
     case DataType::String: return "string";
     case DataType::Integer: return "integer";
-    case DataType::Float: return "number";
+    case DataType::Number: return "number";
     case DataType::Boolean: return "boolean";
     case DataType::Object: return "object";
     case DataType::Array: return "array";
@@ -51,8 +63,19 @@ inline std::string to_string(DataType type)
     }
 }
 
+inline std::string to_string(Format format)
+{
+    switch (format) {
+    case Format::Undefined: return "undefined";
+    case Format::Int64: return "int64";
+    case Format::Float: return "float";
+    case Format::Double: return "double";
+    default: return "undefined";
+    }
+}
+
 struct Property {
-    DataType type;
+    TypeSchema type;
     std::string description;
     Val minimum;
     Val maximum;
