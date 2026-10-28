@@ -24,6 +24,8 @@
 #include <string>
 #include "types/ret.h"
 
+#include "deathtest.h"
+
 using namespace muse;
 
 class Global_RetTests : public ::testing::Test
@@ -73,6 +75,7 @@ TEST(Global_RetTests, Data_KeyExistsButTypeMismatch_ReturnsDefaultInReleaseANDTr
 #else
     // In debug builds, expect the assertion to trigger
     EXPECT_DEATH({
+        muse::testing::exitOnAbort();
         const auto result = ret.data<std::string>("answer", std::string("0"));
         UNUSED(result);
     }, ".*Assertion.*failed");
@@ -93,6 +96,7 @@ TEST(Global_RetTests, Data_BadAnyCast_ReturnsDefaultInReleaseANDTriggersAssertio
     EXPECT_EQ(result, 999);
 #else
     EXPECT_DEATH({
+        muse::testing::exitOnAbort();
         const auto result = ret.data<int>("value", 999);
         UNUSED(result);
     }, ".*Assertion.*failed");

@@ -27,6 +27,8 @@
 
 #include "io/buffer.h"
 
+#include "deathtest.h"
+
 #ifdef NDEBUG
 #include "log.h"
 #endif
@@ -62,6 +64,7 @@ TEST_F(Global_IO_IODeviceTests, Open_ReadOnly)
 
     //! CHECK Should assert
     EXPECT_DEATH({
+        muse::testing::exitOnAbort();
         size_t size = buf.write(wrba);
         EXPECT_EQ(size, 0);
     }, ".*isOpenModeWriteable\\(\\).*");
@@ -91,16 +94,19 @@ TEST_F(Global_IO_IODeviceTests, Open_WriteOnly)
 #ifndef NDEBUG
     //! DO Try Read
     EXPECT_DEATH({
+        muse::testing::exitOnAbort();
         ByteArray rba = buf.readAll();
         EXPECT_TRUE(rba.empty());
     }, ".*isOpenModeReadable\\(\\).*");
 
     EXPECT_DEATH({
+        muse::testing::exitOnAbort();
         ByteArray rba = buf.read(4);
         EXPECT_TRUE(rba.empty());
     }, ".*isOpenModeReadable\\(\\).*");
 
     EXPECT_DEATH({
+        muse::testing::exitOnAbort();
         uint8_t d = 0;
         size_t s = buf.read(&d, 1);
         EXPECT_EQ(s, 0);
