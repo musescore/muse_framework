@@ -173,9 +173,11 @@ static UInt32 keyboardType()
     return LMGetKbdType();
 }
 
-static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, bool& found)
+//! NOTE requiredModifiers receives the modifiers needed to type the character with the returned key
+static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, Qt::KeyboardModifiers& requiredModifiers, bool& found)
 {
     found = true;
+    requiredModifiers = Qt::NoModifier;
 
     switch (keyCode) {
     case Qt::Key_Return:
@@ -302,45 +304,59 @@ static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, bool& f
         return 0;
     }
 
-    // Only search the tables for the unmodified state and for Command (the latter holds e.g. the Latin characters
-    // of non-Latin layouts). keyCodeToString translates the key without modifiers, so a character that requires
-    // e.g. Shift (`:` is `Shift+;` on QWERTY) would be translated to a different character (`;`) and clash with
-    // the shortcuts for that character. The tables for other modifiers can't be used either: e.g. the Control table
-    // may have a QWERTY-like layout, and Command+CapsLock may select the Shift table
-    std::vector<bool> allowedTables(charTable->keyToCharTableCount, false);
+    // The tables to search, in order of priority, and the modifiers needed to type a character from each of them.
+    // keyCodeToString translates the key without modifiers, so a character that requires e.g. Shift (`:` is `Shift+;`
+    // on QWERTY) must be translated together with that modifier, otherwise it clashes with the shortcuts for the
+    // character of the same key without the modifier (`;`). The Command table needs no modifiers, as it holds e.g.
+    // the Latin characters of non-Latin layouts, that Qt also takes into account. The tables for other modifiers
+    // can't be used: e.g. the Control table may have a QWERTY-like layout
+    const std::vector<std::pair<UInt32, Qt::KeyboardModifiers> > tablesModifiers = {
+        { 0, Qt::NoModifier },
+        { cmdKey, Qt::NoModifier },
+        { shiftKey, Qt::ShiftModifier },
+        { optionKey, Qt::AltModifier },
+        { optionKey | shiftKey, Qt::AltModifier | Qt::ShiftModifier },
+    };
+
     const UCKeyModifiersToTableNum* modifiersToTable
         = reinterpret_cast<const UCKeyModifiersToTableNum*>(data + header->keyModifiersToTableNumOffset);
-    if (modifiersToTable->keyModifiersToTableNumFormat == kUCKeyModifiersToTableNumFormat) {
-        for (UInt32 modifiers : { UInt32(0), UInt32((cmdKey >> 8) & 0xFF) }) {
-            const UInt32 tableNum = modifiers < modifiersToTable->modifiersCount
-                                    ? modifiersToTable->tableNum[modifiers] : modifiersToTable->defaultTableNum;
-            if (tableNum < allowedTables.size()) {
-                allowedTables[tableNum] = true;
-            }
-        }
-    } else if (!allowedTables.empty()) {
-        allowedTables[0] = true;
-    }
+    const bool hasModifiersToTable = modifiersToTable->keyModifiersToTableNumFormat == kUCKeyModifiersToTableNumFormat;
 
-    for (UInt32 j = 0; j < charTable->keyToCharTableCount; j++) {
-        if (!allowedTables[j]) {
+    std::vector<bool> searchedTables(charTable->keyToCharTableCount, false);
+
+    for (const auto& [carbonModifiers, qtModifiers] : tablesModifiers) {
+        const UInt32 modifiers = (carbonModifiers >> 8) & 0xFF;
+
+        UInt32 tableNum = 0;
+        if (hasModifiersToTable) {
+            tableNum = modifiers < modifiersToTable->modifiersCount
+                       ? modifiersToTable->tableNum[modifiers] : modifiersToTable->defaultTableNum;
+        } else if (modifiers != 0) {
+            break;
+        }
+
+        if (tableNum >= searchedTables.size() || searchedTables[tableNum]) {
             continue;
         }
 
-        UCKeyOutput* keyToChar = reinterpret_cast<UCKeyOutput*>(data + charTable->keyToCharTableOffsets[j]);
+        searchedTables[tableNum] = true;
+
+        UCKeyOutput* keyToChar = reinterpret_cast<UCKeyOutput*>(data + charTable->keyToCharTableOffsets[tableNum]);
         for (UInt32 k = 0; k < charTable->keyToCharTableSize; k++) {
+            bool keyMatches = false;
             if (keyToChar[k] & kUCKeyOutputTestForIndexMask) {
                 long idx = keyToChar[k] & kUCKeyOutputGetIndexMask;
                 if (stateRec && idx < stateRec->keyStateRecordCount) {
                     UCKeyStateRecord* rec = reinterpret_cast<UCKeyStateRecord*>(data + stateRec->keyStateRecordOffsets[idx]);
-                    if (matches(rec->stateZeroCharData)) {
-                        return k;
-                    }
+                    keyMatches = matches(rec->stateZeroCharData);
                 }
             } else if (!(keyToChar[k] & kUCKeyOutputSequenceIndexMask) && keyToChar[k] < 0xFFFE) {
-                if (matches(keyToChar[k])) {
-                    return k;
-                }
+                keyMatches = matches(keyToChar[k]);
+            }
+
+            if (keyMatches) {
+                requiredModifiers = qtModifiers;
+                return k;
             }
         }
     }
@@ -390,7 +406,8 @@ static QKeySequence translateToKeyboardLayout(UCKeyboardLayout* keyboard, const 
     const Qt::Key qKey = keyCombination.key();
 
     bool found = false;
-    UInt32 keyNativeCode = nativeKeycode(keyboard, qKey, found);
+    Qt::KeyboardModifiers requiredModifiers;
+    UInt32 keyNativeCode = nativeKeycode(keyboard, qKey, requiredModifiers, found);
     if (!found) {
         LOGD() << "Key " << qKey << " not found in the keyboard layout";
         return {};
@@ -399,7 +416,7 @@ static QKeySequence translateToKeyboardLayout(UCKeyboardLayout* keyboard, const 
     QString keyStr = keyCodeToString(keyboard, keyNativeCode);
     Qt::Key translatedQKey = QKeySequence::fromString(keyStr, QKeySequence::PortableText)[0].key();
 
-    return QKeyCombination(keyCombination.keyboardModifiers(), translatedQKey);
+    return QKeyCombination(keyCombination.keyboardModifiers() | requiredModifiers, translatedQKey);
 }
 
 MacOSShortcutsInstanceModel::MacOSShortcutsInstanceModel(QObject* parent)
@@ -469,6 +486,18 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
         LOGE() << "The keyboard layout is not valid";
     }
 
+    // A character that requires modifiers (e.g. `!` is `Shift+1` on QWERTY) is translated to these modifiers and the
+    // key. Such translations are recorded last, so that they don't take over the shortcuts bound directly to that
+    // combination of keys (e.g. `@` is `Alt+2` on the Russian layout). We must not record the untranslated character
+    // in this case: Qt matches a key press against both the key with modifiers (`Alt+2`) and the character typed
+    // (`@`), and if there are shortcuts for both, it treats the key press as ambiguous and activates neither of them
+    struct DeferredMapping {
+        QString translatedSequence;
+        QString rawSequence;
+        bool autoRepeat = false;
+    };
+    std::vector<DeferredMapping> deferredMappings;
+
     ShortcutList shortcuts = commandShortcutsRegister()->shortcuts();
 
     for (const Shortcut& sc : shortcuts) {
@@ -495,12 +524,22 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
             } else {
                 QString translatedSequenceStrNormalised = translatedSequence.toString(QKeySequence::PortableText);
 
+                if (translatedSequence[0].keyboardModifiers() != untranslatedSequence[0].keyboardModifiers()) {
+                    deferredMappings.push_back({ translatedSequenceStrNormalised, untranslatedSequenceStr, sc.autoRepeat });
+                    continue;
+                }
+
                 // If it was successful, record the translated sequence too, and map it to the untranslated sequence
                 // Again, map to non-normalised
                 recordMapping(translatedSequenceStrNormalised, untranslatedSequenceStr, false);
                 recordAutoRepeat(translatedSequenceStrNormalised, sc.autoRepeat);
             }
         }
+    }
+
+    for (const DeferredMapping& mapping : deferredMappings) {
+        recordMapping(mapping.translatedSequence, mapping.rawSequence, false);
+        recordAutoRepeat(mapping.translatedSequence, mapping.autoRepeat);
     }
 
     if (inputSource) {
