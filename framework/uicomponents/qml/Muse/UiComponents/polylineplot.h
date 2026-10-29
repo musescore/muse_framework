@@ -72,8 +72,8 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
     Q_PROPERTY(QVector<QColor> colorsUnderLine READ colorsUnderLine WRITE setColorsUnderLine NOTIFY colorsUnderLineChanged)
 
     // optional left/rightEdgeValues represent the line's y values (same units as the points) at the edges of the x range
-    Q_PROPERTY(qreal leftEdgeValue READ leftEdgeValue WRITE setLeftEdgeValue NOTIFY leftEdgeValueChanged)
-    Q_PROPERTY(qreal rightEdgeValue READ rightEdgeValue WRITE setRightEdgeValue NOTIFY rightEdgeValueChanged)
+    Q_PROPERTY(qreal leftEdgeValue READ leftEdgeValue WRITE setLeftEdgeValue RESET resetLeftEdgeValue NOTIFY leftEdgeValueChanged)
+    Q_PROPERTY(qreal rightEdgeValue READ rightEdgeValue WRITE setRightEdgeValue RESET resetRightEdgeValue NOTIFY rightEdgeValueChanged)
 
     Q_PROPERTY(qreal defaultValue READ defaultValue WRITE setDefaultValue NOTIFY defaultValueChanged)
 
@@ -144,9 +144,11 @@ public:
 
     qreal leftEdgeValue() const;
     void setLeftEdgeValue(qreal);
+    void resetLeftEdgeValue();
 
     qreal rightEdgeValue() const;
     void setRightEdgeValue(qreal);
+    void resetRightEdgeValue();
 
     qreal defaultValue() const;
     void setDefaultValue(qreal v);

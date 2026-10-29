@@ -444,6 +444,18 @@ void PolylinePlot::setLeftEdgeValue(qreal v)
     rebuildVisiblePoints();
 }
 
+void PolylinePlot::resetLeftEdgeValue()
+{
+    if (!m_leftEdgeValue.has_value()) {
+        return;
+    }
+
+    m_leftEdgeValue.reset();
+    emit leftEdgeValueChanged();
+
+    rebuildVisiblePoints();
+}
+
 qreal PolylinePlot::rightEdgeValue() const
 {
     if (!m_rightEdgeValue.has_value()) {
@@ -459,6 +471,18 @@ void PolylinePlot::setRightEdgeValue(qreal v)
     }
 
     m_rightEdgeValue = v;
+    emit rightEdgeValueChanged();
+
+    rebuildVisiblePoints();
+}
+
+void PolylinePlot::resetRightEdgeValue()
+{
+    if (!m_rightEdgeValue.has_value()) {
+        return;
+    }
+
+    m_rightEdgeValue.reset();
     emit rightEdgeValueChanged();
 
     rebuildVisiblePoints();
