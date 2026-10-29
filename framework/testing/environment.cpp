@@ -132,7 +132,19 @@ void Environment::setupContext(const IApplication::RunMode& runMode)
     }
 
     for (modularity::IContextSetup* s : m_contextSetups) {
+        s->resolveImports();
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onPreInit(runMode);
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
         s->onInit(runMode);
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onAllInited(runMode);
     }
 }
 
