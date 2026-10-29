@@ -71,6 +71,10 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
     // indices in the colorsUnderLine vector relate to the lines between points (not the points themselves)
     Q_PROPERTY(QVector<QColor> colorsUnderLine READ colorsUnderLine WRITE setColorsUnderLine NOTIFY colorsUnderLineChanged)
 
+    // optional left/rightEdgeValues represent the line's y values (same units as the points) at the edges of the x range
+    Q_PROPERTY(qreal leftEdgeValue READ leftEdgeValue WRITE setLeftEdgeValue NOTIFY leftEdgeValueChanged)
+    Q_PROPERTY(qreal rightEdgeValue READ rightEdgeValue WRITE setRightEdgeValue NOTIFY rightEdgeValueChanged)
+
     Q_PROPERTY(qreal defaultValue READ defaultValue WRITE setDefaultValue NOTIFY defaultValueChanged)
 
     Q_PROPERTY(qreal xRangeFrom READ xRangeFrom WRITE setXRangeFrom NOTIFY xRangeFromChanged)
@@ -138,6 +142,12 @@ public:
     QVector<QColor> colorsUnderLine() const;
     void setColorsUnderLine(const QVector<QColor>&);
 
+    qreal leftEdgeValue() const;
+    void setLeftEdgeValue(qreal);
+
+    qreal rightEdgeValue() const;
+    void setRightEdgeValue(qreal);
+
     qreal defaultValue() const;
     void setDefaultValue(qreal v);
 
@@ -202,6 +212,9 @@ signals:
     void pointsChanged();
 
     void colorsUnderLineChanged();
+
+    void leftEdgeValueChanged();
+    void rightEdgeValueChanged();
 
     void activePointChanged();
 
@@ -270,6 +283,9 @@ private:
     QVector<int> m_visibleToDomainIndex;
 
     QVector<QColor> m_colorsUnderLine;
+
+    std::optional<qreal> m_leftEdgeValue;
+    std::optional<qreal> m_rightEdgeValue;
 
     qreal m_defaultValue = 1.0;
 
