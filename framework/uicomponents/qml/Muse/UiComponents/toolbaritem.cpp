@@ -23,6 +23,7 @@
 
 #include <QVariantMap>
 
+#include "global/containers.h"
 #include "global/stringutils.h"
 #include "types/translatablestring.h"
 
@@ -74,11 +75,15 @@ void ToolBarItem::setEnabled(bool enabled)
 
 void ToolBarItem::activate()
 {
-    if (strings::startsWith(m_intent, "command://")) {
-        commandDispatcher()->dispatch(command(), m_params);
+    static constexpr Qt::KeyboardModifiers relevantModifiers = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+    const Qt::KeyboardModifiers modifiers = application()->keyboardModifiers() & relevantModifiers;
+    const std::string intent = muse::value(m_intents, modifiers, this->intent());
+
+    if (strings::startsWith(intent, "command://")) {
+        commandDispatcher()->dispatch(rcommand::Command(intent), m_params);
     } else {
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
-        dispatcher()->dispatch(actionCode(), m_args);
+        dispatcher()->dispatch(intent, m_args);
 #endif
     }
 }
@@ -192,7 +197,7 @@ void ToolBarItem::setShortcuts(const std::vector<std::string>& shortcuts)
 
 QString muse::uicomponents::ToolBarItem::code_property() const
 {
-    return QString::fromStdString(m_intent);
+    return QString::fromStdString(intent());
 }
 
 QString ToolBarItem::description_property() const
@@ -295,8 +300,8 @@ ToolBarItem::ToolBarItem(const rcommand::CommandInfo& info, ToolBarItemType::Typ
 
 void ToolBarItem::setCommandInfo(const rcommand::CommandInfo& info)
 {
-    m_intent = info.command.toString();
-    setId(QString::fromStdString(m_intent));
+    m_intents[Qt::NoModifier] = info.command.toString();
+    setId(QString::fromStdString(intent()));
 
     m_title = info.title;
     m_description = info.description;
@@ -309,7 +314,7 @@ void ToolBarItem::setCommandInfo(const rcommand::CommandInfo& info)
 muse::rcommand::CommandInfo ToolBarItem::commandInfo() const
 {
     rcommand::CommandInfo info;
-    info.command = rcommand::Command(m_intent);
+    info.command = rcommand::Command(intent());
     info.title = m_title;
     info.description = m_description;
     info.decoration.iconCode = m_icon;
@@ -317,15 +322,23 @@ muse::rcommand::CommandInfo ToolBarItem::commandInfo() const
     return info;
 }
 
-void ToolBarItem::setCommand(const rcommand::Command& command)
+void ToolBarItem::setCommand(const rcommand::Command& command, Qt::KeyboardModifiers modifiers)
 {
-    m_intent = command.toString();
-    setId(QString::fromStdString(m_intent));
+    m_intents[modifiers] = command.toString();
+
+    if (modifiers == Qt::NoModifier) {
+        setId(QString::fromStdString(intent()));
+    }
 }
 
 muse::rcommand::Command ToolBarItem::command() const
 {
-    return rcommand::Command(m_intent);
+    return rcommand::Command(intent());
+}
+
+std::string ToolBarItem::intent() const
+{
+    return muse::value(m_intents, Qt::NoModifier);
 }
 
 void ToolBarItem::setParams(const rcommand::Params& params)
@@ -368,7 +381,7 @@ ToolBarItem::ToolBarItem(const UiAction& action, ToolBarItemType::Type type, QOb
 
 void ToolBarItem::setAction(const UiAction& action)
 {
-    m_intent = action.code;
+    m_intents[Qt::NoModifier] = action.code;
     m_title = action.title;
     m_description = action.description;
     m_icon = action.iconCode;
@@ -380,7 +393,7 @@ void ToolBarItem::setAction(const UiAction& action)
 UiAction ToolBarItem::action() const
 {
     UiAction action;
-    action.code = m_intent;
+    action.code = intent();
     action.title = m_title;
     action.description = m_description;
     action.iconCode = m_icon;
@@ -390,7 +403,7 @@ UiAction ToolBarItem::action() const
 
 muse::actions::ActionCode ToolBarItem::actionCode() const
 {
-    return m_intent;
+    return intent();
 }
 
 void ToolBarItem::setState(const UiActionState& state)
