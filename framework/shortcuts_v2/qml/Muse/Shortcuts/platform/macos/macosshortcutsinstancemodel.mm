@@ -173,6 +173,33 @@ static UInt32 keyboardType()
     return LMGetKbdType();
 }
 
+static bool isKeypadKey(UInt32 keyNativeCode)
+{
+    switch (keyNativeCode) {
+    case kVK_ANSI_Keypad0:
+    case kVK_ANSI_Keypad1:
+    case kVK_ANSI_Keypad2:
+    case kVK_ANSI_Keypad3:
+    case kVK_ANSI_Keypad4:
+    case kVK_ANSI_Keypad5:
+    case kVK_ANSI_Keypad6:
+    case kVK_ANSI_Keypad7:
+    case kVK_ANSI_Keypad8:
+    case kVK_ANSI_Keypad9:
+    case kVK_ANSI_KeypadDecimal:
+    case kVK_ANSI_KeypadMultiply:
+    case kVK_ANSI_KeypadPlus:
+    case kVK_ANSI_KeypadClear:
+    case kVK_ANSI_KeypadDivide:
+    case kVK_ANSI_KeypadEnter:
+    case kVK_ANSI_KeypadMinus:
+    case kVK_ANSI_KeypadEquals:
+        return true;
+    default:
+        return false;
+    }
+}
+
 //! NOTE requiredModifiers receives the modifiers needed to type the character with the returned key
 static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, Qt::KeyboardModifiers& requiredModifiers, bool& found)
 {
@@ -343,6 +370,12 @@ static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, Qt::Key
 
         UCKeyOutput* keyToChar = reinterpret_cast<UCKeyOutput*>(data + charTable->keyToCharTableOffsets[tableNum]);
         for (UInt32 k = 0; k < charTable->keyToCharTableSize; k++) {
+            // The keypad keys have their own shortcuts (`Num+...`), and keyCodeToString doesn't translate them
+            // according to the layout (e.g. the keypad decimal key types `,` on the Russian layout, not `.`)
+            if (isKeypadKey(k)) {
+                continue;
+            }
+
             bool keyMatches = false;
             if (keyToChar[k] & kUCKeyOutputTestForIndexMask) {
                 long idx = keyToChar[k] & kUCKeyOutputGetIndexMask;
@@ -402,6 +435,11 @@ static QKeySequence translateToKeyboardLayout(UCKeyboardLayout* keyboard, const 
     }
 
     const QKeyCombination keyCombination = sequence[0];
+
+    // The keypad keys are not searched for characters (see nativeKeycode), so the keypad shortcuts are kept as is
+    if (keyCombination.keyboardModifiers() & Qt::KeypadModifier) {
+        return sequence;
+    }
 
     const Qt::Key qKey = keyCombination.key();
 

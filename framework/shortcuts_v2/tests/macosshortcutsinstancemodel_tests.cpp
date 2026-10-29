@@ -44,6 +44,7 @@ namespace muse::shortcuts {
 static const QString US_LAYOUT = "com.apple.keylayout.US";
 static const QString GERMAN_LAYOUT = "com.apple.keylayout.German";
 static const QString RUSSIAN_LAYOUT = "com.apple.keylayout.Russian";
+static const QString FRENCH_LAYOUT = "com.apple.keylayout.French";
 
 class TestMacOSShortcutsInstanceModel : public MacOSShortcutsInstanceModel
 {
@@ -198,9 +199,8 @@ TEST_F(Shortcuts_MacOSShortcutsInstanceModelTests, US_ShiftedCharactersDoNotOver
     const std::vector<Case> cases = {
         { "_", "Shift+-", "-" },
         { "(", "Shift+9", "9" },
-        // `+` is also on the keypad, so it is kept as is
-        { "+", "+", "=" },
-        { "Alt++", "Alt++", "Alt+=" },
+        { "+", "Shift+=", "=" },
+        { "Alt++", "Alt+Shift+=", "Alt+=" },
         { "{", "Shift+[", "[" },
         { "}", "Shift+]", "]" },
     };
@@ -314,4 +314,63 @@ TEST_F(Shortcuts_MacOSShortcutsInstanceModelTests, Russian_CharacterTypedWithOpt
 
     //! [THEN] Pressing `Option+2` activates the shortcut
     EXPECT_EQ(activate("Alt+2"), "@");
+}
+
+/**
+ * @brief Characters are not translated to the keypad keys
+ * @details The keypad decimal key types `,` on the Russian layout, so `Alt+,` used to be translated to that key,
+ * i.e. to `Alt+.`, which clashed with `Alt+Shift+7` (`Shift+7` types `.` on the Russian layout)
+ */
+TEST_F(Shortcuts_MacOSShortcutsInstanceModelTests, Russian_CharactersAreNotTranslatedToKeypad)
+{
+    //! [GIVEN] Shortcuts with `,` and `.`, and with the keys that type `.` with Shift
+    addShortcut("test://a", { "Alt+," });
+    addShortcut("test://b", { "Alt+." });
+    addShortcut("test://c", { "Alt+Shift+7" });
+
+    //! [WHEN] The shortcuts are loaded for the Russian layout
+    loadShortcuts(RUSSIAN_LAYOUT);
+
+    //! [THEN] `,` and `.` are translated to the `Б` and `Ю` keys, like the Latin letters
+    EXPECT_EQ(activate("Alt+Б"), "Alt+,");
+    EXPECT_EQ(activate("Alt+Ю"), "Alt+.");
+
+    //! [THEN] `Alt+.` is not registered, so `Alt+Shift+7` is not ambiguous
+    EXPECT_FALSE(isRegistered("Alt+."));
+    EXPECT_EQ(activate("Alt+Shift+7"), "Alt+Shift+7");
+}
+
+/**
+ * @brief Keypad shortcuts are registered as is
+ * @details Characters are not searched on the keypad keys, so e.g. `+` would be translated to `Shift+=`,
+ * and `Num++` to `Shift+Num+=`, which Qt never produces for the keypad key
+ */
+TEST_F(Shortcuts_MacOSShortcutsInstanceModelTests, US_KeypadShortcutsAreNotTranslated)
+{
+    //! [GIVEN] Keypad shortcuts with characters that require Shift on the main keys
+    addShortcut("test://a", { "Num++" });
+    addShortcut("test://b", { "Num+*" });
+    addShortcut("test://c", { "Num+1" });
+
+    //! [WHEN] The shortcuts are loaded for the US layout
+    loadShortcuts(US_LAYOUT);
+
+    //! [THEN] Pressing the keypad keys activates the shortcuts
+    EXPECT_EQ(activate("Num++"), "Num++");
+    EXPECT_EQ(activate("Num+*"), "Num+*");
+    EXPECT_EQ(activate("Num+1"), "Num+1");
+}
+
+TEST_F(Shortcuts_MacOSShortcutsInstanceModelTests, French_KeypadDigitsAreNotTranslated)
+{
+    //! [GIVEN] The digits require Shift on the main keys of the French layout (`1` is `Shift+&`)
+    addShortcut("test://a", { "Num+1" });
+    addShortcut("test://b", { "1" });
+
+    //! [WHEN] The shortcuts are loaded for the French layout
+    loadShortcuts(FRENCH_LAYOUT);
+
+    //! [THEN] The keypad digit is kept as is, while the digit on the main keys is translated
+    EXPECT_EQ(activate("Num+1"), "Num+1");
+    EXPECT_EQ(activate("Shift+&"), "1");
 }
