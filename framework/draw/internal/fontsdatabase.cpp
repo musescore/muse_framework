@@ -39,6 +39,13 @@ using namespace muse::draw;
 static int s_fontID = -1;
 #endif
 
+FontsDatabase::~FontsDatabase()
+{
+    for (const auto& [key, info] : m_fonts) {
+        release(info);
+    }
+}
+
 void FontsDatabase::setDefaultFont(Font::Type type, const FontDataKey& key)
 {
     m_defaults[type] = key;

@@ -229,6 +229,32 @@ TEST_F(Draw_FontsProviderQtTests, removeSubstitutions)
     EXPECT_EQ(qSubstitutions.at(1).toLower(), QString("leland"));
 }
 
+TEST_F(Draw_FontsProviderQtTests, removeApplicationFont)
+{
+    {
+        int qtFontId = -1;
+        {
+            FontsDatabase database;
+            qtFontId = database.addFont(FontDataKey(u"Edwin"), Env::edwinPath());
+            ASSERT_NE(qtFontId, -1);
+            EXPECT_FALSE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+        }
+
+        EXPECT_TRUE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+    }
+
+    {
+        QFontProvider provider;
+        const int qtFontId = provider.addSymbolFont(u"Bravura", Env::bravuraPath());
+        ASSERT_NE(qtFontId, -1);
+        EXPECT_FALSE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+
+        provider.removeSymbolFont(qtFontId);
+
+        EXPECT_TRUE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+    }
+}
+
 TEST_F(Draw_FontsProviderQtTests, substitutionChangeReachesCachedFaces)
 {
     Env env;

@@ -78,6 +78,11 @@ int QFontProvider::addSymbolFont(const String& family, std::shared_ptr<io::IODev
     return QFontDatabase::addApplicationFontFromData(device->readAll().toQByteArray());
 }
 
+void QFontProvider::removeSymbolFont(int id)
+{
+    QFontDatabase::removeApplicationFont(id);
+}
+
 double QFontProvider::lineSpacing(const Font& f) const
 {
     return QFontMetricsF(f.toQFont(), &device).lineSpacing();

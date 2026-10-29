@@ -43,6 +43,7 @@ public:
 
     virtual int addSymbolFont(const String& family, const io::path_t& path) = 0;
     virtual int addSymbolFont(const String& family, std::shared_ptr<io::IODevice> device) = 0;
+    virtual void removeSymbolFont(int id) = 0;
 
     virtual double lineSpacing(const Font& f) const = 0;
     virtual double xHeight(const Font& f) const = 0;
