@@ -64,7 +64,13 @@ Rectangle {
     QtObject {
         id: prv
         readonly property alias tabsModel: frameModel.tabsModel
-        readonly property int currentIndex: Boolean(root.frameCpp) && root.frameCpp.currentIndex >= 0 ? root.frameCpp.currentIndex : 0
+        readonly property int currentIndex: {
+            const tabCount = prv.tabsModel.numTabs // re-evaluate when tabs are added or closed
+            if (tabCount <= 0 || !Boolean(root.frameCpp)) {
+                return 0
+            }
+            return root.frameCpp.currentIndex >= 0 ? root.frameCpp.currentIndex : 0
+        }
     }
 
     NavigationPanel {
