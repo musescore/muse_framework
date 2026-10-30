@@ -69,6 +69,7 @@ struct BaseContract {
             }
         }
         UNREACHABLE;
+        return std::string();
     }
 
     static std::optional<decltype(C::def)> enum_val(const std::string& sval)

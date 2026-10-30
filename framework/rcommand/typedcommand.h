@@ -93,7 +93,11 @@ DataType dataType()
         return DataType::Bool;
     } else if constexpr (std::is_same<T, int>::value) {
         return DataType::Int;
+    } else if constexpr (std::is_same<T, unsigned int>::value) {
+        return DataType::Int;
     } else if constexpr (std::is_same<T, int64_t>::value) {
+        return DataType::Int64;
+    } else if constexpr (std::is_same<T, uint64_t>::value) {
         return DataType::Int64;
     } else if constexpr (std::is_same<T, float>::value) {
         return DataType::Float;
@@ -118,6 +122,12 @@ Val toVal(const T& val)
 {
     if constexpr (std::is_enum<T>::value) {
         return Val(Contract<T>::str_val(val));
+    } else if constexpr (std::is_same<T, unsigned int>::value) {
+        return Val(static_cast<int>(val));
+    } else if constexpr (std::is_same<T, uint64_t>::value) {
+        return Val(static_cast<int64_t>(val));
+    } else if constexpr (std::is_same<T, float>::value) {
+        return Val(static_cast<double>(val));
     } else {
         return Val::fromType(val);
     }
@@ -134,6 +144,12 @@ std::optional<T> fromVal(const Val& v)
 {
     if constexpr (std::is_enum<T>::value) {
         return Contract<T>::enum_val(v.toString());
+    } else if constexpr (std::is_same<T, unsigned int>::value) {
+        return static_cast<unsigned int>(v.toInt());
+    } else if constexpr (std::is_same<T, uint64_t>::value) {
+        return static_cast<uint64_t>(v.toInt64());
+    } else if constexpr (std::is_same<T, float>::value) {
+        return static_cast<float>(v.toDouble());
     } else {
         return v.toType<T>();
     }
