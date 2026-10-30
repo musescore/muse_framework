@@ -95,6 +95,15 @@ void SignalNode::updateSignalValue(const audioch_t ch, const float newPeak)
 
 void SignalNode::notifyAboutChanges()
 {
+    //! NOTE No level meter updates while rendering offline (export): it runs much faster than
+    //! real time, so the meters would only flicker, and a parallel export renders tracks on
+    //! worker threads, where sending would need to register with the engine's message queue
+    //! while the engine thread is blocked waiting for the workers (deadlock)
+    if (m_mode == ProcessMode::PlayingOffline) {
+        m_shouldNotifyAboutChanges = false;
+        return;
+    }
+
     if (m_shouldNotifyAboutChanges) {
         m_audioSignalChanges.send(m_signalValuesMap);
         m_shouldNotifyAboutChanges = false;

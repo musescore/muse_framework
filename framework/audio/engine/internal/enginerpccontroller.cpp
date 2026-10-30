@@ -767,6 +767,49 @@ void EngineRpcController::init()
             }
         });
 
+        onLongRequest(ctxId, MsgCode::SaveSoundTracks, [this](const Msg& msg) {
+            ONLY_AUDIO_RPC_THREAD;
+            SoundTrackFormat format;
+            std::vector<TrackId> trackIds;
+            std::vector<uint64_t> trackCounts;
+            std::vector<uint64_t> dstDevicePtrs;
+            SoundTracksExportOptions options;
+            IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, format, trackIds, trackCounts, dstDevicePtrs, options.idleUntilFirstNote)) {
+                return make_response_ret(msg, make_ret(Err::InvalidRpcData));
+            }
+            IF_ASSERT_FAILED(trackCounts.size() == dstDevicePtrs.size()) {
+                return make_response_ret(msg, make_ret(Err::InvalidRpcData));
+            }
+
+            SoundTrackTargetList targets;
+            targets.reserve(dstDevicePtrs.size());
+            size_t offset = 0;
+            for (size_t i = 0; i < dstDevicePtrs.size(); ++i) {
+                IF_ASSERT_FAILED(offset <= trackIds.size() && trackCounts.at(i) <= trackIds.size() - offset) {
+                    return make_response_ret(msg, make_ret(Err::InvalidRpcData));
+                }
+                const size_t count = static_cast<size_t>(trackCounts.at(i));
+
+                SoundTrackTarget target;
+                target.trackIds.assign(trackIds.cbegin() + offset, trackIds.cbegin() + offset + count);
+                target.dstDevice = reinterpret_cast<io::IODevice*>(dstDevicePtrs.at(i));
+                targets.push_back(std::move(target));
+                offset += count;
+            }
+            IF_ASSERT_FAILED(offset == trackIds.size()) {
+                return make_response_ret(msg, make_ret(Err::InvalidRpcData));
+            }
+
+            if (auto actx = audioContext(msg.ctxId)) {
+                actx->saveSoundTracks(targets, format, options).onResolve(this, [this, msg](const Ret& ret) {
+                    channel()->send(make_response_ret(msg, ret));
+                });
+                return make_response_delayed(msg);
+            } else {
+                return make_response_ret(msg, make_ret(Err::InvalidContext));
+            }
+        });
+
         onLongRequest(ctxId, MsgCode::AbortSavingAllSoundTracks, [this](const Msg& msg) {
             ONLY_AUDIO_RPC_THREAD;
             if (auto actx = audioContext(msg.ctxId)) {
