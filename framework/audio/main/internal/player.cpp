@@ -48,8 +48,12 @@ void Player::init()
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackStatus);
-        channel()->send(msg, [this](const Msg& res) {
+        channel()->send(msg, [this, alive = std::weak_ptr<bool>(m_alive)](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
+            if (alive.expired()) {
+                return;
+            }
+
             Ret ret;
             PlaybackStatus status = PlaybackStatus::Stopped;
             StreamId streamId = 0;
@@ -58,6 +62,7 @@ void Player::init()
             }
 
             if (ret) {
+                m_playbackStatusStreamId = streamId;
                 channel()->addReceiveStream(StreamName::PlaybackStatusStream, streamId, m_playbackStatusChanged);
                 //! NOTE Send initial state
                 m_playbackStatusChanged.send(status);
@@ -73,8 +78,12 @@ void Player::init()
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackPosition);
-        channel()->send(msg, [this](const Msg& res) {
+        channel()->send(msg, [this, alive = std::weak_ptr<bool>(m_alive)](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
+            if (alive.expired()) {
+                return;
+            }
+
             Ret ret;
             secs_t pos = 0.0;
             StreamId streamId = 0;
@@ -83,6 +92,7 @@ void Player::init()
             }
 
             if (ret) {
+                m_playbackPositionStreamId = streamId;
                 channel()->addReceiveStream(StreamName::PlaybackPositionStream, streamId, m_playbackPositionChanged);
                 //! NOTE Send initial state
                 m_playbackPositionChanged.send(pos);
@@ -91,6 +101,26 @@ void Player::init()
             }
         });
     }
+}
+
+void Player::deinit()
+{
+    ONLY_AUDIO_MAIN_THREAD;
+
+    m_alive.reset();
+
+    if (m_playbackStatusStreamId != 0) {
+        channel()->removeStream(m_playbackStatusStreamId);
+        m_playbackStatusStreamId = 0;
+    }
+
+    if (m_playbackPositionStreamId != 0) {
+        channel()->removeStream(m_playbackPositionStreamId);
+        m_playbackPositionStreamId = 0;
+    }
+
+    m_playbackStatusChanged.disconnect(this);
+    m_playbackPositionChanged.disconnect(this);
 }
 
 async::Promise<Ret> Player::prepareToPlay()
