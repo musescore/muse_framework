@@ -38,4 +38,21 @@ set(MODULE_TEST_DEF
     SHORTCUTS_TESTDATA_DIR="${CMAKE_CURRENT_LIST_DIR}/testdata"
 )
 
+if (OS_IS_MAC AND MUSE_MODULE_SHORTCUTS_QML)
+    set(MODULE_TEST_SRC ${MODULE_TEST_SRC}
+        ${CMAKE_CURRENT_LIST_DIR}/mocks/commandshortcutsregistermock.h
+        ${CMAKE_CURRENT_LIST_DIR}/mocks/shortcutscontrollermock.h
+        ${CMAKE_CURRENT_LIST_DIR}/macosshortcutsinstancemodel_tests.cpp
+    )
+
+    set(MODULE_TEST_LINK ${MODULE_TEST_LINK}
+        muse::shortcuts_qml
+        Qt6::Qml
+    )
+
+    set(MODULE_TEST_INCLUDE ${MODULE_TEST_INCLUDE}
+        ${MUSE_FRAMEWORK_SRC_PATH}/shortcuts_v2/qml/Muse/Shortcuts/platform/macos
+    )
+endif()
+
 include(SetupGTest)

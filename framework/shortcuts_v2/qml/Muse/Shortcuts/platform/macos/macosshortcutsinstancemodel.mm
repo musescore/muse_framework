@@ -86,33 +86,125 @@ static const std::map<UInt32, QString> specialKeysMap = {
     { kVK_ANSI_KeypadEquals, "=" }
 };
 
-static UCKeyboardLayout* keyboardLayout()
+//! NOTE Returns the current keyboard layout if inputSourceId is empty.
+//! The returned input source owns the layout data and must be released by the caller
+static TISInputSourceRef copyKeyboardLayoutInputSource(const QString& inputSourceId)
 {
     static TISInputSourceRef (* TISCopyCurrentKeyboardLayoutInputSource)(void);
+    static CFArrayRef (* TISCreateInputSourceList)(CFDictionaryRef properties, Boolean includeAllInstalled);
+
+    CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
+
+    if (bundle) {
+        *(void**)& TISCopyCurrentKeyboardLayoutInputSource
+            = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCopyCurrentKeyboardLayoutInputSource"));
+        *(void**)& TISCreateInputSourceList = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCreateInputSourceList"));
+    }
+
+    if (!TISCopyCurrentKeyboardLayoutInputSource || !TISCreateInputSourceList) {
+        LOGE() << "Error getting functions from Carbon framework";
+        return nullptr;
+    }
+
+    if (inputSourceId.isEmpty()) {
+        return TISCopyCurrentKeyboardLayoutInputSource();
+    }
+
+    CFStringRef id = inputSourceId.toCFString();
+    const void* keys[] = { CFSTR("TISPropertyInputSourceID") };
+    const void* values[] = { id };
+    CFDictionaryRef properties = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1,
+                                                    &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+    CFArrayRef sources = TISCreateInputSourceList(properties, true);
+
+    CFRelease(properties);
+    CFRelease(id);
+
+    TISInputSourceRef source = nullptr;
+    if (sources) {
+        if (CFArrayGetCount(sources) > 0) {
+            source = (TISInputSourceRef)CFRetain(CFArrayGetValueAtIndex(sources, 0));
+        }
+        CFRelease(sources);
+    }
+
+    return source;
+}
+
+static UCKeyboardLayout* keyboardLayout(TISInputSourceRef inputSource)
+{
     static void*(* TISGetInputSourceProperty)(TISInputSourceRef inputSource, CFStringRef propertyKey);
 
     CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
 
     if (bundle) {
         *(void**)& TISGetInputSourceProperty = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISGetInputSourceProperty"));
-        *(void**)& TISCopyCurrentKeyboardLayoutInputSource
-            = CFBundleGetFunctionPointerForName(bundle, CFSTR("TISCopyCurrentKeyboardLayoutInputSource"));
     }
 
-    if (!TISCopyCurrentKeyboardLayoutInputSource || !TISGetInputSourceProperty) {
+    if (!TISGetInputSourceProperty) {
         LOGE() << "Error getting functions from Carbon framework";
-        return 0;
+        return nullptr;
     }
 
-    TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardLayoutInputSource();
-    CFDataRef uchr = (CFDataRef)TISGetInputSourceProperty(currentKeyboard, CFSTR("TISPropertyUnicodeKeyLayoutData"));
+    CFDataRef uchr = (CFDataRef)TISGetInputSourceProperty(inputSource, CFSTR("TISPropertyUnicodeKeyLayoutData"));
+    if (!uchr) {
+        return nullptr;
+    }
 
     return (UCKeyboardLayout*)CFDataGetBytePtr(uchr);
 }
 
-static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, bool& found)
+static UInt32 keyboardType()
+{
+    static UInt8 (* LMGetKbdType)(void);
+
+    CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
+
+    if (bundle) {
+        *(void**)& LMGetKbdType = CFBundleGetFunctionPointerForName(bundle, CFSTR("LMGetKbdType"));
+    }
+
+    if (!LMGetKbdType) {
+        LOGE() << "Error getting functions from Carbon framework";
+        return 0;
+    }
+
+    return LMGetKbdType();
+}
+
+static bool isKeypadKey(UInt32 keyNativeCode)
+{
+    switch (keyNativeCode) {
+    case kVK_ANSI_Keypad0:
+    case kVK_ANSI_Keypad1:
+    case kVK_ANSI_Keypad2:
+    case kVK_ANSI_Keypad3:
+    case kVK_ANSI_Keypad4:
+    case kVK_ANSI_Keypad5:
+    case kVK_ANSI_Keypad6:
+    case kVK_ANSI_Keypad7:
+    case kVK_ANSI_Keypad8:
+    case kVK_ANSI_Keypad9:
+    case kVK_ANSI_KeypadDecimal:
+    case kVK_ANSI_KeypadMultiply:
+    case kVK_ANSI_KeypadPlus:
+    case kVK_ANSI_KeypadClear:
+    case kVK_ANSI_KeypadDivide:
+    case kVK_ANSI_KeypadEnter:
+    case kVK_ANSI_KeypadMinus:
+    case kVK_ANSI_KeypadEquals:
+        return true;
+    default:
+        return false;
+    }
+}
+
+//! NOTE requiredModifiers receives the modifiers needed to type the character with the returned key
+static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, Qt::KeyboardModifiers& requiredModifiers, bool& found)
 {
     found = true;
+    requiredModifiers = Qt::NoModifier;
 
     switch (keyCode) {
     case Qt::Key_Return:
@@ -200,45 +292,104 @@ static UInt32 nativeKeycode(UCKeyboardLayout* keyboard, Qt::Key keyCode, bool& f
     }
 
     if (keyCode < 0 || keyCode > 0xFFFF) {
-        LOGW() << "Unhandled key code: " << keyCode;
+        LOGD() << "Unhandled key code: " << keyCode;
         found = false;
         return 0;
     }
 
-    UTF16Char keyCodeChar = keyCode;
-    UCKeyboardTypeHeader* table = keyboard->keyboardTypeList;
+    const UTF16Char keyCodeChar = keyCode;
+    // Letters are matched regardless of case: Qt::Key_A is `A`, while the unmodified key produces `a`
+    const UTF16Char keyCodeCharLower = QChar(keyCodeChar).toLower().unicode();
+
+    auto matches = [keyCodeChar, keyCodeCharLower](UTF16Char ch) {
+        return ch == keyCodeChar || ch == keyCodeCharLower;
+    };
 
     uint8_t* data = (uint8_t*)keyboard;
+
+    // Use the same keyboard type that UCKeyTranslate (see keyCodeToString) will use
+    const UInt32 kbdType = keyboardType();
+    const UCKeyboardTypeHeader* header = &keyboard->keyboardTypeList[0];
     for (UInt32 i = 0; i < keyboard->keyboardTypeCount; i++) {
-        UCKeyStateRecordsIndex* stateRec = 0;
-        if (table[i].keyStateRecordsIndexOffset != 0) {
-            stateRec = reinterpret_cast<UCKeyStateRecordsIndex*>(data + table[i].keyStateRecordsIndexOffset);
-            if (stateRec->keyStateRecordsIndexFormat != kUCKeyStateRecordsIndexFormat) {
-                stateRec = 0;
-            }
+        if (keyboard->keyboardTypeList[i].keyboardTypeFirst <= kbdType && kbdType <= keyboard->keyboardTypeList[i].keyboardTypeLast) {
+            header = &keyboard->keyboardTypeList[i];
+            break;
+        }
+    }
+
+    UCKeyStateRecordsIndex* stateRec = 0;
+    if (header->keyStateRecordsIndexOffset != 0) {
+        stateRec = reinterpret_cast<UCKeyStateRecordsIndex*>(data + header->keyStateRecordsIndexOffset);
+        if (stateRec->keyStateRecordsIndexFormat != kUCKeyStateRecordsIndexFormat) {
+            stateRec = 0;
+        }
+    }
+
+    UCKeyToCharTableIndex* charTable = reinterpret_cast<UCKeyToCharTableIndex*>(data + header->keyToCharTableIndexOffset);
+    if (charTable->keyToCharTableIndexFormat != kUCKeyToCharTableIndexFormat) {
+        found = false;
+        return 0;
+    }
+
+    // The tables to search, in order of priority, and the modifiers needed to type a character from each of them.
+    // keyCodeToString translates the key without modifiers, so a character that requires e.g. Shift (`:` is `Shift+;`
+    // on QWERTY) must be translated together with that modifier, otherwise it clashes with the shortcuts for the
+    // character of the same key without the modifier (`;`). The Command table needs no modifiers, as it holds e.g.
+    // the Latin characters of non-Latin layouts, that Qt also takes into account. The tables for other modifiers
+    // can't be used: e.g. the Control table may have a QWERTY-like layout
+    const std::vector<std::pair<UInt32, Qt::KeyboardModifiers> > tablesModifiers = {
+        { 0, Qt::NoModifier },
+        { cmdKey, Qt::NoModifier },
+        { shiftKey, Qt::ShiftModifier },
+        { optionKey, Qt::AltModifier },
+        { optionKey | shiftKey, Qt::AltModifier | Qt::ShiftModifier },
+    };
+
+    const UCKeyModifiersToTableNum* modifiersToTable
+        = reinterpret_cast<const UCKeyModifiersToTableNum*>(data + header->keyModifiersToTableNumOffset);
+    const bool hasModifiersToTable = modifiersToTable->keyModifiersToTableNumFormat == kUCKeyModifiersToTableNumFormat;
+
+    std::vector<bool> searchedTables(charTable->keyToCharTableCount, false);
+
+    for (const auto& [carbonModifiers, qtModifiers] : tablesModifiers) {
+        const UInt32 modifiers = (carbonModifiers >> 8) & 0xFF;
+
+        UInt32 tableNum = 0;
+        if (hasModifiersToTable) {
+            tableNum = modifiers < modifiersToTable->modifiersCount
+                       ? modifiersToTable->tableNum[modifiers] : modifiersToTable->defaultTableNum;
+        } else if (modifiers != 0) {
+            break;
         }
 
-        UCKeyToCharTableIndex* charTable = reinterpret_cast<UCKeyToCharTableIndex*>(data + table[i].keyToCharTableIndexOffset);
-        if (charTable->keyToCharTableIndexFormat != kUCKeyToCharTableIndexFormat) {
+        if (tableNum >= searchedTables.size() || searchedTables[tableNum]) {
             continue;
         }
 
-        for (UInt32 j = 0; j < charTable->keyToCharTableCount; j++) {
-            UCKeyOutput* keyToChar = reinterpret_cast<UCKeyOutput*>(data + charTable->keyToCharTableOffsets[j]);
-            for (UInt32 k = 0; k < charTable->keyToCharTableSize; k++) {
-                if (keyToChar[k] & kUCKeyOutputTestForIndexMask) {
-                    long idx = keyToChar[k] & kUCKeyOutputGetIndexMask;
-                    if (stateRec && idx < stateRec->keyStateRecordCount) {
-                        UCKeyStateRecord* rec = reinterpret_cast<UCKeyStateRecord*>(data + stateRec->keyStateRecordOffsets[idx]);
-                        if (rec->stateZeroCharData == keyCodeChar) {
-                            return k;
-                        }
-                    }
-                } else if (!(keyToChar[k] & kUCKeyOutputSequenceIndexMask) && keyToChar[k] < 0xFFFE) {
-                    if (keyToChar[k] == keyCodeChar) {
-                        return k;
-                    }
+        searchedTables[tableNum] = true;
+
+        UCKeyOutput* keyToChar = reinterpret_cast<UCKeyOutput*>(data + charTable->keyToCharTableOffsets[tableNum]);
+        for (UInt32 k = 0; k < charTable->keyToCharTableSize; k++) {
+            // The keypad keys have their own shortcuts (`Num+...`), and keyCodeToString doesn't translate them
+            // according to the layout (e.g. the keypad decimal key types `,` on the Russian layout, not `.`)
+            if (isKeypadKey(k)) {
+                continue;
+            }
+
+            bool keyMatches = false;
+            if (keyToChar[k] & kUCKeyOutputTestForIndexMask) {
+                long idx = keyToChar[k] & kUCKeyOutputGetIndexMask;
+                if (stateRec && idx < stateRec->keyStateRecordCount) {
+                    UCKeyStateRecord* rec = reinterpret_cast<UCKeyStateRecord*>(data + stateRec->keyStateRecordOffsets[idx]);
+                    keyMatches = matches(rec->stateZeroCharData);
                 }
+            } else if (!(keyToChar[k] & kUCKeyOutputSequenceIndexMask) && keyToChar[k] < 0xFFFE) {
+                keyMatches = matches(keyToChar[k]);
+            }
+
+            if (keyMatches) {
+                requiredModifiers = qtModifiers;
+                return k;
             }
         }
     }
@@ -253,14 +404,6 @@ static QString keyCodeToString(UCKeyboardLayout* keyboard, UInt32 keyNativeCode)
         return specialKeysMap.at(keyNativeCode);
     }
 
-    static UInt8 (* LMGetKbdType)(void);
-
-    CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.Carbon"));
-
-    if (bundle) {
-        *(void**)& LMGetKbdType = CFBundleGetFunctionPointerForName(bundle, CFSTR("LMGetKbdType"));
-    }
-
     UInt32 deadKeyState = 0;
     UniCharCount actualLength = 0;
     const int maxLength = 4;
@@ -271,7 +414,7 @@ static QString keyCodeToString(UCKeyboardLayout* keyboard, UInt32 keyNativeCode)
                                     UInt16(keyNativeCode),
                                     UInt16(kUCKeyActionDisplay),
                                     UInt32((0 >> 8) & 0xFF),
-                                    UInt32(LMGetKbdType()),
+                                    keyboardType(),
                                     OptionBits(kUCKeyTranslateNoDeadKeysBit),
                                     &deadKeyState,
                                     maxLength,
@@ -285,29 +428,33 @@ static QString keyCodeToString(UCKeyboardLayout* keyboard, UInt32 keyNativeCode)
     return "";
 }
 
-static QKeySequence translateToCurrentKeyboardLayout(const QKeySequence& sequence)
+static QKeySequence translateToKeyboardLayout(UCKeyboardLayout* keyboard, const QKeySequence& sequence)
 {
-    const QKeyCombination keyCombination = sequence[0];
-
-    const Qt::Key qKey = keyCombination.key();
-
-    UCKeyboardLayout* keyboard = keyboardLayout();
     if (!keyboard) {
-        LOGE() << "The keyboard layout is not valid";
         return {};
     }
 
+    const QKeyCombination keyCombination = sequence[0];
+
+    // The keypad keys are not searched for characters (see nativeKeycode), so the keypad shortcuts are kept as is
+    if (keyCombination.keyboardModifiers() & Qt::KeypadModifier) {
+        return sequence;
+    }
+
+    const Qt::Key qKey = keyCombination.key();
+
     bool found = false;
-    UInt32 keyNativeCode = nativeKeycode(keyboard, qKey, found);
+    Qt::KeyboardModifiers requiredModifiers;
+    UInt32 keyNativeCode = nativeKeycode(keyboard, qKey, requiredModifiers, found);
     if (!found) {
-        LOGW() << "Key " << qKey << " not found in the keyboard layout";
+        LOGD() << "Key " << qKey << " not found in the keyboard layout";
         return {};
     }
 
     QString keyStr = keyCodeToString(keyboard, keyNativeCode);
     Qt::Key translatedQKey = QKeySequence::fromString(keyStr, QKeySequence::PortableText)[0].key();
 
-    return QKeyCombination(keyCombination.keyboardModifiers(), translatedQKey);
+    return QKeyCombination(keyCombination.keyboardModifiers() | requiredModifiers, translatedQKey);
 }
 
 MacOSShortcutsInstanceModel::MacOSShortcutsInstanceModel(QObject* parent)
@@ -371,6 +518,24 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
         }
     };
 
+    TISInputSourceRef inputSource = copyKeyboardLayoutInputSource(keyboardLayoutId());
+    UCKeyboardLayout* keyboard = inputSource ? keyboardLayout(inputSource) : nullptr;
+    if (!keyboard) {
+        LOGE() << "The keyboard layout is not valid";
+    }
+
+    // A character that requires modifiers (e.g. `!` is `Shift+1` on QWERTY) is translated to these modifiers and the
+    // key. Such translations are recorded last, so that they don't take over the shortcuts bound directly to that
+    // combination of keys (e.g. `@` is `Alt+2` on the Russian layout). We must not record the untranslated character
+    // in this case: Qt matches a key press against both the key with modifiers (`Alt+2`) and the character typed
+    // (`@`), and if there are shortcuts for both, it treats the key press as ambiguous and activates neither of them
+    struct DeferredMapping {
+        QString translatedSequence;
+        QString rawSequence;
+        bool autoRepeat = false;
+    };
+    std::vector<DeferredMapping> deferredMappings;
+
     ShortcutList shortcuts = commandShortcutsRegister()->shortcuts();
 
     for (const Shortcut& sc : shortcuts) {
@@ -382,7 +547,7 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
 
             // Attempt to translate from combination of keys to character, e.g., `Shift+.` becomes `>`, in the case of a QWERTY layout
             QKeySequence translatedSequence
-                = translateToCurrentKeyboardLayout(untranslatedSequence);
+                = translateToKeyboardLayout(keyboard, untranslatedSequence);
             if (translatedSequence.isEmpty() || !(untranslatedSequence[0].key() & 0xff) || untranslatedSequence[0].key() == Qt::Key_A) {
                 QString untranslatedSequenceStrNormalised = untranslatedSequence.toString(QKeySequence::PortableText);
 
@@ -393,9 +558,14 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
             }
 
             if (translatedSequence.isEmpty()) {
-                LOGW() << "Failed to translate sequence " << untranslatedSequenceStr;
+                LOGD() << "Failed to translate sequence " << untranslatedSequenceStr;
             } else {
                 QString translatedSequenceStrNormalised = translatedSequence.toString(QKeySequence::PortableText);
+
+                if (translatedSequence[0].keyboardModifiers() != untranslatedSequence[0].keyboardModifiers()) {
+                    deferredMappings.push_back({ translatedSequenceStrNormalised, untranslatedSequenceStr, sc.autoRepeat });
+                    continue;
+                }
 
                 // If it was successful, record the translated sequence too, and map it to the untranslated sequence
                 // Again, map to non-normalised
@@ -405,9 +575,23 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
         }
     }
 
+    for (const DeferredMapping& mapping : deferredMappings) {
+        recordMapping(mapping.translatedSequence, mapping.rawSequence, false);
+        recordAutoRepeat(mapping.translatedSequence, mapping.autoRepeat);
+    }
+
+    if (inputSource) {
+        CFRelease(inputSource);
+    }
+
     assert(m_shortcuts.size() == m_macSequenceMap.size());
 
     emit shortcutsChanged();
+}
+
+QString MacOSShortcutsInstanceModel::keyboardLayoutId() const
+{
+    return QString();
 }
 
 void MacOSShortcutsInstanceModel::doActivate(const QString& seq)
