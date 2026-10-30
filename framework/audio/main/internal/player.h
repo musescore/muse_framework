@@ -40,6 +40,7 @@ public:
         : Contextable(ctx) {}
 
     void init();
+    void deinit();
 
     async::Promise<Ret> prepareToPlay() override;
 
@@ -68,6 +69,12 @@ private:
 
     secs_t m_playbackPosition = 0.0;
     async::Channel<secs_t> m_playbackPositionChanged;
+
+    rpc::StreamId m_playbackStatusStreamId = 0;
+    rpc::StreamId m_playbackPositionStreamId = 0;
+
+    //! NOTE Responses may come after deinit, they must not be handled
+    std::shared_ptr<bool> m_alive = std::make_shared<bool>(true);
 };
 }
 
