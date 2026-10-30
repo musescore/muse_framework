@@ -42,7 +42,7 @@ FocusScope {
     property alias verticalScrollBarPolicy: verticalScrollBar.policy
 
     property real textSidePadding: 12
-    property bool contextMenuEnabled: false
+    property bool contextMenuEnabled: true
 
     readonly property alias inputField: valueInput
     readonly property alias background: background

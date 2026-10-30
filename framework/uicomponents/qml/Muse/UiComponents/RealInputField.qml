@@ -35,6 +35,7 @@ TextInputField {
     property int decimals: 2
 
     currentText: ui.df.formatReal(root.currentValue, root.decimals)
+    contextMenuEnabled: false
 
     validator: DoubleInputValidator {
         top: root.max

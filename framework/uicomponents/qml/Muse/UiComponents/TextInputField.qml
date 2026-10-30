@@ -40,7 +40,7 @@ FocusScope {
     property alias hint: valueInput.placeholderText
     property alias hintIcon: hintIcon.iconCode
     property bool clearTextButtonVisible: false
-    property bool contextMenuEnabled: false
+    property bool contextMenuEnabled: true
 
     property alias textHorizontalAlignment: valueInput.horizontalAlignment
     property alias textVerticalAlignment: valueInput.verticalAlignment
