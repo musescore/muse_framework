@@ -184,9 +184,13 @@ async::Channel<bool> Playback::initedChanged() const
 
 IPlayerPtr Playback::player() const
 {
-    std::shared_ptr<Player> p = std::make_shared<Player>(iocContext());
-    p->init();
-    return p;
+    if (!m_player) {
+        std::shared_ptr<Player> p = std::make_shared<Player>(iocContext());
+        p->init();
+        m_player = p;
+    }
+
+    return m_player;
 }
 
 template<typename T>
