@@ -316,11 +316,17 @@ FocusScope {
         acceptedButtons: root.contextMenuEnabled ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
 
         onPressed: function(mouse) {
+            // Before focusing, as it selects all and may scroll the text
+            let wasFocused = valueInput.activeFocus
+            let posOnInput = clickableArea.mapToItem(valueInput, mouse.x, mouse.y)
+            let clickedPos = valueInput.positionAt(posOnInput.x, posOnInput.y)
+
             root.ensureActiveFocus()
             navCtrl.requestActiveByInteraction()
 
             if (mouse.button === Qt.RightButton) {
                 editMenuLoader.active = true
+                editMenuLoader.item.moveCursor(posOnInput, clickedPos, wasFocused)
                 editMenuLoader.item.open(Qt.point(mouse.x, mouse.y))
                 return
             }

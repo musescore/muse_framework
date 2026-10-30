@@ -28,6 +28,19 @@ ContextMenuLoader {
 
     property alias textInput: menuModel.textInput
 
+    function moveCursor(clickPoint, clickedPos, wasFocused) {
+        let input = root.textInput
+        let boundaryX = input.positionToRectangle(clickedPos).x
+        let clickedInSelection = input.selectionStart !== input.selectionEnd
+            && (clickedPos > input.selectionStart || clickPoint.x >= boundaryX)
+            && (clickedPos < input.selectionEnd || clickPoint.x < boundaryX)
+
+        // Focusing selects all, so keep the selection only if it existed before the click
+        if (!wasFocused || !clickedInSelection) {
+            input.cursorPosition = clickedPos
+        }
+    }
+
     function open(position) {
         root.show(position, menuModel.items())
     }
