@@ -227,20 +227,10 @@ if (OS_IS_WIN)
     )
 endif(OS_IS_WIN)
 
-if (${Qt6_VERSION} VERSION_GREATER_EQUAL 6.9)
-    qt_target_qml_sources(muse_uicomponents_qml
-        QML_FILES
-            StyledRectangularShadow.qml
-    )
-else()
-    qt_target_qml_sources(muse_uicomponents_qml
-        QML_FILES
-            StubStyledRectangularShadow.qml
-    )
-    set_source_files_properties(StubStyledRectangularShadow.qml PROPERTIES
-        QT_QML_SOURCE_TYPENAME StyledRectangularShadow.qml
-    )
-endif()
+qt_target_qml_sources(muse_uicomponents_qml
+    QML_FILES
+        StyledRectangularShadow.qml
+)
 
 if (MUSE_MODULE_SHORTCUTS_V2)
     target_sources(muse_uicomponents_qml PRIVATE
