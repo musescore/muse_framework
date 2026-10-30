@@ -180,6 +180,7 @@ void MuseSamplerSequencer::clearAllTracks()
 {
     m_layerIdxToTrackIdx.clear();
     m_presetChangesByTrack.clear();
+    m_velocityOverridesByLayer.clear();
 
     for (ms_Track track : allTracks()) {
         m_samplerLib->clearTrack(m_sampler, track);
@@ -284,22 +285,66 @@ void MuseSamplerSequencer::loadDynamicEvents(const DynamicAutomationLayers& chan
 {
     constexpr timestamp_t STEP_INTERVAL_US = 30000;
 
+    std::unordered_set<layer_idx_t> handledLayers;
+
+    // Per-note velocity overrides (see addNoteEvent) and the dynamics-marking curve both feed
+    // the same MuseSampler dynamics stream, which the API expects in chronological order per
+    // track - merge them into a single sorted sequence rather than issuing two separate,
+    // independently-ordered passes of addDynamicsEvent calls.
     for (const auto& layer : changes) {
         ms_Track track = findTrack(layer.first);
         if (!track) {
             continue;
         }
 
-        std::optional<double> lastRatio;
-
+        std::map<long long, double> mergedPoints;
         resampleCurve(layer.second, STEP_INTERVAL_US, [&](timestamp_t t, real_t normalized) {
-            const double ratio = dynamicLevelRatio(dynamicLevelFromNormalized(normalized));
+            mergedPoints[t] = dynamicLevelRatio(dynamicLevelFromNormalized(normalized));
+        });
+
+        const auto overridesIt = m_velocityOverridesByLayer.find(layer.first);
+        if (overridesIt != m_velocityOverridesByLayer.end()) {
+            // Intentional: a note's own velocity override is more specific than the
+            // dynamics-marking curve, so it wins outright at that exact instant, even if a
+            // resampled point happens to land on the same instant.
+            for (const auto& override : overridesIt->second) {
+                mergedPoints[override.first] = override.second.mean();
+            }
+        }
+
+        std::optional<double> lastRatio;
+        for (const auto& point : mergedPoints) {
+            if (lastRatio.has_value() && RealIsEqual(*lastRatio, point.second)) {
+                continue;
+            }
+            lastRatio = point.second;
+            m_samplerLib->addDynamicsEvent(m_sampler, track, DynamicEvent { point.first, point.second });
+        }
+
+        handledLayers.insert(layer.first);
+    }
+
+    // A layer/voice with note-level velocity overrides but no dynamics-marking curve of its own
+    // (e.g. no hairpins/dynamic text at all) still needs those overrides sent.
+    for (const auto& layerOverrides : m_velocityOverridesByLayer) {
+        if (muse::contains(handledLayers, layerOverrides.first)) {
+            continue;
+        }
+
+        ms_Track track = findTrack(layerOverrides.first);
+        if (!track) {
+            continue;
+        }
+
+        std::optional<double> lastRatio;
+        for (const auto& override : layerOverrides.second) {
+            const double ratio = override.second.mean();
             if (lastRatio.has_value() && RealIsEqual(*lastRatio, ratio)) {
-                return;
+                continue;
             }
             lastRatio = ratio;
-            m_samplerLib->addDynamicsEvent(m_sampler, track, DynamicEvent { t, ratio });
-        });
+            m_samplerLib->addDynamicsEvent(m_sampler, track, DynamicEvent { override.first, ratio });
+        }
     }
 }
 
@@ -317,6 +362,17 @@ void MuseSamplerSequencer::addNoteEvent(const mpe::NoteEvent& noteEvent)
     ms_Track track = findOrCreateTrack(layerIdx);
     IF_ASSERT_FAILED(track) {
         return;
+    }
+
+    if (noteEvent.expressionCtx().velocityOverride.has_value()) {
+        const double value = std::clamp(noteEvent.expressionCtx().velocityOverride.value(), 0.0f, 1.0f);
+        // MuseSampler's dynamics stream can only carry one value per instant per track, so
+        // multiple notes in the same voice sharing an onset (e.g. a chord) can't all be
+        // represented - accumulate a sum/count here and average them (in loadDynamicEvents)
+        // rather than letting whichever note happens to be processed last silently win.
+        VelocityOverrideAccumulator& accumulator = m_velocityOverridesByLayer[layerIdx][arrangementCtx.nominalTimestamp];
+        accumulator.sum += value;
+        accumulator.count++;
     }
 
     for (const auto& art : articulations) {
@@ -629,38 +685,9 @@ int MuseSamplerSequencer::pitchLevelToCents(const pitch_level_t pitchLevel) cons
 
 double MuseSamplerSequencer::dynamicLevelRatio(const dynamic_level_t level) const
 {
-    static constexpr dynamic_level_t MIN_SUPPORTED_DYNAMIC_LEVEL = dynamicLevelFromType(DynamicType::ppppppppp);
-    static constexpr dynamic_level_t MAX_SUPPORTED_DYNAMIC_LEVEL = dynamicLevelFromType(DynamicType::fffffffff);
-
-    // Piecewise linear simple scaling to expected MuseSampler values:
-    static const std::list<std::pair<dynamic_level_t, double> > conversionMap = {
-        { MIN_SUPPORTED_DYNAMIC_LEVEL, 0.0 },
-        { dynamicLevelFromType(DynamicType::ppppp), 1.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::pppp), 2.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::ppp), 4.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::pp), 8.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::p), 16.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::mp), 32.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::mf), 64.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::f), 96.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::ff), 120.0 / 127.0 },
-        { dynamicLevelFromType(DynamicType::fff), 127.0 / 127.0 },
-        { MAX_SUPPORTED_DYNAMIC_LEVEL, 127.0 / 127.0 }
-    };
-
-    auto prev_level = conversionMap.begin();
-    auto last_level = conversionMap.end();
-    auto level_it = std::next(prev_level);
-    while (level_it != last_level) {
-        if (level >= prev_level->first && level <= level_it->first) {
-            auto alpha = static_cast<double>(level - prev_level->first) / static_cast<double>(level_it->first - prev_level->first);
-            return alpha * level_it->second + (1.0 - alpha) * prev_level->second;
-        }
-        prev_level = level_it;
-        level_it = std::next(level_it);
-    }
-    LOGE() << "Out of range dynamic value found!";
-    return 48.0 / 127.0;
+    // Shared with any other code (e.g. notation UI) that needs the same "how loud does this
+    // dynamic level sound" curve - see muse::mpe::dynamicLevelToVelocityRatio()'s own doc comment.
+    return dynamicLevelToVelocityRatio(level);
 }
 
 void MuseSamplerSequencer::parseArticulations(const ArticulationMap& articulations,
