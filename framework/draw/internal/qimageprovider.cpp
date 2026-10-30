@@ -37,9 +37,9 @@ Pixmap QImageProvider::scaled(const Pixmap& origin, const Size& s) const
     return Pixmap::fromQPixmap(qtPixmap);
 }
 
-std::shared_ptr<IPaintProvider> QImageProvider::painterForImage(std::shared_ptr<Pixmap> pixmap)
+std::shared_ptr<IPaintProvider> QImageProvider::painterForImage(std::shared_ptr<Pixmap> pixmap, const modularity::ContextPtr& iocCtx)
 {
-    return QImagePainterProvider::make(pixmap);
+    return QImagePainterProvider::make(pixmap, iocCtx);
 }
 
 void QImageProvider::saveAsPng(std::shared_ptr<Pixmap> px, io::IODevice* device)

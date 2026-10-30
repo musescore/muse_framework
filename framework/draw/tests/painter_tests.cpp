@@ -31,6 +31,8 @@
 using namespace muse;
 using namespace muse::draw;
 
+static const muse::modularity::ContextPtr utestCtx = std::make_shared<muse::modularity::Context>(1);
+
 class Draw_PainterTests : public ::testing::Test
 {
 public:
@@ -48,7 +50,7 @@ TEST_F(Draw_PainterTests, Painter_FromNewQPainter)
     QPainter qp(&pd);
 
     //! DO Create Painter from it
-    Painter painter(&qp, "test");
+    Painter painter(&qp, "test", utestCtx);
 
     //! CHECK
     EXPECT_EQ(getUnderlyingQPainter(&painter), &qp);
@@ -72,7 +74,7 @@ TEST_F(Draw_PainterTests, Painter_FromExistingQPainter)
     qp.setTransform(QTransform(1, 2, 3, 4, 5, 6));
 
     //! DO Create Painter from it
-    Painter painter(&qp, "test");
+    Painter painter(&qp, "test", utestCtx);
 
     //! CHECK
     EXPECT_EQ(getUnderlyingQPainter(&painter), &qp);
@@ -94,7 +96,7 @@ TEST_F(Draw_PainterTests, Painter_ViewportAndWindow)
     //! GIVEN Painter
     QImage pd(100, 100, QImage::Format_ARGB32_Premultiplied);
     QPainter qp(&pd);
-    Painter painter(&qp, "test");
+    Painter painter(&qp, "test", utestCtx);
 
     //! DO Set viewport and window
     painter.setWindow(RectF(0.0, 0.0, 4.0, 4.0));
@@ -119,7 +121,7 @@ TEST_F(Draw_PainterTests, Painter_SaveRestore)
     //! GIVEN Painter
     QImage pd(100, 100, QImage::Format_ARGB32_Premultiplied);
     QPainter qp(&pd);
-    Painter painter(&qp, "test");
+    Painter painter(&qp, "test", utestCtx);
 
     //! DO Set properties
     painter.setWindow(RectF(0.0, 0.0, 4.0, 4.0));

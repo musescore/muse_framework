@@ -67,7 +67,7 @@ void DrawContext::registerExports()
     ioc()->registerExport<draw::IFontsDatabase>(mname, std::make_shared<FontsDatabase>());
 
 #ifndef NO_QT_SUPPORT
-    ioc()->registerExport<draw::IFontProvider>(mname, std::make_shared<QFontProvider>());
+    ioc()->registerExport<draw::IFontProvider>(mname, std::make_shared<QFontProvider>(iocContext()));
 #else
     m_fontsEngine = std::make_shared<FontsEngine>(iocContext());
     ioc()->registerExport<draw::IFontsEngine>(mname, m_fontsEngine);

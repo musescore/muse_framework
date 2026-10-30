@@ -25,7 +25,6 @@
 
 #ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
 #include <QFontDatabase>
-#include <QFont>
 #endif
 
 #include "global/io/file.h"
@@ -57,11 +56,6 @@ void FontsDatabase::insertSubstitution(const String& familyName, const String& s
     FontDataKey familyKey(familyName);
     FontDataKey substituteKey(substituteName);
     m_familySubstitutions[familyKey].push_back(substituteKey);
-
-#ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
-    QFont::insertSubstitution(familyName, substituteName);
-#endif
-
     m_changed.notify();
 }
 
@@ -81,13 +75,6 @@ void FontsDatabase::removeSubstitutions(const String& familyName, const std::vec
     if (removed == 0) {
         return;
     }
-
-#ifdef MUSE_MODULE_DRAW_USE_QTFONTMETRICS
-    QFont::removeSubstitutions(familyName);
-    for (const FontDataKey& key : substitutes) {
-        QFont::insertSubstitution(familyName, key.family().id().toQString());
-    }
-#endif
 
     if (substitutes.empty()) {
         m_familySubstitutions.erase(it);

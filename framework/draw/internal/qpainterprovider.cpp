@@ -33,13 +33,14 @@
 #include "draw/utils/drawlogger.h"
 #include "types/transform.h"
 #include "types/painterpath.h"
+#include "qfontsubstitution.h"
 
 #include "log.h"
 
 using namespace muse::draw;
 
-QPainterProvider::QPainterProvider(QPainter* painter, bool ownsPainter)
-    : m_painter(painter), m_ownsPainter(ownsPainter), m_drawObjectsLogger(new DrawObjectsLogger())
+QPainterProvider::QPainterProvider(QPainter* painter, const modularity::ContextPtr& iocCtx, bool ownsPainter)
+    : Contextable(iocCtx), m_painter(painter), m_ownsPainter(ownsPainter), m_drawObjectsLogger(new DrawObjectsLogger())
 {
     if (painter->isActive()) {
         m_font = Font::fromQFont(m_painter->font(), Font::Type::Undefined);
@@ -58,14 +59,14 @@ QPainterProvider::~QPainterProvider()
     delete m_drawObjectsLogger;
 }
 
-IPaintProviderPtr QPainterProvider::make(QPaintDevice* dp)
+IPaintProviderPtr QPainterProvider::make(QPaintDevice* dp, const modularity::ContextPtr& iocCtx)
 {
-    return std::make_shared<QPainterProvider>(new QPainter(dp), true);
+    return std::make_shared<QPainterProvider>(new QPainter(dp), iocCtx, true);
 }
 
-IPaintProviderPtr QPainterProvider::make(QPainter* qp, bool ownsPainter)
+IPaintProviderPtr QPainterProvider::make(QPainter* qp, const modularity::ContextPtr& iocCtx, bool ownsPainter)
 {
-    return std::make_shared<QPainterProvider>(qp, ownsPainter);
+    return std::make_shared<QPainterProvider>(qp, iocCtx, ownsPainter);
 }
 
 QPainter* QPainterProvider::qpainter() const
@@ -139,7 +140,7 @@ void QPainterProvider::setViewport(const RectF& viewport)
 void QPainterProvider::setFont(const Font& font)
 {
     if (m_font != font) {
-        m_painter->setFont(font.toQFont());
+        m_painter->setFont(toQFont(font, *fontsDatabase()));
         m_font = font;
     }
 }

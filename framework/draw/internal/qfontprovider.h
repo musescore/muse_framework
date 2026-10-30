@@ -22,13 +22,17 @@
 #pragma once
 
 #include "../ifontprovider.h"
+#include "global/modularity/ioc.h"
+#include "ifontsdatabase.h"
 
 namespace muse::draw {
 class FontEngineFT;
-class QFontProvider : public IFontProvider
+class QFontProvider : public IFontProvider, public Contextable
 {
+    ContextInject<IFontsDatabase> fontsDatabase = { this };
+
 public:
-    QFontProvider() = default;
+    explicit QFontProvider(const modularity::ContextPtr& iocCtx);
 
     int addSymbolFont(const String& family, const io::path_t& path) override;
     int addSymbolFont(const String& family, std::shared_ptr<io::IODevice> device) override;
@@ -55,5 +59,8 @@ public:
     RectF boundingRect(const Font& f, char32_t ucs4) const override;
 
     RectF tightBoundingRect(const Font& f, const String& string) const override;
+
+private:
+    QFont qFont(const Font& f) const;
 };
 }

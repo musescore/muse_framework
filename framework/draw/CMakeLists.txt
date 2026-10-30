@@ -103,6 +103,7 @@ else()
         target_sources(muse_draw PRIVATE
             internal/qfontprovider.cpp
             internal/qfontprovider.h
+            internal/qfontsubstitution.h
         )
     endif()
 

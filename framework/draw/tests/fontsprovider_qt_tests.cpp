@@ -33,6 +33,7 @@
 #include "draw/internal/fontsdatabase.h"
 #include "draw/internal/fontsengine.h"
 #include "draw/internal/qfontprovider.h"
+#include "draw/internal/qfontsubstitution.h"
 #include "global/modularity/ioc.h"
 
 using namespace muse;
@@ -45,7 +46,8 @@ class Draw_FontsProviderQtTests : public ::testing::Test
 public:
     struct Env {
         Env()
-            : xProvider(utestCtx),
+            : qProvider(utestCtx),
+            xProvider(utestCtx),
             fontsDatabase(std::make_shared<FontsDatabase>()),
             fontsEngine(std::make_shared<FontsEngine>(utestCtx))
         {
@@ -208,7 +210,6 @@ TEST_F(Draw_FontsProviderQtTests, removeSubstitutions)
     Env env;
 
     const muse::String family = u"Draw_FontsProviderQtTests_family";
-    QFont::removeSubstitutions(family.toQString());
 
     env.fontsDatabase->insertSubstitution(family, u"Edwin");
     env.fontsDatabase->insertSubstitution(family, u"FreeSerif");
@@ -222,11 +223,12 @@ TEST_F(Draw_FontsProviderQtTests, removeSubstitutions)
     EXPECT_EQ(substitutions.at(0), FontDataKey(u"Edwin"));
     EXPECT_EQ(substitutions.at(1), FontDataKey(u"Leland"));
 
-    QStringList qSubstitutions = QFont::substitutes(family.toQString());
+    const QStringList qFamilies = toQFont(Font(family, Font::Type::Text), *env.fontsDatabase).families();
 
-    ASSERT_EQ(2, qSubstitutions.size());
-    EXPECT_EQ(qSubstitutions.at(0).toLower(), QString("edwin"));
-    EXPECT_EQ(qSubstitutions.at(1).toLower(), QString("leland"));
+    ASSERT_EQ(3, qFamilies.size());
+    EXPECT_EQ(qFamilies.at(0), family.toQString().toLower());
+    EXPECT_EQ(qFamilies.at(1), QString("edwin"));
+    EXPECT_EQ(qFamilies.at(2), QString("leland"));
 }
 
 TEST_F(Draw_FontsProviderQtTests, removeApplicationFont)
@@ -244,7 +246,7 @@ TEST_F(Draw_FontsProviderQtTests, removeApplicationFont)
     }
 
     {
-        QFontProvider provider;
+        QFontProvider provider(utestCtx);
         const int qtFontId = provider.addSymbolFont(u"Bravura", Env::bravuraPath());
         ASSERT_NE(qtFontId, -1);
         EXPECT_FALSE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
