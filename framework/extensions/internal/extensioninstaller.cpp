@@ -98,11 +98,7 @@ void ExtensionInstaller::doInstallExtension(const io::path_t& srcPath)
         LOGE() << "failed unpack from: " << srcPath << ", to: " << dstPath << ", err: " << ret.toString();
 
         interactive()->error(trc("extensions", "Failed to install extension"),
-#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
                              qtrc("extensions", "Error code: %1").arg(ret.toString()).toStdString(),
-#else
-                             qtrc("extensions", "Error code: %1").arg(QString::fromStdString(ret.toString())).toStdString(),
-#endif
                              { interactive()->buttonData(IInteractive::Button::Ok) });
 
         return;

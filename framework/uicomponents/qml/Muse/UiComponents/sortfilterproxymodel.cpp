@@ -41,11 +41,7 @@ SortFilterProxyModel::SortFilterProxyModel(QObject* parent)
 
     const auto invalidateRows = [this] {
         beginFilterChange();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
         endFilterChange(Direction::Rows);
-#else
-        invalidateFilter();
-#endif
     };
 
     auto onFilterChanged = [this, invalidateRows](Filter* changedFilter) {
@@ -102,11 +98,7 @@ void SortFilterProxyModel::setAlwaysIncludeIndices(const QList<int>& indices)
 
     beginFilterChange();
     m_alwaysIncludeIndices = indices;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     endFilterChange(QSortFilterProxyModel::Direction::Rows);
-#else
-    invalidateFilter();
-#endif
 
     emit alwaysIncludeIndicesChanged();
 }
@@ -124,11 +116,7 @@ void SortFilterProxyModel::setAlwaysExcludeIndices(const QList<int>& indices)
 
     beginFilterChange();
     m_alwaysExcludeIndices = indices;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     endFilterChange(QSortFilterProxyModel::Direction::Rows);
-#else
-    invalidateFilter();
-#endif
 
     emit alwaysExcludeIndicesChanged();
 }
