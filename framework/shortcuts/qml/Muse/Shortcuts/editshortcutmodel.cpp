@@ -223,21 +223,20 @@ QString EditShortcutModel::conflictWarning() const
     return muse::qtrc("shortcuts", "This shortcut is already assigned to: <b>%1</b>").arg(title);
 }
 
-void EditShortcutModel::trySave()
+bool EditShortcutModel::trySave()
 {
-    QString newSequence = this->newSequence();
+    const QString newSequence = this->newSequence();
     const bool alreadyEmpty = originSequenceInNativeFormat().isEmpty() && m_cleared;
     if (alreadyEmpty || m_originSequence == newSequence) {
-        return;
+        return false;
     }
-
-    m_originSequence = newSequence;
 
     QString conflictWarn = conflictWarning();
 
     if (conflictWarn.isEmpty()) {
+        m_originSequence = newSequence;
         emit applyNewSequenceRequested(m_originSequence);
-        return;
+        return true;
     }
 
     QString str = conflictWarn + "<br><br>" + muse::qtrc("shortcuts", "Are you sure you want to assign it to <b>%1</b> instead?")
@@ -250,12 +249,15 @@ void EditShortcutModel::trySave()
         interactive()->buttonData(IInteractive::Button::Ok)
     }, (int)IInteractive::Button::Ok);
 
-    promise.onResolve(this, [this](const IInteractive::Result& res) {
+    promise.onResolve(this, [this, newSequence](const IInteractive::Result& res) {
         if (res.isButton(IInteractive::Button::Ok)) {
+            m_originSequence = newSequence;
             int conflictShortcutIndex = m_allShortcuts.indexOf(m_conflictShortcut);
             emit applyNewSequenceRequested(m_originSequence, conflictShortcutIndex);
         }
     });
+
+    return true;
 }
 
 QString EditShortcutModel::newSequence() const
