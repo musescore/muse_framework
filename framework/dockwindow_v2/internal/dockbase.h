@@ -209,6 +209,7 @@ private slots:
 
 private:
     void setUpFrameConnections();
+    void fitSizeIntoMaximum();
 
     void writeProperties();
 
