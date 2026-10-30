@@ -31,7 +31,7 @@
 #include "../types/fontstypes.h"
 
 namespace muse::draw {
-class IFontsDatabase : MODULE_GLOBAL_INTERFACE
+class IFontsDatabase : MODULE_CONTEXT_INTERFACE
 {
     INTERFACE_ID(muse::draw::IFontsDatabase)
 public:

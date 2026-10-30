@@ -24,6 +24,7 @@
 #include <memory>
 
 #include "global/io/file.h"
+#include "qfontsubstitution.h"
 
 #include <QFont>
 #include <QPaintDevice>
@@ -59,6 +60,11 @@ protected:
 
 static FontPaintDevice device;
 
+QFontProvider::QFontProvider(const modularity::ContextPtr& iocCtx)
+    : Contextable(iocCtx)
+{
+}
+
 int QFontProvider::addSymbolFont(const String& family, const io::path_t& path)
 {
     return addSymbolFont(family, std::make_shared<io::File>(path));
@@ -78,49 +84,54 @@ int QFontProvider::addSymbolFont(const String& family, std::shared_ptr<io::IODev
     return QFontDatabase::addApplicationFontFromData(device->readAll().toQByteArray());
 }
 
+void QFontProvider::removeSymbolFont(int id)
+{
+    QFontDatabase::removeApplicationFont(id);
+}
+
 double QFontProvider::lineSpacing(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).lineSpacing();
+    return QFontMetricsF(qFont(f), &device).lineSpacing();
 }
 
 double QFontProvider::xHeight(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).xHeight();
+    return QFontMetricsF(qFont(f), &device).xHeight();
 }
 
 double QFontProvider::height(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).height();
+    return QFontMetricsF(qFont(f), &device).height();
 }
 
 double QFontProvider::capHeight(const Font& f) const
 {
-    return QFontMetrics(f.toQFont(), &device).capHeight();
+    return QFontMetrics(qFont(f), &device).capHeight();
 }
 
 double QFontProvider::ascent(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).ascent();
+    return QFontMetricsF(qFont(f), &device).ascent();
 }
 
 double QFontProvider::descent(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).descent();
+    return QFontMetricsF(qFont(f), &device).descent();
 }
 
 double QFontProvider::underlinePos(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).underlinePos();
+    return QFontMetricsF(qFont(f), &device).underlinePos();
 }
 
 double QFontProvider::lineWidth(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).lineWidth();
+    return QFontMetricsF(qFont(f), &device).lineWidth();
 }
 
 double QFontProvider::strikeOutPos(const Font& f) const
 {
-    return QFontMetricsF(f.toQFont(), &device).strikeOutPos();
+    return QFontMetricsF(qFont(f), &device).strikeOutPos();
 }
 
 bool QFontProvider::inFont(const Font& f, char32_t ucs4) const
@@ -130,7 +141,7 @@ bool QFontProvider::inFont(const Font& f, char32_t ucs4) const
     // is found in any of the fallbacks. We need to use instead QRawFont, which represents the
     // *actual* font, not Qt's interpretation of the query. From QRawFont we can query the glyph index
     // of a character (zero if not in font) and the bounding rectangle of the actual glyph at that index.
-    QRawFont qRawFont = QRawFont::fromFont(f.toQFont());
+    QRawFont qRawFont = QRawFont::fromFont(qFont(f));
     int glyphIndex = qRawFont.glyphIndexesForString(QString(QChar::fromUcs4(ucs4)))[0];
     if (glyphIndex == 0) {
         return false;
@@ -144,27 +155,27 @@ bool QFontProvider::inFont(const Font& f, char32_t ucs4) const
 
 double QFontProvider::horizontalAdvance(const Font& f, const String& string) const
 {
-    return QFontMetricsF(f.toQFont(), &device).horizontalAdvance(string);
+    return QFontMetricsF(qFont(f), &device).horizontalAdvance(string);
 }
 
 double QFontProvider::horizontalAdvance(const Font& f, char32_t ucs4) const
 {
     if (Char::requiresSurrogates(ucs4)) {
-        return QFontMetricsF(f.toQFont(), &device).horizontalAdvance(String::fromUcs4(ucs4));
+        return QFontMetricsF(qFont(f), &device).horizontalAdvance(String::fromUcs4(ucs4));
     }
 
-    return QFontMetricsF(f.toQFont(), &device).horizontalAdvance(static_cast<char16_t>(ucs4));
+    return QFontMetricsF(qFont(f), &device).horizontalAdvance(static_cast<char16_t>(ucs4));
 }
 
 RectF QFontProvider::boundingRect(const Font& f, const String& string) const
 {
-    return RectF::fromQRectF(QFontMetricsF(f.toQFont(), &device).boundingRect(string));
+    return RectF::fromQRectF(QFontMetricsF(qFont(f), &device).boundingRect(string));
 }
 
 RectF QFontProvider::boundingRect(const Font& f, char32_t ucs4) const
 {
     if (Char::requiresSurrogates(ucs4)) {
-        return RectF::fromQRectF(QFontMetrics(f.toQFont(), &device).boundingRect(String::fromUcs4(ucs4)));
+        return RectF::fromQRectF(QFontMetrics(qFont(f), &device).boundingRect(String::fromUcs4(ucs4)));
     }
 
     if (f.type() == Font::Type::MusicSymbol || f.type() == Font::Type::MusicSymbolText) {
@@ -172,7 +183,7 @@ RectF QFontProvider::boundingRect(const Font& f, char32_t ucs4) const
         // QPainterPath::boundingRect works from the actual vector shape so it's more accurate.
         // There is still some discretization going on so we can make it even more accurate by upscaling.
         // CAUTION: More expensive! Ok for music glyphs because they are cached.
-        QFont qf = f.toQFont();
+        QFont qf = qFont(f);
         qf = QFont(qf, &device);
         static constexpr double UPSCALING = 4.0;
         qf.setPointSizeF(qf.pointSizeF() * UPSCALING);
@@ -181,15 +192,20 @@ RectF QFontProvider::boundingRect(const Font& f, char32_t ucs4) const
         return RectF::fromQRectF(path.boundingRect()).scaled(SizeF(1.0 / UPSCALING, 1.0 / UPSCALING));
     }
 
-    return RectF::fromQRectF(QFontMetricsF(f.toQFont(), &device).boundingRect(static_cast<char16_t>(ucs4)));
+    return RectF::fromQRectF(QFontMetricsF(qFont(f), &device).boundingRect(static_cast<char16_t>(ucs4)));
 }
 
 RectF QFontProvider::tightBoundingRect(const Font& f, const String& string) const
 {
-    auto boundingRect = QFontMetricsF(f.toQFont(), &device).tightBoundingRect(string);
+    auto boundingRect = QFontMetricsF(qFont(f), &device).tightBoundingRect(string);
     if (!boundingRect.isValid()) {
         // fix for https://github.com/musescore/MuseScore/issues/19503 - Qt can return garbage bounding rectangles that corrupt layout
         return RectF();
     }
     return RectF::fromQRectF(boundingRect);
+}
+
+QFont QFontProvider::qFont(const Font& f) const
+{
+    return toQFont(f, *fontsDatabase());
 }

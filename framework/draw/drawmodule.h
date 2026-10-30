@@ -33,6 +33,17 @@ class DrawModule : public modularity::IModuleSetup
 public:
     std::string moduleName() const override;
     void registerExports() override;
+
+    modularity::IContextSetup* newContext(const modularity::ContextPtr& ctx) const override;
+};
+
+class DrawContext : public modularity::IContextSetup
+{
+public:
+    DrawContext(const modularity::ContextPtr& ctx)
+        : modularity::IContextSetup(ctx) {}
+
+    void registerExports() override;
     void onInit(const IApplication::RunMode& mode) override;
 
 private:

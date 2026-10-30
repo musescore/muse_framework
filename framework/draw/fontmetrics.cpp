@@ -24,8 +24,8 @@
 using namespace muse;
 using namespace muse::draw;
 
-FontMetrics::FontMetrics(const Font& font)
-    : m_font(font)
+FontMetrics::FontMetrics(const Font& font, const modularity::ContextPtr& iocCtx)
+    : fontProvider(iocCtx), m_font(font)
 {
 }
 
@@ -121,27 +121,27 @@ bool FontMetrics::inFont(char32_t ucs4) const
 
 // Static
 
-double FontMetrics::width(const Font& f, const String& string)
+double FontMetrics::width(const Font& f, const String& string, const modularity::ContextPtr& iocCtx)
 {
-    return FontMetrics(f).width(string);
+    return FontMetrics(f, iocCtx).width(string);
 }
 
-RectF FontMetrics::boundingRect(const Font& f, const String& string)
+RectF FontMetrics::boundingRect(const Font& f, const String& string, const modularity::ContextPtr& iocCtx)
 {
-    return FontMetrics(f).boundingRect(string);
+    return FontMetrics(f, iocCtx).boundingRect(string);
 }
 
-RectF FontMetrics::tightBoundingRect(const Font& f, const String& string)
+RectF FontMetrics::tightBoundingRect(const Font& f, const String& string, const modularity::ContextPtr& iocCtx)
 {
-    return FontMetrics(f).tightBoundingRect(string);
+    return FontMetrics(f, iocCtx).tightBoundingRect(string);
 }
 
-double FontMetrics::ascent(const Font& f)
+double FontMetrics::ascent(const Font& f, const modularity::ContextPtr& iocCtx)
 {
-    return FontMetrics(f).ascent();
+    return FontMetrics(f, iocCtx).ascent();
 }
 
-double FontMetrics::capHeight(const Font& f)
+double FontMetrics::capHeight(const Font& f, const modularity::ContextPtr& iocCtx)
 {
-    return FontMetrics(f).capHeight();
+    return FontMetrics(f, iocCtx).capHeight();
 }
