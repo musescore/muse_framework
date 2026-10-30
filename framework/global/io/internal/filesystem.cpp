@@ -21,6 +21,9 @@
  */
 #include "filesystem.h"
 
+#include <cerrno>
+#include <cstring>
+
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
@@ -29,10 +32,20 @@
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+#include <io.h>
+#else
+#include <unistd.h>
 #endif
 
 #include "../ioretcodes.h"
 #include "log.h"
+
+#ifdef Q_OS_WIN
+//Use _commit instead of FlushFileBuffers since it takes a file descriptor like fsync.
+    #define OS_SYNC_FILE(handle) _commit((handle))
+#else
+    #define OS_SYNC_FILE(handle) fsync((handle))
+#endif
 
 using namespace muse;
 using namespace muse::io;
@@ -198,7 +211,7 @@ Ret FileSystem::readFile(const io::path_t& filePath, ByteArray& data) const
     return ret;
 }
 
-Ret FileSystem::writeFile(const io::path_t& filePath, const ByteArray& data)
+Ret FileSystem::writeFile(const io::path_t& filePath, const ByteArray& data, bool syncToDisk)
 {
     Ret ret = muse::make_ok();
 
@@ -221,6 +234,21 @@ Ret FileSystem::writeFile(const io::path_t& filePath, const ByteArray& data)
         ret = make_ret(Err::FSWriteError);
         ret.setText("Failed to write entire file");
         return ret;
+    }
+
+    if (syncToDisk) {
+        // Flush user-space buffer (Qt/fflush), not a disk sync.
+        // Must be called before OS_SYNC_FILE.
+        file.flush();
+
+        // Ask the OS to push data to disk.
+        // If it fails, we log a warning and proceed —
+        // a failed sync does not necessarily mean the data wasn't written.
+        // At least we tried.
+        if (OS_SYNC_FILE(file.handle()) == -1) {
+            const int errorCode = errno;
+            LOGW() << "Failed to sync file to disk:" << std::strerror(errorCode);
+        }
     }
 
     file.close();
