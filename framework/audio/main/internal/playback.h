@@ -26,7 +26,7 @@
 #include "global/types/retval.h"
 
 #include "modularity/ioc.h"
-#include "common/rpc/irpcchannel.h"
+#include "audio/common/rpc/irpcchannel.h"
 #include "../istartaudiocontroller.h"
 
 #include "../iplayer.h"
