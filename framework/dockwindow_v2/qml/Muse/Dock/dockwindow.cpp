@@ -244,7 +244,7 @@ void DockWindow::loadPage(const QString& uri, const QVariantMap& params)
                 || (m_mainWindow->window()->isFullScreen())) {
                 //! NOTE: show window as maximized if no geometry has been restored
                 //! or if the user had closed app in FullScreen mode
-                // m_mainWindow->window()->->showMaximized(); // todo kddock
+                m_mainWindow->window()->setWindowState(KDDockWidgets::WindowState::Maximized);
             }
 
             notifyAboutPageLoaded();
@@ -300,6 +300,11 @@ void DockWindow::toggleDockFloating(const QString& dockName)
 DockPageView* DockWindow::currentPage() const
 {
     return m_currentPage;
+}
+
+Notification DockWindow::currentPageChanged() const
+{
+    return m_currentPageChanged;
 }
 
 QQuickItem& DockWindow::asItem() const
@@ -518,6 +523,8 @@ bool DockWindow::doLoadPage(const QString& uri, const QVariantMap& params)
 
     m_currentPage = newPage;
 
+    m_currentPageChanged.notify();
+
     connect(m_currentPage, &DockPageView::layoutRequested,
             this, &DockWindow::forceLayout, Qt::UniqueConnection);
 
@@ -605,10 +612,10 @@ bool DockWindow::restoreLayout(const QByteArray& layout, bool restoreRelativeToM
 
     TRACEFUNC;
 
-    auto option = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOption_RelativeToMainWindow
-                  : KDDockWidgets::RestoreOption_None;
+    auto options = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_RelativeToMainWindow)
+                   : KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_SkipMainWindowVisibility);
 
-    KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, option);
+    KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, options);
     return layoutSaver.restoreLayout(layout);
 }
 

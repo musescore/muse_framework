@@ -132,6 +132,8 @@ void GuiApplication::startupScenario(const muse::modularity::ContextPtr& ctxId)
                     contextDelayedInit(ctxId);
                 });
             }, Qt::QueuedConnection);
+        } else {
+            closeSplash();
         }
     }, Qt::QueuedConnection);
 }
@@ -198,11 +200,7 @@ bool GuiApplication::loadMainWindow(const muse::modularity::ContextPtr& ctxId)
         return false;
     }
 
-    // The main window must be shown at this point so KDDockWidgets can read its size correctly
-    // and scale all sizes properly. https://github.com/musescore/MuseScore/issues/21148
     QQuickWindow* window = dynamic_cast<QQuickWindow*>(obj);
-    window->setVisible(true);
-
     m_windows[ctxId->id] = window;
 
     return true;
@@ -213,6 +211,11 @@ void GuiApplication::doDestroyContext(const ContextData& data)
     auto wit = m_windows.find(data.ctxId->id);
     if (wit != m_windows.end()) {
         QQuickWindow* window = wit->second;
+
+        for (QWindow* child : window->findChildren<QWindow*>()) {
+            child->setVisible(false);
+        }
+
         window->setVisible(false);
         m_windows.erase(wit);
         delete window;
