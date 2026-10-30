@@ -138,5 +138,7 @@ private:
     mutable bool m_saveSoundTrackProgressStreamInited = false;
     async::Channel<int64_t, int64_t, SaveSoundTrackStage> m_saveSoundTrackProgressStream;
     mutable rpc::StreamId m_saveSoundTrackProgressStreamId = 0;
+
+    mutable IPlayerPtr m_player;
 };
 }
