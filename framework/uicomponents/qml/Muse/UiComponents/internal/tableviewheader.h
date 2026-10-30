@@ -73,6 +73,7 @@ class TableViewHeader : public QObject
     Q_PROPERTY(muse::uicomponents::TableViewCellEditMode::Mode cellEditMode READ cellEditMode NOTIFY cellEditModeChanged FINAL)
 
     Q_PROPERTY(int preferredWidth READ preferredWidth WRITE setPreferredWidth NOTIFY preferredWidthChanged FINAL)
+    Q_PROPERTY(bool readOnly READ readOnly WRITE setReadOnly NOTIFY readOnlyChanged FINAL)
 
     Q_PROPERTY(
         muse::uicomponents::MenuItemList availableFormats READ availableFormats WRITE setAvailableFormats NOTIFY availableFormatsChanged FINAL)
@@ -86,6 +87,9 @@ public:
 
     int preferredWidth() const;
     void setPreferredWidth(int width);
+
+    bool readOnly() const;
+    void setReadOnly(bool readOnly);
 
     TableViewCellType::Type cellType() const;
     void setCellType(TableViewCellType::Type type);
@@ -106,6 +110,7 @@ signals:
     void cellEditModeChanged();
 
     void preferredWidthChanged();
+    void readOnlyChanged();
 
     void availableFormatsChanged();
     void currentFormatIdChanged();
@@ -119,6 +124,7 @@ private:
     TableViewCellEditMode::Mode m_cellEditMode = TableViewCellEditMode::Mode::StartInEdit;
 
     int m_preferredWidth = 0;
+    bool m_readOnly = false;
 
     MenuItemList m_availableFormats;
     QString m_currentFormatId;
