@@ -27,20 +27,27 @@ set -euo pipefail # exit on error, error on unset variable, preserve errors in p
 
 ARTIFACTS_DIR=build.artifacts
 RELEASE_DIR=release
-CHECKSUMS_FILE=checksums.sha256.txt
+CHECKSUMS_FILE="${CHECKSUMS_FILE-checksums.sha256.txt}" # parameter: the name of the checksums file in the release
 
 mkdir "${RELEASE_DIR}" # error if it already exists (need it to be empty)
 
-# Move artifacts into release directory.
+# Move artifacts into release directory. artifact_name.env holds one file name per
+# line: usually one, but a build may produce several packages (e.g. an installer
+# and an archive on Windows).
+package_files=() # every file named there; each must have a checksum from its build
 for path in "${ARTIFACTS_DIR}/"*"/env/artifact_name.env"; do
     artifact_dir="$(dirname "$(dirname "${path}")")"
-    artifact_name="$(<"${path}")"
-    artifact_path="${artifact_dir}/${artifact_name}"
+    while IFS= read -r artifact_name || [[ "${artifact_name}" ]]; do
+        artifact_name="${artifact_name%$'\r'}"
+        [[ "${artifact_name}" ]] || continue
+        artifact_path="${artifact_dir}/${artifact_name}"
+        package_files+=("${artifact_name}")
 
-    mv -v "${artifact_path}" "${RELEASE_DIR}/"
-    if [[ -f "${artifact_path}.zsync" ]]; then
-        mv -v "${artifact_path}.zsync" "${RELEASE_DIR}/"
-    fi
+        mv -v "${artifact_path}" "${RELEASE_DIR}/"
+        if [[ -f "${artifact_path}.zsync" ]]; then
+            mv -v "${artifact_path}.zsync" "${RELEASE_DIR}/"
+        fi
+    done <"${path}"
 done
 
 declare -A old_checksums new_checksums # associative arrays (i.e. maps / dictionaries)
@@ -61,6 +68,14 @@ for path in "${ARTIFACTS_DIR}/"*"/checksum.txt"; do
         checksum="${BASH_REMATCH[3]}"
         old_checksums["${filename}"]="${checksum}"
     done <"${path}"
+done
+
+# A package file without a build checksum cannot be verified, so it must not be released.
+for filename in "${package_files[@]}"; do
+    if [[ -z "${old_checksums["${filename}"]+set}" ]]; then
+        echo >&2 "$o: Error: No build checksum for: ${filename}"
+        exit 1
+    fi
 done
 
 # Calculate new checksums to be uploaded with the release.
