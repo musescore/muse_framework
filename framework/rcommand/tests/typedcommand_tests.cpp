@@ -107,6 +107,15 @@ struct TestCommand {
     };
 };
 
+//! A command without parameters that declares its decoration and its availabilities
+struct TestInternalCommand {
+    static const inline auto id = muse::rcommand::Command("command://rcommand/test-internal");
+    static const inline auto title = MnemonicString("action", "Internal test command");
+    static const inline auto description = TranslatableString("action", "Dispatch only");
+    static const inline auto decoration = Decoration(Checkable::Yes);
+    static const inline Availabilities availabilities = Availability::Dispatch;
+};
+
 TEST_F(RCommand_TypedCommandTests, TypedCommand_Convert)
 {
     //! GIVEN Valid test command
@@ -256,4 +265,123 @@ TEST_F(RCommand_TypedCommandTests, TypedCommand_OutputSchema)
 
     EXPECT_EQ(schema.args.at("e_val").type, DataType::String);
     EXPECT_EQ(schema.args.at("e_val").description, String::fromUtf8("Enum value"));
+}
+
+TEST_F(RCommand_TypedCommandTests, TypedCommand_Concepts)
+{
+    static_assert(TypedCommand<TestCommand>);
+    static_assert(HasInput<TestCommand>);
+    static_assert(HasOutput<TestCommand>);
+
+    static_assert(TypedCommand<TestInternalCommand>);
+    static_assert(!HasInput<TestInternalCommand>);
+    static_assert(!HasOutput<TestInternalCommand>);
+    static_assert(HasDecoration<TestInternalCommand>);
+    static_assert(HasAvailabilities<TestInternalCommand>);
+
+    static_assert(!TypedCommand<Command>);
+}
+
+TEST_F(RCommand_TypedCommandTests, MakeCommandInfo_TakesEverythingFromTheStruct)
+{
+    //! DO make the info of a command with input and output
+    const CommandInfo info = makeCommandInfo<TestCommand>();
+
+    //! CHECK
+    EXPECT_EQ(info.command, TestCommand::id);
+    EXPECT_EQ(info.inputSchema.args.size(), 9);
+    EXPECT_EQ(info.outputSchema.args.size(), 9);
+    EXPECT_EQ(info.decoration.checkable, Checkable::No);
+
+    //! DO make the info of a command without parameters
+    const CommandInfo internal = makeCommandInfo<TestInternalCommand>();
+
+    //! CHECK decoration and availabilities come from the struct
+    EXPECT_EQ(internal.command, TestInternalCommand::id);
+    EXPECT_TRUE(internal.inputSchema.args.empty());
+    EXPECT_TRUE(internal.outputSchema.args.empty());
+    EXPECT_EQ(internal.decoration.checkable, Checkable::Yes);
+    EXPECT_TRUE(internal.availabilities.testFlag(Availability::Dispatch));
+    EXPECT_FALSE(internal.availabilities.testFlag(Availability::MCP));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesEncodedAsStrings)
+{
+    //! GIVEN Params as they arrive from a CommandQuery parsed from a URI: every value is a string
+    const Params params = {
+        { "b_val", Val("true") },
+        { "i_val", Val("7") },
+        { "d_val", Val("2.5") },
+        { "e_val", Val("value3") },
+    };
+
+    //! DO convert from params
+    TestCommand result;
+    ASSERT_TRUE(fromInputParams(params, result));
+
+    //! CHECK
+    EXPECT_EQ(result.bVal, true);
+    EXPECT_EQ(result.iVal, 7);
+    EXPECT_EQ(result.dVal, 2.5);
+    EXPECT_EQ(result.eVal, TestEnum::Value3);
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsMissingRequiredParameter)
+{
+    //! GIVEN Params without the required "i_val"
+    const Params params = {
+        { "b_val", Val(true) },
+    };
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsWrongType)
+{
+    //! GIVEN Valid params with a non-numeric value for an integer parameter
+    Params params = toInputParams(TestCommand {});
+    params.set("i_val", Val("not a number"));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsWrongTypeOfOptionalParameter)
+{
+    //! GIVEN Valid params with a non-numeric value for an optional double parameter
+    Params params = toInputParams(TestCommand {});
+    params.set("d_val", Val("not a number"));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected: optional means it may be absent, not that it may be invalid
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsUnknownEnumValue)
+{
+    //! GIVEN Valid params with a value outside the enum contract
+    Params params = toInputParams(TestCommand {});
+    params.set("e_val", Val("value4"));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, EnumContract_RoundTrip)
+{
+    EXPECT_EQ(Contract<TestEnum>::str_val(TestEnum::Value2), "value2");
+    EXPECT_EQ(Contract<TestEnum>::enum_val("value3"), TestEnum::Value3);
+    EXPECT_FALSE(Contract<TestEnum>::enum_val("value4").has_value());
 }
