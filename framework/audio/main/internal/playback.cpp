@@ -168,6 +168,11 @@ void Playback::deinit()
     m_saveSoundTrackProgressStreamInited = false;
     m_saveSoundTrackProgressStreamId = 0;
 
+    if (m_player) {
+        m_player->deinit();
+        m_player.reset();
+    }
+
     channel()->send(rpc::make_request(rpc::GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(ctxId())));
     m_inited.set(false);
 }
@@ -184,9 +189,17 @@ async::Channel<bool> Playback::initedChanged() const
 
 IPlayerPtr Playback::player() const
 {
-    std::shared_ptr<Player> p = std::make_shared<Player>(iocContext());
-    p->init();
-    return p;
+    //! NOTE The player requests the engine context, so it must exist
+    IF_ASSERT_FAILED(isInited()) {
+        return nullptr;
+    }
+
+    if (!m_player) {
+        m_player = std::make_shared<Player>(iocContext());
+        m_player->init();
+    }
+
+    return m_player;
 }
 
 template<typename T>

@@ -26,12 +26,14 @@
 #include "global/types/retval.h"
 
 #include "modularity/ioc.h"
-#include "common/rpc/irpcchannel.h"
+#include "audio/common/rpc/irpcchannel.h"
 #include "../istartaudiocontroller.h"
 
 #include "../iplayer.h"
 
 namespace muse::audio {
+class Player;
+
 //! NOTE It may not use contextual services,
 // but the playback itself is contextual,
 // because each context (window) has its own playback.
@@ -138,5 +140,7 @@ private:
     mutable bool m_saveSoundTrackProgressStreamInited = false;
     async::Channel<int64_t, int64_t, SaveSoundTrackStage> m_saveSoundTrackProgressStream;
     mutable rpc::StreamId m_saveSoundTrackProgressStreamId = 0;
+
+    mutable std::shared_ptr<Player> m_player;
 };
 }
