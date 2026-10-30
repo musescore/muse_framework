@@ -26,6 +26,7 @@
 
 #include "../types/bytearray.h"
 #include "../types/string.h"
+#include "../types/val.h"
 
 namespace muse {
 struct JsonData;
@@ -58,6 +59,9 @@ public:
     const std::string& toStdString() const;
     JsonArray toArray() const;
     JsonObject toObject() const;
+
+    Val toVal() const;
+    static JsonValue fromVal(const Val& val);
 
     void setNull();
     JsonValue& operator=(bool v);

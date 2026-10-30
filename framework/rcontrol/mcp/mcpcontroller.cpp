@@ -36,7 +36,7 @@ static TypeSchema toMcpTypeSchema(muse::rcommand::DataType type)
     case CT::Undefined: return TypeSchema{ MT::Undefined, MF::Undefined };
     case CT::String: return TypeSchema{ MT::String, MF::Undefined };
     case CT::Int: return TypeSchema{ MT::Integer, MF::Undefined };
-    case CT::Int64: return TypeSchema{ MT::Integer, MF::Int64 };
+    case CT::Int64: return TypeSchema{ MT::String, MF::Int64 };
     case CT::Float: return TypeSchema{ MT::Number, MF::Float };
     case CT::Double: return TypeSchema{ MT::Number, MF::Double };
     case CT::Bool: return TypeSchema{ MT::Boolean, MF::Undefined };

@@ -474,13 +474,18 @@ static void appendQuoted(std::ostream& out, std::string_view text)
     out << '"';
 }
 
-static void appendValue(std::ostream& out, const Val& value)
+static bool appendValue(std::ostream& out, const Val& value)
 {
-    if (value.type() == Val::Type::String) {
-        appendQuoted(out, value.toString());
-        return;
+    const std::optional<std::string> text = value.toType<std::string>();
+    if (!text) {
+        return false;
     }
-    out << value.toString();
+    if (value.type() == Val::Type::String) {
+        appendQuoted(out, *text);
+        return true;
+    }
+    out << *text;
+    return true;
 }
 
 static int hexDigit(char c)
@@ -536,10 +541,19 @@ static std::optional<std::string> unquote(std::string_view token)
                     }
                     code = (code << 4) | digit;
                 }
-                if (code > 0xff) {
+                if (code >= 0xd800 && code <= 0xdfff) {
                     return std::nullopt;
                 }
-                result.push_back(static_cast<char>(code));
+                if (code < 0x80) {
+                    result.push_back(static_cast<char>(code));
+                } else if (code < 0x800) {
+                    result.push_back(static_cast<char>(0xc0 | (code >> 6)));
+                    result.push_back(static_cast<char>(0x80 | (code & 0x3f)));
+                } else {
+                    result.push_back(static_cast<char>(0xe0 | (code >> 12)));
+                    result.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3f)));
+                    result.push_back(static_cast<char>(0x80 | (code & 0x3f)));
+                }
                 i += 4;
                 break;
             }
@@ -593,7 +607,9 @@ bool ValJson::toString(const ValList& list, std::string& str)
     std::stringstream stream;
     stream << "[";
     for (size_t i = 0; i < list.size(); ++i) {
-        appendValue(stream, list.at(i));
+        if (!appendValue(stream, list.at(i))) {
+            return false;
+        }
         if (i + 1 < list.size()) {
             stream << ", ";
         }
@@ -612,7 +628,9 @@ bool ValJson::toString(const ValMap& map, std::string& str)
         stream << sep;
         appendQuoted(stream, item.first);
         stream << ": ";
-        appendValue(stream, item.second);
+        if (!appendValue(stream, item.second)) {
+            return false;
+        }
         sep = ", ";
     }
     stream << "}";

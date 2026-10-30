@@ -562,27 +562,37 @@ TEST_F(Global_ValTests, ValJson_RoundTrip)
         EXPECT_EQ(parsed, map);
     };
 
-    expectList(ValList{ Val("a, b") }, "[\"a, b\"]");
-    expectList(ValList{ Val("1") }, "[\"1\"]");
-    expectList(ValList{ Val("true") }, "[\"true\"]");
-    expectList(ValList{ Val("false") }, "[\"false\"]");
-    expectList(ValList{ Val("22.12") }, "[\"22.12\"]");
-    expectList(ValList{ Val("  x  ") }, "[\"  x  \"]");
-    expectList(ValList{ Val("a:b") }, "[\"a:b\"]");
-    expectList(ValList{ Val("a[b]") }, "[\"a[b]\"]");
-    expectList(ValList{ Val("a{b}") }, "[\"a{b}\"]");
-    expectList(ValList{ Val("a\"b\\c") }, "[\"a\\\"b\\\\c\"]");
-    expectList(ValList{ Val("a\nb") }, "[\"a\\nb\"]");
-    expectList(ValList{ Val("") }, "[\"\"]");
-    expectList(ValList{ Val(1), Val("1"), Val(true), Val("true") }, "[1, \"1\", true, \"true\"]");
-    expectList(ValList{ Val(ValList{ Val("a, b") }), Val("x:y") }, "[[\"a, b\"], \"x:y\"]");
+    expectList(ValList { Val("a, b") }, "[\"a, b\"]");
+    expectList(ValList { Val("1") }, "[\"1\"]");
+    expectList(ValList { Val("true") }, "[\"true\"]");
+    expectList(ValList { Val("false") }, "[\"false\"]");
+    expectList(ValList { Val("22.12") }, "[\"22.12\"]");
+    expectList(ValList { Val("  x  ") }, "[\"  x  \"]");
+    expectList(ValList { Val("a:b") }, "[\"a:b\"]");
+    expectList(ValList { Val("a[b]") }, "[\"a[b]\"]");
+    expectList(ValList { Val("a{b}") }, "[\"a{b}\"]");
+    expectList(ValList { Val("a\"b\\c") }, "[\"a\\\"b\\\\c\"]");
+    expectList(ValList { Val("a\nb") }, "[\"a\\nb\"]");
+    expectList(ValList { Val("") }, "[\"\"]");
+    expectList(ValList { Val(1), Val("1"), Val(true), Val("true") }, "[1, \"1\", true, \"true\"]");
+    expectList(ValList { Val(ValList { Val("a, b") }), Val("x:y") }, "[[\"a, b\"], \"x:y\"]");
 
-    expectMap(ValMap{ { "k", Val("x, y") } }, "{\"k\": \"x, y\"}");
-    expectMap(ValMap{ { "a, b", Val(1) } }, "{\"a, b\": 1}");
-    expectMap(ValMap{ { "a:b", Val(1) } }, "{\"a:b\": 1}");
-    expectMap(ValMap{ { "  k  ", Val(1) } }, "{\"  k  \": 1}");
-    expectMap(ValMap{ { "a[b]", Val("{c}") } }, "{\"a[b]\": \"{c}\"}");
-    expectMap(ValMap{ { "k", Val(ValList{ Val("a, b"), Val("1") }) } }, "{\"k\": [\"a, b\", \"1\"]}");
+    expectMap(ValMap { { "k", Val("x, y") } }, "{\"k\": \"x, y\"}");
+    expectMap(ValMap { { "a, b", Val(1) } }, "{\"a, b\": 1}");
+    expectMap(ValMap { { "a:b", Val(1) } }, "{\"a:b\": 1}");
+    expectMap(ValMap { { "  k  ", Val(1) } }, "{\"  k  \": 1}");
+    expectMap(ValMap { { "a[b]", Val("{c}") } }, "{\"a[b]\": \"{c}\"}");
+    expectMap(ValMap { { "k", Val(ValList { Val("a, b"), Val("1") }) } }, "{\"k\": [\"a, b\", \"1\"]}");
+
+    {
+        std::string written = "unchanged";
+        EXPECT_FALSE(ValJson::toString(ValList { Val(1), Val() }, written));
+        EXPECT_EQ(written, "unchanged");
+        EXPECT_FALSE(ValJson::toString(ValMap { { "k", Val() } }, written));
+        EXPECT_EQ(written, "unchanged");
+        EXPECT_FALSE(ValJson::toString(ValList { Val(ValList { Val() }) }, written));
+        EXPECT_EQ(written, "unchanged");
+    }
 }
 
 TEST_F(Global_ValTests, Val_To_From_Type)
