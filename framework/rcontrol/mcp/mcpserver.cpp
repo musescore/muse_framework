@@ -31,76 +31,11 @@ static const char* SERVER_NAME = "MuseMCP";
 
 using namespace muse::rcontrol::mcp;
 
-static muse::JsonValue toMcpJsonValue(const muse::Val& val)
-{
-    switch (val.type()) {
-    case muse::Val::Type::Undefined: return muse::JsonValue();
-    case muse::Val::Type::Bool: return muse::JsonValue(val.toBool());
-    case muse::Val::Type::Int: return muse::JsonValue(val.toInt());
-    case muse::Val::Type::Int64: return muse::JsonValue(static_cast<double>(val.toInt64()));
-    case muse::Val::Type::Double: return muse::JsonValue(val.toDouble());
-    case muse::Val::Type::String: return muse::JsonValue(val.toString());
-    case muse::Val::Type::List: {
-        muse::JsonArray array;
-        for (const auto& item : val.toList()) {
-            array.append(toMcpJsonValue(item));
-        }
-        return array;
-    }
-    case muse::Val::Type::Map: {
-        muse::JsonObject object;
-        for (const auto& [key, value] : val.toMap()) {
-            object[key] = toMcpJsonValue(value);
-        }
-        return object;
-    }
-    default: {
-        NOT_SUPPORTED << "data type: " << (int)val.type();
-    }
-    }
-
-    return muse::JsonValue();
-}
-
-static muse::Val toVal(const muse::JsonValue& val)
-{
-    if (val.isNull()) {
-        return muse::Val();
-    }
-    if (val.isBool()) {
-        return muse::Val(val.toBool());
-    }
-    if (val.isNumber()) {
-        return muse::Val(val.toDouble());
-    }
-    if (val.isString()) {
-        return muse::Val(val.toString().toStdString());
-    }
-    if (val.isArray()) {
-        muse::ValList list;
-        const muse::JsonArray array = val.toArray();
-        for (size_t i = 0; i < array.size(); ++i) {
-            list.emplace_back(toVal(array[i]));
-        }
-        return muse::Val(list);
-    }
-    if (val.isObject()) {
-        muse::ValMap map;
-        const muse::JsonObject object = val.toObject();
-        for (const auto& key : object.keys()) {
-            map[key] = toVal(object[key]);
-        }
-        return muse::Val(map);
-    }
-
-    return muse::Val();
-}
-
 static std::map<std::string, muse::Val> toArgs(const muse::JsonObject& obj)
 {
     std::map<std::string, muse::Val> args;
     for (const auto& key : obj.keys()) {
-        args[key] = toVal(obj[key]);
+        args[key] = obj[key].toVal();
     }
     return args;
 }
@@ -220,13 +155,16 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
                 JsonObject properties;
                 for (const auto& [name, property] : schema.properties) {
                     JsonObject propertyObj;
-                    propertyObj["type"] = to_string(property.type);
+                    propertyObj["type"] = to_string(property.type.type);
+                    if (property.type.format != Format::Undefined) {
+                        propertyObj["format"] = to_string(property.type.format);
+                    }
                     propertyObj["description"] = property.description;
                     if (!property.minimum.isNull()) {
-                        propertyObj["minimum"] = toMcpJsonValue(property.minimum);
+                        propertyObj["minimum"] = JsonValue::fromVal(property.minimum);
                     }
                     if (!property.maximum.isNull()) {
-                        propertyObj["maximum"] = toMcpJsonValue(property.maximum);
+                        propertyObj["maximum"] = JsonValue::fromVal(property.maximum);
                     }
                     properties[name] = propertyObj;
                 }
@@ -242,7 +180,10 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
                 JsonObject properties;
                 for (const auto& [name, property] : schema.properties) {
                     JsonObject propertyObj;
-                    propertyObj["type"] = to_string(property.type);
+                    propertyObj["type"] = to_string(property.type.type);
+                    if (property.type.format != Format::Undefined) {
+                        propertyObj["format"] = to_string(property.type.format);
+                    }
                     propertyObj["description"] = property.description;
                     properties[name] = propertyObj;
                 }
@@ -291,7 +232,7 @@ void McpServer::onToolsCall(const JsonObject& request, const std::function<void(
         if (toolResult.ret) {
             JsonObject structuredContent;
             for (const auto& [name, val] : toolResult.result) {
-                structuredContent[name] = toMcpJsonValue(val);
+                structuredContent[name] = JsonValue::fromVal(val);
             }
             resObj["structuredContent"] = structuredContent;
 

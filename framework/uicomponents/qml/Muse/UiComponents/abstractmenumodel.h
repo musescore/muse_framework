@@ -129,6 +129,19 @@ protected:
 
     MenuItem* makeMenuItem(const muse::rcommand::Command& command, const TranslatableString& title = {});
     MenuItem* makeMenuItem(const muse::rcommand::CommandQuery& query, const TranslatableString& title = {});
+    MenuItem* makeMenuItem(const muse::rcommand::Command& command, const muse::rcommand::Params& params,
+                           const TranslatableString& title = {});
+
+    template<muse::rcommand::TypedCommand C>
+    MenuItem* makeMenuItem(const C& command, const TranslatableString& title = {})
+    {
+        if constexpr (muse::rcommand::HasInput<C>) {
+            return makeMenuItem(command.id, muse::rcommand::toInputParams(command), title);
+        } else {
+            return makeMenuItem(command.id, title);
+        }
+    }
+
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     MenuItem* makeMenuItem(const muse::actions::ActionCode& actionCode, const TranslatableString& title = {});
 #endif

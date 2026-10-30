@@ -26,19 +26,24 @@
 using namespace muse::rcontrol::mcp;
 using namespace muse::rcommand;
 
-static muse::rcontrol::mcp::DataType toMcpDataType(muse::rcommand::DataType type)
+static TypeSchema toMcpTypeSchema(muse::rcommand::DataType type)
 {
+    using CT = muse::rcommand::DataType;
+    using MT = muse::rcontrol::mcp::DataType;
+    using MF = muse::rcontrol::mcp::Format;
+
     switch (type) {
-    case muse::rcommand::DataType::Undefined: return muse::rcontrol::mcp::DataType::Undefined;
-    case muse::rcommand::DataType::String: return muse::rcontrol::mcp::DataType::String;
-    case muse::rcommand::DataType::Integer: return muse::rcontrol::mcp::DataType::Integer;
-    case muse::rcommand::DataType::Float: return muse::rcontrol::mcp::DataType::Float;
-    case muse::rcommand::DataType::Boolean: return muse::rcontrol::mcp::DataType::Boolean;
-    case muse::rcommand::DataType::Object: return muse::rcontrol::mcp::DataType::Object;
-    case muse::rcommand::DataType::Array: return muse::rcontrol::mcp::DataType::Array;
-    case muse::rcommand::DataType::Null: return muse::rcontrol::mcp::DataType::Null;
+    case CT::Undefined: return TypeSchema{ MT::Undefined, MF::Undefined };
+    case CT::String: return TypeSchema{ MT::String, MF::Undefined };
+    case CT::Int: return TypeSchema{ MT::Integer, MF::Undefined };
+    case CT::Int64: return TypeSchema{ MT::String, MF::Int64 };
+    case CT::Float: return TypeSchema{ MT::Number, MF::Float };
+    case CT::Double: return TypeSchema{ MT::Number, MF::Double };
+    case CT::Bool: return TypeSchema{ MT::Boolean, MF::Undefined };
+    case CT::List: return TypeSchema{ MT::Array, MF::Undefined };
+    case CT::Map: return TypeSchema{ MT::Object, MF::Undefined };
     }
-    return muse::rcontrol::mcp::DataType::Undefined;
+    return TypeSchema{ MT::Undefined, MF::Undefined };
 }
 
 McpController::McpController(const modularity::ContextPtr& iocCtx)
@@ -116,7 +121,7 @@ std::vector<Tool> McpController::makeToolsList() const
         tool.description = info.description.translated().toStdString();
         for (const auto& [name, arg] : info.inputSchema.args) {
             Property property;
-            property.type = toMcpDataType(arg.type);
+            property.type = toMcpTypeSchema(arg.type);
             property.description = arg.description.toStdString();
             property.minimum = arg.min;
             property.maximum = arg.max;
@@ -125,7 +130,7 @@ std::vector<Tool> McpController::makeToolsList() const
 
         for (const auto& [name, arg] : info.outputSchema.args) {
             Property property;
-            property.type = toMcpDataType(arg.type);
+            property.type = toMcpTypeSchema(arg.type);
             property.description = arg.description.toStdString();
             tool.outputSchema.properties[name] = property;
         }
