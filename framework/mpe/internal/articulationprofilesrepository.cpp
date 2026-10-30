@@ -29,7 +29,7 @@
 
 #include "log.h"
 
-#include "internal/articulationstringutils.h"
+#include "articulationstringutils.h"
 
 using namespace muse;
 using namespace muse::mpe;

@@ -24,7 +24,7 @@
 
 #include <iterator>
 
-#include "internal/articulationstringutils.h"
+#include "articulationstringutils.h"
 
 using namespace muse::mpe;
 
