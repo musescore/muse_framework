@@ -28,7 +28,7 @@ namespace muse::rcommand {
 // *INDENT-OFF* // Uncrustify doesn't understand `requires`
 template<typename C>
 concept TypedCommand = requires {
-    { C::command } -> std::convertible_to<const rcommand::Command&>;
+    { C::id } -> std::convertible_to<const rcommand::Command&>;
     { C::title } -> std::convertible_to<const MnemonicString&>;
     { C::description } -> std::convertible_to<const TranslatableString&>;
 };
@@ -145,11 +145,23 @@ std::optional<T> fromVal(const Val& v)
     if constexpr (std::is_enum<T>::value) {
         return Contract<T>::enum_val(v.toString());
     } else if constexpr (std::is_same<T, unsigned int>::value) {
-        return static_cast<unsigned int>(v.toInt());
+        auto opt = v.toType<int>();
+        if (opt) {
+            return static_cast<unsigned int>(*opt);
+        }
+        return std::nullopt;
     } else if constexpr (std::is_same<T, uint64_t>::value) {
-        return static_cast<uint64_t>(v.toInt64());
+        auto opt = v.toType<int64_t>();
+        if (opt) {
+            return static_cast<uint64_t>(*opt);
+        }
+        return std::nullopt;
     } else if constexpr (std::is_same<T, float>::value) {
-        return static_cast<float>(v.toDouble());
+        auto opt = v.toType<double>();
+        if (opt) {
+            return static_cast<float>(*opt);
+        }
+        return std::nullopt;
     } else {
         return v.toType<T>();
     }
@@ -217,7 +229,7 @@ template<TypedCommand C>
 CommandInfo makeCommandInfo()
 {
     CommandInfo info;
-    info.command = C::command;
+    info.command = C::id;
     info.title = C::title;
     info.description = C::description;
     if constexpr (HasInput<C>) {

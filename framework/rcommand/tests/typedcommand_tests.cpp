@@ -55,7 +55,7 @@ DECLARE_CONTRACT(TestEnum, TestEnumContract);
 }
 
 struct TestCommand {
-    static const inline auto command = muse::rcommand::Command("command://rcommand/test");
+    static const inline auto id = muse::rcommand::Command("command://rcommand/test");
     static const inline auto title = MnemonicString("action", "Test command");
     static const inline auto description = TranslatableString("action", "Test command");
 

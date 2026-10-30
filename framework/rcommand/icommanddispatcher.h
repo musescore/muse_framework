@@ -98,13 +98,13 @@ public:
         if constexpr (HasInput<C>) {
             params = toInputParams(command);
         }
-        return dispatch(make_request(command.command, params));
+        return dispatch(make_request(command.id, params));
     }
 
     template<TypedCommand C>
     void onRequest(Commandable* client, std::function<Ret(const C&)> callback)
     {
-        onRequest(client, C::command, CallBack([callback](const Request& request) {
+        onRequest(client, C::id, CallBack([callback](const Request& request) {
             C command;
             if constexpr (HasInput<C>) {
                 if (!fromInputParams(request.params, command)) {
@@ -118,7 +118,7 @@ public:
     template<HasOutput C>
     void onRequest(Commandable* client, std::function<RetVal<typename C::Output>(const C&)> callback)
     {
-        onRequest(client, C::command, CallBack([callback](const Request& request) {
+        onRequest(client, C::id, CallBack([callback](const Request& request) {
             C command;
             if constexpr (HasInput<C>) {
                 if (!fromInputParams(request.params, command)) {
