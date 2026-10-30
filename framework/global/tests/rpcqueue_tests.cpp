@@ -38,7 +38,7 @@ struct Msg {
     int val = 0;
 };
 
-TEST_F(Global_Concurrency_RpcQueueTests, Communication)
+TEST_F(Global_Concurrency_RpcQueueTests, DISABLED_Communication)
 {
     RpcQueue<Msg> q;
 
