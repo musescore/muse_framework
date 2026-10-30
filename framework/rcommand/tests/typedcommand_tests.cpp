@@ -307,7 +307,7 @@ TEST_F(RCommand_TypedCommandTests, MakeCommandInfo_TakesEverythingFromTheStruct)
 
 TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesEncodedAsStrings)
 {
-    //! GIVEN Params as they arrive from a CommandQuery parsed from a URI: every value is a string
+    //! GIVEN Params with every value supplied as a string, as a script or the API may send them
     const Params params = {
         { "b_val", Val("true") },
         { "i_val", Val("7") },
@@ -323,6 +323,23 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesEncodedAsStrings
     EXPECT_EQ(result.bVal, true);
     EXPECT_EQ(result.iVal, 7);
     EXPECT_EQ(result.dVal, 2.5);
+    EXPECT_EQ(result.eVal, TestEnum::Value3);
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsTheParamsOfACommandQuery)
+{
+    //! GIVEN A CommandQuery parsed from a URI: true/false arrive as bools, every other value as a string
+    const CommandQuery query("command://rcommand/test?b_val=true&i_val=7&d_val=2.5&s_val=hello&e_val=value3");
+
+    //! DO convert from its params
+    TestCommand result;
+    ASSERT_TRUE(fromInputParams(query.params(), result));
+
+    //! CHECK
+    EXPECT_EQ(result.bVal, true);
+    EXPECT_EQ(result.iVal, 7);
+    EXPECT_EQ(result.dVal, 2.5);
+    EXPECT_EQ(result.sVal, "hello");
     EXPECT_EQ(result.eVal, TestEnum::Value3);
 }
 
