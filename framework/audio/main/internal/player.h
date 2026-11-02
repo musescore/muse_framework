@@ -38,7 +38,6 @@ class Player : public IPlayer, public Contextable, public async::Asyncable
 public:
     Player(const muse::modularity::ContextPtr& ctx)
         : Contextable(ctx) {}
-    ~Player() override;
 
     void init();
     void deinit();
@@ -70,15 +69,6 @@ private:
 
     secs_t m_playbackPosition = 0.0;
     async::Channel<secs_t> m_playbackPositionChanged;
-
-    void cancelPendingResponses();
-
-    rpc::StreamId m_playbackStatusStreamId = 0;
-    rpc::StreamId m_playbackPositionStreamId = 0;
-
-    //! NOTE Pending requests, their responses are dropped on deinit
-    rpc::CallId m_playbackStatusCallId = 0;
-    rpc::CallId m_playbackPositionCallId = 0;
 };
 }
 

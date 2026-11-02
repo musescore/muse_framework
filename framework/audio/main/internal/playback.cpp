@@ -37,7 +37,7 @@ using namespace muse::async;
 
 Playback::~Playback()
 {
-    cancelAllPendingTrackRequests();
+    channel()->cancelAllRequests(ctxId());
 }
 
 rpc::CtxId Playback::ctxId() const
@@ -170,6 +170,8 @@ void Playback::deinit()
     channel()->onNotification(ctxId(), MsgCode::ControlParamsChanged, nullptr);
     channel()->onNotification(ctxId(), MsgCode::AuxSendsParamsChanged, nullptr);
 
+    channel()->cancelAllRequests(ctxId());
+
     m_saveSoundTrackProgressStream = SaveSoundTrackProgress();
     m_saveSoundTrackProgressStreamInited = false;
     m_saveSoundTrackProgressStreamId = 0;
@@ -179,51 +181,10 @@ void Playback::deinit()
         m_player.reset();
     }
 
-    removeAllTrackStreams();
+    m_trackStreams.clear();
 
     channel()->send(rpc::make_request(rpc::GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(ctxId())));
     m_inited.set(false);
-}
-
-void Playback::addPendingTrackRequest(TrackId trackId, rpc::CallId callId, const RejectFunc& reject) const
-{
-    m_pendingTrackRequests[trackId][callId] = reject;
-}
-
-void Playback::removePendingTrackRequest(TrackId trackId, rpc::CallId callId) const
-{
-    auto it = m_pendingTrackRequests.find(trackId);
-    if (it == m_pendingTrackRequests.end()) {
-        return;
-    }
-
-    it->second.erase(callId);
-    if (it->second.empty()) {
-        m_pendingTrackRequests.erase(it);
-    }
-}
-
-void Playback::cancelPendingTrackRequests(TrackId trackId) const
-{
-    auto it = m_pendingTrackRequests.find(trackId);
-    if (it == m_pendingTrackRequests.end()) {
-        return;
-    }
-
-    std::map<rpc::CallId, RejectFunc> requests = std::move(it->second);
-    m_pendingTrackRequests.erase(it);
-
-    for (const auto& pair : requests) {
-        channel()->cancelResponse(pair.first);
-        pair.second(audio::make_ret(Err::InvalidTrackId));
-    }
-}
-
-void Playback::cancelAllPendingTrackRequests() const
-{
-    while (!m_pendingTrackRequests.empty()) {
-        cancelPendingTrackRequests(m_pendingTrackRequests.begin()->first);
-    }
 }
 
 void Playback::addTrackStream(TrackId trackId, rpc::StreamId streamId) const
@@ -233,8 +194,6 @@ void Playback::addTrackStream(TrackId trackId, rpc::StreamId streamId) const
 
 void Playback::removeTrackStreams(TrackId trackId) const
 {
-    cancelPendingTrackRequests(trackId);
-
     auto it = m_trackStreams.find(trackId);
     if (it == m_trackStreams.end()) {
         return;
@@ -245,19 +204,6 @@ void Playback::removeTrackStreams(TrackId trackId) const
     }
 
     m_trackStreams.erase(it);
-}
-
-void Playback::removeAllTrackStreams() const
-{
-    for (const auto& pair : m_trackStreams) {
-        for (StreamId streamId : pair.second) {
-            channel()->removeStream(streamId);
-        }
-    }
-
-    m_trackStreams.clear();
-
-    cancelAllPendingTrackRequests();
 }
 
 bool Playback::isInited() const
@@ -450,8 +396,8 @@ async::Promise<TrackId, TrackParams> Playback::addTrack(const TrackName& trackNa
     return async::make_promise<TrackId, TrackParams>([this, trackName, playbackData, params](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
 
-        rpc::StreamId mainStreamId = channel()->addSendStream(StreamName::PlaybackDataMainStream, playbackData.mainStream);
-        rpc::StreamId offStreamId = channel()->addSendStream(StreamName::PlaybackDataOffStream, playbackData.offStream);
+        rpc::StreamId mainStreamId = channel()->addSendStream(ctxId(), StreamName::PlaybackDataMainStream, playbackData.mainStream);
+        rpc::StreamId offStreamId = channel()->addSendStream(ctxId(), StreamName::PlaybackDataOffStream, playbackData.offStream);
 
         ByteArray data = RpcPacker::pack(trackName, playbackData, params, mainStreamId, offStreamId);
 
@@ -642,13 +588,8 @@ muse::async::Promise<InputProcessingProgress> Playback::inputProcessingProgress(
     return async::make_promise<InputProcessingProgress>([this, trackId](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetInputProcessingProgress, RpcPacker::pack(trackId));
-        addPendingTrackRequest(trackId, msg.callId, [reject](const Ret& ret) {
-            doReject(MsgCode::GetInputProcessingProgress, reject, ret);
-        });
-        channel()->send(msg, [this, trackId, callId = msg.callId, resolve, reject](const Msg& res) {
+        channel()->send(msg, [this, trackId, resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            removePendingTrackRequest(trackId, callId);
-
             Ret ret;
             bool isStarted = false;
             StreamId streamId = 0;
@@ -660,7 +601,7 @@ muse::async::Promise<InputProcessingProgress> Playback::inputProcessingProgress(
             if (ret) {
                 InputProcessingProgress prog;
                 prog.isStarted = isStarted;
-                channel()->addReceiveStream(StreamName::InputProcessingProgressStream, streamId, prog.processedChannel);
+                channel()->addReceiveStream(ctxId(), StreamName::InputProcessingProgressStream, streamId, prog.processedChannel);
                 addTrackStream(trackId, streamId);
                 (void)resolve(prog);
             } else {
@@ -706,13 +647,8 @@ async::Promise<AudioSignalChanges> Playback::signalChanges(const TrackId trackId
     return async::make_promise<AudioSignalChanges>([this, trackId](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetSignalChanges, RpcPacker::pack(trackId));
-        addPendingTrackRequest(trackId, msg.callId, [reject](const Ret& ret) {
-            doReject(MsgCode::GetSignalChanges, reject, ret);
-        });
-        channel()->send(msg, [this, trackId, callId = msg.callId, resolve, reject](const Msg& res) {
+        channel()->send(msg, [this, trackId, resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            removePendingTrackRequest(trackId, callId);
-
             RetVal<StreamId> ret;
             IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
                 doReject(MsgCode::GetSignalChanges, reject, audio::make_ret(Err::InvalidRpcData));
@@ -721,7 +657,7 @@ async::Promise<AudioSignalChanges> Playback::signalChanges(const TrackId trackId
 
             if (ret.ret) {
                 AudioSignalChanges ch;
-                channel()->addReceiveStream(StreamName::AudioSignalStream, ret.val, ch);
+                channel()->addReceiveStream(ctxId(), StreamName::AudioSignalStream, ret.val, ch);
                 addTrackStream(trackId, ret.val);
                 (void)resolve(ch);
             } else {
@@ -743,13 +679,8 @@ async::Promise<AutomatedControlParamsChanges> Playback::automatedControlParamsCh
     return async::make_promise<AutomatedControlParamsChanges>([this, trackId](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetAutomatedControlParamsChanges, RpcPacker::pack(trackId));
-        addPendingTrackRequest(trackId, msg.callId, [reject](const Ret& ret) {
-            doReject(MsgCode::GetAutomatedControlParamsChanges, reject, ret);
-        });
-        channel()->send(msg, [this, trackId, callId = msg.callId, resolve, reject](const Msg& res) {
+        channel()->send(msg, [this, trackId, resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            removePendingTrackRequest(trackId, callId);
-
             RetVal<StreamId> ret;
             IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
                 doReject(MsgCode::GetAutomatedControlParamsChanges, reject, audio::make_ret(Err::InvalidRpcData));
@@ -758,7 +689,7 @@ async::Promise<AutomatedControlParamsChanges> Playback::automatedControlParamsCh
 
             if (ret.ret) {
                 AutomatedControlParamsChanges ch;
-                channel()->addReceiveStream(StreamName::AutomatedControlParamsStream, ret.val, ch);
+                channel()->addReceiveStream(ctxId(), StreamName::AutomatedControlParamsStream, ret.val, ch);
                 addTrackStream(trackId, ret.val);
                 (void)resolve(ch);
             } else {
@@ -818,7 +749,7 @@ SaveSoundTrackProgress Playback::saveSoundTrackProgressChanged() const
 
             if (m_saveSoundTrackProgressStreamId == 0) {
                 m_saveSoundTrackProgressStreamId = ret.val;
-                channel()->addReceiveStream(StreamName::SaveSoundTrackProgressStream,
+                channel()->addReceiveStream(ctxId(), StreamName::SaveSoundTrackProgressStream,
                                             m_saveSoundTrackProgressStreamId,
                                             m_saveSoundTrackProgressStream);
             }

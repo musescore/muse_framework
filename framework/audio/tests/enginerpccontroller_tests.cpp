@@ -117,6 +117,8 @@ protected:
         StreamId streamId = 0;
         EXPECT_CALL(*m_rpcChannel, addStream(_))
         .WillOnce(Invoke([&streamId](std::shared_ptr<IRpcStream> s) {
+            //! NOTE The stream must belong to the context to be removed with it
+            EXPECT_EQ(s->ctxId(), CTX_ID);
             streamId = s->streamId();
         }));
 
@@ -137,43 +139,38 @@ protected:
     async::Channel<TrackId> m_trackRemoved;
 };
 
-TEST_F(Audio_EngineRpcControllerTests, ContextDeinit_RemovesPlayerStreams)
+TEST_F(Audio_EngineRpcControllerTests, ContextDeinit_CancelsAllRequestsOfContext)
 {
     // [GIVEN] The context is inited
     request(GLOBAL_CTX_ID, MsgCode::ContextInit, RpcPacker::pack(CTX_ID));
 
     // [GIVEN] The player has requested the status and the position
-    const StreamId statusStreamId = requestStream(MsgCode::GetPlaybackStatus);
-    const StreamId positionStreamId = requestStream(MsgCode::GetPlaybackPosition);
-    ASSERT_NE(statusStreamId, 0);
-    ASSERT_NE(positionStreamId, 0);
+    requestStream(MsgCode::GetPlaybackStatus);
+    requestStream(MsgCode::GetPlaybackPosition);
 
-    // [THEN] Both streams are removed
-    EXPECT_CALL(*m_rpcChannel, removeStream(statusStreamId));
-    EXPECT_CALL(*m_rpcChannel, removeStream(positionStreamId));
+    // [THEN] The pending responses and the streams of the context are removed by the channel
+    EXPECT_CALL(*m_rpcChannel, cancelAllRequests(CTX_ID));
+    EXPECT_CALL(*m_rpcChannel, removeStream(_)).Times(0);
 
     // [WHEN] Deinit the context
     request(GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(CTX_ID));
 }
 
-TEST_F(Audio_EngineRpcControllerTests, ContextDeinit_StreamsAreRemovedOnlyOnce)
+TEST_F(Audio_EngineRpcControllerTests, ContextDeinit_ForgetsTrackStreams)
 {
-    // [GIVEN] The context is inited and the player has requested the status
+    // [GIVEN] The context is inited and the stream of the track is requested
     request(GLOBAL_CTX_ID, MsgCode::ContextInit, RpcPacker::pack(CTX_ID));
-    const StreamId statusStreamId = requestStream(MsgCode::GetPlaybackStatus);
+    requestStream(MsgCode::GetSignalChanges, RpcPacker::pack(TRACK_ID));
 
     // [GIVEN] The context is deinited and inited again
-    EXPECT_CALL(*m_rpcChannel, removeStream(statusStreamId)).Times(1);
     request(GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(CTX_ID));
-    ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
-
     request(GLOBAL_CTX_ID, MsgCode::ContextInit, RpcPacker::pack(CTX_ID));
 
-    // [THEN] The streams of the previous init are not removed again
+    // [THEN] The stream of the previous init is not removed again
     EXPECT_CALL(*m_rpcChannel, removeStream(_)).Times(0);
 
-    // [WHEN] Deinit the context again
-    request(GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(CTX_ID));
+    // [WHEN] The track is removed
+    m_trackRemoved.send(TRACK_ID);
 }
 
 TEST_F(Audio_EngineRpcControllerTests, TrackRemoved_RemovesTrackStreams)
@@ -197,9 +194,9 @@ TEST_F(Audio_EngineRpcControllerTests, TrackRemoved_RemovesTrackStreams)
     m_trackRemoved.send(TRACK_ID);
     ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
 
-    // [THEN] The streams of the other track are removed on the context deinit
-    EXPECT_CALL(*m_rpcChannel, removeStream(otherTrackStreamId));
-    EXPECT_CALL(*m_rpcChannel, removeStream(signalStreamId)).Times(0);
+    // [THEN] The streams of the other track are removed on the context deinit by the channel with all streams of the context
+    EXPECT_CALL(*m_rpcChannel, cancelAllRequests(CTX_ID));
+    EXPECT_CALL(*m_rpcChannel, removeStream(_)).Times(0);
 
     // [WHEN] Deinit the context
     request(GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(CTX_ID));

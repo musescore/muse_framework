@@ -31,11 +31,6 @@ using namespace muse::async;
 using namespace muse::audio;
 using namespace muse::audio::rpc;
 
-Player::~Player()
-{
-    cancelPendingResponses();
-}
-
 rpc::CtxId Player::ctxId() const
 {
     return rpc::ctxId(iocContext());
@@ -53,11 +48,8 @@ void Player::init()
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackStatus);
-        m_playbackStatusCallId = msg.callId;
         channel()->send(msg, [this](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            m_playbackStatusCallId = 0;
-
             Ret ret;
             PlaybackStatus status = PlaybackStatus::Stopped;
             StreamId streamId = 0;
@@ -66,8 +58,7 @@ void Player::init()
             }
 
             if (ret) {
-                m_playbackStatusStreamId = streamId;
-                channel()->addReceiveStream(StreamName::PlaybackStatusStream, streamId, m_playbackStatusChanged);
+                channel()->addReceiveStream(ctxId(), StreamName::PlaybackStatusStream, streamId, m_playbackStatusChanged);
                 //! NOTE Send initial state
                 m_playbackStatusChanged.send(status);
             } else {
@@ -82,11 +73,8 @@ void Player::init()
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackPosition);
-        m_playbackPositionCallId = msg.callId;
         channel()->send(msg, [this](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            m_playbackPositionCallId = 0;
-
             Ret ret;
             secs_t pos = 0.0;
             StreamId streamId = 0;
@@ -95,8 +83,7 @@ void Player::init()
             }
 
             if (ret) {
-                m_playbackPositionStreamId = streamId;
-                channel()->addReceiveStream(StreamName::PlaybackPositionStream, streamId, m_playbackPositionChanged);
+                channel()->addReceiveStream(ctxId(), StreamName::PlaybackPositionStream, streamId, m_playbackPositionChanged);
                 //! NOTE Send initial state
                 m_playbackPositionChanged.send(pos);
             } else {
@@ -110,33 +97,8 @@ void Player::deinit()
 {
     ONLY_AUDIO_MAIN_THREAD;
 
-    cancelPendingResponses();
-
-    if (m_playbackStatusStreamId != 0) {
-        channel()->removeStream(m_playbackStatusStreamId);
-        m_playbackStatusStreamId = 0;
-    }
-
-    if (m_playbackPositionStreamId != 0) {
-        channel()->removeStream(m_playbackPositionStreamId);
-        m_playbackPositionStreamId = 0;
-    }
-
     m_playbackStatusChanged.disconnect(this);
     m_playbackPositionChanged.disconnect(this);
-}
-
-void Player::cancelPendingResponses()
-{
-    if (m_playbackStatusCallId != 0) {
-        channel()->cancelResponse(m_playbackStatusCallId);
-        m_playbackStatusCallId = 0;
-    }
-
-    if (m_playbackPositionCallId != 0) {
-        channel()->cancelResponse(m_playbackPositionCallId);
-        m_playbackPositionCallId = 0;
-    }
 }
 
 async::Promise<Ret> Player::prepareToPlay()

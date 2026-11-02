@@ -25,10 +25,8 @@
 #include <map>
 #include <vector>
 
-#include "async/asyncable.h"
 #include "async/processevents.h"
 
-#include "audio/common/audioerrors.h"
 #include "audio/common/rpc/rpcpacker.h"
 #include "audio/main/internal/playback.h"
 
@@ -60,7 +58,7 @@ MATCHER_P(StreamIdIs, id, "")
 }
 
 namespace muse::audio {
-class Audio_PlaybackTests : public ::testing::Test, public async::Asyncable
+class Audio_PlaybackTests : public ::testing::Test
 {
 protected:
     struct Request {
@@ -83,11 +81,11 @@ protected:
             m_requests.push_back({ msg, onResponse });
         }));
 
-        //! NOTE As the channel, the response of the canceled request is dropped
-        ON_CALL(*m_rpcChannel, cancelResponse(_))
-        .WillByDefault(Invoke([this](CallId callId) {
-            std::erase_if(m_requests, [callId](const Request& r) {
-                return r.msg.callId == callId;
+        //! NOTE As the channel, the responses of the canceled requests are dropped
+        ON_CALL(*m_rpcChannel, cancelAllRequests(_))
+        .WillByDefault(Invoke([this](CtxId ctxId) {
+            std::erase_if(m_requests, [ctxId](const Request& r) {
+                return r.msg.ctxId == ctxId;
             });
         }));
 
@@ -208,20 +206,20 @@ TEST_F(Audio_PlaybackTests, Player_SubscribesToStatusAndPosition)
     EXPECT_EQ(player->playbackPosition(), secs_t(2.0));
 }
 
-TEST_F(Audio_PlaybackTests, Deinit_RemovesPlayerStreams)
+TEST_F(Audio_PlaybackTests, Deinit_CancelsAllRequestsOfContext)
 {
     // [GIVEN] The player is subscribed to the streams
     initContext();
     IPlayerPtr player = m_playback->player();
     respondPlayerStreams();
 
-    // [THEN] The streams are removed
-    EXPECT_CALL(*m_rpcChannel, removeStream(STATUS_STREAM_ID));
-    EXPECT_CALL(*m_rpcChannel, removeStream(POSITION_STREAM_ID));
+    // [THEN] The pending responses and the streams of the context are removed by the channel
+    EXPECT_CALL(*m_rpcChannel, cancelAllRequests(rpc::ctxId(m_ctx)));
 
     // [WHEN] Deinit the playback
     m_playback->deinit();
     EXPECT_FALSE(m_playback->isInited());
+    ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
 
     // [WHEN] Init it again
     initContext();
@@ -239,10 +237,11 @@ TEST_F(Audio_PlaybackTests, Deinit_CancelsPlayerPendingRequests)
     IPlayerPtr player = m_playback->player();
 
     // [THEN] The responses are canceled
-    EXPECT_CALL(*m_rpcChannel, cancelResponse(_)).Times(2);
+    EXPECT_CALL(*m_rpcChannel, cancelAllRequests(rpc::ctxId(m_ctx)));
 
     // [WHEN] Deinit the playback
     m_playback->deinit();
+    ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
 
     // [THEN] No responses are expected anymore
     EXPECT_EQ(requestCount(MsgCode::GetPlaybackStatus), 0);
@@ -264,67 +263,12 @@ TEST_F(Audio_PlaybackTests, TrackRemoved_RemovesTrackStreams)
     notify(MsgCode::TrackRemoved, RpcPacker::pack(TRACK_ID));
     ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
 
-    // [THEN] The stream of the other track is removed on deinit
-    EXPECT_CALL(*m_rpcChannel, removeStream(OTHER_SIGNAL_STREAM_ID));
-    EXPECT_CALL(*m_rpcChannel, removeStream(SIGNAL_STREAM_ID)).Times(0);
+    // [THEN] The stream of the other track is removed on deinit by the channel with all streams of the context
+    EXPECT_CALL(*m_rpcChannel, cancelAllRequests(rpc::ctxId(m_ctx)));
+    EXPECT_CALL(*m_rpcChannel, removeStream(_)).Times(0);
 
     // [WHEN] Deinit the playback
     m_playback->deinit();
-}
-
-TEST_F(Audio_PlaybackTests, TrackRemoved_CancelsPendingRequests)
-{
-    // [GIVEN] The signal changes of two tracks are requested, but the engine has not responded yet
-    initContext();
-
-    bool rejected = false;
-    m_playback->signalChanges(TRACK_ID).onReject(this, [&rejected](int code, const std::string&) {
-        rejected = code == static_cast<int>(Err::InvalidTrackId);
-    });
-    m_playback->signalChanges(OTHER_TRACK_ID);
-    async::processMessages();
-
-    // [WHEN] The track is removed
-    notify(MsgCode::TrackRemoved, RpcPacker::pack(TRACK_ID));
-    async::processMessages();
-
-    // [THEN] The request of the removed track is canceled and rejected
-    EXPECT_TRUE(rejected);
-
-    // [THEN] The request of the other track is still pending
-    EXPECT_EQ(requestCount(MsgCode::GetSignalChanges), 1);
-}
-
-TEST_F(Audio_PlaybackTests, Deinit_CancelsPendingTrackRequests)
-{
-    // [GIVEN] The signal changes are requested, but the engine has not responded yet
-    initContext();
-
-    bool rejected = false;
-    m_playback->signalChanges(TRACK_ID).onReject(this, [&rejected](int code, const std::string&) {
-        rejected = code == static_cast<int>(Err::InvalidTrackId);
-    });
-    async::processMessages();
-
-    // [WHEN] Deinit the playback
-    m_playback->deinit();
-    async::processMessages();
-
-    // [THEN] The request is canceled and rejected
-    EXPECT_TRUE(rejected);
-    EXPECT_EQ(requestCount(MsgCode::GetSignalChanges), 0);
-}
-
-TEST_F(Audio_PlaybackTests, Response_RemovesPendingRequest)
-{
-    // [GIVEN] The signal changes are requested
-    initContext();
-    requestSignalChanges(TRACK_ID, SIGNAL_STREAM_ID);
-
-    // [THEN] The completed request is not canceled
-    EXPECT_CALL(*m_rpcChannel, cancelResponse(_)).Times(0);
-
-    // [WHEN] The track is removed
-    notify(MsgCode::TrackRemoved, RpcPacker::pack(TRACK_ID));
+    ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
 }
 }

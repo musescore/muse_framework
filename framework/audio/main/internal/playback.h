@@ -126,15 +126,8 @@ private:
 
     rpc::CtxId ctxId() const;
 
-    using RejectFunc = std::function<void (const Ret&)>;
-    void addPendingTrackRequest(TrackId trackId, rpc::CallId callId, const RejectFunc& reject) const;
-    void removePendingTrackRequest(TrackId trackId, rpc::CallId callId) const;
-    void cancelPendingTrackRequests(TrackId trackId) const;
-    void cancelAllPendingTrackRequests() const;
-
     void addTrackStream(TrackId trackId, rpc::StreamId streamId) const;
     void removeTrackStreams(TrackId trackId) const;
-    void removeAllTrackStreams() const;
 
     ValCh<bool> m_inited;
 
@@ -154,10 +147,7 @@ private:
 
     mutable std::shared_ptr<Player> m_player;
 
-    //! NOTE The receive streams are removed on the track removal and on the deinit
+    //! NOTE The receive streams are removed on the track removal, on the deinit all streams of the context are removed by the channel
     mutable std::map<TrackId, std::vector<rpc::StreamId> > m_trackStreams;
-
-    //! NOTE Responses of the pending requests are canceled on the track removal and on the deinit
-    mutable std::map<TrackId, std::map<rpc::CallId, RejectFunc> > m_pendingTrackRequests;
 };
 }
