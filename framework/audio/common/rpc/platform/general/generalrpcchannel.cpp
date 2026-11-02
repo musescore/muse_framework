@@ -92,6 +92,15 @@ void GeneralRpcChannel::send(const Msg& msg, const ResponseHandler& onResponse)
     }
 }
 
+void GeneralRpcChannel::cancelResponse(CallId callId)
+{
+    if (s_isMainThread) {
+        m_mainRpcData.onResponses.erase(callId);
+    } else {
+        m_engineRpcData.onResponses.erase(callId);
+    }
+}
+
 void GeneralRpcChannel::receive(RpcData& to, const Msg& m)
 {
     RPCLOG() << "ctxId: " << m.ctxId

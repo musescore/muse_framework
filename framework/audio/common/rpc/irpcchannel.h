@@ -403,6 +403,7 @@ public:
     virtual void process() = 0;
 
     virtual void send(const Msg& msg, const ResponseHandler& onResponse = nullptr) = 0;
+    virtual void cancelResponse(CallId callId) = 0;
     virtual void onRequest(CtxId ctxId, MsgCode code, RequestHandler h) = 0;
     virtual void onNotification(CtxId ctxId, MsgCode code, NotificationHandler h) = 0;
 

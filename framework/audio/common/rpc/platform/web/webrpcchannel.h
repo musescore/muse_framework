@@ -35,6 +35,7 @@ public:
     void process() override;
 
     void send(const Msg& msg, const Handler& onResponse = nullptr) override;
+    void cancelResponse(CallId callId) override;
     void onRequest(MsgCode code, Handler h) override;
     void onNotification(MsgCode code, Handler h) override;
     void listenAll(Handler h) override;

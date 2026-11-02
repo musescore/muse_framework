@@ -123,6 +123,11 @@ void WebRpcChannel::send(const Msg& msg, const Handler& onResponse)
     rpcSend(&buffer[0], buffer.size());
 }
 
+void WebRpcChannel::cancelResponse(CallId callId)
+{
+    m_data.onResponses.erase(callId);
+}
+
 void WebRpcChannel::receive(const ByteArray& data)
 {
     IF_ASSERT_FAILED(data.size() > 0) {

@@ -39,6 +39,7 @@ public:
     // IRpcChannel
     // msgs
     void send(const Msg& msg, const ResponseHandler& onResponse = nullptr) override;
+    void cancelResponse(CallId callId) override;
     void onRequest(CtxId ctxId, MsgCode code, RequestHandler h) override;
     void onNotification(CtxId ctxId, MsgCode code, NotificationHandler h) override;
 
