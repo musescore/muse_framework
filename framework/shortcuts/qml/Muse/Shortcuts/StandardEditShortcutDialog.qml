@@ -51,6 +51,7 @@ StyledDialogView {
 
         onApplyNewSequenceRequested: function(newSequence, conflictShortcutIndex) {
             root.applyNewSequenceRequested(newSequence, conflictShortcutIndex)
+            Qt.callLater(root.accept)
         }
     }
 
@@ -67,8 +68,9 @@ StyledDialogView {
         informationText: editShortcutModel.conflictWarning
 
         onSaveRequested: {
-            editShortcutModel.trySave()
-            root.accept()
+            if (!editShortcutModel.trySave()) {
+                root.accept()
+            }
         }
 
         onCancelRequested: {
