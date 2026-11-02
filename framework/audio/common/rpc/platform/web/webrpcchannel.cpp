@@ -117,15 +117,21 @@ void WebRpcChannel::send(const Msg& msg, const Handler& onResponse)
     }
 
     if (onResponse) {
-        m_data.onResponses[msg.callId] = onResponse;
+        m_data.onResponses[msg.callId] = { msg.ctxId, onResponse };
     }
 
     rpcSend(&buffer[0], buffer.size());
 }
 
-void WebRpcChannel::cancelResponse(CallId callId)
+void WebRpcChannel::cancelAllRequests(CtxId ctxId)
 {
-    m_data.onResponses.erase(callId);
+    std::erase_if(m_data.onResponses, [ctxId](const auto& pair) {
+        return pair.second.ctxId == ctxId;
+    });
+
+    std::erase_if(m_data.streams, [ctxId](const auto& pair) {
+        return pair.second->ctxId() == ctxId;
+    });
 }
 
 void WebRpcChannel::receive(const ByteArray& data)
@@ -179,10 +185,11 @@ void WebRpcChannel::receive(const Msg& msg)
     case MsgType::Response: {
         auto it = m_data.onResponses.find(msg.callId);
         if (it != m_data.onResponses.end()) {
-            if (it->second) {
-                it->second(msg);
-            }
+            Handler handler = std::move(it->second.handler);
             m_data.onResponses.erase(it);
+            if (handler) {
+                handler(msg);
+            }
         }
     } break;
     default: {

@@ -79,26 +79,30 @@ void GeneralRpcChannel::send(const Msg& msg, const ResponseHandler& onResponse)
 
     if (s_isMainThread) {
         if (onResponse) {
-            m_mainRpcData.onResponses[msg.callId] = onResponse;
+            m_mainRpcData.onResponses[msg.callId] = { msg.ctxId, onResponse };
         }
 
         m_msgQueue.port1()->send(msg);
     } else {
         if (onResponse) {
-            m_engineRpcData.onResponses[msg.callId] = onResponse;
+            m_engineRpcData.onResponses[msg.callId] = { msg.ctxId, onResponse };
         }
 
         m_msgQueue.port2()->send(msg);
     }
 }
 
-void GeneralRpcChannel::cancelResponse(CallId callId)
+void GeneralRpcChannel::cancelAllRequests(CtxId ctxId)
 {
-    if (s_isMainThread) {
-        m_mainRpcData.onResponses.erase(callId);
-    } else {
-        m_engineRpcData.onResponses.erase(callId);
-    }
+    RpcData& data = s_isMainThread ? m_mainRpcData : m_engineRpcData;
+
+    std::erase_if(data.onResponses, [ctxId](const auto& pair) {
+        return pair.second.ctxId == ctxId;
+    });
+
+    std::erase_if(data.streams, [ctxId](const auto& pair) {
+        return pair.second->ctxId() == ctxId;
+    });
 }
 
 void GeneralRpcChannel::receive(RpcData& to, const Msg& m)
@@ -129,10 +133,11 @@ void GeneralRpcChannel::receive(RpcData& to, const Msg& m)
     case MsgType::Response: {
         auto it = to.onResponses.find(m.callId);
         if (it != to.onResponses.end()) {
-            if (it->second) {
-                it->second(m);
-            }
+            ResponseHandler handler = std::move(it->second.handler);
             to.onResponses.erase(it);
+            if (handler) {
+                handler(m);
+            }
         }
     } break;
     case MsgType::Notification: {

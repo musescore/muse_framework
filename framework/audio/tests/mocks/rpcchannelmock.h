@@ -35,7 +35,7 @@ public:
     MOCK_METHOD(void, process, (), (override));
 
     MOCK_METHOD(void, send, (const Msg&, const ResponseHandler&), (override));
-    MOCK_METHOD(void, cancelResponse, (CallId), (override));
+    MOCK_METHOD(void, cancelAllRequests, (CtxId), (override));
     MOCK_METHOD(void, onRequest, (CtxId, MsgCode, RequestHandler), (override));
     MOCK_METHOD(void, onNotification, (CtxId, MsgCode, NotificationHandler), (override));
 
