@@ -25,8 +25,10 @@
 #include <map>
 #include <vector>
 
+#include "async/asyncable.h"
 #include "async/processevents.h"
 
+#include "audio/common/audioerrors.h"
 #include "audio/common/rpc/rpcpacker.h"
 #include "audio/main/internal/playback.h"
 
@@ -58,7 +60,7 @@ MATCHER_P(StreamIdIs, id, "")
 }
 
 namespace muse::audio {
-class Audio_PlaybackTests : public ::testing::Test
+class Audio_PlaybackTests : public ::testing::Test, public async::Asyncable
 {
 protected:
     struct Request {
@@ -79,6 +81,14 @@ protected:
         ON_CALL(*m_rpcChannel, send(_, _))
         .WillByDefault(Invoke([this](const Msg& msg, const ResponseHandler& onResponse) {
             m_requests.push_back({ msg, onResponse });
+        }));
+
+        //! NOTE As the channel, the response of the canceled request is dropped
+        ON_CALL(*m_rpcChannel, cancelResponse(_))
+        .WillByDefault(Invoke([this](CallId callId) {
+            std::erase_if(m_requests, [callId](const Request& r) {
+                return r.msg.callId == callId;
+            });
         }));
 
         ON_CALL(*m_rpcChannel, onNotification(_, _, _))
@@ -222,23 +232,21 @@ TEST_F(Audio_PlaybackTests, Deinit_RemovesPlayerStreams)
     EXPECT_NE(newPlayer, player);
 }
 
-TEST_F(Audio_PlaybackTests, Deinit_LateResponsesAreIgnored)
+TEST_F(Audio_PlaybackTests, Deinit_CancelsPlayerPendingRequests)
 {
     // [GIVEN] The player has not received the responses yet
     initContext();
     IPlayerPtr player = m_playback->player();
 
+    // [THEN] The responses are canceled
+    EXPECT_CALL(*m_rpcChannel, cancelResponse(_)).Times(2);
+
     // [WHEN] Deinit the playback
     m_playback->deinit();
 
-    // [THEN] The streams are not added by the late responses
-    EXPECT_CALL(*m_rpcChannel, addStream(_)).Times(0);
-
-    // [WHEN] The engine responds after deinit
-    respondPlayerStreams();
-
-    // [THEN] The player state is not changed
-    EXPECT_EQ(player->playbackStatus(), PlaybackStatus::Stopped);
+    // [THEN] No responses are expected anymore
+    EXPECT_EQ(requestCount(MsgCode::GetPlaybackStatus), 0);
+    EXPECT_EQ(requestCount(MsgCode::GetPlaybackPosition), 0);
 }
 
 TEST_F(Audio_PlaybackTests, TrackRemoved_RemovesTrackStreams)
@@ -262,5 +270,61 @@ TEST_F(Audio_PlaybackTests, TrackRemoved_RemovesTrackStreams)
 
     // [WHEN] Deinit the playback
     m_playback->deinit();
+}
+
+TEST_F(Audio_PlaybackTests, TrackRemoved_CancelsPendingRequests)
+{
+    // [GIVEN] The signal changes of two tracks are requested, but the engine has not responded yet
+    initContext();
+
+    bool rejected = false;
+    m_playback->signalChanges(TRACK_ID).onReject(this, [&rejected](int code, const std::string&) {
+        rejected = code == static_cast<int>(Err::InvalidTrackId);
+    });
+    m_playback->signalChanges(OTHER_TRACK_ID);
+    async::processMessages();
+
+    // [WHEN] The track is removed
+    notify(MsgCode::TrackRemoved, RpcPacker::pack(TRACK_ID));
+    async::processMessages();
+
+    // [THEN] The request of the removed track is canceled and rejected
+    EXPECT_TRUE(rejected);
+
+    // [THEN] The request of the other track is still pending
+    EXPECT_EQ(requestCount(MsgCode::GetSignalChanges), 1);
+}
+
+TEST_F(Audio_PlaybackTests, Deinit_CancelsPendingTrackRequests)
+{
+    // [GIVEN] The signal changes are requested, but the engine has not responded yet
+    initContext();
+
+    bool rejected = false;
+    m_playback->signalChanges(TRACK_ID).onReject(this, [&rejected](int code, const std::string&) {
+        rejected = code == static_cast<int>(Err::InvalidTrackId);
+    });
+    async::processMessages();
+
+    // [WHEN] Deinit the playback
+    m_playback->deinit();
+    async::processMessages();
+
+    // [THEN] The request is canceled and rejected
+    EXPECT_TRUE(rejected);
+    EXPECT_EQ(requestCount(MsgCode::GetSignalChanges), 0);
+}
+
+TEST_F(Audio_PlaybackTests, Response_RemovesPendingRequest)
+{
+    // [GIVEN] The signal changes are requested
+    initContext();
+    requestSignalChanges(TRACK_ID, SIGNAL_STREAM_ID);
+
+    // [THEN] The completed request is not canceled
+    EXPECT_CALL(*m_rpcChannel, cancelResponse(_)).Times(0);
+
+    // [WHEN] The track is removed
+    notify(MsgCode::TrackRemoved, RpcPacker::pack(TRACK_ID));
 }
 }

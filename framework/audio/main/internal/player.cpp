@@ -31,6 +31,11 @@ using namespace muse::async;
 using namespace muse::audio;
 using namespace muse::audio::rpc;
 
+Player::~Player()
+{
+    cancelPendingResponses();
+}
+
 rpc::CtxId Player::ctxId() const
 {
     return rpc::ctxId(iocContext());
@@ -48,11 +53,10 @@ void Player::init()
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackStatus);
-        channel()->send(msg, [this, alive = std::weak_ptr<bool>(m_alive)](const Msg& res) {
+        m_playbackStatusCallId = msg.callId;
+        channel()->send(msg, [this](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            if (alive.expired()) {
-                return;
-            }
+            m_playbackStatusCallId = 0;
 
             Ret ret;
             PlaybackStatus status = PlaybackStatus::Stopped;
@@ -78,11 +82,10 @@ void Player::init()
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackPosition);
-        channel()->send(msg, [this, alive = std::weak_ptr<bool>(m_alive)](const Msg& res) {
+        m_playbackPositionCallId = msg.callId;
+        channel()->send(msg, [this](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
-            if (alive.expired()) {
-                return;
-            }
+            m_playbackPositionCallId = 0;
 
             Ret ret;
             secs_t pos = 0.0;
@@ -107,7 +110,7 @@ void Player::deinit()
 {
     ONLY_AUDIO_MAIN_THREAD;
 
-    m_alive.reset();
+    cancelPendingResponses();
 
     if (m_playbackStatusStreamId != 0) {
         channel()->removeStream(m_playbackStatusStreamId);
@@ -121,6 +124,19 @@ void Player::deinit()
 
     m_playbackStatusChanged.disconnect(this);
     m_playbackPositionChanged.disconnect(this);
+}
+
+void Player::cancelPendingResponses()
+{
+    if (m_playbackStatusCallId != 0) {
+        channel()->cancelResponse(m_playbackStatusCallId);
+        m_playbackStatusCallId = 0;
+    }
+
+    if (m_playbackPositionCallId != 0) {
+        channel()->cancelResponse(m_playbackPositionCallId);
+        m_playbackPositionCallId = 0;
+    }
 }
 
 async::Promise<Ret> Player::prepareToPlay()
