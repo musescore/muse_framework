@@ -37,9 +37,11 @@
 #ifdef emit
 #undef emit
 #include "kddockwidgets/src/core/DragController_p.h"
+#include "kddockwidgets/src/core/DropArea.h"
 #define emit
 #else
 #include "kddockwidgets/src/core/DragController_p.h"
+#include "kddockwidgets/src/core/DropArea.h"
 #endif
 
 #include "kddockwidgets/src/core/DockWidget.h"
@@ -102,12 +104,18 @@ DropController::DropController(KDDockWidgets::Core::ClassicDropIndicatorOverlay*
                                const modularity::ContextPtr& iocCtx)
     : Contextable(iocCtx)
     , m_classicIndicators(classicIndicators)
+    , m_dropArea(parent ? parent->asDropAreaController() : nullptr)
 {
-    Q_UNUSED(parent)
 }
 
 KDDropLocation DropController::hover(KDDockWidgets::Point globalPos)
 {
+    //! NOTE: The drop destinations are resolved in the main window only, so don't allow
+    //! dropping into the layout of a floating window, e.g. of an undocked toolbar under the cursor
+    if (m_dropArea && !m_dropArea->isInMainWindow()) {
+        return KDDockWidgets::DropLocation_None;
+    }
+
     DockBase* draggedDock = this->draggedDock();
     if (!draggedDock) {
         return KDDockWidgets::DropLocation_None;
