@@ -125,6 +125,10 @@ private:
 
     rpc::CtxId ctxId() const;
 
+    void addTrackStream(TrackId trackId, rpc::StreamId streamId) const;
+    void removeTrackStreams(TrackId trackId) const;
+    void removeAllTrackStreams() const;
+
     ValCh<bool> m_inited;
 
     async::Channel<TrackId> m_trackAdded;
@@ -142,5 +146,8 @@ private:
     mutable rpc::StreamId m_saveSoundTrackProgressStreamId = 0;
 
     mutable std::shared_ptr<Player> m_player;
+
+    //! NOTE The receive streams are removed on the track removal and on the deinit
+    mutable std::map<TrackId, std::vector<rpc::StreamId> > m_trackStreams;
 };
 }

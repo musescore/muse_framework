@@ -71,5 +71,18 @@ private:
 
     async::Channel<int64_t, int64_t, SaveSoundTrackStage> m_saveSoundTrackProgressStream;
     rpc::StreamId m_saveSoundTrackProgressStreamId = 0;
+
+    //! NOTE The send streams are removed on the track removal and on the context deinit
+    struct ContextStreams {
+        std::vector<rpc::StreamId> streams;
+        std::map<TrackId, std::vector<rpc::StreamId> > trackStreams;
+    };
+
+    void addContextStream(rpc::CtxId ctxId, rpc::StreamId streamId);
+    void addTrackStream(rpc::CtxId ctxId, TrackId trackId, rpc::StreamId streamId);
+    void removeTrackStreams(rpc::CtxId ctxId, TrackId trackId);
+    void removeContextStreams(rpc::CtxId ctxId);
+
+    std::map<rpc::CtxId, ContextStreams> m_contextStreams;
 };
 }

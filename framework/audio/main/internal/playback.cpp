@@ -60,6 +60,7 @@ async::Promise<Ret> Playback::init()
         IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, trackId)) {
             return;
         }
+        removeTrackStreams(trackId);
         m_trackRemoved.send(trackId);
     });
 
@@ -173,8 +174,40 @@ void Playback::deinit()
         m_player.reset();
     }
 
+    removeAllTrackStreams();
+
     channel()->send(rpc::make_request(rpc::GLOBAL_CTX_ID, MsgCode::ContextDeinit, RpcPacker::pack(ctxId())));
     m_inited.set(false);
+}
+
+void Playback::addTrackStream(TrackId trackId, rpc::StreamId streamId) const
+{
+    m_trackStreams[trackId].push_back(streamId);
+}
+
+void Playback::removeTrackStreams(TrackId trackId) const
+{
+    auto it = m_trackStreams.find(trackId);
+    if (it == m_trackStreams.end()) {
+        return;
+    }
+
+    for (StreamId streamId : it->second) {
+        channel()->removeStream(streamId);
+    }
+
+    m_trackStreams.erase(it);
+}
+
+void Playback::removeAllTrackStreams() const
+{
+    for (const auto& pair : m_trackStreams) {
+        for (StreamId streamId : pair.second) {
+            channel()->removeStream(streamId);
+        }
+    }
+
+    m_trackStreams.clear();
 }
 
 bool Playback::isInited() const
@@ -559,7 +592,7 @@ muse::async::Promise<InputProcessingProgress> Playback::inputProcessingProgress(
     return async::make_promise<InputProcessingProgress>([this, trackId](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetInputProcessingProgress, RpcPacker::pack(trackId));
-        channel()->send(msg, [this, resolve, reject](const Msg& res) {
+        channel()->send(msg, [this, trackId, resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
             Ret ret;
             bool isStarted = false;
@@ -573,6 +606,7 @@ muse::async::Promise<InputProcessingProgress> Playback::inputProcessingProgress(
                 InputProcessingProgress prog;
                 prog.isStarted = isStarted;
                 channel()->addReceiveStream(StreamName::InputProcessingProgressStream, streamId, prog.processedChannel);
+                addTrackStream(trackId, streamId);
                 (void)resolve(prog);
             } else {
                 doReject(MsgCode::GetInputProcessingProgress, reject, ret);
@@ -617,7 +651,7 @@ async::Promise<AudioSignalChanges> Playback::signalChanges(const TrackId trackId
     return async::make_promise<AudioSignalChanges>([this, trackId](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetSignalChanges, RpcPacker::pack(trackId));
-        channel()->send(msg, [this, resolve, reject](const Msg& res) {
+        channel()->send(msg, [this, trackId, resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
             RetVal<StreamId> ret;
             IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
@@ -628,6 +662,7 @@ async::Promise<AudioSignalChanges> Playback::signalChanges(const TrackId trackId
             if (ret.ret) {
                 AudioSignalChanges ch;
                 channel()->addReceiveStream(StreamName::AudioSignalStream, ret.val, ch);
+                addTrackStream(trackId, ret.val);
                 (void)resolve(ch);
             } else {
                 doReject(MsgCode::GetSignalChanges, reject, ret.ret);
@@ -648,7 +683,7 @@ async::Promise<AutomatedControlParamsChanges> Playback::automatedControlParamsCh
     return async::make_promise<AutomatedControlParamsChanges>([this, trackId](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetAutomatedControlParamsChanges, RpcPacker::pack(trackId));
-        channel()->send(msg, [this, resolve, reject](const Msg& res) {
+        channel()->send(msg, [this, trackId, resolve, reject](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
             RetVal<StreamId> ret;
             IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
@@ -659,6 +694,7 @@ async::Promise<AutomatedControlParamsChanges> Playback::automatedControlParamsCh
             if (ret.ret) {
                 AutomatedControlParamsChanges ch;
                 channel()->addReceiveStream(StreamName::AutomatedControlParamsStream, ret.val, ch);
+                addTrackStream(trackId, ret.val);
                 (void)resolve(ch);
             } else {
                 doReject(MsgCode::GetAutomatedControlParamsChanges, reject, ret.ret);

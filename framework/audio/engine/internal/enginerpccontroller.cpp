@@ -349,6 +349,7 @@ void EngineRpcController::init()
         });
 
         acontext->trackRemoved().onReceive(this, [this, ctxId](TrackId trackId) {
+            removeTrackStreams(ctxId, trackId);
             channel()->send(rpc::make_notification(ctxId, MsgCode::TrackRemoved, RpcPacker::pack(trackId)));
         });
 
@@ -506,6 +507,7 @@ void EngineRpcController::init()
                 StreamId streamId = 0;
                 if (ret.ret) {
                     streamId = channel()->addSendStream(StreamName::InputProcessingProgressStream, ret.val.processedChannel);
+                    addTrackStream(msg.ctxId, trackId, streamId);
                 }
                 return make_response(msg, RpcPacker::pack(ret.ret, ret.val.isStarted, streamId));
             } else {
@@ -571,6 +573,7 @@ void EngineRpcController::init()
                 StreamId streamId = 0;
                 if (ret.ret) {
                     streamId = channel()->addSendStream(StreamName::AudioSignalStream, ret.val);
+                    addTrackStream(msg.ctxId, trackId, streamId);
                 }
 
                 RetVal<StreamId> res;
@@ -594,6 +597,7 @@ void EngineRpcController::init()
                 StreamId streamId = 0;
                 if (ret.ret) {
                     streamId = channel()->addSendStream(StreamName::AutomatedControlParamsStream, ret.val);
+                    addTrackStream(msg.ctxId, trackId, streamId);
                 }
 
                 RetVal<StreamId> res;
@@ -728,6 +732,7 @@ void EngineRpcController::init()
                 PlaybackStatus status = actx->playbackStatus();
                 async::Channel<PlaybackStatus> ch = actx->playbackStatusChanged();
                 StreamId streamId = channel()->addSendStream(StreamName::PlaybackStatusStream, ch);
+                addContextStream(msg.ctxId, streamId);
                 return make_response(msg, RpcPacker::pack(make_ok(), status, streamId));
             } else {
                 return make_response(msg, RpcPacker::pack(make_ret(Err::InvalidContext), PlaybackStatus::Stopped, 0));
@@ -741,6 +746,7 @@ void EngineRpcController::init()
                 secs_t pos = actx->playbackPosition();
                 async::Channel<secs_t> ch = actx->playbackPositionChanged();
                 StreamId streamId = channel()->addSendStream(StreamName::PlaybackPositionStream, ch);
+                addContextStream(msg.ctxId, streamId);
                 return make_response(msg, RpcPacker::pack(make_ok(), pos, streamId));
             } else {
                 return make_response(msg, RpcPacker::pack(make_ret(Err::InvalidContext), 0, 0));
@@ -819,10 +825,61 @@ void EngineRpcController::init()
         audioContext->sourceParamsChanged().disconnect(this);
         audioContext->fxChainParamsChanged().disconnect(this);
 
+        removeContextStreams(ctxId);
+
         audioEngine()->destroyContext(ctxId);
 
         return make_response_ret(msg, make_ok());
     });
+}
+
+void EngineRpcController::addContextStream(rpc::CtxId ctxId, rpc::StreamId streamId)
+{
+    m_contextStreams[ctxId].streams.push_back(streamId);
+}
+
+void EngineRpcController::addTrackStream(rpc::CtxId ctxId, TrackId trackId, rpc::StreamId streamId)
+{
+    m_contextStreams[ctxId].trackStreams[trackId].push_back(streamId);
+}
+
+void EngineRpcController::removeTrackStreams(rpc::CtxId ctxId, TrackId trackId)
+{
+    auto ctxIt = m_contextStreams.find(ctxId);
+    if (ctxIt == m_contextStreams.end()) {
+        return;
+    }
+
+    auto trackIt = ctxIt->second.trackStreams.find(trackId);
+    if (trackIt == ctxIt->second.trackStreams.end()) {
+        return;
+    }
+
+    for (StreamId streamId : trackIt->second) {
+        channel()->removeStream(streamId);
+    }
+
+    ctxIt->second.trackStreams.erase(trackIt);
+}
+
+void EngineRpcController::removeContextStreams(rpc::CtxId ctxId)
+{
+    auto it = m_contextStreams.find(ctxId);
+    if (it == m_contextStreams.end()) {
+        return;
+    }
+
+    for (StreamId streamId : it->second.streams) {
+        channel()->removeStream(streamId);
+    }
+
+    for (const auto& pair : it->second.trackStreams) {
+        for (StreamId streamId : pair.second) {
+            channel()->removeStream(streamId);
+        }
+    }
+
+    m_contextStreams.erase(it);
 }
 
 void EngineRpcController::onLongRequest(rpc::CtxId ctxId, rpc::MsgCode code, const RequestHandler& h)
