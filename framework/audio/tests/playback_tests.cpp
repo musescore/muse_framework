@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include <map>
 #include <vector>
 
 #include "async/processevents.h"
@@ -44,6 +45,11 @@ using namespace muse::audio::rpc;
 namespace {
 const StreamId STATUS_STREAM_ID = 11;
 const StreamId POSITION_STREAM_ID = 12;
+const StreamId SIGNAL_STREAM_ID = 21;
+const StreamId OTHER_SIGNAL_STREAM_ID = 22;
+
+const TrackId TRACK_ID = 2;
+const TrackId OTHER_TRACK_ID = 3;
 
 MATCHER_P(StreamIdIs, id, "")
 {
@@ -73,6 +79,11 @@ protected:
         ON_CALL(*m_rpcChannel, send(_, _))
         .WillByDefault(Invoke([this](const Msg& msg, const ResponseHandler& onResponse) {
             m_requests.push_back({ msg, onResponse });
+        }));
+
+        ON_CALL(*m_rpcChannel, onNotification(_, _, _))
+        .WillByDefault(Invoke([this](CtxId, MsgCode code, NotificationHandler h) {
+            m_notifications[code] = h;
         }));
 
         m_playback = std::make_shared<Playback>(m_ctx);
@@ -122,6 +133,21 @@ protected:
         ASSERT_TRUE(m_playback->isInited());
     }
 
+    void notify(MsgCode code, const ByteArray& data)
+    {
+        auto it = m_notifications.find(code);
+        ASSERT_TRUE(it != m_notifications.end() && it->second);
+        it->second(make_notification(rpc::ctxId(m_ctx), code, data));
+    }
+
+    void requestSignalChanges(TrackId trackId, StreamId streamId)
+    {
+        m_playback->signalChanges(trackId);
+        async::processMessages();
+
+        respond(MsgCode::GetSignalChanges, RpcPacker::pack(RetVal<StreamId>::make_ok(streamId)));
+    }
+
     void respondPlayerStreams()
     {
         respond(MsgCode::GetPlaybackStatus, RpcPacker::pack(make_ok(), PlaybackStatus::Running, STATUS_STREAM_ID));
@@ -135,6 +161,7 @@ protected:
     std::shared_ptr<Playback> m_playback;
 
     std::vector<Request> m_requests;
+    std::map<MsgCode, NotificationHandler> m_notifications;
 };
 
 TEST_F(Audio_PlaybackTests, Player_IsCreatedOncePerContext)
@@ -212,5 +239,28 @@ TEST_F(Audio_PlaybackTests, Deinit_LateResponsesAreIgnored)
 
     // [THEN] The player state is not changed
     EXPECT_EQ(player->playbackStatus(), PlaybackStatus::Stopped);
+}
+
+TEST_F(Audio_PlaybackTests, TrackRemoved_RemovesTrackStreams)
+{
+    // [GIVEN] The signal changes of two tracks are requested
+    initContext();
+    requestSignalChanges(TRACK_ID, SIGNAL_STREAM_ID);
+    requestSignalChanges(OTHER_TRACK_ID, OTHER_SIGNAL_STREAM_ID);
+
+    // [THEN] Only the stream of the removed track is removed
+    EXPECT_CALL(*m_rpcChannel, removeStream(SIGNAL_STREAM_ID));
+    EXPECT_CALL(*m_rpcChannel, removeStream(OTHER_SIGNAL_STREAM_ID)).Times(0);
+
+    // [WHEN] The engine notifies that the track is removed
+    notify(MsgCode::TrackRemoved, RpcPacker::pack(TRACK_ID));
+    ::testing::Mock::VerifyAndClearExpectations(m_rpcChannel.get());
+
+    // [THEN] The stream of the other track is removed on deinit
+    EXPECT_CALL(*m_rpcChannel, removeStream(OTHER_SIGNAL_STREAM_ID));
+    EXPECT_CALL(*m_rpcChannel, removeStream(SIGNAL_STREAM_ID)).Times(0);
+
+    // [WHEN] Deinit the playback
+    m_playback->deinit();
 }
 }
