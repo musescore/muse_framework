@@ -35,6 +35,7 @@ public:
     void process() override;
 
     void send(const Msg& msg, const Handler& onResponse = nullptr) override;
+    void cancelAllRequests(CtxId ctxId) override;
     void onRequest(MsgCode code, Handler h) override;
     void onNotification(MsgCode code, Handler h) override;
     void listenAll(Handler h) override;
@@ -54,7 +55,12 @@ private:
         Handler listenerAll;
         std::map<MsgCode, Handler> onRequests;
         std::map<MsgCode, Handler> onNotifications;
-        std::map<CallId, Handler> onResponses;
+        struct PendingResponse {
+            CtxId ctxId = 0;
+            Handler handler;
+        };
+
+        std::map<CallId, PendingResponse> onResponses;
 
         // stream
         std::map<StreamId, std::shared_ptr<IRpcStream> > streams;

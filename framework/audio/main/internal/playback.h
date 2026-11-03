@@ -26,12 +26,14 @@
 #include "global/types/retval.h"
 
 #include "modularity/ioc.h"
-#include "common/rpc/irpcchannel.h"
+#include "audio/common/rpc/irpcchannel.h"
 #include "../istartaudiocontroller.h"
 
 #include "../iplayer.h"
 
 namespace muse::audio {
+class Player;
+
 //! NOTE It may not use contextual services,
 // but the playback itself is contextual,
 // because each context (window) has its own playback.
@@ -43,6 +45,7 @@ class Playback : public IPlayback, public async::Asyncable, public Contextable
 public:
     Playback(const muse::modularity::ContextPtr& ctx)
         : Contextable(ctx) {}
+    ~Playback() override;
 
     // Init
     async::Promise<Ret> init() override;
@@ -123,6 +126,9 @@ private:
 
     rpc::CtxId ctxId() const;
 
+    void addTrackStream(TrackId trackId, rpc::StreamId streamId) const;
+    void removeTrackStreams(TrackId trackId) const;
+
     ValCh<bool> m_inited;
 
     async::Channel<TrackId> m_trackAdded;
@@ -138,5 +144,10 @@ private:
     mutable bool m_saveSoundTrackProgressStreamInited = false;
     async::Channel<int64_t, int64_t, SaveSoundTrackStage> m_saveSoundTrackProgressStream;
     mutable rpc::StreamId m_saveSoundTrackProgressStreamId = 0;
+
+    mutable std::shared_ptr<Player> m_player;
+
+    //! NOTE The receive streams are removed on the track removal, on the deinit all streams of the context are removed by the channel
+    mutable std::map<TrackId, std::vector<rpc::StreamId> > m_trackStreams;
 };
 }
