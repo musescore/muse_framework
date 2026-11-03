@@ -64,18 +64,18 @@ int QFontProvider::addSymbolFont(const String& family, const io::path_t& path)
     return addSymbolFont(family, std::make_shared<io::File>(path));
 }
 
-int QFontProvider::addSymbolFont(const String& family, std::shared_ptr<io::IODevice> device)
+int QFontProvider::addSymbolFont(const String& family, std::shared_ptr<io::IODevice> ioDevice)
 {
-    const std::string filePath = device->meta("file_path");
+    const std::string filePath = ioDevice->meta("file_path");
     if (!filePath.empty()) {
         return QFontDatabase::addApplicationFont(QString::fromStdString(filePath));
     }
 
-    if (!device->open(io::IODevice::ReadOnly)) {
+    if (!ioDevice->open(io::IODevice::ReadOnly)) {
         return -1;
     }
 
-    return QFontDatabase::addApplicationFontFromData(device->readAll().toQByteArray());
+    return QFontDatabase::addApplicationFontFromData(ioDevice->readAll().toQByteArray());
 }
 
 double QFontProvider::lineSpacing(const Font& f) const
