@@ -64,7 +64,7 @@ int QFontProvider::addSymbolFont(const String& family, const io::path_t& path)
     return addSymbolFont(family, std::make_shared<io::File>(path));
 }
 
-int QFontProvider::addSymbolFont(const String& family, std::shared_ptr<io::IODevice> ioDevice)
+int QFontProvider::addSymbolFont(const String&, std::shared_ptr<io::IODevice> ioDevice)
 {
     const std::string filePath = ioDevice->meta("file_path");
     if (!filePath.empty()) {
