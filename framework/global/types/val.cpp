@@ -149,7 +149,7 @@ std::optional<int> Val::doToInt() const
         }
         try {
             return std::stoi(str);
-        } catch (const std::exception& e) {
+        } catch (const std::exception&) {
             return std::nullopt;
         }
     }
@@ -179,7 +179,7 @@ std::optional<int64_t> Val::doToInt64() const
         }
         try {
             return std::stoll(str);
-        } catch (const std::exception& e) {
+        } catch (const std::exception&) {
             return std::nullopt;
         }
     }
@@ -209,7 +209,7 @@ std::optional<double> Val::doToDouble() const
         }
         try {
             return std::stod(str);
-        } catch (const std::exception& e) {
+        } catch (const std::exception&) {
             return std::nullopt;
         }
     }
