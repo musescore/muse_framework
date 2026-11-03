@@ -1,8 +1,11 @@
-{
-    "TEST": [
-        {
-            "command": "test://b",
-            "sequences": ["Alt+B"]
-        }
-    ]
-}
+[
+    {
+        "scope": "TEST",
+        "shortcuts": [
+            {
+                "command": "test://b",
+                "sequences": ["Alt+B"]
+            }
+        ]
+    }
+]
