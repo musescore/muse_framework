@@ -396,6 +396,75 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsUnknownEnumValue)
     EXPECT_FALSE(fromInputParams(params, result));
 }
 
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsValueBelowMinimum)
+{
+    //! GIVEN Valid params with the bounded f_val below its minimum
+    Params params = toInputParams(TestCommand {});
+    params.set("f_val", Val(-1.0));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsValueAboveMaximum)
+{
+    //! GIVEN Valid params with the bounded f_val above its maximum
+    Params params = toInputParams(TestCommand {});
+    params.set("f_val", Val(101.0));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsNaNInBoundedField)
+{
+    //! GIVEN Valid params with a NaN value for the bounded f_val,
+    //! arriving as a string, since string inputs can reach float conversion
+    Params params = toInputParams(TestCommand {});
+    params.set("f_val", Val("nan"));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected: NaN compares false against both bounds, so it must not be accepted
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsInfinityInBoundedField)
+{
+    //! GIVEN Valid params with an infinity value for the bounded f_val
+    Params params = toInputParams(TestCommand {});
+    params.set("f_val", Val("inf"));
+
+    //! DO convert from params
+    TestCommand result;
+
+    //! CHECK rejected
+    EXPECT_FALSE(fromInputParams(params, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesOnTheBounds)
+{
+    //! GIVEN Valid params with f_val exactly on the minimum, then on the maximum
+    Params params = toInputParams(TestCommand {});
+    params.set("f_val", Val(0.0));
+
+    //! DO convert from params
+    TestCommand result;
+    ASSERT_TRUE(fromInputParams(params, result));
+    EXPECT_EQ(result.fVal, 0.0f);
+
+    params.set("f_val", Val(100.0));
+    ASSERT_TRUE(fromInputParams(params, result));
+    EXPECT_EQ(result.fVal, 100.0f);
+}
+
 TEST_F(RCommand_TypedCommandTests, EnumContract_RoundTrip)
 {
     EXPECT_EQ(Contract<TestEnum>::str_val(TestEnum::Value2), "value2");

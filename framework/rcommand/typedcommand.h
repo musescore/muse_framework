@@ -20,7 +20,12 @@
 #pragma once
 
 #include <tuple>
+
+#include "global/stringutils.h"
+
 #include "commandtypes.h"
+
+#include "log.h"
 
 namespace muse::rcommand {
 // concepts --------
@@ -57,6 +62,63 @@ concept HasAvailabilities = TypedCommand<C> && requires(const C& c) {
 // *INDENT-ON*
 
 // data fields --------
+enum class ConvertPolicy {
+    StrictCompliance,
+    WarningUnknown,
+    IgnoreUnknown,
+};
+
+struct ConvertResult {
+    Ret ret;
+    std::vector<std::string> unknownParams; // Available in params, not in the schema
+    std::vector<std::string> missingParams; // Required, but not available
+    std::vector<std::string> invalidParams; // Available, but not converted to the target type
+
+    operator bool() const
+    {
+        return ret.success();
+    }
+
+    void applyPolicy(ConvertPolicy policy)
+    {
+        // missing/invalid params are always an error,
+        // unknown params are an error only for StrictCompliance
+        const bool ok = missingParams.empty()
+                        && invalidParams.empty()
+                        && (policy != ConvertPolicy::StrictCompliance || unknownParams.empty());
+
+        ret = ok ? make_ok() : muse::make_ret(Ret::Code::BadArgs, infoAsString());
+    }
+
+    void printResult(ConvertPolicy policy) const
+    {
+        if (ret) {
+            if (policy == ConvertPolicy::WarningUnknown) {
+                if (!unknownParams.empty()) {
+                    LOGW() << "convert success, but unknown params: " << strings::join(unknownParams, ", ");
+                    return;
+                }
+            }
+            LOGD() << "convert success, info: " + infoAsString();
+        } else {
+            LOGE() << "convert failed, info: " + infoAsString();
+        }
+    }
+
+    std::string infoAsString(const std::vector<std::string>& info) const
+    {
+        return info.empty() ? "none" : strings::join(info, ", ");
+    }
+
+    std::string infoAsString() const
+    {
+        std::stringstream ss;
+        ss << "unknown params: " << infoAsString(unknownParams)
+           << ", missing params: " << infoAsString(missingParams)
+           << ", invalid params: " << infoAsString(invalidParams);
+        return ss.str();
+    }
+};
 
 enum class FieldType {
     Required,
@@ -105,7 +167,7 @@ DataType dataType()
         return DataType::Double;
     } else if constexpr (std::is_same<T, std::string>::value) {
         return DataType::String;
-    } else if constexpr (std::is_enum<T>::value) {  // enum as string!!
+    } else if constexpr (std::is_enum<T>::value) {     // enum as string!!
         return DataType::String;
     } else if constexpr (std::is_same<T, std::vector<T> >::value) {
         return DataType::List;
@@ -182,11 +244,77 @@ bool fromVal(S& o, T S::* member, const Val& v)
 template<typename S, typename T>
 bool fromVal(S& o, const Field<S, T>& f, const Val& v)
 {
-    if (v.isNull()) {
-        return (f.type == FieldType::Required) ? false : true;
-    } else {
-        return fromVal(o, f.member, v);
+    return fromVal(o, f.member, v);
+}
+
+template<typename T>
+bool isWithinBounds(const T& value, const std::optional<T>& min, const std::optional<T>& max)
+{
+    //! NOTE The comparisons are negated on purpose.
+    //! For NaN both `value < min` and `value > max` are false, so checking only
+    //! "below the minimum" / "above the maximum" would let NaN through.
+    //! Requiring the value to be inside the bounds rejects it, because `NaN >= min` is false.
+    if (min && !(value >= *min)) {
+        return false;
     }
+    if (max && !(value <= *max)) {
+        return false;
+    }
+    return true;
+}
+
+template<typename S, typename T>
+void convert(S& o, const Field<S, T>& f, const Params& params, ConvertResult& res)
+{
+    if (params.find(f.key) == params.end()) {
+        if (f.type == FieldType::Required) {
+            res.missingParams.push_back(std::string(f.key));
+        }
+        return;
+    }
+
+    const Val& v = params.at(f.key);
+
+    if (v.isNull()) {
+        if (f.type == FieldType::Required) {
+            res.invalidParams.push_back(std::string(f.key));
+        }
+        return;
+    }
+
+    bool ok = fromVal(o, f.member, v);
+    if (!ok) {
+        res.invalidParams.push_back(std::string(f.key));
+        return;
+    }
+
+    if (!isWithinBounds(o.*f.member, f.min, f.max)) {
+        res.invalidParams.push_back(std::string(f.key));
+    }
+}
+
+template<typename F>
+constexpr auto keysOf(const F& fields)
+{
+    std::array<std::string_view, std::tuple_size_v<F> > keys{};
+    std::apply([&keys](const auto&... f) {
+        std::size_t i = 0;
+        ((keys[i++] = f.key), ...);
+    }, fields);
+    return keys;
+}
+
+template<typename F>
+std::vector<std::string> unknownKeys(const Params& params, const F& fields)
+{
+    const auto keys = keysOf(fields);
+    std::vector<std::string> unknown;
+    for (const auto& [key, value] : params) {
+        if (std::find(keys.begin(), keys.end(), std::string_view(key)) == keys.end()) {
+            unknown.push_back(key);
+        }
+    }
+    return unknown;
 }
 
 template<typename S, typename T>
@@ -201,7 +329,34 @@ Arg makeArg(const Field<S, T>& f)
     }
     return arg;
 }
-} // namespace internal
+
+template<typename O, typename F>
+Params toParams(const O& o, const F& fields)
+{
+    Params params;
+    std::apply([&](const auto&... f) {
+        (params.emplace(f.key, internal::toVal(o, f.member)), ...);
+    }, fields);
+    return params;
+}
+
+template<typename O, typename F>
+ConvertResult fromParams(const Params& params, O& o, const F& fields, ConvertPolicy policy)
+{
+    ConvertResult res;
+    std::apply([&](const auto&... f) {
+        ((internal::convert(o, f, params, res)), ...);
+    }, fields);
+
+    res.unknownParams = internal::unknownKeys(params, fields);
+
+    res.applyPolicy(policy);
+
+    res.printResult(policy);
+
+    return res;
+}
+}     // namespace internal
 
 // command info --------
 
@@ -251,40 +406,24 @@ CommandInfo makeCommandInfo()
 template<HasInput C>
 Params toInputParams(const C& o)
 {
-    Params params;
-    std::apply([&](const auto&... f) {
-        (params.emplace(f.key, internal::toVal(o, f.member)), ...);
-    }, C::input);
-    return params;
+    return internal::toParams(o, C::input);
 }
 
 template<HasInput C>
-bool fromInputParams(const Params& params, C& o)
+ConvertResult fromInputParams(const Params& params, C& o, ConvertPolicy policy = ConvertPolicy::StrictCompliance)
 {
-    bool ok = true;
-    std::apply([&](const auto&... f) {
-        ((ok = ok && internal::fromVal(o, f, params.at(f.key))), ...);
-    }, C::input);
-    return ok;
+    return internal::fromParams(params, o, C::input, policy);
 }
 
 template<HasOutput C>
 Params toOutputParams(const typename C::Output& o)
 {
-    Params params;
-    std::apply([&](const auto&... f) {
-        (params.emplace(f.key, internal::toVal(o, f.member)), ...);
-    }, C::output);
-    return params;
+    return internal::toParams(o, C::output);
 }
 
 template<HasOutput C>
-bool fromOutputParams(const Params& params, typename C::Output& o)
+ConvertResult fromOutputParams(const Params& params, typename C::Output& o, ConvertPolicy policy = ConvertPolicy::StrictCompliance)
 {
-    bool ok = true;
-    std::apply([&](const auto&... f) {
-        ((ok = ok && internal::fromVal(o, f, params.at(f.key))), ...);
-    }, C::output);
-    return ok;
+    return internal::fromParams(params, o, C::output, policy);
 }
 }

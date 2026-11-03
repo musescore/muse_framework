@@ -107,8 +107,9 @@ public:
         onRequest(client, C::id, CallBack([callback](const Request& request) {
             C command;
             if constexpr (HasInput<C>) {
-                if (!fromInputParams(request.params, command)) {
-                    return make_response(request, muse::make_ret(Ret::Code::BadArgs));
+                ConvertResult res = fromInputParams(request.params, command);
+                if (!res) {
+                    return make_response(request, res.ret);
                 }
             }
             return make_response(request, callback(command));
@@ -121,8 +122,9 @@ public:
         onRequest(client, C::id, CallBack([callback](const Request& request) {
             C command;
             if constexpr (HasInput<C>) {
-                if (!fromInputParams(request.params, command)) {
-                    return make_response(request, muse::make_ret(Ret::Code::BadArgs));
+                ConvertResult res = fromInputParams(request.params, command);
+                if (!res) {
+                    return make_response(request, res.ret);
                 }
             }
             RetVal<typename C::Output> rv = callback(command);
