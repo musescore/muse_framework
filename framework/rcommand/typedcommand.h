@@ -62,13 +62,13 @@ concept HasAvailabilities = TypedCommand<C> && requires(const C& c) {
 // *INDENT-ON*
 
 // data fields --------
-enum class ConvertPolicy {
+enum class ConvertParamsPolicy {
     StrictCompliance,
     WarningUnknown,
     IgnoreUnknown,
 };
 
-struct ConvertResult {
+struct ConvertParamsResult {
     Ret ret;
     std::vector<std::string> unknownParams; // Available in params, not in the schema
     std::vector<std::string> missingParams; // Required, but not available
@@ -79,21 +79,21 @@ struct ConvertResult {
         return ret.success();
     }
 
-    void applyPolicy(ConvertPolicy policy)
+    void applyPolicy(ConvertParamsPolicy policy)
     {
         // missing/invalid params are always an error,
         // unknown params are an error only for StrictCompliance
         const bool ok = missingParams.empty()
                         && invalidParams.empty()
-                        && (policy != ConvertPolicy::StrictCompliance || unknownParams.empty());
+                        && (policy != ConvertParamsPolicy::StrictCompliance || unknownParams.empty());
 
         ret = ok ? make_ok() : muse::make_ret(Ret::Code::BadArgs, infoAsString());
     }
 
-    void printResult(ConvertPolicy policy) const
+    void printResult(ConvertParamsPolicy policy) const
     {
         if (ret) {
-            if (policy == ConvertPolicy::WarningUnknown) {
+            if (policy == ConvertParamsPolicy::WarningUnknown) {
                 if (!unknownParams.empty()) {
                     LOGW() << "convert success, but unknown params: " << strings::join(unknownParams, ", ");
                     return;
@@ -264,7 +264,7 @@ bool isWithinBounds(const T& value, const std::optional<T>& min, const std::opti
 }
 
 template<typename S, typename T>
-void convert(S& o, const Field<S, T>& f, const Params& params, ConvertResult& res)
+void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResult& res)
 {
     if (params.find(f.key) == params.end()) {
         if (f.type == FieldType::Required) {
@@ -341,9 +341,9 @@ Params toParams(const O& o, const F& fields)
 }
 
 template<typename O, typename F>
-ConvertResult fromParams(const Params& params, O& o, const F& fields, ConvertPolicy policy)
+ConvertParamsResult fromParams(const Params& params, O& o, const F& fields, ConvertParamsPolicy policy)
 {
-    ConvertResult res;
+    ConvertParamsResult res;
     std::apply([&](const auto&... f) {
         ((internal::convert(o, f, params, res)), ...);
     }, fields);
@@ -410,7 +410,7 @@ Params toInputParams(const C& o)
 }
 
 template<HasInput C>
-ConvertResult fromInputParams(const Params& params, C& o, ConvertPolicy policy = ConvertPolicy::StrictCompliance)
+ConvertParamsResult fromInputParams(const Params& params, C& o, ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
 {
     return internal::fromParams(params, o, C::input, policy);
 }
@@ -422,7 +422,8 @@ Params toOutputParams(const typename C::Output& o)
 }
 
 template<HasOutput C>
-ConvertResult fromOutputParams(const Params& params, typename C::Output& o, ConvertPolicy policy = ConvertPolicy::StrictCompliance)
+ConvertParamsResult fromOutputParams(const Params& params, typename C::Output& o,
+                                     ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
 {
     return internal::fromParams(params, o, C::output, policy);
 }
