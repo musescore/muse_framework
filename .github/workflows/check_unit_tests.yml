@@ -104,17 +104,6 @@ jobs:
           coverage_badge.svg
           coverage_report/
 
-    - name: Push to S3
-      if: ( github.event_name == 'schedule' || inputs.code_coverage ) && github.repository == 'musescore/muse_framework'
-      run: |
-        S3_URL='s3://extensions.musescore.org/test/code_coverage/coverage_badge.svg'
-
-        bash ./buildscripts/ci/tools/s3_push_file.sh \
-          --s3_key '${{ secrets.S3_KEY }}' \
-          --s3_secret '${{ secrets.S3_SECRET }}' \
-          --s3_url "${S3_URL}" \
-          --file_path "coverage_badge.svg"
-
     - name: Prepare ccache files for saving
       id: prepare-save-ccache
       if: always()
