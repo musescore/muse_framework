@@ -59,32 +59,32 @@ using ExtensionUri = Uri;
 //! NOTE Action code is used to perform actions on the extension
 using ExtensionActionCode = std::string;
 
-enum class Type {
+enum class ExtensionType {
     Undefined = 0,
     Form,       // Have UI, controls, user interaction
     Macros,     // Without UI, they just do some script
     Composite   // Composite with some UI and script
 };
 
-static inline Type typeFromString(const std::string& str)
+static inline ExtensionType typeFromString(const std::string& str)
 {
     if (str == "form") {
-        return Type::Form;
+        return ExtensionType::Form;
     } else if (str == "macros") {
-        return Type::Macros;
+        return ExtensionType::Macros;
     } else if (str == "composite") {
-        return Type::Composite;
+        return ExtensionType::Composite;
     }
-    return Type::Undefined;
+    return ExtensionType::Undefined;
 }
 
-static inline std::string typeToString(const Type& type)
+static inline std::string typeToString(const ExtensionType& type)
 {
     switch (type) {
-    case Type::Undefined: return "undefined";
-    case Type::Form: return "form";
-    case Type::Macros: return "macros";
-    case Type::Composite: return "composite";
+    case ExtensionType::Undefined: return "undefined";
+    case ExtensionType::Form: return "form";
+    case ExtensionType::Macros: return "macros";
+    case ExtensionType::Composite: return "composite";
     }
     return std::string();
 }
@@ -96,7 +96,7 @@ enum Filter {
 
 struct Action {
     ExtensionActionCode code;
-    Type type = Type::Undefined;
+    ExtensionType type = ExtensionType::Undefined;
     bool modal = DEFAULT_MODAL;
     bool docked = false; // Legacy QML form hosted in the notation page's right panel.
     String title;
@@ -109,7 +109,7 @@ struct Action {
     int apiversion = DEFAULT_API_VERSION;
     bool legacyPlugin = false;
 
-    bool isValid() const { return type != Type::Undefined && !code.empty(); }
+    bool isValid() const { return type != ExtensionType::Undefined && !code.empty(); }
 };
 
 /*
@@ -135,7 +135,7 @@ manifest.json
 struct Manifest {
     ExtensionUri uri;
     io::path_t path;
-    Type type = Type::Undefined;
+    ExtensionType type = ExtensionType::Undefined;
     String title;
     String description;
     String category;
@@ -150,7 +150,7 @@ struct Manifest {
 
     std::vector<Action> actions;
 
-    bool isValid() const { return type != Type::Undefined && uri.isValid(); }
+    bool isValid() const { return type != ExtensionType::Undefined && uri.isValid(); }
 
     Action action(const ExtensionActionCode& code) const
     {
