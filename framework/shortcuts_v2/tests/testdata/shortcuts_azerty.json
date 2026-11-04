@@ -1,8 +1,11 @@
-{
-    "TEST": [
-        {
-            "command": "test://c",
-            "sequences": ["&", "Num+1"]
-        }
-    ]
-}
+[
+    {
+        "scope": "TEST",
+        "shortcuts": [
+            {
+                "command": "test://c",
+                "sequences": ["&", "Num+1"]
+            }
+        ]
+    }
+]
