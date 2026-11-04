@@ -22,6 +22,7 @@
 
 #include "settings.h"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
