@@ -190,6 +190,15 @@ if(CMAKE_MATCH_3 AND CMAKE_MATCH_3 GREATER_EQUAL 5)
     math(EXPR BADGE_PERCENT "${BADGE_PERCENT} + 1")
 endif()
 
+# Badge color by the shown coverage: red below 50%, yellow below 75%, green from 75%
+if(BADGE_PERCENT LESS 50)
+    set(BADGE_COLOR "#e05d44")
+elseif(BADGE_PERCENT LESS 75)
+    set(BADGE_COLOR "#dfb317")
+else()
+    set(BADGE_COLOR "#4c1")
+endif()
+
 configure_file("${CMAKE_CURRENT_LIST_DIR}/coverage_badge.svg.in" "${BADGE_FILE}" @ONLY)
 
 ###########################################
