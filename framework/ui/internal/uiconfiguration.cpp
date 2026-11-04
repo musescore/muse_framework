@@ -70,9 +70,16 @@ static const Settings::Key UI_MUSICAL_TEXT_FONT_SIZE_KEY("ui", "ui/theme/musical
 static const Settings::Key UI_INTERFACE_SCALE_KEY("ui", "ui/application/interfaceScale");
 static const Settings::Key UI_INTERFACE_SCALE_AUTO_KEY("ui", "ui/application/interfaceScaleAuto");
 static const std::string INTERFACE_SCALE_AUTO("auto");
-// Qt's reference: a point is 1/72 inch, a logical inch 96 px (the device pixel
-// ratio of the screen comes on top of that in Qt itself).
+// A point is 1/72 inch; a logical inch is Qt's logical base DPI of the platform:
+// 72 on macOS (a point is a logical pixel there), 96 elsewhere. The device pixel
+// ratio of the screen comes on top of that in Qt itself. Deliberately the base,
+// not the screen's current logical DPI: that may already include the scale
+// factor applied at start, and the measurement must not depend on its own result.
+#ifdef Q_OS_MACOS
+static constexpr double PX_PER_PT = 72.0 / 72.0;
+#else
 static constexpr double PX_PER_PT = 96.0 / 72.0;
+#endif
 static constexpr double INTERFACE_SCALE_STEP = 0.05;
 static constexpr double INTERFACE_SCALE_MIN = 0.75;
 static constexpr double INTERFACE_SCALE_MAX = 3.0;
@@ -708,6 +715,12 @@ std::string UiConfiguration::interfaceScale() const
 
 void UiConfiguration::setInterfaceScale(const std::string& scale)
 {
+    //! Switching to "auto": measure now. The desktop's font may have changed while
+    //! a fixed scale was set, and init() only measures when "auto" is already on,
+    //! so the next start would use a stale factor.
+    if (scale == INTERFACE_SCALE_AUTO) {
+        settings()->setSharedValue(UI_INTERFACE_SCALE_AUTO_KEY, Val(systemInterfaceScale()));
+    }
     settings()->setSharedValue(UI_INTERFACE_SCALE_KEY, Val(scale));
 }
 
