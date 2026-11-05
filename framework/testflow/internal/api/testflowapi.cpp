@@ -128,9 +128,22 @@ bool TestflowApi::openProject(const QString& name)
         return false;
     }
 
-    dispatcher()->dispatch("file-open", ActionData::make_arg1<QUrl>(QUrl::fromLocalFile(filePath.toQString())));
+    rcommand::Params params;
+    params["url"] = Val(QUrl::fromLocalFile(filePath.toQString()).toString());
+    params["display_name"] = Val(std::string());
+    commandDispatcher()->dispatch(rcommand::make_request(rcommand::Command("command://project/open"), params));
 
     return true;
+}
+
+bool TestflowApi::isCommandEnabled(const QString& command) const
+{
+    return commandsState() ? commandsState()->commandState(rcommand::Command(command.toStdString())).enabled : false;
+}
+
+bool TestflowApi::isCommandChecked(const QString& command) const
+{
+    return commandsState() ? commandsState()->commandState(rcommand::Command(command.toStdString())).checked : false;
 }
 
 void TestflowApi::saveProject(const QString& name)
@@ -143,7 +156,9 @@ void TestflowApi::saveProject(const QString& name)
 
     io::path_t filePath = dir + "/" + QDateTime::currentDateTime().toString("yyMMddhhmmss") + "_" + name;
 
-    dispatcher()->dispatch("file-save-at", ActionData::make_arg1<io::path_t>(filePath));
+    rcommand::Params params;
+    params["path"] = Val(filePath.toStdString());
+    commandDispatcher()->dispatch(rcommand::make_request(rcommand::Command("command://project/save-at"), params));
 }
 
 void TestflowApi::sleep(int msec)
