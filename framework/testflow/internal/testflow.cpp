@@ -47,6 +47,12 @@ void Testflow::init()
         }
 
         m_report.onStepStatusChanged(stepInfo, m_context);
+
+        if (stepInfo.status == StepStatus::Aborted || stepInfo.status == StepStatus::Error) {
+            m_runResult.failedStep = stepInfo.name;
+            m_runResult.ret = ret;
+        }
+
         m_stepStatusChanged.send(stepInfo, ret);
 
         if (stepInfo.status == StepStatus::Aborted) {
@@ -171,7 +177,7 @@ QJSValueList Testflow::parseFuncArgs(const std::string& funcArgs, ScriptEngine* 
     return args;
 }
 
-void Testflow::execScript(const io::path_t& path, const Options& opt)
+ITestflow::RunResult Testflow::execScript(const io::path_t& path, const Options& opt)
 {
     LOGD() << "path: " << path
            << ", context: " << opt.context
@@ -194,7 +200,7 @@ void Testflow::execScript(const io::path_t& path, const Options& opt)
             QTimer::singleShot(1000, [this, path, opt]() {
                 execScript(path, opt);
             });
-            return;
+            return RunResult();
         }
     }
 
@@ -218,23 +224,35 @@ void Testflow::execScript(const io::path_t& path, const Options& opt)
     m_context->setGlobalVal("script_path", path.toQString());
     loadContext(m_context, opt.context, opt.contextVal, m_engine);
 
+    m_runResult = RunResult();
+
     setStatus(Status::Running);
     QString func = opt.func.empty() ? QString("main") : QString::fromStdString(opt.func);
     QJSValueList args = opt.funcArgs.empty() ? QJSValueList() : parseFuncArgs(opt.funcArgs, m_engine);
     Ret ret = m_engine->call(func, args);
-
-    //! NOTE Also maybe abort or error
-    if (status() == Status::Running) {
-        setStatus(Status::Finished);
-    }
-
-    delete m_engine;
-    m_engine = nullptr;
     if (!ret) {
         LOGE() << ret.toString();
     }
 
+    //! NOTE Also maybe abort or error (set by a failed step)
+    if (status() == Status::Running) {
+        setStatus(ret ? Status::Finished : Status::Error);
+    }
+
+    delete m_engine;
+    m_engine = nullptr;
+
     restoreAffectOnServices();
+
+    RunResult result = m_runResult;
+    result.status = status();
+    //! NOTE The failed step error is more precise than the script one
+    if (!result.ret.valid()) {
+        result.ret = ret;
+    }
+    result.reportPath = m_report.reportPath();
+
+    return result;
 }
 
 SpeedMode Testflow::speedMode() const
@@ -269,6 +287,7 @@ int Testflow::intervalMsec() const
 
 void Testflow::runTestCase(const TestCase& testCase)
 {
+    m_runResult.testCasesCount++;
     m_report.beginReport(testCase);
     m_runner.run(testCase);
 }

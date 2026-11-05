@@ -79,7 +79,15 @@ public:
         std::string funcArgs;
     };
 
-    virtual void execScript(const io::path_t& path, const Options& opt = Options()) = 0;
+    struct RunResult {
+        Status status = Status::Undefined;
+        Ret ret;
+        int testCasesCount = 0;
+        QString failedStep;
+        io::path_t reportPath;
+    };
+
+    virtual RunResult execScript(const io::path_t& path, const Options& opt = Options()) = 0;
 
     virtual void runTestCase(const TestCase& testCase) = 0;
     virtual void sleep(int msec) = 0;

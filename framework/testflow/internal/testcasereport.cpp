@@ -133,3 +133,8 @@ void TestCaseReport::onStepStatusChanged(const StepInfo& stepInfo, const ITestCa
 
     m_stream.flush();
 }
+
+io::path_t TestCaseReport::reportPath() const
+{
+    return m_opened ? io::path_t(m_file.fileName()) : io::path_t();
+}
