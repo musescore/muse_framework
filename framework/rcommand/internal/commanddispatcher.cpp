@@ -51,6 +51,7 @@ async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
     auto it = m_clients.find(request.command);
     if (it == m_clients.end()) {
         LOGW() << "command not registered: " << request.command;
+        m_notRegistered.send(request.command);
         return async::make_promise<Response>([request](auto resolve) {
             return resolve(make_response(request, make_ret(Ret::Code::UnknownError)));
         });
@@ -100,6 +101,7 @@ Response CommandDispatcher::dispatch(const Command& command, const Params& param
     auto it = m_clients.find(command);
     if (it == m_clients.end()) {
         LOGW() << "command not registered: " << command;
+        m_notRegistered.send(command);
         return make_response(request, make_ret(Ret::Code::UnknownError));
     }
 
@@ -165,4 +167,9 @@ async::Channel<Command, bool*> CommandDispatcher::preDispatch() const
 async::Channel<Command> CommandDispatcher::postDispatch() const
 {
     return m_postDispatch;
+}
+
+async::Channel<Command> CommandDispatcher::notRegistered() const
+{
+    return m_notRegistered;
 }

@@ -34,6 +34,7 @@ public:
 
     async::Channel<Command, bool* /*allow dispatch*/> preDispatch() const override;
     async::Channel<Command> postDispatch() const override;
+    async::Channel<Command> notRegistered() const override;
 
     // for utests
     Response dispatch(const Command& command, const Params& params = {});
@@ -53,5 +54,6 @@ private:
     std::map<Command, Client> m_clients;
     async::Channel<Command, bool* /*allow dispatch*/> m_preDispatch;
     async::Channel<Command> m_postDispatch;
+    async::Channel<Command> m_notRegistered;
 };
 }

@@ -36,5 +36,6 @@ public:
     MOCK_METHOD(void, unreg, (Commandable * client), (override));
     MOCK_METHOD((async::Channel<Command, bool*>), preDispatch, (), (const, override));
     MOCK_METHOD(async::Channel<Command>, postDispatch, (), (const, override));
+    MOCK_METHOD(async::Channel<Command>, notRegistered, (), (const, override));
 };
 }
