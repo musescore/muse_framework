@@ -32,11 +32,15 @@ target_sources(muse_testflow PRIVATE
     itestflowscriptsrepository.h
     testflowutils.h
     testflowcommands.h
+    testflowcmdline.cpp
+    testflowcmdline.h
 
     internal/testflow.cpp
     internal/testflow.h
     internal/testflowconfiguration.cpp
     internal/testflowconfiguration.h
+    internal/testflowcmdrunner.cpp
+    internal/testflowcmdrunner.h
     internal/testcasecontext.cpp
     internal/testcasecontext.h
     internal/testcaserunner.cpp

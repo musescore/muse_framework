@@ -44,6 +44,12 @@ public:
     io::path_t reportsPath() const override;
     io::path_t drawDataPath() const override;
     io::path_t fileDrawDataPath(const io::path_t& filePath) const override;
+
+    const std::optional<RunRequest>& runRequest() const override;
+    void setRunRequest(const std::optional<RunRequest>& request) override;
+
+private:
+    std::optional<RunRequest> m_runRequest;
 };
 }
 

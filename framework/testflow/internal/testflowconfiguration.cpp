@@ -85,3 +85,13 @@ io::path_t TestflowConfiguration::fileDrawDataPath(const io::path_t& filePath) c
 {
     return drawDataPath() + "/" + io::completeBasename(filePath) + ".json";
 }
+
+const std::optional<RunRequest>& TestflowConfiguration::runRequest() const
+{
+    return m_runRequest;
+}
+
+void TestflowConfiguration::setRunRequest(const std::optional<RunRequest>& request)
+{
+    m_runRequest = request;
+}

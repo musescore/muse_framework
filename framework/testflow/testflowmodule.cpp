@@ -28,6 +28,7 @@
 
 #include "internal/testflow.h"
 #include "internal/testflowconfiguration.h"
+#include "internal/testflowcmdrunner.h"
 
 #include "internal/testflowactionscontroller.h"
 #include "internal/testflowcommandsregister.h"
@@ -92,6 +93,15 @@ void TestflowModule::onInit(const IApplication::RunMode&)
         pr->reg("testflowSavingFilesPath", m_configuration->savingFilesPath());
         pr->reg("testflowReportsPath", m_configuration->reportsPath());
         pr->reg("testflowDrawDataPath", m_configuration->drawDataPath());
+    }
+}
+
+void TestflowModule::onAllInited(const IApplication::RunMode&)
+{
+    const std::optional<RunRequest>& request = m_configuration->runRequest();
+    if (request.has_value()) {
+        m_cmdRunner = std::make_shared<TestflowCmdRunner>();
+        m_cmdRunner->start(request.value());
     }
 }
 

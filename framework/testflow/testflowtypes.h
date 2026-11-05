@@ -22,6 +22,8 @@
 #pragma once
 
 #include <vector>
+#include <optional>
+#include <string>
 #include <QJSValue>
 
 #include "io/path.h"
@@ -159,4 +161,14 @@ inline SpeedMode speedModeFromString(const QString& str)
     }
     return SpeedMode::Undefined;
 }
+
+struct RunRequest {
+    std::string nameOrFile;
+    io::path_t context;
+    std::string contextVal;
+    std::string func;
+    std::string funcArgs;
+    SpeedMode speed = SpeedMode::Undefined;
+    std::optional<int> timeoutSec;
+};
 }

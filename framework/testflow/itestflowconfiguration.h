@@ -22,8 +22,12 @@
 #ifndef MUSE_TESTFLOW_ITESTFLOWCONFIGURATION_H
 #define MUSE_TESTFLOW_ITESTFLOWCONFIGURATION_H
 
+#include <optional>
+
 #include "modularity/imoduleinterface.h"
+
 #include "io/path.h"
+#include "testflowtypes.h"
 
 namespace muse::testflow {
 class ITestflowConfiguration : MODULE_GLOBAL_INTERFACE
@@ -40,6 +44,9 @@ public:
     virtual io::path_t reportsPath() const = 0;
     virtual io::path_t drawDataPath() const = 0;
     virtual io::path_t fileDrawDataPath(const io::path_t& filePath) const = 0;
+
+    virtual const std::optional<RunRequest>& runRequest() const = 0;
+    virtual void setRunRequest(const std::optional<RunRequest>& request) = 0;
 };
 }
 

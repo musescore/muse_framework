@@ -30,6 +30,7 @@ namespace muse::testflow {
 class TestflowConfiguration;
 class Testflow;
 class TestflowActionsController;
+class TestflowCmdRunner;
 class TestflowModule : public modularity::IModuleSetup
 {
 public:
@@ -37,11 +38,13 @@ public:
     void registerExports() override;
     void resolveImports() override;
     void onInit(const IApplication::RunMode&) override;
+    void onAllInited(const IApplication::RunMode&) override;
 
     modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
 
 private:
     std::shared_ptr<TestflowConfiguration> m_configuration;
+    std::shared_ptr<TestflowCmdRunner> m_cmdRunner;
 };
 
 class TestflowContext : public modularity::IContextSetup
