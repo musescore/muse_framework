@@ -21,6 +21,9 @@
  */
 #include "testflowscriptsrepository.h"
 
+#include <QDir>
+#include <QFileInfo>
+
 #include "scriptengine.h"
 #include "testflowtypes.h"
 
@@ -72,4 +75,32 @@ Scripts TestflowScriptsRepository::scripts() const
     }
 
     return scripts;
+}
+
+io::path_t TestflowScriptsRepository::resolveScript(const QString& nameOrFile) const
+{
+    if (nameOrFile.isEmpty()) {
+        return io::path_t();
+    }
+
+    QFileInfo fi(nameOrFile);
+    if (fi.isFile()) {
+        return io::path_t(fi.absoluteFilePath());
+    }
+
+    QStringList candidates = { nameOrFile };
+    if (!nameOrFile.endsWith(".js")) {
+        candidates << nameOrFile + ".js";
+    }
+
+    for (const io::path_t& dir : configuration()->scriptsDirPaths()) {
+        for (const QString& c : candidates) {
+            QFileInfo dfi(QDir(dir.toQString()), c);
+            if (dfi.isFile()) {
+                return io::path_t(dfi.absoluteFilePath());
+            }
+        }
+    }
+
+    return io::path_t();
 }
