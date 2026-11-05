@@ -19,6 +19,12 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
+#include <optional>
+#include <vector>
+#include <array>
+
 #include "rcommand/commandtypes.h"
 
 #include "log.h"
