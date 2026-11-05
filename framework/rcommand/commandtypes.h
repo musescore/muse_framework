@@ -122,36 +122,49 @@ enum class DataType {
     Float,
     Double,
     String,
+    Enum,
     List,
     Map
 };
 
+enum class Presence {
+    Required,
+    Optional,
+};
+
 struct Arg {
-    DataType type = DataType::Undefined;
-    String description;
-    Val min;
-    Val max;
+    std::string description;
+    DataType dataType = DataType::Undefined;
+    Presence presence = Presence::Required;
+    std::optional<ValList> allowedValues; //! NOTE Typically, these are enum values.
+    std::optional<Val> min;
+    std::optional<Val> max;
 
     Arg() = default;
-    Arg(DataType type, const String& description, const Val& min = Val(), const Val& max = Val())
-        : type(type), description(description), min(min), max(max) {}
+
+    Arg(DataType dataType, const String& description,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : description(description.toStdString()), dataType(dataType), min(min), max(max) {}
+
+    Arg(DataType dataType, const std::string& description, Presence presence,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : description(description), dataType(dataType), presence(presence), min(min), max(max) {}
+
+    Arg(DataType dataType, const std::string& description,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : description(description), dataType(dataType), min(min), max(max) {}
 };
 
-struct InputSchema {
-    InputSchema() {}
-    InputSchema(std::map<std::string, Arg> _args)
+struct ArgsSchema {
+    ArgsSchema() {}
+    ArgsSchema(std::map<std::string, Arg> _args)
         : args(std::move(_args)) {}
 
     std::map<std::string, Arg> args;
 };
 
-struct OutputSchema {
-    OutputSchema() {}
-    OutputSchema(std::map<std::string, Arg> _args)
-        : args(std::move(_args)) {}
-
-    std::map<std::string, Arg> args;
-};
+using InputSchema = ArgsSchema;
+using OutputSchema = ArgsSchema;
 
 enum class Checkable {
     No = 0,
@@ -188,6 +201,16 @@ enum class Availability {
 DECLARE_FLAGS(Availabilities, Availability)
 DECLARE_OPERATORS_FOR_FLAGS(Availabilities)
 
+//! NOTE Annotation for a command action (used in MCP)
+enum class Annotation {
+    ReadOnly = 1 << 0,        // Does not change state (getters...)
+    Destructive = 1 << 1,     // Can irreversibly change state (delete, cut...)
+    Idempotent = 1 << 2,      // A repeated call produces no new effect (getters, selections...)
+    OpenWorld = 1 << 3,       // Interacts with the outside world (network, file system, open, save...)
+};
+DECLARE_FLAGS(Annotations, Annotation)
+DECLARE_OPERATORS_FOR_FLAGS(Annotations)
+
 struct CommandInfo
 {
     Command command;
@@ -197,6 +220,7 @@ struct CommandInfo
     OutputSchema outputSchema;
     Decoration decoration;
     Availabilities availabilities = Availability::All; // All temporarily, when we set the flag for all commands, it needs to be replaced with Availability::Disabled;
+    Annotations annotations = Annotation::Destructive;  // Default to destructive
 
     CommandInfo() = default;
     CommandInfo(const Command& command, const MnemonicString& title, const TranslatableString& description,

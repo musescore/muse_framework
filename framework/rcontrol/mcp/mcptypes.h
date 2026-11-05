@@ -23,6 +23,7 @@
 
 #include "global/types/ret.h"
 #include "global/types/val.h"
+#include "global/types/flags.h"
 
 namespace muse::rcontrol::mcp {
 enum class DataType {
@@ -59,8 +60,8 @@ inline std::string to_string(DataType type)
     case DataType::Object: return "object";
     case DataType::Array: return "array";
     case DataType::Null: return "null";
-    default: return "undefined";
     }
+    return "undefined";
 }
 
 inline std::string to_string(Format format)
@@ -70,25 +71,33 @@ inline std::string to_string(Format format)
     case Format::Int64: return "int64";
     case Format::Float: return "float";
     case Format::Double: return "double";
-    default: return "undefined";
     }
+    return "undefined";
 }
 
 struct Property {
     TypeSchema type;
     std::string description;
-    Val minimum;
-    Val maximum;
+    std::optional<ValList> enumValues;
+    std::optional<Val> minimum;
+    std::optional<Val> maximum;
 };
 
-struct InputSchema {
+struct PropertiesSchema {
     std::string type = "object";
     std::map<std::string, Property> properties;
+    std::vector<std::string> required;
 };
 
-struct OutputSchema {
-    std::string type = "object";
-    std::map<std::string, Property> properties;
+using InputSchema = PropertiesSchema;
+using OutputSchema = PropertiesSchema;
+
+struct Annotations
+{
+    bool readOnly = false;
+    bool destructive = true;      // MCP: destructiveHint defaults to true
+    bool idempotent = false;
+    bool openWorld = true;        // MCP: openWorldHint defaults to true
 };
 
 struct Tool {
@@ -97,6 +106,7 @@ struct Tool {
     std::string description;
     InputSchema inputSchema;
     OutputSchema outputSchema;
+    Annotations annotations;
 };
 
 struct ToolResult {

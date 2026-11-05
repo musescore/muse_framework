@@ -143,6 +143,9 @@ public:
     JsonArray& operator <<(const JsonArray& v) { append(v); return *this; }
     JsonArray& operator <<(const JsonObject& v) { append(v); return *this; }
 
+    static JsonArray fromValList(const ValList& valList);
+    static JsonArray fromStringList(const std::vector<std::string>& stringList);
+
     JsonValue operator [](size_t i) const;
     JsonValueRef operator [](size_t i);
 
