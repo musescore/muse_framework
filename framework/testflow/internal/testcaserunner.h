@@ -67,6 +67,7 @@ private:
         int currentStepIdx = -1;
         int finishedCount = 0;
         QString lastStepName;
+        bool stopped = false;
         QEventLoop loop;
 
         void reset()
@@ -77,6 +78,7 @@ private:
             currentStepIdx = -1;
             finishedCount = 0;
             lastStepName.clear();
+            stopped = false;
             if (loop.isRunning()) {
                 loop.quit();
             }
