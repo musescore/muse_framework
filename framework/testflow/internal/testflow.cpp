@@ -66,6 +66,20 @@ void Testflow::init()
         m_report.endReport(aborted);
     });
 
+    //! NOTE A script that dispatches an unknown action or command is out of date,
+    //! fail the current step instead of silently doing nothing
+    if (actionsDispatcher()) {
+        actionsDispatcher()->notRegistered().onReceive(this, [this](const actions::ActionCode& code) {
+            onNotRegistered(QString("not registered action: ") + QString::fromStdString(code));
+        });
+    }
+
+    if (commandDispatcher()) {
+        commandDispatcher()->notRegistered().onReceive(this, [this](const rcommand::Command& command) {
+            onNotRegistered(QString("not registered command: ") + QString::fromStdString(command.toString()));
+        });
+    }
+
     setStatus(Status::Undefined);
     setSpeedMode(SpeedMode::Default);
 }
@@ -357,6 +371,16 @@ ITestCaseContextPtr Testflow::context() const
 TestflowInteractivePtr Testflow::testflowInteractive() const
 {
     return m_testflowInteractive;
+}
+
+void Testflow::onNotRegistered(const QString& what)
+{
+    if (!m_engine || status() != Status::Running) {
+        return;
+    }
+
+    LOGE() << what;
+    m_engine->throwError(what);
 }
 
 void Testflow::setStatus(Status st)
