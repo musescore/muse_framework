@@ -23,6 +23,8 @@
 
 #include <qqmlintegration.h>
 
+#include <map>
+
 #include <QObject>
 #include <QString>
 
@@ -33,6 +35,8 @@
 #include "abstracttoolbarmodel.h"
 
 #include "modularity/ioc.h"
+
+#include "global/iapplication.h"
 
 #include "rcommand/commandtypes.h"
 #include "rcommand/icommanddispatcher.h"
@@ -77,6 +81,8 @@ class ToolBarItem : public QObject, public Contextable, public async::Asyncable
     Q_PROPERTY(QList<MenuItem*> menuItems READ menuItems NOTIFY menuItemsChanged)
     Q_PROPERTY(bool isMenuSecondary READ isMenuSecondary NOTIFY isMenuSecondaryChanged)
 
+    GlobalInject<IApplication> application;
+
     ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
@@ -118,7 +124,7 @@ public:
     ToolBarItem(const rcommand::CommandInfo& info, ToolBarItemType::Type type, QObject* parent = nullptr);
     void setCommandInfo(const rcommand::CommandInfo& info);
     rcommand::CommandInfo commandInfo() const;
-    void setCommand(const rcommand::Command& command);
+    void setCommand(const rcommand::Command& command, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     rcommand::Command command() const;
     void setParams(const rcommand::Params& params);
     rcommand::Params params() const;
@@ -170,10 +176,12 @@ private:
     bool selected_property() const;
     int type_property() const;
 
+    std::string intent() const;
+
     ToolBarItemType::Type m_type = ToolBarItemType::ACTION;
 
     QString m_id;
-    std::string m_intent;
+    std::map<Qt::KeyboardModifiers, std::string> m_intents;
     MnemonicString m_title;
     TranslatableString m_description;
     bool m_showTitle = false;
