@@ -61,6 +61,15 @@ concept EnumContract = requires {
 
 template<EnumContract C>
 struct BaseContract {
+    static std::vector<std::string> str_vals()
+    {
+        std::vector<std::string> result;
+        for (const auto& row : C::table) {
+            result.push_back(std::string(row.sval));
+        }
+        return result;
+    }
+
     static std::string str_val(decltype(C::def) eval)
     {
         for (const auto& row : C::table) {

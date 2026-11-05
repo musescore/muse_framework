@@ -59,6 +59,17 @@ concept HasAvailabilities = TypedCommand<C> && requires(const C& c) {
     { C::availabilities } -> std::convertible_to<const Availabilities&>;
 };
 
+// For bug detection
+template<typename C>
+concept HasAvailability = TypedCommand<C> && requires(const C& c) {
+    C::availability;
+};
+
+template<typename C>
+concept HasAnnotations = TypedCommand<C> && requires(const C& c) {
+    { C::annotations } -> std::convertible_to<const Annotations&>;
+};
+
 // *INDENT-ON*
 
 // data fields --------
@@ -120,11 +131,6 @@ struct ConvertParamsResult {
     }
 };
 
-enum class FieldType {
-    Required,
-    Optional,
-};
-
 template<typename S, typename T>
 struct Field {
     std::string_view key;
@@ -132,16 +138,19 @@ struct Field {
     std::string_view description;
     std::optional<T> min;
     std::optional<T> max;
-    FieldType type = FieldType::Required;
+    Presence presence = Presence::Required;
 
     constexpr Field(std::string_view key, T S::* member, std::string_view description
-                    , FieldType type = FieldType::Required)
-        : key(key), member(member), description(description), type(type) {}
+                    , Presence presence = Presence::Required)
+        : key(key), member(member), description(description), presence(presence) {}
 
     constexpr Field(std::string_view key, T S::* member, std::string_view description,
-                    const T& min, const T& max, FieldType type = FieldType::Required)
-        : key(key), member(member), description(description), min(min), max(max), type(type) {}
+                    const T& min, const T& max, Presence presence = Presence::Required)
+        : key(key), member(member), description(description), min(min), max(max), presence(presence) {}
 };
+
+template<typename S, typename ... T>
+using FieldsScheme = std::tuple<Field<S, T>...>;
 
 // enum contract
 template<typename E>
@@ -167,8 +176,8 @@ DataType dataType()
         return DataType::Double;
     } else if constexpr (std::is_same<T, std::string>::value) {
         return DataType::String;
-    } else if constexpr (std::is_enum<T>::value) {     // enum as string!!
-        return DataType::String;
+    } else if constexpr (std::is_enum<T>::value) {
+        return DataType::Enum;
     } else if constexpr (std::is_same<T, std::vector<T> >::value) {
         return DataType::List;
     } else if constexpr (std::is_same<T, std::map<std::string, T> >::value) {
@@ -267,7 +276,7 @@ template<typename S, typename T>
 void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResult& res)
 {
     if (params.find(f.key) == params.end()) {
-        if (f.type == FieldType::Required) {
+        if (f.presence == Presence::Required) {
             res.missingParams.push_back(std::string(f.key));
         }
         return;
@@ -276,7 +285,7 @@ void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResu
     const Val& v = params.at(f.key);
 
     if (v.isNull()) {
-        if (f.type == FieldType::Required) {
+        if (f.presence == Presence::Required) {
             res.invalidParams.push_back(std::string(f.key));
         }
         return;
@@ -320,7 +329,12 @@ std::vector<std::string> unknownKeys(const Params& params, const F& fields)
 template<typename S, typename T>
 Arg makeArg(const Field<S, T>& f)
 {
-    Arg arg(dataType<T>(), String::fromUtf8(f.description));
+    Arg arg(dataType<T>(), std::string(f.description), f.presence);
+
+    if constexpr (std::is_enum<T>::value) {
+        arg.allowedValues = toValList(Contract<T>::str_vals());
+    }
+
     if (f.min) {
         arg.min = toVal(*f.min);
     }
@@ -396,8 +410,14 @@ CommandInfo makeCommandInfo()
     if constexpr (HasDecoration<C>) {
         info.decoration = C::decoration;
     }
+
+    static_assert(!HasAvailability<C>, "`availability` is not correct, use `availabilities` instead");
     if constexpr (HasAvailabilities<C>) {
         info.availabilities = C::availabilities;
+    }
+
+    if constexpr (HasAnnotations<C>) {
+        info.annotations = C::annotations;
     }
     return info;
 }
