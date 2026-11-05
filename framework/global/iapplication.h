@@ -27,6 +27,7 @@
 #include "types/string.h"
 #include "types/version.h"
 #include "modularity/ioc.h"
+#include "async/channel.h"
 
 #ifndef NO_QT_SUPPORT
 class QObject;
@@ -73,6 +74,10 @@ public:
     virtual void destroyContext(const modularity::ContextPtr& ctx) = 0;
     virtual size_t contextCount() const = 0;
     virtual std::vector<modularity::ContextPtr> contexts() const = 0;
+
+    virtual bool isContextReady(const modularity::ContextPtr& ctx) const = 0;
+    virtual void setContextReady(const modularity::ContextPtr& ctx) = 0;
+    virtual async::Channel<modularity::ContextPtr> contextReady() const = 0;
 
     virtual void processEvents() = 0;
 

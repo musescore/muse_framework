@@ -50,6 +50,10 @@ public:
     size_t contextCount() const override { return 0; }
     std::vector<modularity::ContextPtr> contexts() const override { return {}; }
 
+    bool isContextReady(const modularity::ContextPtr&) const override { return false; }
+    void setContextReady(const modularity::ContextPtr&) override {}
+    async::Channel<modularity::ContextPtr> contextReady() const override { return {}; }
+
     void processEvents() override {}
 
 #ifndef NO_QT_SUPPORT

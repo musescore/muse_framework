@@ -74,6 +74,10 @@ public:
     size_t contextCount() const override;
     std::vector<muse::modularity::ContextPtr> contexts() const override;
 
+    bool isContextReady(const muse::modularity::ContextPtr& ctx) const override;
+    void setContextReady(const muse::modularity::ContextPtr& ctx) override;
+    async::Channel<muse::modularity::ContextPtr> contextReady() const override;
+
     // runtime
     void processEvents() override;
 
@@ -89,6 +93,7 @@ protected:
     struct ContextData {
         muse::modularity::ContextPtr ctxId;
         bool initializing = false;
+        bool ready = false;
         std::shared_ptr<CmdOptions> options;
         std::vector<muse::modularity::IContextSetup*> setups;
 
@@ -114,6 +119,7 @@ protected:
     std::shared_ptr<CmdOptions> m_appOptions;
 
     std::vector<ContextData> m_contexts;
+    async::Channel<muse::modularity::ContextPtr> m_contextReady;
 
     FinishMode m_finishMode = FinishMode::Default;
 };

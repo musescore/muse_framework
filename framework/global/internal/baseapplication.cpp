@@ -274,6 +274,49 @@ std::vector<muse::modularity::ContextPtr> BaseApplication::contexts() const
     return ctxs;
 }
 
+bool BaseApplication::isContextReady(const muse::modularity::ContextPtr& ctx) const
+{
+    IF_ASSERT_FAILED(ctx) {
+        return false;
+    }
+
+    for (const ContextData& c : m_contexts) {
+        if (c.ctxId->id == ctx->id) {
+            return c.ready;
+        }
+    }
+
+    return false;
+}
+
+void BaseApplication::setContextReady(const muse::modularity::ContextPtr& ctx)
+{
+    IF_ASSERT_FAILED(ctx) {
+        return;
+    }
+
+    for (ContextData& c : m_contexts) {
+        if (c.ctxId->id != ctx->id) {
+            continue;
+        }
+
+        if (c.ready) {
+            return;
+        }
+
+        c.ready = true;
+        m_contextReady.send(c.ctxId);
+        return;
+    }
+
+    LOGW() << "Context not found: " << ctx->id;
+}
+
+async::Channel<muse::modularity::ContextPtr> BaseApplication::contextReady() const
+{
+    return m_contextReady;
+}
+
 size_t BaseApplication::contextCount() const
 {
     return m_contexts.size();
