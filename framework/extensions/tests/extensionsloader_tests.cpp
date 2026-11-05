@@ -51,7 +51,7 @@ TEST(ExtensionsLoaderTests, LegacyDockPresentation)
         const Action& action = manifests.front().actions.front();
         EXPECT_EQ(action.docked, type == "dock");
         EXPECT_EQ(action.context, type == "dock" ? PROJECT_OPENED_CONTEXT : ANY_CONTEXT);
-        EXPECT_EQ(action.type, type == "dock" || type == "dialog" ? Type::Form : Type::Macros);
+        EXPECT_EQ(action.type, type == "dock" || type == "dialog" ? ExtensionType::Form : ExtensionType::Macros);
     }
 }
 
