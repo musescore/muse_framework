@@ -196,6 +196,7 @@ enum class Availability {
     API = 1 << 2,
     MCP = 1 << 3,
 
+    UI = Dispatch | Shortcut,
     All = Dispatch | Shortcut | API | MCP
 };
 DECLARE_FLAGS(Availabilities, Availability)

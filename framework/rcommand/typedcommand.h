@@ -152,9 +152,8 @@ struct Field {
 template<typename S, typename ... T>
 using FieldsScheme = std::tuple<Field<S, T>...>;
 
-// enum contract
 template<typename E>
-struct Contract;
+struct EnumContract;
 
 namespace internal {
 template<typename T>
@@ -192,7 +191,7 @@ template<typename T>
 Val toVal(const T& val)
 {
     if constexpr (std::is_enum<T>::value) {
-        return Val(Contract<T>::str_val(val));
+        return Val(EnumContract<T>::str_val(val));
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         return Val(static_cast<int>(val));
     } else if constexpr (std::is_same<T, uint64_t>::value) {
@@ -214,7 +213,7 @@ template<typename T>
 std::optional<T> fromVal(const Val& v)
 {
     if constexpr (std::is_enum<T>::value) {
-        return Contract<T>::enum_val(v.toString());
+        return EnumContract<T>::enum_val(v.toString());
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         auto opt = v.toType<int>();
         if (opt) {
@@ -332,7 +331,7 @@ Arg makeArg(const Field<S, T>& f)
     Arg arg(dataType<T>(), std::string(f.description), f.presence);
 
     if constexpr (std::is_enum<T>::value) {
-        arg.allowedValues = toValList(Contract<T>::str_vals());
+        arg.allowedValues = toValList(EnumContract<T>::str_vals());
     }
 
     if (f.min) {
