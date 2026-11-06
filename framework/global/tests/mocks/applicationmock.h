@@ -59,10 +59,6 @@ public:
     MOCK_METHOD(size_t, contextCount, (), (const, override));
     MOCK_METHOD(std::vector<modularity::ContextPtr>, contexts, (), (const, override));
 
-    MOCK_METHOD(bool, isContextReady, (const modularity::ContextPtr&), (const, override));
-    MOCK_METHOD(void, setContextReady, (const modularity::ContextPtr&), (override));
-    MOCK_METHOD(async::Channel<modularity::ContextPtr>, contextReady, (), (const, override));
-
     MOCK_METHOD(void, processEvents, (), (override));
 };
 }

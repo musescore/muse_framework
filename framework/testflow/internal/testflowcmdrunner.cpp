@@ -25,7 +25,6 @@
 
 #include "../itestflow.h"
 #include "../itestflowscriptsrepository.h"
-#include "../testflowtypes.h"
 
 #include "log.h"
 
@@ -35,42 +34,27 @@ using namespace muse::testflow;
 static constexpr int EXIT_PASSED = 0;
 static constexpr int EXIT_FAILED = 1;
 
-void TestflowCmdRunner::start(const RunRequest& request)
+void TestflowCmdRunner::run(const modularity::ContextPtr& ctx, const RunRequest& request)
 {
+    //! NOTE Only one test case per application run
+    IF_ASSERT_FAILED(!m_started) {
+        return;
+    }
+    m_started = true;
+
     m_request = request;
 
     if (m_request.timeoutSec.has_value()) {
         m_timeoutTimer.setSingleShot(true);
         m_timeoutTimer.setInterval(m_request.timeoutSec.value() * 1000);
         QObject::connect(&m_timeoutTimer, &QTimer::timeout, [this]() {
-            LOGE() << "[testflow] FAILED: timeout " << m_request.timeoutSec.value() << " sec"
-                   << (m_started ? "" : ", the application context did not become ready");
+            LOGE() << "[testflow] FAILED: timeout " << m_request.timeoutSec.value() << " sec";
             finish(false);
         });
         m_timeoutTimer.start();
     }
 
-    //! NOTE The test case runs in the first ready context
-    for (const modularity::ContextPtr& ctx : application()->contexts()) {
-        if (application()->isContextReady(ctx)) {
-            run(ctx);
-            return;
-        }
-    }
-
-    application()->contextReady().onReceive(this, [this](const modularity::ContextPtr& ctx) {
-        run(ctx);
-    });
-}
-
-void TestflowCmdRunner::run(const modularity::ContextPtr& ctx)
-{
-    if (m_started) {
-        return;
-    }
-    m_started = true;
-
-    //! NOTE Let the ready notification finish before the script takes over the event loop
+    //! NOTE Let the caller finish before the script takes over the event loop
     QMetaObject::invokeMethod(qApp, [this, ctx]() {
         exec(ctx);
     }, Qt::QueuedConnection);

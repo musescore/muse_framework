@@ -34,6 +34,7 @@ target_sources(muse_testflow PRIVATE
     testflowcommands.h
     testflowcmdline.cpp
     testflowcmdline.h
+    itestflowcmdrunner.h
 
     internal/testflow.cpp
     internal/testflow.h

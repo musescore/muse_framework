@@ -56,6 +56,7 @@ void TestflowModule::registerExports()
     m_configuration = std::make_shared<TestflowConfiguration>(globalCtx());
 
     globalIoc()->registerExport<ITestflowConfiguration>(mname, m_configuration);
+    globalIoc()->registerExport<ITestflowCmdRunner>(mname, std::make_shared<TestflowCmdRunner>());
 }
 
 void TestflowModule::resolveImports()
@@ -93,15 +94,6 @@ void TestflowModule::onInit(const IApplication::RunMode&)
         pr->reg("testflowSavingFilesPath", m_configuration->savingFilesPath());
         pr->reg("testflowReportsPath", m_configuration->reportsPath());
         pr->reg("testflowDrawDataPath", m_configuration->drawDataPath());
-    }
-}
-
-void TestflowModule::onAllInited(const IApplication::RunMode&)
-{
-    const std::optional<RunRequest>& request = m_configuration->runRequest();
-    if (request.has_value()) {
-        m_cmdRunner = std::make_shared<TestflowCmdRunner>();
-        m_cmdRunner->start(request.value());
     }
 }
 

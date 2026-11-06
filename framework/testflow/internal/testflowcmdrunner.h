@@ -23,29 +23,15 @@
 
 #include <QTimer>
 
-#include "async/asyncable.h"
-#include "modularity/ioc.h"
-#include "global/iapplication.h"
-
-#include "../itestflowconfiguration.h"
-#include "../testflowtypes.h"
+#include "../itestflowcmdrunner.h"
 
 namespace muse::testflow {
-//! NOTE Runs the test case requested from the command line:
-//! waits for the first ready application context, runs the script there,
-//! and exits the application with the result: 0 - passed, 1 - failed.
-class TestflowCmdRunner : public async::Asyncable
+class TestflowCmdRunner : public ITestflowCmdRunner
 {
-    GlobalInject<IApplication> application;
-    GlobalInject<ITestflowConfiguration> configuration;
-
 public:
-    TestflowCmdRunner() = default;
-
-    void start(const RunRequest& request);
+    void run(const modularity::ContextPtr& ctx, const RunRequest& request) override;
 
 private:
-    void run(const modularity::ContextPtr& ctx);
     void exec(const modularity::ContextPtr& ctx);
     void finish(bool passed);
 
