@@ -34,6 +34,7 @@
 #include "progress.h"
 
 class QJsonObject;
+class QLocale;
 class QTranslator;
 
 namespace muse::languages {
@@ -67,6 +68,7 @@ private:
     void loadLanguages();
 
     void setCurrentLanguage(const QString& languageCode);
+    void applyNumberFormat(const QLocale& languageLocale);
     QString effectiveLanguageCode(QString languageCode) const;
 
     Ret loadLanguage(Language& lang);

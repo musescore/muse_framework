@@ -72,6 +72,7 @@ FocusScope {
     }
 
     function clear() {
+        prv.userIsEditing = false
         valueInput.text = ""
         currentText = ""
         textCleared()
@@ -87,6 +88,38 @@ FocusScope {
         if (!root.activeFocus) {
             root.forceActiveFocus()
         }
+    }
+
+    //! Ends the typing session and shows currentText again; call on commits
+    //! that do not change focus, e.g. a spinbox arrow step
+    function endEditing() {
+        prv.userIsEditing = false
+        prv.syncText()
+    }
+
+    QtObject {
+        id: prv
+
+        //! While typing, external currentText changes must not rewrite the
+        //! field under the cursor; endEditing() re-syncs it on commit
+        property bool userIsEditing: false
+
+        function syncText() {
+            var newText = root.currentText === undefined ? "" : root.currentText
+            if (valueInput.text !== newText) {
+                valueInput.text = newText
+            }
+        }
+    }
+
+    onCurrentTextChanged: {
+        if (!prv.userIsEditing) {
+            prv.syncText()
+        }
+    }
+
+    Component.onCompleted: {
+        prv.syncText()
     }
 
     onActiveFocusChanged: {
@@ -180,7 +213,8 @@ FocusScope {
             placeholderTextColor: Utils.colorWithAlpha(ui.theme.fontPrimaryColor, 0.3)
             visible: !root.isIndeterminate || activeFocus
 
-            text: root.currentText === undefined ? "" : root.currentText
+            // No `text:` binding on purpose: prv.syncText() applies currentText
+            // imperatively, so typing is never interrupted by reformatting
 
             ShortcutOverrideModel {
                 id: shortcutOverrideModel
@@ -241,6 +275,8 @@ FocusScope {
                     selectAll()
                 } else {
                     deselect()
+                    // Qt skips editingFinished when the text is unacceptable
+                    root.endEditing()
                 }
             }
 
@@ -253,6 +289,8 @@ FocusScope {
             }
 
             onTextEdited: {
+                prv.userIsEditing = true
+
                 if (!acceptableInput) {
                     return
                 }
@@ -261,7 +299,9 @@ FocusScope {
             }
 
             onEditingFinished: {
+                prv.userIsEditing = false
                 root.textEditingFinished(valueInput.text)
+                prv.syncText()
             }
         }
 

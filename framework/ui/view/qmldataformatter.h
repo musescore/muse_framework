@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QObject>
+#include <QVariant>
 #include <qqmlintegration.h>
 
 namespace muse::ui {
@@ -34,6 +35,19 @@ class QmlDataFormatter : public QObject
 public:
     explicit QmlDataFormatter(QObject* parent = nullptr);
 
+    //! Locale-aware display formatting, keeping the locale's group separators
     Q_INVOKABLE QString formatReal(double value, int decimals = 2) const;
+
+    //! Like formatReal, but without group separators; use for editable fields
+    Q_INVOKABLE QString formatRealForEdit(double value, int decimals = 2) const;
+
+    //! Locale-aware parse of user input. Returns the number, or an invalid
+    //! QVariant (undefined in QML) for empty/partial/unparseable text.
+    //! decimals >= 0 rounds the result.
+    Q_INVOKABLE QVariant parseReal(const QString& text, int decimals = -1) const;
+
+    Q_INVOKABLE double roundReal(double value, int decimals = 2) const;
+
+    Q_INVOKABLE int decimalsForStep(double step) const;
 };
 }

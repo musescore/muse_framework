@@ -34,25 +34,53 @@ QmlDataFormatter::QmlDataFormatter(QObject* parent)
 
 QString QmlDataFormatter::formatReal(double value, int decimals) const
 {
-    QLocale locale;
-    QString formatted = locale.toString(value, 'f', decimals);
-    if (decimals > 0) {
-        // Remove trailing zeros after the decimal separator
-        QString decSepStr = locale.decimalPoint();
-        QChar decSep = decSepStr.isEmpty() ? QChar('.') : decSepStr.at(0);
-        int decPos = formatted.indexOf(decSep);
-        if (decPos != -1) {
-            int last = formatted.length() - 1;
-            // Remove trailing zeros
-            while (last > decPos && formatted[last] == '0') {
-                --last;
-            }
-            // Remove trailing decimal separator if needed
-            if (last == decPos) {
-                --last;
-            }
-            formatted = formatted.left(last + 1);
-        }
+    return DataFormatter::formatLocalizedReal(value, decimals).toQString();
+}
+
+QString QmlDataFormatter::formatRealForEdit(double value, int decimals) const
+{
+    return DataFormatter::formatLocalizedReal(value, decimals, true).toQString();
+}
+
+QVariant QmlDataFormatter::parseReal(const QString& text, int decimals) const
+{
+    const QLocale locale;
+    QString str = text.trimmed();
+
+    // Group separators are display-only; drop them, including the space
+    // variants that space-grouping locales may paste in
+    const QString groupSep = locale.groupSeparator();
+    str.remove(groupSep);
+    if (!groupSep.isEmpty() && groupSep.at(0).isSpace()) {
+        str.remove(QChar(' '));
+        str.remove(QChar(0x00A0));
+        str.remove(QChar(0x202F));
     }
-    return formatted;
+
+    const QString decSep = locale.decimalPoint();
+    if (str.endsWith(decSep)) {
+        str.chop(decSep.size());
+    }
+
+    if (str.isEmpty() || str == "-" || str == "+") {
+        return QVariant();
+    }
+
+    bool ok = false;
+    const double value = locale.toDouble(str, &ok);
+    if (!ok) {
+        return QVariant();
+    }
+
+    return decimals >= 0 ? DataFormatter::roundDouble(value, decimals) : value;
+}
+
+double QmlDataFormatter::roundReal(double value, int decimals) const
+{
+    return DataFormatter::roundDouble(value, decimals);
+}
+
+int QmlDataFormatter::decimalsForStep(double step) const
+{
+    return DataFormatter::decimalsForStep(step);
 }
