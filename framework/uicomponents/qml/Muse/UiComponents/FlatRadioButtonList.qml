@@ -32,6 +32,7 @@ RadioButtonGroup {
     property var currentValue: undefined
 
     property NavigationPanel navigationPanel: null
+    property string navigationNamePrefix: "FlatRadioButtonList_"
     property int navigationRowStart: 0
     readonly property int navigationRowEnd: root.navigationRowStart + root.count
     property string accessibleName: ""
@@ -67,7 +68,7 @@ RadioButtonGroup {
         toolTipDescription: modelData.description ?? ""
         toolTipShortcut: modelData.shortcuts ?? ""
 
-        navigation.name: "FlatRadioButtonList_" + (Boolean(text) ? text : modelData.title)
+        navigation.name: root.navigationNamePrefix + (Boolean(text) ? text : modelData.title)
         navigation.panel: root.navigationPanel
         navigation.row: root.navigationRowStart + 1 + index
         navigation.accessible.name: root.accessibleName + " " + (Boolean(text) ? text : modelData.title)
