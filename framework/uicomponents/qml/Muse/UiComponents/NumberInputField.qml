@@ -115,6 +115,8 @@ FocusScope {
         readOnly: root.maxValue === 0
         text: prv.pad(root.value)
 
+        renderType: Text.NativeRendering
+
         function textAsInt() {
             return textField.text.length > 0 ? parseInt(textField.text) : 0
         }

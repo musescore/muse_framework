@@ -182,6 +182,8 @@ FocusScope {
 
             text: root.currentText === undefined ? "" : root.currentText
 
+            renderType: Text.NativeRendering
+
             ShortcutOverrideModel {
                 id: shortcutOverrideModel
                 // Left/right should not trigger navigation - override them...
