@@ -174,6 +174,7 @@ qt_add_qml_module(muse_uicomponents_qml
         Utils.mjs
         ValueAdjustControl.qml
         ValueList.qml
+        ValueTooltip.qml
         VisibilityBox.qml
         VisibilityControls.qml
         StyledTableView.qml
