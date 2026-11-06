@@ -191,12 +191,12 @@ struct Decoration {
 
 enum class Availability {
     Disabled = 0,
-    Dispatch = 1 << 0,  // If only dispatch is available, then the command is essentially internal.
+    Internal = 1 << 0,
     Shortcut = 1 << 1,
     Extension = 1 << 2,
     MCP = 1 << 3,
 
-    UI = Dispatch | Shortcut,
+    UI = Internal | Shortcut,
     API = Extension | MCP,
     All = UI | API
 };
@@ -205,6 +205,7 @@ DECLARE_OPERATORS_FOR_FLAGS(Availabilities)
 
 //! NOTE Annotation for a command action (used in MCP)
 enum class Annotation {
+    None = 0,                 // Not readonly, not destructive, not idempotent, not open world (select next...)
     ReadOnly = 1 << 0,        // Does not change state (getters...)
     Destructive = 1 << 1,     // Can irreversibly change state (delete, cut...)
     Idempotent = 1 << 2,      // A repeated call produces no new effect (getters, selections...)
