@@ -22,9 +22,16 @@
 
 #pragma once
 
-#include <QObject>
-#include <QVariant>
+#include <string>
+#include <vector>
+
 #include <qqmlintegration.h>
+
+#include <QObject>
+#include <QString>
+#include <QVariant>
+
+#include "global/stringsearch.h"
 
 namespace muse::uicomponents {
 class FilteredFlyoutModel : public QObject
@@ -50,6 +57,8 @@ signals:
 
 private:
     QString m_filterText;
+    std::vector<std::u32string> m_patternTokens;
+    FuzzyMatcher m_matcher;
 
     QVariant m_rawModel;
 
