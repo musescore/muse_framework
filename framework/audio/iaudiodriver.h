@@ -61,6 +61,12 @@ public:
     virtual void close() = 0;
     virtual bool isOpened() const = 0;
 
+    //! NOTE Tells the driver whether audio is currently being played back in real time.
+    //! The driver is kept open for the whole session and simply receives silence when
+    //! nothing is playing, so it cannot tell the difference on its own.
+    //! Drivers may use this to adjust platform specific behaviour; ignored by default.
+    virtual void setLivePlaybackOngoing(bool ongoing) { (void)ongoing; }
+
     virtual const Spec& activeSpec() const = 0;
     virtual async::Channel<Spec> activeSpecChanged() const = 0;
 

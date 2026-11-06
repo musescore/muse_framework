@@ -51,6 +51,8 @@ public:
     void close() override;
     bool isOpened() const override;
 
+    void setLivePlaybackOngoing(bool ongoing) override;
+
     const Spec& activeSpec() const override;
     async::Channel<Spec> activeSpecChanged() const override;
 
@@ -79,6 +81,7 @@ private:
     std::map<unsigned int, std::string> m_outputDevices = {}, m_inputDevices = {};
     mutable std::mutex m_devicesMutex;
     async::Notification m_availableOutputDevicesChanged;
+    bool m_livePlaybackOngoing = false;
 };
 }
 #endif // MUSE_AUDIO_OSXAUDIODRIVER_H
