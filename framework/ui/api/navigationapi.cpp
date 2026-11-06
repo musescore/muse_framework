@@ -221,6 +221,10 @@ QJSValue NavigationApi::sections() const
 QJSValue NavigationApi::panels(const QString& sectionName) const
 {
     const INavigationSection* s = navigation()->findSection(sectionName.toStdString());
+    if (!s) {
+        return engine()->newArray(0);
+    }
+
     QJSValue arr = engine()->newArray(s->panels().size());
     quint32 i = 0;
     for (const INavigationPanel* p : s->panels()) {
@@ -234,6 +238,10 @@ QJSValue NavigationApi::panels(const QString& sectionName) const
 QJSValue NavigationApi::controls(const QString& sectionName, const QString& panelName) const
 {
     const INavigationPanel* p = navigation()->findPanel(sectionName.toStdString(), panelName.toStdString());
+    if (!p) {
+        return engine()->newArray(0);
+    }
+
     QJSValue arr = engine()->newArray(p->controls().size());
     quint32 i = 0;
     for (const INavigationControl* c : p->controls()) {
