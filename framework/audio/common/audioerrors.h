@@ -65,6 +65,7 @@ enum class Err {
     InvalidContext = 355,
     InvalidRpcData = 356,
     NoSignalNode = 357,
+    ExportInProgress = 358,
 
     // clock
     InvalidTimeLoop = 360,

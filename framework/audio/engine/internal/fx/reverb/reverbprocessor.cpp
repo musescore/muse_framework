@@ -348,6 +348,12 @@ bool ReverbProcessor::shouldProcessDuringSilence() const
     return false;
 }
 
+//! Clears the reverb tail and delay lines, keeping the settings.
+void ReverbProcessor::resetState()
+{
+    reset();
+}
+
 void ReverbProcessor::process(float* buffer, samples_t sampleCount, samples_t)
 {
     if (m_processor._blockSize != static_cast<int>(sampleCount)) {

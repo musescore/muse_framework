@@ -107,6 +107,26 @@ FxChainPtr AudioFactory::makeTrackFxChain(const TrackId trackId, const AudioFxCh
     return chain;
 }
 
+//! A new fx chain with its own effect instances and the settings of `fxChain`, registered under
+//! `copyId` (not shared with the track that owns `fxChain`).
+FxChainPtr AudioFactory::makeFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const
+{
+    std::vector<IFxProcessorPtr> fxlist = fxResolver()->createFxListCopy(copyId, fxChain, audioEngine()->outputSpec());
+
+    FxChainPtr chain = std::make_shared<FxChain>();
+    chain->setName("FxChain [copy " + std::to_string(copyId) + "]");
+    chain->setFxList(fxlist);
+    chain->setFxChainSpec(fxChain);
+
+    return chain;
+}
+
+//! Releases the effect instances of a chain made by makeFxChainCopy().
+void AudioFactory::releaseFxChainCopy(const TrackId copyId, const AudioFxChain& fxChain) const
+{
+    fxResolver()->releaseFxListCopy(copyId, fxChain);
+}
+
 void AudioFactory::clearAllFx()
 {
     fxResolver()->clearAllFx();
