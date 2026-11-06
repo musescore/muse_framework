@@ -38,6 +38,11 @@ int FontProvider::addSymbolFont(const muse::String& family, std::shared_ptr<io::
     return fontsDatabase()->addFont(FontDataKey(Font::FontFamily(family)), std::move(device));
 }
 
+void FontProvider::removeSymbolFont(int id)
+{
+    UNUSED(id);
+}
+
 double FontProvider::lineSpacing(const muse::draw::Font& f) const
 {
     return fontsEngine()->lineSpacing(f);

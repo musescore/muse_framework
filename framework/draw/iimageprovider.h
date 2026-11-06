@@ -43,7 +43,7 @@ public:
 
     virtual Pixmap scaled(const Pixmap& origin, const Size& s) const = 0;
 
-    virtual IPaintProviderPtr painterForImage(std::shared_ptr<Pixmap> pixmap) = 0;
+    virtual IPaintProviderPtr painterForImage(std::shared_ptr<Pixmap> pixmap, const modularity::ContextPtr& iocCtx) = 0;
 
     virtual void saveAsPng(std::shared_ptr<Pixmap> px, io::IODevice* device) = 0;
 };

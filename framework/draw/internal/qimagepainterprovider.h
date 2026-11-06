@@ -30,11 +30,11 @@ namespace muse::draw {
 class QImagePainterProvider : public QPainterProvider
 {
 public:
-    QImagePainterProvider(std::shared_ptr<Pixmap> px);
+    QImagePainterProvider(std::shared_ptr<Pixmap> px, const modularity::ContextPtr& iocCtx);
     ~QImagePainterProvider();
     bool endTarget(bool endDraw) override;
 
-    static IPaintProviderPtr make(std::shared_ptr<Pixmap> px);
+    static IPaintProviderPtr make(std::shared_ptr<Pixmap> px, const modularity::ContextPtr& iocCtx);
 
 private:
     std::shared_ptr<Pixmap> m_px;

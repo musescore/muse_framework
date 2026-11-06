@@ -32,7 +32,7 @@ public:
 
     Pixmap scaled(const Pixmap& origin, const Size& s) const override;
 
-    IPaintProviderPtr painterForImage(std::shared_ptr<Pixmap> pixmap) override;
+    IPaintProviderPtr painterForImage(std::shared_ptr<Pixmap> pixmap, const modularity::ContextPtr& iocCtx) override;
     void saveAsPng(std::shared_ptr<Pixmap> px, io::IODevice* device) override;
 };
 }

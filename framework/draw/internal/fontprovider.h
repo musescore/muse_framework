@@ -30,8 +30,8 @@
 namespace muse::draw {
 class FontProvider : public IFontProvider, public Contextable
 {
-    GlobalInject<IFontsDatabase> fontsDatabase;
-    GlobalInject<IFontsEngine> fontsEngine;
+    ContextInject<IFontsDatabase> fontsDatabase = { this };
+    ContextInject<IFontsEngine> fontsEngine = { this };
 
 public:
     FontProvider(const modularity::ContextPtr& iocCtx)
@@ -39,6 +39,7 @@ public:
 
     int addSymbolFont(const String& family, const io::path_t& path) override;
     int addSymbolFont(const String& family, std::shared_ptr<io::IODevice> device) override;
+    void removeSymbolFont(int id) override;
 
     double lineSpacing(const Font& f) const override;
     double xHeight(const Font& f) const override;

@@ -33,10 +33,10 @@
 namespace muse::draw {
 class FontMetrics
 {
-    GlobalInject<IFontProvider> fontProvider;
+    ContextInject<IFontProvider> fontProvider;
 
 public:
-    FontMetrics(const Font& font);
+    FontMetrics(const Font& font, const modularity::ContextPtr& iocCtx);
 
     double lineSpacing() const;
     double xHeight() const;
@@ -63,11 +63,11 @@ public:
 
     bool inFont(char32_t ucs4) const;
 
-    static double width(const Font& f, const String& string);
-    static RectF boundingRect(const Font& f, const String& string);
-    static RectF tightBoundingRect(const Font& f, const String& string);
-    static double ascent(const Font& f);
-    static double capHeight(const Font& f);
+    static double width(const Font& f, const String& string, const modularity::ContextPtr& iocCtx);
+    static RectF boundingRect(const Font& f, const String& string, const modularity::ContextPtr& iocCtx);
+    static RectF tightBoundingRect(const Font& f, const String& string, const modularity::ContextPtr& iocCtx);
+    static double ascent(const Font& f, const modularity::ContextPtr& iocCtx);
+    static double capHeight(const Font& f, const modularity::ContextPtr& iocCtx);
 
 private:
     Font m_font;

@@ -43,17 +43,17 @@ Painter::Painter(IPaintProviderPtr provider, const std::string& name)
 }
 
 #ifndef NO_QT_SUPPORT
-Painter::Painter(QPaintDevice* dp, const std::string& name)
+Painter::Painter(QPaintDevice* dp, const std::string& name, const modularity::ContextPtr& iocCtx)
     : m_name(name)
 {
-    m_provider = QPainterProvider::make(dp);
+    m_provider = QPainterProvider::make(dp, iocCtx);
     init();
 }
 
-Painter::Painter(QPainter* qp, const std::string& name, bool ownsQPainter)
+Painter::Painter(QPainter* qp, const std::string& name, const modularity::ContextPtr& iocCtx, bool ownsQPainter)
     : m_name(name)
 {
-    m_provider = QPainterProvider::make(qp, ownsQPainter);
+    m_provider = QPainterProvider::make(qp, iocCtx, ownsQPainter);
     init();
 }
 

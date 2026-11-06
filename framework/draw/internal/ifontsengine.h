@@ -30,7 +30,7 @@
 #include "types/fontstypes.h"
 
 namespace muse::draw {
-class IFontsEngine : MODULE_GLOBAL_INTERFACE
+class IFontsEngine : MODULE_CONTEXT_INTERFACE
 {
     INTERFACE_ID(muse::draw::IFontsEngine)
 public:
