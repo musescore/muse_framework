@@ -83,7 +83,8 @@ public:
     int defaultIntervalMsec() const override;
     int intervalMsec() const override;
 
-    RunResult execScript(const io::path_t& path, const Options& opt = Options()) override;
+    RunResult execScript(const io::path_t& path, const ExecOptions& opt = ExecOptions()) override;
+    bool isInteractive() const override;
 
     void runTestCase(const TestCase& testCase) override;
     void sleep(int msec) override;
@@ -115,6 +116,7 @@ private:
     async::Channel<StepInfo, Ret> m_stepStatusChanged;
     ScriptEngine* m_engine = nullptr;
     RunResult m_runResult;
+    bool m_interactive = true;
     ITestCaseContextPtr m_context = nullptr;
     TestCaseRunner m_runner;
     TestCaseReport m_report;

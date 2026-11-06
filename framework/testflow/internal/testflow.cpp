@@ -191,7 +191,12 @@ QJSValueList Testflow::parseFuncArgs(const std::string& funcArgs, ScriptEngine* 
     return args;
 }
 
-ITestflow::RunResult Testflow::execScript(const io::path_t& path, const Options& opt)
+bool Testflow::isInteractive() const
+{
+    return m_interactive;
+}
+
+ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOptions& opt)
 {
     LOGD() << "path: " << path
            << ", context: " << opt.context
@@ -239,6 +244,7 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const Options&
     loadContext(m_context, opt.context, opt.contextVal, m_engine);
 
     m_runResult = RunResult();
+    m_interactive = opt.interactive;
 
     setStatus(Status::Running);
     QString func = opt.func.empty() ? QString("main") : QString::fromStdString(opt.func);
@@ -257,6 +263,8 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const Options&
     m_engine = nullptr;
 
     restoreAffectOnServices();
+
+    m_interactive = true;
 
     RunResult result = m_runResult;
     result.status = status();

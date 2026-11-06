@@ -162,6 +162,15 @@ inline SpeedMode speedModeFromString(const QString& str)
     return SpeedMode::Undefined;
 }
 
+struct ExecOptions {
+    io::path_t context;
+    std::string contextVal;
+    std::string func;
+    std::string funcArgs;
+
+    bool interactive = true;
+};
+
 struct RunRequest {
     std::string nameOrFile;
     io::path_t context;

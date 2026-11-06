@@ -55,6 +55,11 @@ void TestflowApi::runTestCase(const QJSValue& testCase)
 
 bool TestflowApi::pause(bool immediately)
 {
+    if (!testflow()->isInteractive()) {
+        LOGW() << "[testflow] non-interactive run, pause skipped";
+        return true;
+    }
+
     if (immediately) {
         IInteractive::Result res = interactive()->questionSync("Pause", "Continue?",
                                                                { IInteractive::Button::Continue, IInteractive::Button::Abort });
@@ -73,6 +78,11 @@ bool TestflowApi::pause(bool immediately)
 
 bool TestflowApi::confirm(const QString& msg)
 {
+    if (!testflow()->isInteractive()) {
+        LOGW() << "[testflow] non-interactive run, confirm skipped: " << msg;
+        return true;
+    }
+
     int pauseBtn = int(IInteractive::Button::CustomButton) + 1;
     IInteractive::Result res = interactive()->questionSync("Confirm", msg.toStdString(), {
         interactive()->buttonData(IInteractive::Button::Continue),

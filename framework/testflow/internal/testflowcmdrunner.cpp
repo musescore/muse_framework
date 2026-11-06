@@ -96,11 +96,12 @@ void TestflowCmdRunner::exec(const modularity::ContextPtr& ctx)
         testflow->setSpeedMode(m_request.speed);
     }
 
-    ITestflow::Options opt;
+    ExecOptions opt;
     opt.context = m_request.context;
     opt.contextVal = m_request.contextVal;
     opt.func = m_request.func;
     opt.funcArgs = m_request.funcArgs;
+    opt.interactive = false;
 
     LOGI() << "[testflow] running script: " << scriptPath;
 
