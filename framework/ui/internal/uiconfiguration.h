@@ -91,6 +91,10 @@ public:
     std::string defaultFontFamily() const override;
     int defaultFontSize() const override;
 
+    std::string interfaceScale() const override;
+    void setInterfaceScale(const std::string& scale) override;
+    double systemInterfaceScale() const override;
+
     void resetFonts() override;
 
     void setCustomPhysicalDotsPerInch(std::optional<double> dpi) override;

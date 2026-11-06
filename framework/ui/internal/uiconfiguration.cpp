@@ -20,6 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
+#include <cmath>
+
 #include <QFontDatabase>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -29,6 +32,7 @@
 #include <QApplication>
 
 #include "uiconfiguration.h"
+#include "interfacescale.h"
 #include "global/configreader.h"
 
 #include "internal/baseapplication.h"
@@ -63,6 +67,22 @@ static const Settings::Key UI_MUSICAL_FONT_FAMILY_KEY("ui", "ui/theme/musicalFon
 static const Settings::Key UI_MUSICAL_FONT_SIZE_KEY("ui", "ui/theme/musicalFontSize");
 static const Settings::Key UI_MUSICAL_TEXT_FONT_FAMILY_KEY("ui", "ui/theme/musicalTextFontFamily");
 static const Settings::Key UI_MUSICAL_TEXT_FONT_SIZE_KEY("ui", "ui/theme/musicalTextFontSize");
+static const Settings::Key UI_INTERFACE_SCALE_KEY("ui", "ui/application/interfaceScale");
+static const Settings::Key UI_INTERFACE_SCALE_AUTO_KEY("ui", "ui/application/interfaceScaleAuto");
+static const std::string INTERFACE_SCALE_AUTO("auto");
+// A point is 1/72 inch; a logical inch is Qt's logical base DPI of the platform:
+// 72 on macOS (a point is a logical pixel there), 96 elsewhere. The device pixel
+// ratio of the screen comes on top of that in Qt itself. Deliberately the base,
+// not the screen's current logical DPI: that may already include the scale
+// factor applied at start, and the measurement must not depend on its own result.
+#ifdef Q_OS_MACOS
+static constexpr double PX_PER_PT = 72.0 / 72.0;
+#else
+static constexpr double PX_PER_PT = 96.0 / 72.0;
+#endif
+static constexpr double INTERFACE_SCALE_STEP = 0.05;
+static constexpr double INTERFACE_SCALE_MIN = 0.75;
+static constexpr double INTERFACE_SCALE_MAX = 3.0;
 
 static const int FLICKABLE_MAX_VELOCITY = 4000;
 
@@ -101,6 +121,19 @@ void UiConfiguration::init()
     settings()->setDefaultValue(UI_MUSICAL_TEXT_FONT_FAMILY_KEY, Val("Leland Text"));
     settings()->setDefaultValue(UI_MUSICAL_TEXT_FONT_SIZE_KEY, Val(defaultFontSize()));
     settings()->setDefaultValue(UI_THEMES_KEY, Val(""));
+    settings()->setDefaultValue(UI_INTERFACE_SCALE_KEY, Val(INTERFACE_SCALE_AUTO));
+    settings()->setDefaultValue(UI_INTERFACE_SCALE_AUTO_KEY, Val(0.0));
+
+    //! Remember what "auto" means on this desktop, for the next start: the factor
+    //! has to be known before the application object exists, and the desktop's
+    //! font is only known after.
+    if (interfaceScale() == INTERFACE_SCALE_AUTO) {
+        const double measured = systemInterfaceScale();
+        if (std::abs(measured - settings()->value(UI_INTERFACE_SCALE_AUTO_KEY).toDouble()) > 0.001) {
+            settings()->setSharedValue(UI_INTERFACE_SCALE_AUTO_KEY, Val(measured));
+            LOGI() << "interface scale for this desktop: " << measured << " (from the next start)";
+        }
+    }
 
     settings()->valueChanged(UI_THEMES_KEY).onReceive(this, [this](const Val&) {
         updateThemes();
@@ -673,6 +706,61 @@ std::string UiConfiguration::defaultFontFamily() const
 int UiConfiguration::defaultFontSize() const
 {
     return 12;
+}
+
+std::string UiConfiguration::interfaceScale() const
+{
+    return settings()->value(UI_INTERFACE_SCALE_KEY).toString();
+}
+
+void UiConfiguration::setInterfaceScale(const std::string& scale)
+{
+    //! Switching to "auto": measure now. The desktop's font may have changed while
+    //! a fixed scale was set, and init() only measures when "auto" is already on,
+    //! so the next start would use a stale factor.
+    if (scale == INTERFACE_SCALE_AUTO) {
+        settings()->setSharedValue(UI_INTERFACE_SCALE_AUTO_KEY, Val(systemInterfaceScale()));
+    }
+    settings()->setSharedValue(UI_INTERFACE_SCALE_KEY, Val(scale));
+}
+
+double UiConfiguration::systemInterfaceScale() const
+{
+    //! The font family already follows the desktop (defaultFontFamily()); this is
+    //! the size. Everything else in the interface is laid out in pixels for a
+    //! body font of defaultFontSize() px, so scaling all of it by the same ratio
+    //! keeps the proportions and makes the body text as large as the desktop's.
+    const QFont font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
+    const double px = font.pixelSize() > 0 ? font.pixelSize() : font.pointSizeF() * PX_PER_PT;
+    if (px <= 0) {
+        return 1.0;
+    }
+    const double ratio = std::round(px / defaultFontSize() / INTERFACE_SCALE_STEP) * INTERFACE_SCALE_STEP;
+    return std::clamp(ratio, INTERFACE_SCALE_MIN, INTERFACE_SCALE_MAX);
+}
+
+void muse::ui::applyInterfaceScaleBeforeStart()
+{
+    if (qEnvironmentVariableIsSet("QT_SCALE_FACTOR")) {
+        return; // set from outside: that wins
+    }
+    //! Same file as muse::Settings; organization and application name are set
+    //! by main() before this is called.
+#ifndef Q_OS_MAC
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+#endif
+    QSettings settings;
+    const QString key = QString::fromStdString(UI_INTERFACE_SCALE_KEY.key);
+    const QString mode = settings.value(key, QString::fromStdString(INTERFACE_SCALE_AUTO)).toString();
+    bool fixed = false;
+    double factor = mode.toDouble(&fixed);
+    if (!fixed) {
+        factor = settings.value(QString::fromStdString(UI_INTERFACE_SCALE_AUTO_KEY.key), 0.0).toDouble();
+    }
+    if (factor < INTERFACE_SCALE_MIN || factor > INTERFACE_SCALE_MAX || std::abs(factor - 1.0) < 0.001) {
+        return;
+    }
+    qputenv("QT_SCALE_FACTOR", QByteArray::number(factor, 'f', 2));
 }
 
 void UiConfiguration::resetFonts()
