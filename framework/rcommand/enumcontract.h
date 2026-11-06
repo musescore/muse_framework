@@ -19,7 +19,11 @@
 
 #pragma once
 
-#include <tuple>
+#include <string>
+#include <string_view>
+#include <optional>
+#include <vector>
+#include <array>
 
 #include "rcommand/commandtypes.h"
 
@@ -27,7 +31,7 @@
 
 namespace muse::rcommand {
 template<typename E>
-struct Contract;
+struct EnumContract;
 
 template<typename T>
 concept Enumeration = std::is_enum_v<std::remove_cvref_t<T> >;
@@ -40,27 +44,27 @@ struct EnumEntry {
 };
 
 template<typename E, std::size_t N>
-using Table = std::array<EnumEntry<E>, N>;
+using EnumTable = std::array<EnumEntry<E>, N>;
 
 template<typename E, std::size_t N>
-void accepts_table(const Table<E, N>&);
+void accepts_table(const EnumTable<E, N>&);
 
 template<typename T, typename E>
-concept EnumTable = requires(const std::remove_cvref_t<T>& table) {
+concept IsEnumTable = requires(const std::remove_cvref_t<T>& table) {
     accepts_table<E>(table);
 };
 
 // *INDENT-OFF* // Uncrustify doesn't understand `requires`
 template<typename C>
-concept EnumContract = requires {
+concept IsEnumContract = requires {
     { C::key } -> std::convertible_to<const std::string_view&>;
     { C::def } -> Enumeration;
-    { C::table } -> EnumTable<std::remove_cvref_t<decltype(C::def)>>;
+    { C::table } -> IsEnumTable<std::remove_cvref_t<decltype(C::def)>>;
 };
 // *INDENT-ON*
 
-template<EnumContract C>
-struct BaseContract {
+template<IsEnumContract C>
+struct BaseEnumContract {
     static std::vector<std::string> str_vals()
     {
         std::vector<std::string> result;
@@ -109,5 +113,5 @@ struct BaseContract {
     }
 };
 
-#define DECLARE_CONTRACT(E, C) template<> struct Contract<E> : BaseContract<C> {};
+#define DECLARE_ENUM_CONTRACT(E, C) template<> struct EnumContract<E> : BaseEnumContract<C> {};
 }

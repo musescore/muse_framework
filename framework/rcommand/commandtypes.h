@@ -193,10 +193,12 @@ enum class Availability {
     Disabled = 0,
     Dispatch = 1 << 0,  // If only dispatch is available, then the command is essentially internal.
     Shortcut = 1 << 1,
-    API = 1 << 2,
+    Extension = 1 << 2,
     MCP = 1 << 3,
 
-    All = Dispatch | Shortcut | API | MCP
+    UI = Dispatch | Shortcut,
+    API = Extension | MCP,
+    All = UI | API
 };
 DECLARE_FLAGS(Availabilities, Availability)
 DECLARE_OPERATORS_FOR_FLAGS(Availabilities)

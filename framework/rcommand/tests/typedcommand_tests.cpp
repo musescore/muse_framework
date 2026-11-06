@@ -43,7 +43,7 @@ enum class TestEnum {
 struct TestEnumContract {
     static constexpr std::string_view key = "e_val";
     static constexpr TestEnum def = TestEnum::Value1;
-    static constexpr Table<TestEnum, 3> table = { {
+    static constexpr EnumTable<TestEnum, 3> table = { {
         { "value1", TestEnum::Value1, "value 1" },
         { "value2", TestEnum::Value2, "value 2" },
         { "value3", TestEnum::Value3, "value 3" },
@@ -51,7 +51,7 @@ struct TestEnumContract {
 };
 
 namespace muse::rcommand {
-DECLARE_CONTRACT(TestEnum, TestEnumContract);
+DECLARE_ENUM_CONTRACT(TestEnum, TestEnumContract);
 }
 
 struct TestCommand {
@@ -467,7 +467,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesOnTheBounds)
 
 TEST_F(RCommand_TypedCommandTests, EnumContract_RoundTrip)
 {
-    EXPECT_EQ(Contract<TestEnum>::str_val(TestEnum::Value2), "value2");
-    EXPECT_EQ(Contract<TestEnum>::enum_val("value3"), TestEnum::Value3);
-    EXPECT_FALSE(Contract<TestEnum>::enum_val("value4").has_value());
+    EXPECT_EQ(EnumContract<TestEnum>::str_val(TestEnum::Value2), "value2");
+    EXPECT_EQ(EnumContract<TestEnum>::enum_val("value3"), TestEnum::Value3);
+    EXPECT_FALSE(EnumContract<TestEnum>::enum_val("value4").has_value());
 }
