@@ -58,6 +58,9 @@ IInteractive::Result TestflowInteractive::infoSync(const std::string& contentTit
                                                    int defBtn,
                                                    const Options& options, const std::string& dialogTitle)
 {
+    if (isUnattended()) {
+        return unattendedResult("INFO", contentTitle, text, buttons, defBtn);
+    }
     return m_real->infoSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
@@ -65,6 +68,12 @@ async::Promise<IInteractive::Result> TestflowInteractive::info(const std::string
                                                                const ButtonDatas& buttons, int defBtn,
                                                                const Options& options, const std::string& dialogTitle)
 {
+    if (isUnattended()) {
+        Result res = unattendedResult("INFO", contentTitle, text, buttons, defBtn);
+        return async::make_promise<Result>([res](auto resolve) {
+            return resolve(res);
+        });
+    }
     return m_real->info(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
@@ -72,6 +81,9 @@ IInteractive::Result TestflowInteractive::warningSync(const std::string& content
                                                       int defBtn,
                                                       const Options& options, const std::string& dialogTitle)
 {
+    if (isUnattended()) {
+        return unattendedResult("WARNING", contentTitle, text, buttons, defBtn);
+    }
     return m_real->warningSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
@@ -79,6 +91,12 @@ async::Promise<IInteractive::Result> TestflowInteractive::warning(const std::str
                                                                   const ButtonDatas& buttons, int defBtn,
                                                                   const Options& options, const std::string& dialogTitle)
 {
+    if (isUnattended()) {
+        Result res = unattendedResult("WARNING", contentTitle, text, buttons, defBtn);
+        return async::make_promise<Result>([res](auto resolve) {
+            return resolve(res);
+        });
+    }
     return m_real->warning(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
@@ -86,6 +104,9 @@ IInteractive::Result TestflowInteractive::errorSync(const std::string& contentTi
                                                     int defBtn,
                                                     const Options& options, const std::string& dialogTitle)
 {
+    if (isUnattended()) {
+        return unattendedResult("ERROR", contentTitle, text, buttons, defBtn);
+    }
     return m_real->errorSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
@@ -93,6 +114,12 @@ async::Promise<IInteractive::Result> TestflowInteractive::error(const std::strin
                                                                 const ButtonDatas& buttons, int defBtn,
                                                                 const Options& options, const std::string& dialogTitle)
 {
+    if (isUnattended()) {
+        Result res = unattendedResult("ERROR", contentTitle, text, buttons, defBtn);
+        return async::make_promise<Result>([res](auto resolve) {
+            return resolve(res);
+        });
+    }
     return m_real->error(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
 
@@ -251,4 +278,30 @@ bool TestflowInteractive::topWindowIsWidget() const
 io::path_t TestflowInteractive::selectedFilePath() const
 {
     return m_selectedFilePath;
+}
+
+void TestflowInteractive::setUnattendedMessageHandler(const MessageHandler& handler)
+{
+    m_unattendedMessageHandler = handler;
+}
+
+bool TestflowInteractive::isUnattended() const
+{
+    return m_unattendedMessageHandler != nullptr;
+}
+
+IInteractive::Result TestflowInteractive::unattendedResult(const std::string& type, const std::string& title, const Text& text,
+                                                           const ButtonDatas& buttons, int defBtn) const
+{
+    m_unattendedMessageHandler(type, title, text.text);
+
+    if (defBtn != int(Button::NoButton)) {
+        return Result(defBtn);
+    }
+
+    if (!buttons.empty()) {
+        return Result(buttons.front().btn);
+    }
+
+    return Result(int(Button::Ok));
 }

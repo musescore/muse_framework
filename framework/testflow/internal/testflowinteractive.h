@@ -23,6 +23,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 #include "interactive/iinteractive.h"
 
@@ -119,10 +120,20 @@ public:
     // TestflowInteractive
     io::path_t selectedFilePath() const; // last selected file path
 
+    //! NOTE In a non-interactive run nobody can close a message (info, warning, error),
+    //! so it is not shown, the handler gets it and the default button is returned
+    using MessageHandler = std::function<void (const std::string& type, const std::string& title, const std::string& text)>;
+    void setUnattendedMessageHandler(const MessageHandler& handler);
+
 private:
     std::shared_ptr<IInteractive> m_real = nullptr;
 
+    bool isUnattended() const;
+    Result unattendedResult(const std::string& type, const std::string& title, const Text& text, const ButtonDatas& buttons,
+                            int defBtn) const;
+
     io::path_t m_selectedFilePath;
+    MessageHandler m_unattendedMessageHandler;
 };
 
 using TestflowInteractivePtr = std::shared_ptr<TestflowInteractive>;

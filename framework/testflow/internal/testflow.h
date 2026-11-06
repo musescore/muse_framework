@@ -105,7 +105,7 @@ private:
     void restoreAffectOnServices();
 
     void setStatus(Status st);
-    void onNotRegistered(const QString& what);
+    void failRunningStep(const QString& what);
 
     struct AffectedServiceState {
         bool fontDisabledMerging = false;

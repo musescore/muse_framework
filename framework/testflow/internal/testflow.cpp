@@ -70,13 +70,13 @@ void Testflow::init()
     //! fail the current step instead of silently doing nothing
     if (actionsDispatcher()) {
         actionsDispatcher()->notRegistered().onReceive(this, [this](const actions::ActionCode& code) {
-            onNotRegistered(QString("not registered action: ") + QString::fromStdString(code));
+            failRunningStep(QString("not registered action: ") + QString::fromStdString(code));
         });
     }
 
     if (commandDispatcher()) {
         commandDispatcher()->notRegistered().onReceive(this, [this](const rcommand::Command& command) {
-            onNotRegistered(QString("not registered command: ") + QString::fromStdString(command.toString()));
+            failRunningStep(QString("not registered command: ") + QString::fromStdString(command.toString()));
         });
     }
 
@@ -245,6 +245,13 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOpti
 
     m_runResult = RunResult();
     m_interactive = opt.interactive;
+    if (!m_interactive) {
+        m_testflowInteractive->setUnattendedMessageHandler([this](const std::string& type, const std::string& title,
+                                                                  const std::string& text) {
+            failRunningStep(QString("unexpected message (%1): %2: %3")
+                            .arg(QString::fromStdString(type), QString::fromStdString(title), QString::fromStdString(text)));
+        });
+    }
 
     setStatus(Status::Running);
     QString func = opt.func.empty() ? QString("main") : QString::fromStdString(opt.func);
@@ -265,6 +272,7 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOpti
     restoreAffectOnServices();
 
     m_interactive = true;
+    m_testflowInteractive->setUnattendedMessageHandler(nullptr);
 
     RunResult result = m_runResult;
     result.status = status();
@@ -381,7 +389,7 @@ TestflowInteractivePtr Testflow::testflowInteractive() const
     return m_testflowInteractive;
 }
 
-void Testflow::onNotRegistered(const QString& what)
+void Testflow::failRunningStep(const QString& what)
 {
     if (!m_engine || status() != Status::Running) {
         return;
