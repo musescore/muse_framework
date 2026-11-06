@@ -51,6 +51,8 @@ public:
     muse::audio::AudioSourceType type() const override;
     std::string name() const override;
 
+    void setHostTrackName(const std::string& name) override;
+
     void flushSound() override;
 
     void setupSound(const mpe::PlaybackSetupData& setupData) override;
@@ -70,10 +72,13 @@ private:
     void toggleVolumeGain(const bool isActive);
     audio::samples_t processSequence(const VstSequencer::EventSequence& sequence, const audio::samples_t samples, float* buffer);
 
+    void sendChannelContext(); // push the host track name to the plugin (VST3 channel context)
+
     IVstPluginInstancePtr m_pluginPtr = nullptr;
     std::unique_ptr<VstAudioClient> m_vstAudioClient = nullptr;
 
     audio::OutputSpec m_outputSpec;
+    std::string m_hostTrackName;
 
     VstSequencer m_sequencer;
 
