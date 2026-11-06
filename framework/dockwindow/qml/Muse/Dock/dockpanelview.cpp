@@ -310,3 +310,15 @@ void DockPanelView::setCurrentTabIndex(int index)
         frame->setCurrentTabIndex(index);
     }
 }
+
+bool DockPanelView::isCurrentTab() const
+{
+    return dockWidget() && dockWidget()->isCurrentTab();
+}
+
+void DockPanelView::makeCurrentTab()
+{
+    if (dockWidget()) {
+        dockWidget()->setAsCurrentTab();
+    }
+}
