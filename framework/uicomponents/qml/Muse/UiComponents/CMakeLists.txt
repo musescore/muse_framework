@@ -94,6 +94,8 @@ qt_add_qml_module(muse_uicomponents_qml
         sortfilterproxymodel.h
         tablesortfilterproxymodel.cpp
         tablesortfilterproxymodel.h
+        textinputmenumodel.cpp
+        textinputmenumodel.h
         toolbaritem.cpp
         toolbaritem.h
         validators/doubleinputvalidator.cpp
@@ -189,6 +191,7 @@ qt_add_qml_module(muse_uicomponents_qml
         internal/StyledDropdownView.qml
         internal/StyledMenu.qml
         internal/StyledMenuItem.qml
+        internal/TextInputContextMenu.qml
         internal/ValueListHeaderItem.qml
         internal/ValueListItem.qml
         internal/ValueListSectionItem.qml
