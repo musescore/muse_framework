@@ -360,3 +360,76 @@ TEST_F(MPE_MultiNoteArticulationsTest, IsMultiNoteArticulation)
         EXPECT_EQ(mpe::isRangedArticulation(type), isRanged);
     }
 }
+
+// Build a note's articulation map from two articulations that both carry only an arrangement
+// pattern and no expression pattern (durationFactor 9900, empty pitch and expression), matching
+// how Legato, Tremolo and the grace note articulations are defined in the profiles.
+static ArticulationMap twoArrangementOnlyArticulations(ArticulationType first, ArticulationType second,
+                                                       timestamp_t timestamp, duration_t duration)
+{
+    ArticulationPatternSegment arrangementOnly;
+    arrangementOnly.arrangementPattern = createArrangementPattern(9900 /*duration_factor*/, 0 /*timestamp_offset*/);
+    // pitchPattern and expressionPattern left default (empty): maxAmplitudeLevel() == 0.
+
+    auto makeApplied = [&](ArticulationType type) {
+        ArticulationPattern pattern;
+        pattern.emplace(0, arrangementOnly);
+
+        ArticulationMeta meta;
+        meta.type = type;
+        meta.pattern = pattern;
+        meta.timestamp = timestamp;
+        meta.overallDuration = duration;
+
+        return ArticulationAppliedData(std::move(meta), 0, HUNDRED_PERCENT);
+    };
+
+    ArticulationMap map;
+    map.emplace(first, makeApplied(first));
+    map.emplace(second, makeApplied(second));
+    map.preCalculateAverageData();
+    return map;
+}
+
+// Regression guard: with 2+ articulations that none carry an expression pattern, the averaging used
+// to treat an empty pattern (maxAmplitudeLevel() == 0) as an explicit dynamic of 0 and write an
+// all-zero but non-empty averaged curve. A synthesizer then reads that curve as near-silence instead
+// of falling back to the note's nominal dynamic. The averaged curve must stay EMPTY.
+
+/**
+ * @brief MPE_MultiNoteArticulationsTest_SlurredTremoloKeepsNominalDynamic
+ * @details A slurred tremolo applies Legato + Tremolo, neither with an expression pattern.
+ */
+TEST_F(MPE_MultiNoteArticulationsTest, SlurredTremoloKeepsNominalDynamic)
+{
+    const NoteMetaData& note = m_initialData.at(0);
+
+    ArticulationMap articulations = twoArrangementOnlyArticulations(
+        ArticulationType::Tremolo8th, ArticulationType::Legato, note.nominalTimestamp, note.nominalDuration);
+
+    EXPECT_TRUE(articulations.averageDynamicOffsetMap().empty());
+
+    NoteEvent noteEvent(note.nominalTimestamp, note.nominalDuration, note.voiceIdx, note.staffIdx,
+                        note.nominalPitchLevel, note.nominalDynamicLevel, articulations, 0);
+
+    EXPECT_TRUE(noteEvent.expressionCtx().expressionCurve.empty());
+}
+
+/**
+ * @brief MPE_MultiNoteArticulationsTest_SlurredAcciaccaturaKeepsNominalDynamic
+ * @details A slurred acciaccatura applies Legato + Acciaccatura, neither with an expression pattern.
+ */
+TEST_F(MPE_MultiNoteArticulationsTest, SlurredAcciaccaturaKeepsNominalDynamic)
+{
+    const NoteMetaData& note = m_initialData.at(0);
+
+    ArticulationMap articulations = twoArrangementOnlyArticulations(
+        ArticulationType::Acciaccatura, ArticulationType::Legato, note.nominalTimestamp, note.nominalDuration);
+
+    EXPECT_TRUE(articulations.averageDynamicOffsetMap().empty());
+
+    NoteEvent noteEvent(note.nominalTimestamp, note.nominalDuration, note.voiceIdx, note.staffIdx,
+                        note.nominalPitchLevel, note.nominalDynamicLevel, articulations, 0);
+
+    EXPECT_TRUE(noteEvent.expressionCtx().expressionCurve.empty());
+}
