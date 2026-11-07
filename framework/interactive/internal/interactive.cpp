@@ -841,7 +841,7 @@ void Interactive::raise(const UriQuery& uri)
         ContainerMeta openMeta = uriRegister()->meta(objectInfo.query.uri());
         switch (openMeta.type) {
         case ContainerMeta::QWidgetDialog: {
-            if (auto window = dynamic_cast<QWidget*>(objectInfo.window)) {
+            if (auto window = qobject_cast<QWidget*>(objectInfo.window)) {
                 window->raise();
                 window->activateWindow();
             }
@@ -938,7 +938,7 @@ Promise<Ret> Interactive::closeObjects(const std::vector<ObjectInfo>& objs)
             ContainerMeta meta = uriRegister()->meta(obj.query.uri());
             switch (meta.type) {
                 case ContainerMeta::QWidgetDialog: {
-                    if (auto window = dynamic_cast<QWidget*>(obj.window)) {
+                    if (auto window = qobject_cast<QWidget*>(obj.window)) {
                         ok = window->close();
                     } else {
                         ok = false;
@@ -1185,10 +1185,16 @@ RetVal<Interactive::OpenData> Interactive::openWidgetDialog(const Uri& uri, cons
             return;
         }
 
-        async::Async::call(this, [this, objectId, dialog]() {
-            QQmlEngine::setObjectOwnership(dialog, QQmlEngine::CppOwnership);
-            QQmlEngine::setObjectOwnership(dialog->windowHandle(), QQmlEngine::CppOwnership);
-            onOpen(ContainerMeta::QWidgetDialog, objectId, dialog->window());
+        const QPointer<ui::WidgetDialog> shownDialog(dialog);
+        async::Async::call(this, [this, objectId, shownDialog]() {
+            // A second show event may come before this runs, or the dialog may be gone
+            if (!shownDialog || isOpened(objectId).val) {
+                return;
+            }
+
+            QQmlEngine::setObjectOwnership(shownDialog, QQmlEngine::CppOwnership);
+            QQmlEngine::setObjectOwnership(shownDialog->windowHandle(), QQmlEngine::CppOwnership);
+            onOpen(ContainerMeta::QWidgetDialog, objectId, shownDialog->window());
         });
     })
     .onHide([this, objectId, dialog]() {
