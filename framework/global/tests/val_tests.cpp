@@ -717,15 +717,24 @@ TEST_F(Global_ValTests, Val_To_From_Type)
     }
 }
 
+#ifndef NO_QT_SUPPORT
 TEST_F(Global_ValTests, Val_ColorWithAlpha)
 {
     //! GIVEN Value as semi-transparent color
 
-    Val semiVisibleRed(QColor(255, 10, 10, 128));
+    {
+        Val v(QColor(255, 10, 10, 128));
 
-    EXPECT_EQ(semiVisibleRed.type(), Val::Type::Color);
-    EXPECT_EQ(semiVisibleRed.isNull(), false);
-    EXPECT_EQ(semiVisibleRed.toBool(), false);
-    EXPECT_EQ(semiVisibleRed.toString(), "#80ff0a0a"); // #AARRGGBB
-    EXPECT_EQ(semiVisibleRed.toQColor(), QColor(255, 10, 10, 128));
+        EXPECT_EQ(v.type(), Val::Type::Color);
+        EXPECT_EQ(v.isNull(), false);
+        EXPECT_EQ(v.toBool(), true);
+        EXPECT_EQ(v.toInt(), 0);
+        EXPECT_EQ(v.toInt64(), 0);
+        EXPECT_EQ(v.toDouble(), 0.0);
+        EXPECT_EQ(v.toString(), "#80ff0a0a");
+        EXPECT_EQ(v.toList(), ValList());
+        EXPECT_EQ(v.toMap(), ValMap());
+        EXPECT_EQ(v.toQColor(), QColor(255, 10, 10, 128));
+    }
 }
+#endif
