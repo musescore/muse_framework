@@ -85,6 +85,7 @@ public:
 
     RunResult execScript(const io::path_t& path, const ExecOptions& opt = ExecOptions()) override;
     bool isInteractive() const override;
+    void setSkipDialogsOutsideRun(bool skip) override;
 
     void runTestCase(const TestCase& testCase) override;
     void sleep(int msec) override;
@@ -103,6 +104,7 @@ private:
 
     void affectOnServices();
     void restoreAffectOnServices();
+    void setTestflowInteractiveInstalled(bool installed);
 
     void setStatus(Status st);
     void failRunningStep(const QString& what);
@@ -117,6 +119,7 @@ private:
     ScriptEngine* m_engine = nullptr;
     RunResult m_runResult;
     bool m_interactive = true;
+    bool m_skipDialogsOutsideRun = false;
     ITestCaseContextPtr m_context = nullptr;
     TestCaseRunner m_runner;
     TestCaseReport m_report;

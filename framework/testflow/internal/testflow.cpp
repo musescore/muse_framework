@@ -105,15 +105,42 @@ void Testflow::affectOnServices()
 #endif
 
         //! NOTE Change Interactive implementation
-        modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
-        auto realInteractive = ioc->resolve<IInteractive>("testflow");
-        m_testflowInteractive->setRealInteractive(realInteractive);
-        ioc->unregister<IInteractive>("testflow");
-        ioc->registerExport<IInteractive>("testflow", m_testflowInteractive);
+        setTestflowInteractiveInstalled(true);
+        m_testflowInteractive->setSkipDialogs(false);
     }
 
     m_affectedServiceState.fontDisabledMerging = muse::draw::Font::g_disableFontMerging;
     muse::draw::Font::g_disableFontMerging = true;
+}
+
+void Testflow::setTestflowInteractiveInstalled(bool installed)
+{
+    modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
+    const bool isInstalled = ioc->resolve<IInteractive>("testflow") == m_testflowInteractive;
+    if (installed == isInstalled) {
+        return;
+    }
+
+    if (installed) {
+        m_testflowInteractive->setRealInteractive(ioc->resolve<IInteractive>("testflow"));
+        ioc->unregister<IInteractive>("testflow");
+        ioc->registerExport<IInteractive>("testflow", m_testflowInteractive);
+    } else {
+        ioc->unregister<IInteractive>("testflow");
+        ioc->registerExport<IInteractive>("testflow", m_testflowInteractive->realInteractive());
+    }
+}
+
+void Testflow::setSkipDialogsOutsideRun(bool skip)
+{
+    m_skipDialogsOutsideRun = skip;
+
+    if (application()->runMode() != IApplication::RunMode::GuiApp || status() == Status::Running) {
+        return;
+    }
+
+    setTestflowInteractiveInstalled(skip);
+    m_testflowInteractive->setSkipDialogs(skip);
 }
 
 void Testflow::restoreAffectOnServices()
@@ -127,10 +154,8 @@ void Testflow::restoreAffectOnServices()
         shortcutsRegister()->reload(false);
 #endif
 
-        modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
-        auto realInteractive = m_testflowInteractive->realInteractive();
-        ioc->unregister<IInteractive>("testflow");
-        ioc->registerExport<IInteractive>("testflow", realInteractive);
+        m_testflowInteractive->setSkipDialogs(m_skipDialogsOutsideRun);
+        setTestflowInteractiveInstalled(m_skipDialogsOutsideRun);
     }
 
     muse::draw::Font::g_disableFontMerging = m_affectedServiceState.fontDisabledMerging;

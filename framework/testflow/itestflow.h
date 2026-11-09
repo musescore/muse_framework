@@ -90,6 +90,10 @@ public:
     virtual void fatal(const QString& msg) = 0;
     virtual bool isInteractive() const = 0;
 
+    //! NOTE Nobody can answer dialogs while no test case runs (e.g. on the application startup in a command line run),
+    //! so they are skipped (see TestflowInteractive::setSkipDialogs)
+    virtual void setSkipDialogsOutsideRun(bool skip) = 0;
+
     virtual ITestCaseContextPtr context() const = 0;
     virtual TestflowInteractivePtr testflowInteractive() const = 0;
 };

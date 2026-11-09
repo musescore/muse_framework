@@ -26,10 +26,14 @@
 #include <functional>
 
 #include "interactive/iinteractive.h"
+#include "interactive/iinteractiveuriregister.h"
+#include "modularity/ioc.h"
 
 namespace muse::testflow {
 class TestflowInteractive : public IInteractive
 {
+    GlobalInject<interactive::IInteractiveUriRegister> uriRegister;
+
 public:
     TestflowInteractive() = default;
 
@@ -125,8 +129,16 @@ public:
     using MessageHandler = std::function<void (const std::string& type, const std::string& title, const std::string& text)>;
     void setUnattendedMessageHandler(const MessageHandler& handler);
 
+    //! NOTE When no test case runs nobody can answer dialogs (e.g. on the application startup in a command line run),
+    //! so they are skipped: messages and questions get Cancel, opening dialogs and selecting files are cancelled
+    void setSkipDialogs(bool skip);
+
 private:
     std::shared_ptr<IInteractive> m_real = nullptr;
+
+    bool isDialog(const Uri& uri) const;
+    Result skippedResult(const std::string& type, const std::string& title) const;
+    static async::Promise<Result> resultPromise(const Result& res);
 
     bool isUnattended() const;
     Result unattendedResult(const std::string& type, const std::string& title, const Text& text, const ButtonDatas& buttons,
@@ -134,6 +146,7 @@ private:
 
     io::path_t m_selectedFilePath;
     MessageHandler m_unattendedMessageHandler;
+    bool m_skipDialogs = false;
 };
 
 using TestflowInteractivePtr = std::shared_ptr<TestflowInteractive>;
