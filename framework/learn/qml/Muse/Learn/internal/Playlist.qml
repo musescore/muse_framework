@@ -38,6 +38,8 @@ FocusScope {
     property alias navigation: navPanel
     property int sideMargin: 46
 
+    property bool isSearching: false
+
     NavigationPanel {
         id: navPanel
         name: "Playlist"
@@ -141,11 +143,12 @@ FocusScope {
         StyledTextLabel {
             width: parent.width
             font: ui.theme.tabBoldFont
-            text: qsTrc("learn", "Sorry, we are unable to load these videos right now")
+            text: isSearching ? qsTrc("learn", "No results found") : qsTrc("learn", "Sorry, we are unable to load these videos right now")
         }
 
         StyledTextLabel {
             width: parent.width
+            visible: !isSearching
             text: qsTrc("global", "Please check your internet connection or try again later.")
         }
     }
