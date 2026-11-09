@@ -29,13 +29,17 @@
 namespace muse::testflow {
 //! NOTE Runs the test case requested from the command line
 //! and exits the application with the result: 0 - passed, 1 - failed.
-//! The application calls it when the context is ready for user interaction.
 class ITestflowCmdRunner : MODULE_GLOBAL_INTERFACE
 {
     INTERFACE_ID(ITestflowCmdRunner)
 public:
     virtual ~ITestflowCmdRunner() = default;
 
-    virtual void run(const modularity::ContextPtr& ctx, const RunRequest& request) = 0;
+    //! NOTE The application calls it before the startup:
+    //! starts the timeout, dialogs are skipped until the test case runs (nobody can answer them)
+    virtual void prepare(const modularity::ContextPtr& ctx, const RunRequest& request) = 0;
+
+    //! NOTE The application calls it when the context is ready for user interaction
+    virtual void run(const modularity::ContextPtr& ctx) = 0;
 };
 }

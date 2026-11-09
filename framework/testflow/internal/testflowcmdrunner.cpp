@@ -34,15 +34,20 @@ using namespace muse::testflow;
 static constexpr int EXIT_PASSED = 0;
 static constexpr int EXIT_FAILED = 1;
 
-void TestflowCmdRunner::run(const modularity::ContextPtr& ctx, const RunRequest& request)
+void TestflowCmdRunner::prepare(const modularity::ContextPtr& ctx, const RunRequest& request)
 {
     //! NOTE Only one test case per application run
-    IF_ASSERT_FAILED(!m_started) {
+    IF_ASSERT_FAILED(!m_prepared) {
         return;
     }
-    m_started = true;
+    m_prepared = true;
 
     m_request = request;
+
+    auto testflow = modularity::ioc(ctx)->resolve<ITestflow>("testflow");
+    if (testflow) {
+        testflow->setSkipDialogsOutsideRun(true);
+    }
 
     if (m_request.timeoutSec.has_value()) {
         m_timeoutTimer.setSingleShot(true);
@@ -52,6 +57,19 @@ void TestflowCmdRunner::run(const modularity::ContextPtr& ctx, const RunRequest&
             finish(false);
         });
         m_timeoutTimer.start();
+    }
+}
+
+void TestflowCmdRunner::run(const modularity::ContextPtr& ctx)
+{
+    IF_ASSERT_FAILED(m_prepared && !m_started) {
+        return;
+    }
+    m_started = true;
+
+    if (m_finished) {
+        //! NOTE Finished by timeout during the startup
+        return;
     }
 
     //! NOTE Let the caller finish before the script takes over the event loop

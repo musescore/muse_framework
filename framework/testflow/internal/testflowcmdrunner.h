@@ -29,7 +29,8 @@ namespace muse::testflow {
 class TestflowCmdRunner : public ITestflowCmdRunner
 {
 public:
-    void run(const modularity::ContextPtr& ctx, const RunRequest& request) override;
+    void prepare(const modularity::ContextPtr& ctx, const RunRequest& request) override;
+    void run(const modularity::ContextPtr& ctx) override;
 
 private:
     void exec(const modularity::ContextPtr& ctx);
@@ -37,6 +38,7 @@ private:
 
     RunRequest m_request;
     QTimer m_timeoutTimer;
+    bool m_prepared = false;
     bool m_started = false;
     bool m_finished = false;
 };
