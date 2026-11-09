@@ -22,7 +22,7 @@
 #
 #   1. For each test case runs: <app> --user-data-dir <dir> --test-case <name> --test-case-timeout <sec>
 #      The application exits with 0 if the test case passed, otherwise with 1.
-#      If the application hangs, it is killed after the timeout plus the startup time.
+#      If the application hangs (e.g. its own timeout does not work), it is killed after the timeout plus a margin.
 #   2. Writes to the output directory, for each test case:
 #        <name>/output.log    the application output
 #        <name>/userdata/     the user data of the run: AppData (settings, logs, session)
@@ -60,8 +60,8 @@ set(OUTPUT_DIR "testflow_results")
 set(TIMEOUT 300)
 set(SPEED "")
 
-# The application startup is not included in the test case timeout
-set(STARTUP_TIMEOUT 120)
+# The test case timeout includes the application startup, the margin is for the application exit
+set(EXIT_TIMEOUT 60)
 
 # CMAKE_ARGV0 is cmake, 1 is -P, 2 is this script
 set(i 3)
@@ -128,7 +128,7 @@ function(log_value log_text pattern out)
     set(${out} "${value}" PARENT_SCOPE)
 endfunction()
 
-math(EXPR APP_TIMEOUT "${TIMEOUT} + ${STARTUP_TIMEOUT}")
+math(EXPR APP_TIMEOUT "${TIMEOUT} + ${EXIT_TIMEOUT}")
 
 set(PASSED_COUNT 0)
 set(FAILED_COUNT 0)
