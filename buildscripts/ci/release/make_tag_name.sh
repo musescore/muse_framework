@@ -122,10 +122,12 @@ fi
 
 RELEASE_TYPE_COUNT=1
 
-if [[ "${CREATE_TAG}" == 'true' && "${VERSION_CMAKE_LABEL}" ]]; then
+if [[ "${VERSION_CMAKE_LABEL}" && "${RELEASE_TYPE}" =~ ^(alpha|beta|rc|stable)$ ]]; then
     # version.cmake names the pre-release itself (the app shows that label, and the
     # package files may carry it), so the tag follows it instead of counting tags.
     # The label is '<type>' or '<type><separator><number>', with <type> = RELEASE_TYPE.
+    # A dry run (CREATE_TAG false) takes this branch too, so that it previews the real tag;
+    # any other release type is a test label and counts as before.
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
         echo >&2 "$o: Error: Release type is 'stable' but version.cmake has the pre-release label '${VERSION_CMAKE_LABEL}'."
         echo >&2 "Clear MUSE_APP_VERSION_LABEL in version.cmake for a stable release."
