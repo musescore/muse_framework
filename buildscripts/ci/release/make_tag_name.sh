@@ -121,6 +121,7 @@ if ! version_exists "${older_version}"; then
 fi
 
 RELEASE_TYPE_COUNT=1
+label_number="" # the number version.cmake's label carries, if any
 
 if [[ "${VERSION_CMAKE_LABEL}" && "${RELEASE_TYPE}" =~ ^(alpha|beta|rc|stable)$ ]]; then
     # version.cmake names the pre-release itself (the app shows that label, and the
@@ -138,11 +139,21 @@ if [[ "${VERSION_CMAKE_LABEL}" && "${RELEASE_TYPE}" =~ ^(alpha|beta|rc|stable)$ 
         exit 1
     fi
     VERSION_LABEL="${RELEASE_TYPE}"
-    if [[ "${BASH_REMATCH[2]-}" ]]; then
-        RELEASE_TYPE_COUNT="${BASH_REMATCH[2]}"
+    label_number="${BASH_REMATCH[2]-}"
+    if [[ "${label_number}" ]]; then
+        RELEASE_TYPE_COUNT="${label_number}"
         VERSION_LABEL="${VERSION_LABEL}${TAG_LABEL_SEPARATOR}${RELEASE_TYPE_COUNT}"
     fi
-    if version_exists "${VERSION}" "${VERSION_LABEL}"; then
+    # '<type>' and '<type><separator>1' name the same release: check both spellings.
+    other_label=""
+    if ((RELEASE_TYPE_COUNT == 1)); then
+        if [[ "${label_number}" ]]; then
+            other_label="${RELEASE_TYPE}"
+        else
+            other_label="${RELEASE_TYPE}${TAG_LABEL_SEPARATOR}1"
+        fi
+    fi
+    if version_exists "${VERSION}" "${VERSION_LABEL}" || { [[ "${other_label}" ]] && version_exists "${VERSION}" "${other_label}"; }; then
         echo >&2 "$o: Error: A tag already exists for ${TAG_PREFIX}${VERSION}-${VERSION_LABEL}."
         echo >&2 "You need to bump the number in MUSE_APP_VERSION_LABEL in version.cmake."
         exit 1
@@ -183,7 +194,7 @@ esac
 
 RELEASE_LABEL="${PRETTY_RELEASE_TYPE}"
 
-if ((RELEASE_TYPE_COUNT > 1)); then
+if ((RELEASE_TYPE_COUNT > 1)) || [[ "${label_number}" ]]; then # a 'beta-1' label shows as 'Beta 1'
     RELEASE_LABEL="${RELEASE_LABEL} ${RELEASE_TYPE_COUNT}"
 fi
 
