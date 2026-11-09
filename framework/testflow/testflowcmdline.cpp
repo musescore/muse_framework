@@ -110,6 +110,11 @@ std::optional<RunRequest> muse::testflow::parseCmdOptions(const QCommandLinePars
         }
     }
 
+    //! NOTE Network responses come at an unpredictable time and can show dialogs during the test
+    if (!options.network.offline.has_value()) {
+        options.network.offline = true;
+    }
+
     if (!options.global.userDataDir.has_value()) {
         //! NOTE Not removed, the reports and the saved files stay there
         QTemporaryDir dir(QDir::tempPath() + "/" + QCoreApplication::applicationName() + "_testflow_XXXXXX");

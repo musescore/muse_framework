@@ -32,6 +32,7 @@ namespace muse::testflow {
 void addCmdOptions(QCommandLineParser& parser);
 
 //! NOTE Sets runMode to ConsoleApp if requested (--test-case-mode console)
-//! and a temporary user data dir if it is not set, so the test case does not change the user's data
+//! and a temporary user data dir if it is not set, so the test case does not change the user's data,
+//! and the offline mode if it is not set
 std::optional<RunRequest> parseCmdOptions(const QCommandLineParser& parser, CmdOptions& options);
 }
