@@ -37,17 +37,24 @@ mkdir "${RELEASE_DIR}" # error if it already exists (need it to be empty)
 package_files=() # every file named there; each must have a checksum from its build
 for path in "${ARTIFACTS_DIR}/"*"/env/artifact_name.env"; do
     artifact_dir="$(dirname "$(dirname "${path}")")"
+    names_in_file=0
     while IFS= read -r artifact_name || [[ "${artifact_name}" ]]; do
         artifact_name="${artifact_name%$'\r'}"
         [[ "${artifact_name}" ]] || continue
         artifact_path="${artifact_dir}/${artifact_name}"
         package_files+=("${artifact_name}")
+        ((++names_in_file))
 
         mv -v "${artifact_path}" "${RELEASE_DIR}/"
         if [[ -f "${artifact_path}.zsync" ]]; then
             mv -v "${artifact_path}.zsync" "${RELEASE_DIR}/"
         fi
     done <"${path}"
+    # A build without a package name would silently be left out of the release.
+    if ((names_in_file == 0)); then
+        echo >&2 "$o: Error: No package file names in ${path}"
+        exit 1
+    fi
 done
 
 declare -A old_checksums new_checksums # associative arrays (i.e. maps / dictionaries)
