@@ -42,5 +42,9 @@ struct CmdOptions {
     struct {
         std::optional<double> physicalDotsPerInch;
     } ui;
+
+    struct {
+        std::optional<bool> offline;
+    } network;
 };
 }

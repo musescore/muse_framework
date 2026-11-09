@@ -40,6 +40,16 @@ RequestHeaders NetworkConfiguration::defaultHeaders(const std::string& userAgent
     return headers;
 }
 
+bool NetworkConfiguration::isOffline() const
+{
+    return m_offline;
+}
+
+void NetworkConfiguration::setOffline(bool offline)
+{
+    m_offline = offline;
+}
+
 QString NetworkConfiguration::makeUserAgent(const std::string& tplName) const
 {
     std::string _tplName = tplName;

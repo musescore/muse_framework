@@ -27,3 +27,12 @@ RequestHeaders NetworkConfigurationStub::defaultHeaders(const std::string&) cons
 {
     return {};
 }
+
+bool NetworkConfigurationStub::isOffline() const
+{
+    return true;
+}
+
+void NetworkConfigurationStub::setOffline(bool)
+{
+}

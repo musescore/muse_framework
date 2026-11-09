@@ -43,9 +43,13 @@ public:
 
     RequestHeaders defaultHeaders(const std::string& userAgentName = {}) const override;
 
+    bool isOffline() const override;
+    void setOffline(bool offline) override;
+
 private:
     QString makeUserAgent(const std::string& tplName) const;
 
     Config m_userAgentConfig;
+    bool m_offline = false;
 };
 }
