@@ -135,7 +135,7 @@ if [[ "${VERSION_CMAKE_LABEL}" && "${RELEASE_TYPE}" =~ ^(alpha|beta|rc|stable)$ 
         exit 1
     elif [[ ! "${VERSION_CMAKE_LABEL}" =~ ^${RELEASE_TYPE}([.-]?([1-9][0-9]*))?$ ]]; then
         echo >&2 "$o: Error: Release type is '${RELEASE_TYPE}' but version.cmake has the pre-release label '${VERSION_CMAKE_LABEL}'."
-        echo >&2 "Expected '${RELEASE_TYPE}' or '${RELEASE_TYPE}.<number>' in MUSE_APP_VERSION_LABEL, or change the release type."
+        echo >&2 "Expected '${RELEASE_TYPE}' or '${RELEASE_TYPE}${TAG_LABEL_SEPARATOR}<number>' in MUSE_APP_VERSION_LABEL, or change the release type."
         exit 1
     fi
     VERSION_LABEL="${RELEASE_TYPE}"
