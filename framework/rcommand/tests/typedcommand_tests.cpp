@@ -113,7 +113,7 @@ struct TestInternalCommand {
     static const inline auto title = MnemonicString("action", "Internal test command");
     static const inline auto description = TranslatableString("action", "Dispatch only");
     static const inline auto decoration = Decoration(Checkable::Yes);
-    static const inline Availabilities availabilities = Availability::Dispatch;
+    static const inline Availabilities availabilities = Availability::Internal;
 };
 
 TEST_F(RCommand_TypedCommandTests, TypedCommand_Convert)
@@ -301,7 +301,7 @@ TEST_F(RCommand_TypedCommandTests, MakeCommandInfo_TakesEverythingFromTheStruct)
     EXPECT_TRUE(internal.inputSchema.args.empty());
     EXPECT_TRUE(internal.outputSchema.args.empty());
     EXPECT_EQ(internal.decoration.checkable, Checkable::Yes);
-    EXPECT_TRUE(internal.availabilities.testFlag(Availability::Dispatch));
+    EXPECT_TRUE(internal.availabilities.testFlag(Availability::Internal));
     EXPECT_FALSE(internal.availabilities.testFlag(Availability::MCP));
 }
 

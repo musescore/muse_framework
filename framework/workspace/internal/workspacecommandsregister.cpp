@@ -37,7 +37,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
             { "name", Arg(DataType::String, u"Workspace name") }
         }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         WORKSPACES_CONFIGURE_COMMAND,

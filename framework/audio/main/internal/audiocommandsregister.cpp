@@ -36,7 +36,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString::untranslatable("Use Driver Mode (developer mode)"),
         InputSchema(),
         Decoration(rcommand::Checkable::Yes),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         AUDIO_DEV_USE_HYBRID_MODE_COMMAND,
@@ -44,7 +44,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString::untranslatable("Use Hybrid Mode (developer mode)"),
         InputSchema(),
         Decoration(rcommand::Checkable::Yes),
-        Availability::Dispatch
+        Availability::Internal
     },
 };
 
