@@ -39,7 +39,7 @@ std::shared_ptr<IInteractive> TestflowInteractive::realInteractive() const
 IInteractive::Result TestflowInteractive::questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
                                                        int defBtn, const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         return skippedResult("QUESTION", contentTitle);
     }
     return m_real->questionSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
@@ -49,7 +49,7 @@ async::Promise<IInteractive::Result> TestflowInteractive::question(const std::st
                                                                    const ButtonDatas& buttons, int defBtn,
                                                                    const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         return resultPromise(skippedResult("QUESTION", contentTitle));
     }
     return m_real->question(contentTitle, text, buttons, defBtn, options, dialogTitle);
@@ -64,11 +64,8 @@ IInteractive::Result TestflowInteractive::infoSync(const std::string& contentTit
                                                    int defBtn,
                                                    const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
-        return skippedResult("INFO", contentTitle);
-    }
-    if (isUnattended()) {
-        return unattendedResult("INFO", contentTitle, text, buttons, defBtn);
+    if (m_unattendedDialogs != UnattendedDialogs::Show) {
+        return unattendedMessage("INFO", contentTitle, text);
     }
     return m_real->infoSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -77,12 +74,8 @@ async::Promise<IInteractive::Result> TestflowInteractive::info(const std::string
                                                                const ButtonDatas& buttons, int defBtn,
                                                                const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
-        return resultPromise(skippedResult("INFO", contentTitle));
-    }
-    if (isUnattended()) {
-        Result res = unattendedResult("INFO", contentTitle, text, buttons, defBtn);
-        return resultPromise(res);
+    if (m_unattendedDialogs != UnattendedDialogs::Show) {
+        return resultPromise(unattendedMessage("INFO", contentTitle, text));
     }
     return m_real->info(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -91,11 +84,8 @@ IInteractive::Result TestflowInteractive::warningSync(const std::string& content
                                                       int defBtn,
                                                       const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
-        return skippedResult("WARNING", contentTitle);
-    }
-    if (isUnattended()) {
-        return unattendedResult("WARNING", contentTitle, text, buttons, defBtn);
+    if (m_unattendedDialogs != UnattendedDialogs::Show) {
+        return unattendedMessage("WARNING", contentTitle, text);
     }
     return m_real->warningSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -104,12 +94,8 @@ async::Promise<IInteractive::Result> TestflowInteractive::warning(const std::str
                                                                   const ButtonDatas& buttons, int defBtn,
                                                                   const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
-        return resultPromise(skippedResult("WARNING", contentTitle));
-    }
-    if (isUnattended()) {
-        Result res = unattendedResult("WARNING", contentTitle, text, buttons, defBtn);
-        return resultPromise(res);
+    if (m_unattendedDialogs != UnattendedDialogs::Show) {
+        return resultPromise(unattendedMessage("WARNING", contentTitle, text));
     }
     return m_real->warning(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -118,11 +104,8 @@ IInteractive::Result TestflowInteractive::errorSync(const std::string& contentTi
                                                     int defBtn,
                                                     const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
-        return skippedResult("ERROR", contentTitle);
-    }
-    if (isUnattended()) {
-        return unattendedResult("ERROR", contentTitle, text, buttons, defBtn);
+    if (m_unattendedDialogs != UnattendedDialogs::Show) {
+        return unattendedMessage("ERROR", contentTitle, text);
     }
     return m_real->errorSync(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -131,12 +114,8 @@ async::Promise<IInteractive::Result> TestflowInteractive::error(const std::strin
                                                                 const ButtonDatas& buttons, int defBtn,
                                                                 const Options& options, const std::string& dialogTitle)
 {
-    if (m_skipDialogs) {
-        return resultPromise(skippedResult("ERROR", contentTitle));
-    }
-    if (isUnattended()) {
-        Result res = unattendedResult("ERROR", contentTitle, text, buttons, defBtn);
-        return resultPromise(res);
+    if (m_unattendedDialogs != UnattendedDialogs::Show) {
+        return resultPromise(unattendedMessage("ERROR", contentTitle, text));
     }
     return m_real->error(contentTitle, text, buttons, defBtn, options, dialogTitle);
 }
@@ -149,7 +128,7 @@ void TestflowInteractive::showProgress(const std::string& title, Progress progre
 async::Promise<io::path_t> TestflowInteractive::selectOpeningFile(const std::string& title, const io::path_t& dir,
                                                                   const std::vector<std::string>& filter)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select file): " << title;
         return async::make_promise<io::path_t>([](auto, auto reject) {
             Ret ret = muse::make_ret(Ret::Code::Cancel);
@@ -162,7 +141,7 @@ async::Promise<io::path_t> TestflowInteractive::selectOpeningFile(const std::str
 io::path_t TestflowInteractive::selectOpeningFileSync(const std::string& title, const io::path_t& dir,
                                                       const std::vector<std::string>& filter, const int options)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select file): " << title;
         return {};
     }
@@ -172,7 +151,7 @@ io::path_t TestflowInteractive::selectOpeningFileSync(const std::string& title, 
 io::paths_t TestflowInteractive::selectOpeningFilesSync(const std::string& title, const io::path_t& dir,
                                                         const std::vector<std::string>& filter, const int options)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select files): " << title;
         return {};
     }
@@ -183,7 +162,7 @@ async::Promise<io::path_t> TestflowInteractive::selectSavingFile(const std::stri
                                                                  const std::vector<std::string>& filter,
                                                                  bool confirmOverwrite)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (save file): " << title;
         return async::make_promise<io::path_t>([](auto, auto reject) {
             Ret ret = muse::make_ret(Ret::Code::Cancel);
@@ -197,7 +176,7 @@ io::path_t TestflowInteractive::selectSavingFileSync(const std::string& title, c
                                                      const std::vector<std::string>& filter,
                                                      bool confirmOverwrite)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (save file): " << title;
         return {};
     }
@@ -215,7 +194,7 @@ io::path_t TestflowInteractive::selectSavingFileSync(const std::string& title, c
 
 io::path_t TestflowInteractive::selectDirectory(const std::string& title, const io::path_t& dir)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select directory): " << title;
         return {};
     }
@@ -225,7 +204,7 @@ io::path_t TestflowInteractive::selectDirectory(const std::string& title, const 
 io::paths_t TestflowInteractive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
                                                            const io::paths_t& initialDirectories)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select directories): " << title;
         return {};
     }
@@ -234,7 +213,7 @@ io::paths_t TestflowInteractive::selectMultipleDirectories(const std::string& ti
 
 async::Promise<Color> TestflowInteractive::selectColor(const Color& color, const std::string& title, bool allowAlpha)
 {
-    if (m_skipDialogs) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select color): " << title;
         return async::make_promise<Color>([](auto, auto reject) {
             Ret ret = muse::make_ret(Ret::Code::Cancel);
@@ -251,7 +230,7 @@ bool TestflowInteractive::isSelectColorOpened() const
 
 RetVal<Val> TestflowInteractive::openSync(const UriQuery& uri)
 {
-    if (m_skipDialogs && isDialog(uri.uri())) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip && isDialog(uri.uri())) {
         LOGW() << "[testflow] dialog skipped (open): " << uri.toString();
         return RetVal<Val>(muse::make_ret(Ret::Code::Cancel));
     }
@@ -260,7 +239,7 @@ RetVal<Val> TestflowInteractive::openSync(const UriQuery& uri)
 
 async::Promise<Val> TestflowInteractive::open(const UriQuery& uri)
 {
-    if (m_skipDialogs && isDialog(uri.uri())) {
+    if (m_unattendedDialogs == UnattendedDialogs::Skip && isDialog(uri.uri())) {
         LOGW() << "[testflow] dialog skipped (open): " << uri.toString();
         return async::make_promise<Val>([](auto, auto reject) {
             Ret ret = muse::make_ret(Ret::Code::Cancel);
@@ -350,14 +329,14 @@ io::path_t TestflowInteractive::selectedFilePath() const
     return m_selectedFilePath;
 }
 
-void TestflowInteractive::setUnattendedMessageHandler(const MessageHandler& handler)
+void TestflowInteractive::setUnattendedDialogs(UnattendedDialogs mode)
 {
-    m_unattendedMessageHandler = handler;
+    m_unattendedDialogs = mode;
 }
 
-void TestflowInteractive::setSkipDialogs(bool skip)
+async::Channel<std::string, std::string, std::string> TestflowInteractive::unexpectedMessage() const
 {
-    m_skipDialogs = skip;
+    return m_unexpectedMessage;
 }
 
 bool TestflowInteractive::isDialog(const Uri& uri) const
@@ -379,23 +358,13 @@ async::Promise<IInteractive::Result> TestflowInteractive::resultPromise(const Re
     });
 }
 
-bool TestflowInteractive::isUnattended() const
+IInteractive::Result TestflowInteractive::unattendedMessage(const std::string& type, const std::string& title, const Text& text)
 {
-    return m_unattendedMessageHandler != nullptr;
-}
-
-IInteractive::Result TestflowInteractive::unattendedResult(const std::string& type, const std::string& title, const Text& text,
-                                                           const ButtonDatas& buttons, int defBtn) const
-{
-    m_unattendedMessageHandler(type, title, text.text);
-
-    if (defBtn != int(Button::NoButton)) {
-        return Result(defBtn);
+    if (m_unattendedDialogs == UnattendedDialogs::FailOnMessages) {
+        LOGE() << "[testflow] unexpected message (" << type << "): " << title << ": " << text.text;
+        m_unexpectedMessage.send(type, title, text.text);
+        return Result(int(Button::Cancel));
     }
 
-    if (!buttons.empty()) {
-        return Result(buttons.front().btn);
-    }
-
-    return Result(int(Button::Ok));
+    return skippedResult(type, title);
 }

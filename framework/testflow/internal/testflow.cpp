@@ -40,6 +40,11 @@ using namespace muse::testflow;
 void Testflow::init()
 {
     m_testflowInteractive = std::make_shared<TestflowInteractive>();
+    m_testflowInteractive->unexpectedMessage().onReceive(this, [this](const std::string& type, const std::string& title,
+                                                                      const std::string& text) {
+        failRunningStep(QString("unexpected message (%1): %2: %3")
+                        .arg(QString::fromStdString(type), QString::fromStdString(title), QString::fromStdString(text)));
+    });
 
     m_runner.stepStatusChanged().onReceive(this, [this](const StepInfo& stepInfo, const Ret& ret) {
         if (stepInfo.status == StepStatus::Started) {
@@ -106,7 +111,6 @@ void Testflow::affectOnServices()
 
         //! NOTE Change Interactive implementation
         setTestflowInteractiveInstalled(true);
-        m_testflowInteractive->setSkipDialogs(false);
     }
 
     m_affectedServiceState.fontDisabledMerging = muse::draw::Font::g_disableFontMerging;
@@ -140,7 +144,8 @@ void Testflow::setSkipDialogsOutsideRun(bool skip)
     }
 
     setTestflowInteractiveInstalled(skip);
-    m_testflowInteractive->setSkipDialogs(skip);
+    m_testflowInteractive->setUnattendedDialogs(skip ? TestflowInteractive::UnattendedDialogs::Skip
+                                                : TestflowInteractive::UnattendedDialogs::Show);
 }
 
 void Testflow::restoreAffectOnServices()
@@ -154,7 +159,6 @@ void Testflow::restoreAffectOnServices()
         shortcutsRegister()->reload(false);
 #endif
 
-        m_testflowInteractive->setSkipDialogs(m_skipDialogsOutsideRun);
         setTestflowInteractiveInstalled(m_skipDialogsOutsideRun);
     }
 
@@ -270,13 +274,8 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOpti
 
     m_runResult = RunResult();
     m_interactive = opt.interactive;
-    if (!m_interactive) {
-        m_testflowInteractive->setUnattendedMessageHandler([this](const std::string& type, const std::string& title,
-                                                                  const std::string& text) {
-            failRunningStep(QString("unexpected message (%1): %2: %3")
-                            .arg(QString::fromStdString(type), QString::fromStdString(title), QString::fromStdString(text)));
-        });
-    }
+    m_testflowInteractive->setUnattendedDialogs(m_interactive ? TestflowInteractive::UnattendedDialogs::Show
+                                                : TestflowInteractive::UnattendedDialogs::FailOnMessages);
 
     setStatus(Status::Running);
     QString func = opt.func.empty() ? QString("main") : QString::fromStdString(opt.func);
@@ -294,10 +293,11 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOpti
     delete m_engine;
     m_engine = nullptr;
 
-    restoreAffectOnServices();
-
     m_interactive = true;
-    m_testflowInteractive->setUnattendedMessageHandler(nullptr);
+    m_testflowInteractive->setUnattendedDialogs(m_skipDialogsOutsideRun ? TestflowInteractive::UnattendedDialogs::Skip
+                                                : TestflowInteractive::UnattendedDialogs::Show);
+
+    restoreAffectOnServices();
 
     RunResult result = m_runResult;
     result.status = status();

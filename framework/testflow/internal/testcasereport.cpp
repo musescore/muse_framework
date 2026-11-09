@@ -52,7 +52,7 @@ Ret TestCaseReport::beginReport(const TestCase& testCase)
         m_file.close();
     }
 
-    QString tcname = testCase.name();
+    QString tcname = io::escapeFileName(testCase.name()).toQString();
     QDateTime now = QDateTime::currentDateTime();
     QString reportPath = reportsPath.toQString()
                          + "/" + tcname

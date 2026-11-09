@@ -23,11 +23,12 @@
 #pragma once
 
 #include <memory>
-#include <functional>
 
+#include "async/channel.h"
+
+#include "modularity/ioc.h"
 #include "interactive/iinteractive.h"
 #include "interactive/iinteractiveuriregister.h"
-#include "modularity/ioc.h"
 
 namespace muse::testflow {
 class TestflowInteractive : public IInteractive
@@ -124,14 +125,16 @@ public:
     // TestflowInteractive
     io::path_t selectedFilePath() const; // last selected file path
 
-    //! NOTE In a non-interactive run nobody can close a message (info, warning, error),
-    //! so it is not shown, the handler gets it and the default button is returned
-    using MessageHandler = std::function<void (const std::string& type, const std::string& title, const std::string& text)>;
-    void setUnattendedMessageHandler(const MessageHandler& handler);
+    //! NOTE Nobody can answer dialogs in an unattended run, so they are not shown and get Cancel
+    enum class UnattendedDialogs {
+        Show,           // interactive run (default)
+        Skip,           // no test case runs (e.g. the application startup): all dialogs are skipped
+        FailOnMessages  // a test case runs: messages (info, warning, error) are unexpected,
+                        // dialogs and questions are the test case's business
+    };
+    void setUnattendedDialogs(UnattendedDialogs mode);
 
-    //! NOTE When no test case runs nobody can answer dialogs (e.g. on the application startup in a command line run),
-    //! so they are skipped: messages and questions get Cancel, opening dialogs and selecting files are cancelled
-    void setSkipDialogs(bool skip);
+    async::Channel<std::string /*type*/, std::string /*title*/, std::string /*text*/> unexpectedMessage() const;
 
 private:
     std::shared_ptr<IInteractive> m_real = nullptr;
@@ -140,13 +143,11 @@ private:
     Result skippedResult(const std::string& type, const std::string& title) const;
     static async::Promise<Result> resultPromise(const Result& res);
 
-    bool isUnattended() const;
-    Result unattendedResult(const std::string& type, const std::string& title, const Text& text, const ButtonDatas& buttons,
-                            int defBtn) const;
+    Result unattendedMessage(const std::string& type, const std::string& title, const Text& text);
 
     io::path_t m_selectedFilePath;
-    MessageHandler m_unattendedMessageHandler;
-    bool m_skipDialogs = false;
+    UnattendedDialogs m_unattendedDialogs = UnattendedDialogs::Show;
+    async::Channel<std::string, std::string, std::string> m_unexpectedMessage;
 };
 
 using TestflowInteractivePtr = std::shared_ptr<TestflowInteractive>;

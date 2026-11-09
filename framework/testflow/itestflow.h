@@ -91,7 +91,7 @@ public:
     virtual bool isInteractive() const = 0;
 
     //! NOTE Nobody can answer dialogs while no test case runs (e.g. on the application startup in a command line run),
-    //! so they are skipped (see TestflowInteractive::setSkipDialogs)
+    //! so they are skipped (see TestflowInteractive::UnattendedDialogs)
     virtual void setSkipDialogsOutsideRun(bool skip) = 0;
 
     virtual ITestCaseContextPtr context() const = 0;

@@ -175,7 +175,8 @@ io::path_t GlobalConfiguration::userDataPath() const
         if (!m_userDataDir.empty()) {
             m_userDataPath = m_userDataDir + "/UserData";
         } else {
-            m_userDataPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/" + QCoreApplication::applicationName();
+            m_userDataPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/"
+                             + QCoreApplication::applicationName();
         }
     }
     return m_userDataPath;
