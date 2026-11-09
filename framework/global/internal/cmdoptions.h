@@ -25,6 +25,7 @@
 #include <optional>
 
 #include "global/logger.h"
+#include "global/io/path.h"
 #include "../iapplication.h"
 
 namespace muse {
@@ -35,6 +36,7 @@ struct CmdOptions {
 
     struct {
         std::optional<muse::logger::Level> loggerLevel;
+        std::optional<io::path_t> userDataDir;
     } global;
 
     struct {

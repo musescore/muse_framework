@@ -88,6 +88,18 @@ void Settings::reload()
     }
 }
 
+void Settings::setDataPath(const io::path_t& path)
+{
+    m_dataPath = path.toQString();
+
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, m_dataPath);
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, m_dataPath);
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+
+    delete m_settings;
+    m_settings = new QSettings();
+}
+
 void Settings::load()
 {
     m_items = readItems();
@@ -242,6 +254,10 @@ void Settings::writeValue(const Key& key, const Val& value)
 
 QString Settings::dataPath() const
 {
+    if (!m_dataPath.isEmpty()) {
+        return m_dataPath;
+    }
+
 #ifdef WIN_PORTABLE
     return QDir::cleanPath(QString("%1/../../../Data/settings").arg(QCoreApplication::applicationDirPath()));
 #else

@@ -81,6 +81,9 @@ public:
 
     const Items& items() const;
 
+    //! NOTE Use the given directory instead of the default one, must be called before load
+    void setDataPath(const io::path_t& path);
+
     void reload();
     void load();
 
@@ -125,6 +128,7 @@ private:
     QString dataPath() const;
 
     QSettings* m_settings = nullptr;
+    QString m_dataPath;
     mutable Items m_items;
     mutable Items m_localSettings;
     mutable bool m_isTransactionStarted = false;
