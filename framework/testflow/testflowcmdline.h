@@ -23,7 +23,7 @@
 
 #include <optional>
 
-#include "global/iapplication.h"
+#include "global/internal/cmdoptions.h"
 #include "testflowtypes.h"
 
 class QCommandLineParser;
@@ -32,5 +32,6 @@ namespace muse::testflow {
 void addCmdOptions(QCommandLineParser& parser);
 
 //! NOTE Sets runMode to ConsoleApp if requested (--test-case-mode console)
-std::optional<RunRequest> parseCmdOptions(const QCommandLineParser& parser, IApplication::RunMode& runMode);
+//! and a temporary user data dir if it is not set, so the test case does not change the user's data
+std::optional<RunRequest> parseCmdOptions(const QCommandLineParser& parser, CmdOptions& options);
 }

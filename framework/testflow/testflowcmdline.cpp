@@ -22,6 +22,9 @@
 #include "testflowcmdline.h"
 
 #include <QCommandLineParser>
+#include <QCoreApplication>
+#include <QDir>
+#include <QTemporaryDir>
 
 #include "io/dir.h"
 
@@ -52,7 +55,7 @@ void muse::testflow::addCmdOptions(QCommandLineParser& parser)
     parser.addOption(QCommandLineOption(TEST_CASE_MODE, "Test case run mode: gui (default) | console", "mode"));
 }
 
-std::optional<RunRequest> muse::testflow::parseCmdOptions(const QCommandLineParser& parser, IApplication::RunMode& runMode)
+std::optional<RunRequest> muse::testflow::parseCmdOptions(const QCommandLineParser& parser, CmdOptions& options)
 {
     if (!parser.isSet(TEST_CASE)) {
         return std::nullopt;
@@ -101,9 +104,21 @@ std::optional<RunRequest> muse::testflow::parseCmdOptions(const QCommandLinePars
     if (parser.isSet(TEST_CASE_MODE)) {
         const QString mode = parser.value(TEST_CASE_MODE);
         if (mode == "console") {
-            runMode = IApplication::RunMode::ConsoleApp;
+            options.runMode = IApplication::RunMode::ConsoleApp;
         } else if (mode != "gui") {
             LOGW() << "unknown --" << TEST_CASE_MODE << ": " << mode << ", expected gui|console";
+        }
+    }
+
+    if (!options.global.userDataDir.has_value()) {
+        //! NOTE Not removed, the reports and the saved files stay there
+        QTemporaryDir dir(QDir::tempPath() + "/" + QCoreApplication::applicationName() + "_testflow_XXXXXX");
+        if (dir.isValid()) {
+            dir.setAutoRemove(false);
+            options.global.userDataDir = dir.path();
+            LOGI() << "[testflow] user data dir: " << dir.path();
+        } else {
+            LOGW() << "[testflow] failed to create a temporary user data dir: " << dir.errorString();
         }
     }
 
