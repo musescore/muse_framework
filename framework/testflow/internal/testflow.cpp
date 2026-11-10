@@ -343,7 +343,11 @@ int Testflow::intervalMsec() const
 void Testflow::runTestCase(const TestCase& testCase)
 {
     m_runResult.testCasesCount++;
-    m_report.beginReport(testCase);
+    Ret ret = m_report.beginReport(testCase);
+    if (!ret) {
+        LOGE() << "failed to begin the report, the test case runs without it, err: " << ret.toString();
+    }
+
     m_runner.run(testCase);
 }
 

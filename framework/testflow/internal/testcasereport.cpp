@@ -63,7 +63,7 @@ Ret TestCaseReport::beginReport(const TestCase& testCase)
 
     m_file.setFileName(reportPath);
     if (!m_file.open(QIODevice::WriteOnly)) {
-        return make_ret(Ret::Code::UnknownError);
+        return make_ret(Ret::Code::UnknownError, "failed to open " + reportPath + ": " + m_file.errorString());
     }
 
     m_stream.setDevice(&m_file);
