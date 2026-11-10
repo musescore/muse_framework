@@ -225,5 +225,10 @@ QString TestflowApi::selectedFilePath() const
 
 void TestflowApi::showMainWindowOnFront()
 {
+    //! NOTE A non-interactive run must not take the focus from the user or from other runs in parallel
+    if (!testflow()->isInteractive()) {
+        return;
+    }
+
     mainWindow()->requestShowOnFront();
 }

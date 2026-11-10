@@ -93,8 +93,12 @@ void Testflow::affectOnServices()
 {
     IApplication::RunMode runMode = application()->runMode();
     if (runMode == IApplication::RunMode::GuiApp) {
-        //! NOTE Move focus to main window
-        mainWindow()->qWindow()->requestActivate();
+        //! NOTE Move focus to main window, but not in a non-interactive run:
+        //! the window must not take the focus from the user or from other runs in parallel,
+        //! the keys are sent to the window directly
+        if (m_interactive) {
+            mainWindow()->qWindow()->requestActivate();
+        }
 
         //! NOTE Disable reset on mouse press for testing purpose
         navigation()->setIsResetOnMousePress(false);
@@ -263,6 +267,7 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOpti
         m_engine = nullptr;
     }
 
+    m_interactive = opt.interactive;
     affectOnServices();
 
     m_engine = new ScriptEngine(iocContext());
@@ -273,7 +278,6 @@ ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOpti
     loadContext(m_context, opt.context, opt.contextVal, m_engine);
 
     m_runResult = RunResult();
-    m_interactive = opt.interactive;
     m_testflowInteractive->setUnattendedDialogs(m_interactive ? TestflowInteractive::UnattendedDialogs::Show
                                                 : TestflowInteractive::UnattendedDialogs::FailOnMessages);
 
