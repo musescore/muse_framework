@@ -47,6 +47,9 @@ public:
     void setCurrentAudioDriverName(const std::string& name) override;
     async::Notification currentAudioDriverChanged() const override;
 
+    bool isOutputDisabled() const override;
+    void setOutputDisabled(bool disabled) override;
+
     std::string audioOutputDeviceId() const override;
     void setAudioOutputDeviceId(const std::string& deviceId) override;
     async::Notification audioOutputDeviceIdChanged() const override;
@@ -88,6 +91,7 @@ private:
     async::Channel<bool> m_useSoundFontLowPassFilterChanged;
 
     async::Notification m_currentAudioDriverChanged;
+    bool m_outputDisabled = false;
     async::Notification m_audioOutputDeviceIdChanged;
     async::Notification m_driverBufferSizeChanged;
     async::Notification m_driverSampleRateChanged;

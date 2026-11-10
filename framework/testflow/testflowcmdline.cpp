@@ -115,6 +115,11 @@ std::optional<RunRequest> muse::testflow::parseCmdOptions(const QCommandLinePars
         options.network.offline = true;
     }
 
+    //! NOTE Tests must not play the sound or take an audio device (also from other runs in parallel)
+    if (!options.audio.outputDisabled.has_value()) {
+        options.audio.outputDisabled = true;
+    }
+
     if (!options.global.userDataDir.has_value()) {
         //! NOTE Not removed, the reports and the saved files stay there
         QTemporaryDir dir(QDir::tempPath() + "/" + QCoreApplication::applicationName() + "_testflow_XXXXXX");

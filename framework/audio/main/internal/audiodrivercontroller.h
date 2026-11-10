@@ -75,6 +75,7 @@ public:
     IAudioTaskSchedulerPtr getAudioTaskScheduler() const;
 
 private:
+    IAudioDriverPtr createDriver(const std::string& name) const;
     void setNewDriver(IAudioDriverPtr newDriver);
 
     void handleOutputDeviceChange();

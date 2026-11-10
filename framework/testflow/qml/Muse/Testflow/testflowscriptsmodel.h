@@ -25,6 +25,7 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QMap>
+#include <QProcess>
 #include <qqmlintegration.h>
 
 #include "async/asyncable.h"
@@ -39,6 +40,10 @@ class TestflowScriptsModel : public QAbstractListModel, public Contextable, publ
 
     Q_PROPERTY(bool isRunAllTCMode READ isRunAllTCMode WRITE setIsRunAllTCMode NOTIFY isRunAllTCModeChanged)
     Q_PROPERTY(QString speedMode READ speedMode WRITE setSpeedMode NOTIFY speedModeChanged)
+
+    Q_PROPERTY(bool runInNewWindows READ runInNewWindows WRITE setRunInNewWindows NOTIFY runInNewWindowsChanged)
+    Q_PROPERTY(int jobs READ jobs WRITE setJobs NOTIFY jobsChanged)
+    Q_PROPERTY(bool audioDisabled READ audioDisabled WRITE setAudioDisabled NOTIFY audioDisabledChanged)
 
     QML_ELEMENT
 
@@ -56,6 +61,13 @@ public:
     bool isRunAllTCMode() const;
     QString speedMode() const;
     void setSpeedMode(const QString& newSpeedMode);
+
+    bool runInNewWindows() const;
+    void setRunInNewWindows(bool arg);
+    int jobs() const;
+    void setJobs(int arg);
+    bool audioDisabled() const;
+    void setAudioDisabled(bool arg);
 
     Q_INVOKABLE void load();
     Q_INVOKABLE void runScript(int scriptIndex);
@@ -76,6 +88,9 @@ signals:
     void requireStartTC(const QString& path);
     void isAllSelectedChanged(const QString& type, bool arg);
     void speedModeChanged();
+    void runInNewWindowsChanged();
+    void jobsChanged();
+    void audioDisabledChanged();
 
 private:
 
@@ -91,9 +106,18 @@ private:
     void setStatus(const io::path_t& path, ITestflow::Status st);
     bool isAllSelected(const ScriptType& type) const;
 
+    int takeNextTCIndex();
+    void runNextInNewWindows();
+    void runInNewWindow(const io::path_t& path);
+    void onRunInNewWindowFinished(QProcess* process, const io::path_t& path, bool passed, const QString& info);
+
     Scripts m_scripts;
     int m_currentTCIndex = -1;
     bool m_isRunAllTCMode = false;
+    bool m_runInNewWindows = false;
+    int m_jobs = 1;
+    bool m_audioDisabled = true;
+    QList<QProcess*> m_processes;
     QMap<io::path_t, ITestflow::Status> m_statuses;
     QMap<int, bool> m_selected;
 };
