@@ -42,6 +42,8 @@ static QString formatVal(const ITestCaseContext::Val& val)
 
 Ret TestCaseReport::beginReport(const TestCase& testCase)
 {
+    m_opened = false;
+
     io::path_t reportsPath = configuration()->reportsPath();
     Ret ret = fileSystem()->makePath(reportsPath);
     if (!ret) {
