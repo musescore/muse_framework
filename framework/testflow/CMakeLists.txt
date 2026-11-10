@@ -88,3 +88,7 @@ target_link_libraries(muse_testflow PRIVATE muse::draw Qt::Quick)
 if (MUSE_MODULE_TESTFLOW_QML)
     add_subdirectory(qml/Muse/Testflow)
 endif()
+
+if (MUSE_MODULE_TESTFLOW_TESTS)
+    add_subdirectory(tests)
+endif()
