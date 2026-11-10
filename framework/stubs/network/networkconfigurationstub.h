@@ -31,5 +31,8 @@ public:
 
     bool isOffline() const override;
     void setOffline(bool offline) override;
+
+private:
+    bool m_offline = false;
 };
 }

@@ -30,9 +30,10 @@ RequestHeaders NetworkConfigurationStub::defaultHeaders(const std::string&) cons
 
 bool NetworkConfigurationStub::isOffline() const
 {
-    return true;
+    return m_offline;
 }
 
-void NetworkConfigurationStub::setOffline(bool)
+void NetworkConfigurationStub::setOffline(bool offline)
 {
+    m_offline = offline;
 }
