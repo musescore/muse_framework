@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <map>
+#include <optional>
 #include <string>
 
 #include "global/types/uri.h"
@@ -132,33 +134,54 @@ enum class Presence {
     Optional,
 };
 
+struct UiHints {
+    int order = 0;
+};
+
 struct Arg {
-    std::string description;
+    TranslatableString label;
+    TranslatableString description;
     DataType dataType = DataType::Undefined;
     Presence presence = Presence::Required;
     std::optional<ValList> allowedValues; //! NOTE Typically, these are enum values.
     std::optional<Val> min;
     std::optional<Val> max;
+    UiHints uiHints;
 
     Arg() = default;
 
     Arg(DataType dataType, const String& description,
         const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
-        : description(description.toStdString()), dataType(dataType), min(min), max(max) {}
+        : description(TranslatableString::untranslatable(description)), dataType(dataType), min(min), max(max) {}
 
     Arg(DataType dataType, const std::string& description, Presence presence,
         const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
-        : description(description), dataType(dataType), presence(presence), min(min), max(max) {}
+        : description(TranslatableString::untranslatable(String::fromStdString(description))), dataType(dataType),
+        presence(presence), min(min), max(max) {}
 
     Arg(DataType dataType, const std::string& description,
         const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
-        : description(description), dataType(dataType), min(min), max(max) {}
+        : description(TranslatableString::untranslatable(String::fromStdString(description))), dataType(dataType),
+        min(min), max(max) {}
+
+    Arg(DataType dataType, const TranslatableString& label, const TranslatableString& description,
+        Presence presence = Presence::Required, const std::optional<ValList>& allowedValues = std::nullopt,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : label(label), description(description), dataType(dataType), presence(presence),
+        allowedValues(allowedValues), min(min), max(max) {}
 };
 
 struct ArgsSchema {
     ArgsSchema() {}
-    ArgsSchema(std::map<std::string, Arg> _args)
-        : args(std::move(_args)) {}
+    ArgsSchema(std::initializer_list<std::pair<std::string, Arg> > _args)
+    {
+        int order = 0;
+        for (const auto& [key, arg] : _args) {
+            Arg ordered = arg;
+            ordered.uiHints = UiHints { ++order };
+            args.emplace(key, std::move(ordered));
+        }
+    }
 
     std::map<std::string, Arg> args;
 };

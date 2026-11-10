@@ -137,7 +137,7 @@ std::vector<Tool> McpController::makeToolsList() const
             for (const auto& [name, arg] : schema.args) {
                 Property property;
                 property.type = toMcpDataTypeSchema(arg.dataType);
-                property.description = arg.description;
+                property.description = arg.description.translated().toStdString();
                 property.enumValues = arg.allowedValues;
                 property.minimum = arg.min;
                 property.maximum = arg.max;
