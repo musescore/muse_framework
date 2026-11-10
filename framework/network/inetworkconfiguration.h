@@ -34,5 +34,9 @@ public:
     virtual ~INetworkConfiguration() = default;
 
     virtual RequestHeaders defaultHeaders(const std::string& userAgentName = {}) const = 0;
+
+    //! NOTE In offline mode all requests fail without network access (e.g. for automated tests)
+    virtual bool isOffline() const = 0;
+    virtual void setOffline(bool offline) = 0;
 };
 }

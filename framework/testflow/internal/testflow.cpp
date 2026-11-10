@@ -40,6 +40,11 @@ using namespace muse::testflow;
 void Testflow::init()
 {
     m_testflowInteractive = std::make_shared<TestflowInteractive>();
+    m_testflowInteractive->unexpectedMessage().onReceive(this, [this](const std::string& type, const std::string& title,
+                                                                      const std::string& text) {
+        failRunningStep(QString("unexpected message (%1): %2: %3")
+                        .arg(QString::fromStdString(type), QString::fromStdString(title), QString::fromStdString(text)));
+    });
 
     m_runner.stepStatusChanged().onReceive(this, [this](const StepInfo& stepInfo, const Ret& ret) {
         if (stepInfo.status == StepStatus::Started) {
@@ -47,6 +52,12 @@ void Testflow::init()
         }
 
         m_report.onStepStatusChanged(stepInfo, m_context);
+
+        if (stepInfo.status == StepStatus::Aborted || stepInfo.status == StepStatus::Error) {
+            m_runResult.failedStep = stepInfo.name;
+            m_runResult.ret = ret;
+        }
+
         m_stepStatusChanged.send(stepInfo, ret);
 
         if (stepInfo.status == StepStatus::Aborted) {
@@ -59,6 +70,20 @@ void Testflow::init()
     m_runner.allFinished().onReceive(this, [this](bool aborted) {
         m_report.endReport(aborted);
     });
+
+    //! NOTE A script that dispatches an unknown action or command is out of date,
+    //! fail the current step instead of silently doing nothing
+    if (actionsDispatcher()) {
+        actionsDispatcher()->notRegistered().onReceive(this, [this](const actions::ActionCode& code) {
+            failRunningStep(QString("not registered action: ") + QString::fromStdString(code));
+        });
+    }
+
+    if (commandDispatcher()) {
+        commandDispatcher()->notRegistered().onReceive(this, [this](const rcommand::Command& command) {
+            failRunningStep(QString("not registered command: ") + QString::fromStdString(command.toString()));
+        });
+    }
 
     setStatus(Status::Undefined);
     setSpeedMode(SpeedMode::Default);
@@ -85,15 +110,42 @@ void Testflow::affectOnServices()
 #endif
 
         //! NOTE Change Interactive implementation
-        modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
-        auto realInteractive = ioc->resolve<IInteractive>("testflow");
-        m_testflowInteractive->setRealInteractive(realInteractive);
-        ioc->unregister<IInteractive>("testflow");
-        ioc->registerExport<IInteractive>("testflow", m_testflowInteractive);
+        setTestflowInteractiveInstalled(true);
     }
 
     m_affectedServiceState.fontDisabledMerging = muse::draw::Font::g_disableFontMerging;
     muse::draw::Font::g_disableFontMerging = true;
+}
+
+void Testflow::setTestflowInteractiveInstalled(bool installed)
+{
+    modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
+    const bool isInstalled = ioc->resolve<IInteractive>("testflow") == m_testflowInteractive;
+    if (installed == isInstalled) {
+        return;
+    }
+
+    if (installed) {
+        m_testflowInteractive->setRealInteractive(ioc->resolve<IInteractive>("testflow"));
+        ioc->unregister<IInteractive>("testflow");
+        ioc->registerExport<IInteractive>("testflow", m_testflowInteractive);
+    } else {
+        ioc->unregister<IInteractive>("testflow");
+        ioc->registerExport<IInteractive>("testflow", m_testflowInteractive->realInteractive());
+    }
+}
+
+void Testflow::setSkipDialogsOutsideRun(bool skip)
+{
+    m_skipDialogsOutsideRun = skip;
+
+    if (application()->runMode() != IApplication::RunMode::GuiApp || status() == Status::Running) {
+        return;
+    }
+
+    setTestflowInteractiveInstalled(skip);
+    m_testflowInteractive->setUnattendedDialogs(skip ? TestflowInteractive::UnattendedDialogs::Skip
+                                                : TestflowInteractive::UnattendedDialogs::Show);
 }
 
 void Testflow::restoreAffectOnServices()
@@ -107,10 +159,7 @@ void Testflow::restoreAffectOnServices()
         shortcutsRegister()->reload(false);
 #endif
 
-        modularity::ModulesContextIoC* ioc = modularity::ioc(iocContext());
-        auto realInteractive = m_testflowInteractive->realInteractive();
-        ioc->unregister<IInteractive>("testflow");
-        ioc->registerExport<IInteractive>("testflow", realInteractive);
+        setTestflowInteractiveInstalled(m_skipDialogsOutsideRun);
     }
 
     muse::draw::Font::g_disableFontMerging = m_affectedServiceState.fontDisabledMerging;
@@ -171,7 +220,12 @@ QJSValueList Testflow::parseFuncArgs(const std::string& funcArgs, ScriptEngine* 
     return args;
 }
 
-void Testflow::execScript(const io::path_t& path, const Options& opt)
+bool Testflow::isInteractive() const
+{
+    return m_interactive;
+}
+
+ITestflow::RunResult Testflow::execScript(const io::path_t& path, const ExecOptions& opt)
 {
     LOGD() << "path: " << path
            << ", context: " << opt.context
@@ -194,7 +248,7 @@ void Testflow::execScript(const io::path_t& path, const Options& opt)
             QTimer::singleShot(1000, [this, path, opt]() {
                 execScript(path, opt);
             });
-            return;
+            return RunResult();
         }
     }
 
@@ -218,23 +272,42 @@ void Testflow::execScript(const io::path_t& path, const Options& opt)
     m_context->setGlobalVal("script_path", path.toQString());
     loadContext(m_context, opt.context, opt.contextVal, m_engine);
 
+    m_runResult = RunResult();
+    m_interactive = opt.interactive;
+    m_testflowInteractive->setUnattendedDialogs(m_interactive ? TestflowInteractive::UnattendedDialogs::Show
+                                                : TestflowInteractive::UnattendedDialogs::FailOnMessages);
+
     setStatus(Status::Running);
     QString func = opt.func.empty() ? QString("main") : QString::fromStdString(opt.func);
     QJSValueList args = opt.funcArgs.empty() ? QJSValueList() : parseFuncArgs(opt.funcArgs, m_engine);
     Ret ret = m_engine->call(func, args);
-
-    //! NOTE Also maybe abort or error
-    if (status() == Status::Running) {
-        setStatus(Status::Finished);
-    }
-
-    delete m_engine;
-    m_engine = nullptr;
     if (!ret) {
         LOGE() << ret.toString();
     }
 
+    //! NOTE Also maybe abort or error (set by a failed step)
+    if (status() == Status::Running) {
+        setStatus(ret ? Status::Finished : Status::Error);
+    }
+
+    delete m_engine;
+    m_engine = nullptr;
+
+    m_interactive = true;
+    m_testflowInteractive->setUnattendedDialogs(m_skipDialogsOutsideRun ? TestflowInteractive::UnattendedDialogs::Skip
+                                                : TestflowInteractive::UnattendedDialogs::Show);
+
     restoreAffectOnServices();
+
+    RunResult result = m_runResult;
+    result.status = status();
+    //! NOTE The failed step error is more precise than the script one
+    if (!result.ret.valid()) {
+        result.ret = ret;
+    }
+    result.reportPath = m_report.reportPath();
+
+    return result;
 }
 
 SpeedMode Testflow::speedMode() const
@@ -269,7 +342,12 @@ int Testflow::intervalMsec() const
 
 void Testflow::runTestCase(const TestCase& testCase)
 {
-    m_report.beginReport(testCase);
+    m_runResult.testCasesCount++;
+    Ret ret = m_report.beginReport(testCase);
+    if (!ret) {
+        LOGE() << "failed to begin the report, the test case runs without it, err: " << ret.toString();
+    }
+
     m_runner.run(testCase);
 }
 
@@ -338,6 +416,16 @@ ITestCaseContextPtr Testflow::context() const
 TestflowInteractivePtr Testflow::testflowInteractive() const
 {
     return m_testflowInteractive;
+}
+
+void Testflow::failRunningStep(const QString& what)
+{
+    if (!m_engine || status() != Status::Running) {
+        return;
+    }
+
+    LOGE() << what;
+    m_engine->throwError(what);
 }
 
 void Testflow::setStatus(Status st)

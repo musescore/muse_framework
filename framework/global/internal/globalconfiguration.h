@@ -37,6 +37,9 @@ public:
 
     void init();
 
+    //! NOTE Use the given directory for all user data instead of the default locations
+    void setUserDataDir(const io::path_t& dir);
+
     io::path_t appBinPath() const override;
     io::path_t appBinDirPath() const override;
     io::path_t appDataPath() const override;
@@ -75,6 +78,8 @@ private:
 
     mutable io::path_t m_appDataPath;
     mutable io::path_t m_userAppDataPath;
+    mutable io::path_t m_userDataPath;
+    io::path_t m_userDataDir;
 };
 }
 

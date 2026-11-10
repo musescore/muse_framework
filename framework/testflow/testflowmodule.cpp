@@ -28,6 +28,7 @@
 
 #include "internal/testflow.h"
 #include "internal/testflowconfiguration.h"
+#include "internal/testflowcmdrunner.h"
 
 #include "internal/testflowactionscontroller.h"
 #include "internal/testflowcommandsregister.h"
@@ -55,6 +56,7 @@ void TestflowModule::registerExports()
     m_configuration = std::make_shared<TestflowConfiguration>(globalCtx());
 
     globalIoc()->registerExport<ITestflowConfiguration>(mname, m_configuration);
+    globalIoc()->registerExport<ITestflowCmdRunner>(mname, std::make_shared<TestflowCmdRunner>());
 }
 
 void TestflowModule::resolveImports()

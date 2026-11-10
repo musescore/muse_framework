@@ -42,6 +42,8 @@ static QString formatVal(const ITestCaseContext::Val& val)
 
 Ret TestCaseReport::beginReport(const TestCase& testCase)
 {
+    m_opened = false;
+
     io::path_t reportsPath = configuration()->reportsPath();
     Ret ret = fileSystem()->makePath(reportsPath);
     if (!ret) {
@@ -52,7 +54,7 @@ Ret TestCaseReport::beginReport(const TestCase& testCase)
         m_file.close();
     }
 
-    QString tcname = testCase.name();
+    QString tcname = io::escapeFileName(testCase.name()).toQString();
     QDateTime now = QDateTime::currentDateTime();
     QString reportPath = reportsPath.toQString()
                          + "/" + tcname
@@ -61,7 +63,7 @@ Ret TestCaseReport::beginReport(const TestCase& testCase)
 
     m_file.setFileName(reportPath);
     if (!m_file.open(QIODevice::WriteOnly)) {
-        return make_ret(Ret::Code::UnknownError);
+        return make_ret(Ret::Code::UnknownError, "failed to open " + reportPath + ": " + m_file.errorString());
     }
 
     m_stream.setDevice(&m_file);
@@ -132,4 +134,9 @@ void TestCaseReport::onStepStatusChanged(const StepInfo& stepInfo, const ITestCa
     }
 
     m_stream.flush();
+}
+
+io::path_t TestCaseReport::reportPath() const
+{
+    return m_opened ? io::path_t(m_file.fileName()) : io::path_t();
 }

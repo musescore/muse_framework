@@ -52,6 +52,7 @@ public:
 
     virtual async::Channel<Command, bool* /*allow dispatch*/> preDispatch() const = 0;
     virtual async::Channel<Command> postDispatch() const = 0;
+    virtual async::Channel<Command> notRegistered() const = 0;
 
     // Helpers for convenience
     async::Promise<Response> dispatch(const Command& command)
