@@ -123,15 +123,21 @@ bool NavigationApi::waitControl(const QString& section, const QString& panel, co
 bool NavigationApi::goToControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex, int timeoutMsec)
 {
     if (timeoutMsec > 0) {
+        bool waited = false;
         if (controlNameOrIndex.isString()) {
-            waitControl(section, panel, controlNameOrIndex.toString(), timeoutMsec);
+            waited = waitControl(section, panel, controlNameOrIndex.toString(), timeoutMsec);
         } else {
             const std::string sectionName = section.toStdString();
             const std::string panelName = panel.toStdString();
-            waitFor([this, &sectionName, &panelName]() {
+            waited = waitFor([this, &sectionName, &panelName]() {
                 const INavigationPanel* p = navigation()->findPanel(sectionName, panelName);
                 return p && p->enabled();
             }, timeoutMsec);
+        }
+
+        if (!waited) {
+            LOGW() << "timeout " << timeoutMsec << " msec, waited for an enabled control: " << controlNameOrIndex.toString()
+                   << ", panel: " << panel << ", section: " << section;
         }
     }
 
