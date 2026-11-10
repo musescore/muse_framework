@@ -24,6 +24,8 @@
 
 #include "muse_framework_config.h"
 
+#include "audio/driver/platform/dummy/dummyaudiodriver.h"
+
 #ifdef MUSE_MODULE_AUDIO_JACK
 #include "audio/driver/platform/jack/jackaudiodriver.h"
 #endif
@@ -101,6 +103,10 @@ std::vector<std::string> AudioDriverFactory::availableAudioDrivers() const
 
 IAudioDriverPtr AudioDriverFactory::createDriver(const std::string& name) const
 {
+    if (name == DummyAudioDriver::NAME) {
+        return std::make_shared<DummyAudioDriver>();
+    }
+
 #ifdef MUSE_MODULE_AUDIO_JACK
     LOGW() << "required: " << name << ", but is set MUSE_MODULE_AUDIO_JACK";
     return std::shared_ptr<IAudioDriver>(new JackAudioDriver());

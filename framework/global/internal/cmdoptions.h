@@ -46,5 +46,9 @@ struct CmdOptions {
     struct {
         std::optional<bool> offline;
     } network;
+
+    struct {
+        std::optional<bool> outputDisabled;
+    } audio;
 };
 }

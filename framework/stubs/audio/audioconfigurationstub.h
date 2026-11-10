@@ -34,6 +34,9 @@ public:
     void setCurrentAudioDriverName(const std::string& name) override;
     async::Notification currentAudioDriverChanged() const override;
 
+    bool isOutputDisabled() const override;
+    void setOutputDisabled(bool disabled) override;
+
     std::string audioOutputDeviceId() const override;
     void setAudioOutputDeviceId(const std::string& deviceId) override;
     async::Notification audioOutputDeviceIdChanged() const override;
