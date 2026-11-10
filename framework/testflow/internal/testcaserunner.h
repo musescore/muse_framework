@@ -92,6 +92,7 @@ private:
     TestCaseData m_testCase;
     bool m_abort = false;
     bool m_paused = false;
+    bool m_stepExecuting = false;
 
     QElapsedTimer m_elapsed;
 

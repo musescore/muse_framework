@@ -96,7 +96,10 @@ void TestCaseRunner::unpause(bool isNextStep)
 {
     m_paused = false;
     m_stepStatusChanged.send(StepInfo(m_testCase.lastStepName, StepStatus::Started), muse::make_ok());
-    if (isNextStep) {
+
+    //! NOTE A step may wait in its own event loop (not the testflow sleep),
+    //! the next step will be run when the current one finishes
+    if (isNextStep && !m_stepExecuting) {
         nextStep(false);
     }
 }
@@ -165,7 +168,9 @@ void TestCaseRunner::nextStep(bool byInterval)
             m_stepStatusChanged.send(StepInfo(name, StepStatus::Started), muse::make_ok());
             m_elapsed.restart();
 
+            m_stepExecuting = true;
             Ret ret = step.exec();
+            m_stepExecuting = false;
             if (!ret) {
                 LOGE() << "failed exec step: " << name << ", err: " << ret.toString();
                 StepStatus status = static_cast<Ret::Code>(ret.code()) == Ret::Code::Cancel ? StepStatus::Aborted : StepStatus::Error;
