@@ -37,6 +37,12 @@ std::string WebAudioDriver::name() const
     return "web";
 }
 
+AudioDeviceID WebAudioDriver::defaultDevice() const
+{
+    static const AudioDeviceID id("default");
+    return id;
+}
+
 bool WebAudioDriver::open(const Spec& spec, Spec* activeSpec)
 {
     LOGI() << "try open driver";
@@ -63,16 +69,6 @@ bool WebAudioDriver::open(const Spec& spec, Spec* activeSpec)
     return true;
 }
 
-void WebAudioDriver::resume()
-{
-    emscripten::val::module_property("driver")["resume"]();
-}
-
-void WebAudioDriver::suspend()
-{
-    emscripten::val::module_property("driver")["suspend"]();
-}
-
 void WebAudioDriver::close()
 {
     m_opened = false;
@@ -94,72 +90,25 @@ async::Channel<WebAudioDriver::Spec> WebAudioDriver::activeSpecChanged() const
     return m_activeSpecChanged;
 }
 
-bool WebAudioDriver::setOutputDeviceBufferSize(unsigned int)
+std::vector<samples_t> WebAudioDriver::availableOutputDeviceBufferSizes() const
 {
-    NOT_SUPPORTED;
-    return false;
-}
-
-async::Notification WebAudioDriver::outputDeviceBufferSizeChanged() const
-{
-    static async::Notification n;
-    return n;
-}
-
-bool WebAudioDriver::setOutputDeviceSampleRate(unsigned int)
-{
-    NOT_SUPPORTED;
-    return false;
-}
-
-async::Notification WebAudioDriver::outputDeviceSampleRateChanged() const
-{
-    static async::Notification n;
-    return n;
-}
-
-std::vector<unsigned int> WebAudioDriver::availableOutputDeviceBufferSizes() const
-{
-    std::vector<unsigned int> sizes;
+    std::vector<samples_t> sizes;
     sizes.push_back(m_activeSpec.output.samplesPerChannel);
     return sizes;
 }
 
-std::vector<unsigned int> WebAudioDriver::availableOutputDeviceSampleRates() const
+std::vector<sample_rate_t> WebAudioDriver::availableOutputDeviceSampleRates() const
 {
-    std::vector<unsigned int> sizes;
+    std::vector<sample_rate_t> sizes;
     sizes.push_back(m_activeSpec.output.sampleRate);
     return sizes;
-}
-
-AudioDeviceID WebAudioDriver::outputDevice() const
-{
-    static AudioDeviceID id("default");
-    return id;
-}
-
-bool WebAudioDriver::selectOutputDevice(const AudioDeviceID&)
-{
-    NOT_SUPPORTED;
-    return false;
-}
-
-bool WebAudioDriver::resetToDefaultOutputDevice()
-{
-    return true;
-}
-
-async::Notification WebAudioDriver::outputDeviceChanged() const
-{
-    static async::Notification n;
-    return n;
 }
 
 AudioDeviceList WebAudioDriver::availableOutputDevices() const
 {
     AudioDeviceList list;
     AudioDevice d;
-    d.id = outputDevice();
+    d.id = defaultDevice();
     d.name = d.id;
     list.push_back(d);
     return list;

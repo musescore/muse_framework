@@ -35,6 +35,9 @@ public:
     void init() override;
 
     std::string name() const override;
+
+    AudioDeviceID defaultDevice() const override;
+
     bool open(const Spec& spec, Spec* activeSpec) override;
     void close() override;
     bool isOpened() const override;
@@ -42,23 +45,10 @@ public:
     const Spec& activeSpec() const override;
     async::Channel<Spec> activeSpecChanged() const override;
 
-    bool setOutputDeviceBufferSize(unsigned int bufferSize) override;
-    async::Notification outputDeviceBufferSizeChanged() const override;
-    bool setOutputDeviceSampleRate(unsigned int sampleRate) override;
-    async::Notification outputDeviceSampleRateChanged() const override;
-    std::vector<unsigned int> availableOutputDeviceBufferSizes() const override;
-    std::vector<unsigned int> availableOutputDeviceSampleRates() const override;
-
-    AudioDeviceID outputDevice() const override;
-    bool selectOutputDevice(const AudioDeviceID& id) override;
-    bool resetToDefaultOutputDevice() override;
-    async::Notification outputDeviceChanged() const override;
-
+    std::vector<samples_t> availableOutputDeviceBufferSizes() const override;
+    std::vector<sample_rate_t> availableOutputDeviceSampleRates() const override;
     AudioDeviceList availableOutputDevices() const override;
     async::Notification availableOutputDevicesChanged() const override;
-
-    void resume() override;
-    void suspend() override;
 
 private:
 
