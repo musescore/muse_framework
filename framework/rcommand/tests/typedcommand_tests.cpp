@@ -81,7 +81,7 @@ struct TestCommand {
         TestEnum eVal = TestEnum::Value1;
     };
 
-    static constexpr auto input = FieldsScheme {
+    static const inline auto input = FieldsScheme {
         Field("b_val", &TestCommand::bVal, "Boolean value"),
         Field("i_val", &TestCommand::iVal, "Integer value", -100, 100),
         Field("u_val", &TestCommand::uVal, "Unsigned integer value", Presence::Optional),
@@ -94,7 +94,7 @@ struct TestCommand {
     };
 
     using O = TestCommand::Output;
-    static constexpr auto output = FieldsScheme {
+    static const inline auto output = FieldsScheme {
         Field("b_val", &O::bVal, "Boolean value"),
         Field("i_val", &O::iVal, "Integer value", -100, 100),
         Field("u_val", &O::uVal, "Unsigned integer value", Presence::Optional),
@@ -196,35 +196,35 @@ TEST_F(RCommand_TypedCommandTests, TypedCommand_InputSchema)
     EXPECT_EQ(schema.args.size(), 9);
 
     EXPECT_EQ(schema.args.at("b_val").dataType, DataType::Bool);
-    EXPECT_EQ(schema.args.at("b_val").description, std::string("Boolean value"));
+    EXPECT_EQ(schema.args.at("b_val").description.str.toStdString(), std::string("Boolean value"));
 
     EXPECT_EQ(schema.args.at("i_val").dataType, DataType::Int);
-    EXPECT_EQ(schema.args.at("i_val").description, std::string("Integer value"));
+    EXPECT_EQ(schema.args.at("i_val").description.str.toStdString(), std::string("Integer value"));
     EXPECT_EQ(schema.args.at("i_val").min->toInt(), -100);
     EXPECT_EQ(schema.args.at("i_val").max->toInt(), 100);
 
     EXPECT_EQ(schema.args.at("u_val").dataType, DataType::Int);
-    EXPECT_EQ(schema.args.at("u_val").description, std::string("Unsigned integer value"));
+    EXPECT_EQ(schema.args.at("u_val").description.str.toStdString(), std::string("Unsigned integer value"));
 
     EXPECT_EQ(schema.args.at("i64_val").dataType, DataType::Int64);
-    EXPECT_EQ(schema.args.at("i64_val").description, std::string("64-bit integer value"));
+    EXPECT_EQ(schema.args.at("i64_val").description.str.toStdString(), std::string("64-bit integer value"));
 
     EXPECT_EQ(schema.args.at("u64_val").dataType, DataType::Int64);
-    EXPECT_EQ(schema.args.at("u64_val").description, std::string("64-bit unsigned integer value"));
+    EXPECT_EQ(schema.args.at("u64_val").description.str.toStdString(), std::string("64-bit unsigned integer value"));
 
     EXPECT_EQ(schema.args.at("f_val").dataType, DataType::Float);
-    EXPECT_EQ(schema.args.at("f_val").description, std::string("Float value"));
+    EXPECT_EQ(schema.args.at("f_val").description.str.toStdString(), std::string("Float value"));
     EXPECT_EQ(schema.args.at("f_val").min->toFloat(), 0.0f);
     EXPECT_EQ(schema.args.at("f_val").max->toFloat(), 100.0f);
 
     EXPECT_EQ(schema.args.at("d_val").dataType, DataType::Double);
-    EXPECT_EQ(schema.args.at("d_val").description, std::string("Double value"));
+    EXPECT_EQ(schema.args.at("d_val").description.str.toStdString(), std::string("Double value"));
 
     EXPECT_EQ(schema.args.at("s_val").dataType, DataType::String);
-    EXPECT_EQ(schema.args.at("s_val").description, std::string("String value"));
+    EXPECT_EQ(schema.args.at("s_val").description.str.toStdString(), std::string("String value"));
 
     EXPECT_EQ(schema.args.at("e_val").dataType, DataType::Enum);
-    EXPECT_EQ(schema.args.at("e_val").description, std::string("Enum value"));
+    EXPECT_EQ(schema.args.at("e_val").description.str.toStdString(), std::string("Enum value"));
 }
 
 TEST_F(RCommand_TypedCommandTests, TypedCommand_OutputSchema)
@@ -236,35 +236,35 @@ TEST_F(RCommand_TypedCommandTests, TypedCommand_OutputSchema)
     EXPECT_EQ(schema.args.size(), 9);
 
     EXPECT_EQ(schema.args.at("b_val").dataType, DataType::Bool);
-    EXPECT_EQ(schema.args.at("b_val").description, std::string("Boolean value"));
+    EXPECT_EQ(schema.args.at("b_val").description.str.toStdString(), std::string("Boolean value"));
 
     EXPECT_EQ(schema.args.at("i_val").dataType, DataType::Int);
-    EXPECT_EQ(schema.args.at("i_val").description, std::string("Integer value"));
+    EXPECT_EQ(schema.args.at("i_val").description.str.toStdString(), std::string("Integer value"));
     EXPECT_EQ(schema.args.at("i_val").min->toInt(), -100);
     EXPECT_EQ(schema.args.at("i_val").max->toInt(), 100);
 
     EXPECT_EQ(schema.args.at("u_val").dataType, DataType::Int);
-    EXPECT_EQ(schema.args.at("u_val").description, std::string("Unsigned integer value"));
+    EXPECT_EQ(schema.args.at("u_val").description.str.toStdString(), std::string("Unsigned integer value"));
 
     EXPECT_EQ(schema.args.at("i64_val").dataType, DataType::Int64);
-    EXPECT_EQ(schema.args.at("i64_val").description, std::string("64-bit integer value"));
+    EXPECT_EQ(schema.args.at("i64_val").description.str.toStdString(), std::string("64-bit integer value"));
 
     EXPECT_EQ(schema.args.at("u64_val").dataType, DataType::Int64);
-    EXPECT_EQ(schema.args.at("u64_val").description, std::string("64-bit unsigned integer value"));
+    EXPECT_EQ(schema.args.at("u64_val").description.str.toStdString(), std::string("64-bit unsigned integer value"));
 
     EXPECT_EQ(schema.args.at("f_val").dataType, DataType::Float);
-    EXPECT_EQ(schema.args.at("f_val").description, std::string("Float value"));
+    EXPECT_EQ(schema.args.at("f_val").description.str.toStdString(), std::string("Float value"));
     EXPECT_EQ(schema.args.at("f_val").min->toFloat(), 0.0f);
     EXPECT_EQ(schema.args.at("f_val").max->toFloat(), 100.0f);
 
     EXPECT_EQ(schema.args.at("d_val").dataType, DataType::Double);
-    EXPECT_EQ(schema.args.at("d_val").description, std::string("Double value"));
+    EXPECT_EQ(schema.args.at("d_val").description.str.toStdString(), std::string("Double value"));
 
     EXPECT_EQ(schema.args.at("s_val").dataType, DataType::String);
-    EXPECT_EQ(schema.args.at("s_val").description, std::string("String value"));
+    EXPECT_EQ(schema.args.at("s_val").description.str.toStdString(), std::string("String value"));
 
     EXPECT_EQ(schema.args.at("e_val").dataType, DataType::Enum);
-    EXPECT_EQ(schema.args.at("e_val").description, std::string("Enum value"));
+    EXPECT_EQ(schema.args.at("e_val").description.str.toStdString(), std::string("Enum value"));
 }
 
 TEST_F(RCommand_TypedCommandTests, TypedCommand_Concepts)

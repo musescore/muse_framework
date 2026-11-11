@@ -135,18 +135,29 @@ template<typename S, typename T>
 struct Field {
     std::string_view key;
     T S::* member = nullptr;
-    std::string_view description;
+    TranslatableString label;
+    TranslatableString description;
     std::optional<T> min;
     std::optional<T> max;
     Presence presence = Presence::Required;
 
-    constexpr Field(std::string_view key, T S::* member, std::string_view description
-                    , Presence presence = Presence::Required)
-        : key(key), member(member), description(description), presence(presence) {}
+    Field(std::string_view key, T S::* member, std::string_view description
+          , Presence presence = Presence::Required)
+        : key(key), member(member), description(TranslatableString::untranslatable(String::fromUtf8(description))),
+        presence(presence) {}
 
-    constexpr Field(std::string_view key, T S::* member, std::string_view description,
-                    const T& min, const T& max, Presence presence = Presence::Required)
-        : key(key), member(member), description(description), min(min), max(max), presence(presence) {}
+    Field(std::string_view key, T S::* member, std::string_view description,
+          const T& min, const T& max, Presence presence = Presence::Required)
+        : key(key), member(member), description(TranslatableString::untranslatable(String::fromUtf8(description))),
+        min(min), max(max), presence(presence) {}
+
+    Field(std::string_view key, T S::* member, const TranslatableString& label, const TranslatableString& description
+          , Presence presence = Presence::Required)
+        : key(key), member(member), label(label), description(description), presence(presence) {}
+
+    Field(std::string_view key, T S::* member, const TranslatableString& label, const TranslatableString& description,
+          const T& min, const T& max, Presence presence = Presence::Required)
+        : key(key), member(member), label(label), description(description), min(min), max(max), presence(presence) {}
 };
 
 template<typename S, typename ... T>
@@ -326,9 +337,10 @@ std::vector<std::string> unknownKeys(const Params& params, const F& fields)
 }
 
 template<typename S, typename T>
-Arg makeArg(const Field<S, T>& f)
+Arg makeArg(const Field<S, T>& f, int order)
 {
-    Arg arg(dataType<T>(), std::string(f.description), f.presence);
+    Arg arg(dataType<T>(), f.label, f.description, f.presence);
+    arg.uiHints = UiHints { order };
 
     if constexpr (std::is_enum<T>::value) {
         arg.allowedValues = toValList(EnumContract<T>::str_vals());
@@ -376,21 +388,23 @@ ConvertParamsResult fromParams(const Params& params, O& o, const F& fields, Conv
 template<HasInput C>
 InputSchema inputSchema()
 {
-    std::map<std::string, Arg> args;
+    InputSchema schema;
+    int order = 0;
     std::apply([&](const auto&... f) {
-        (args.emplace(f.key, internal::makeArg(f)), ...);
+        (schema.args.emplace(f.key, internal::makeArg(f, ++order)), ...);
     }, C::input);
-    return InputSchema(std::move(args));
+    return schema;
 }
 
 template<HasOutput C>
 OutputSchema outputSchema()
 {
-    std::map<std::string, Arg> args;
+    OutputSchema schema;
+    int order = 0;
     std::apply([&](const auto&... f) {
-        (args.emplace(f.key, internal::makeArg(f)), ...);
+        (schema.args.emplace(f.key, internal::makeArg(f, ++order)), ...);
     }, C::output);
-    return OutputSchema(std::move(args));
+    return schema;
 }
 
 template<TypedCommand C>
