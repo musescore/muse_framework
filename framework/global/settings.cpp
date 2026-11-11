@@ -50,8 +50,8 @@ Settings* Settings::instance()
 Settings::Settings()
 {
 #ifdef WIN_PORTABLE
-    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dataPath());
-    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, dataPath());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dataPath().toQString());
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, dataPath().toQString());
 #endif
 
 #ifndef Q_OS_MAC
@@ -102,10 +102,10 @@ void Settings::setDataPath(const io::path_t& path)
         m_settings = nullptr;
     }
 
-    m_dataPath = path.toQString();
+    m_dataPath = path;
 
-    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, m_dataPath);
-    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, m_dataPath);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, m_dataPath.toQString());
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, m_dataPath.toQString());
     QSettings::setDefaultFormat(QSettings::IniFormat);
 }
 
@@ -134,8 +134,8 @@ void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool not
     m_localSettings.clear();
 
     if (!keepDefaultSettings) {
-        QDir(dataPath()).removeRecursively();
-        QDir().mkpath(dataPath());
+        QDir(dataPath().toQString()).removeRecursively();
+        QDir().mkpath(dataPath().toQString());
     }
 
     if (!notifyAboutChanges) {
@@ -261,16 +261,16 @@ void Settings::writeValue(const Key& key, const Val& value)
     qsettings()->setValue(QString::fromStdString(key.key), value.toQVariant());
 }
 
-QString Settings::dataPath() const
+io::path_t Settings::dataPath() const
 {
-    if (!m_dataPath.isEmpty()) {
+    if (!m_dataPath.empty()) {
         return m_dataPath;
     }
 
 #ifdef WIN_PORTABLE
-    return QDir::cleanPath(QString("%1/../../../Data/settings").arg(QCoreApplication::applicationDirPath()));
+    return io::path_t(QDir::cleanPath(QString("%1/../../../Data/settings").arg(QCoreApplication::applicationDirPath())));
 #else
-    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    return io::path_t(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
 #endif
 }
 

@@ -125,11 +125,11 @@ private:
     Items readItems() const;
     void writeValue(const Key& key, const Val& value);
 
-    QString dataPath() const;
+    io::path_t dataPath() const;
     QSettings* qsettings() const;
 
     mutable QSettings* m_settings = nullptr;
-    QString m_dataPath;
+    io::path_t m_dataPath;
     mutable Items m_items;
     mutable Items m_localSettings;
     mutable bool m_isTransactionStarted = false;
