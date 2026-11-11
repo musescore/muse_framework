@@ -521,7 +521,7 @@ TEST_F(Global_ValTests, Val_Map)
 #ifndef NO_QT_SUPPORT
 TEST_F(Global_ValTests, Val_Color)
 {
-    //! GIVEN Value as color
+    //! GIVEN Value as opaque color
 
     {
         Val v(QColor("#800000"));
@@ -716,3 +716,25 @@ TEST_F(Global_ValTests, Val_To_From_Type)
         EXPECT_EQ(*opt, value);
     }
 }
+
+#ifndef NO_QT_SUPPORT
+TEST_F(Global_ValTests, Val_ColorWithAlpha)
+{
+    //! GIVEN Value as semi-transparent color
+
+    {
+        Val v(QColor(255, 10, 10, 128));
+
+        EXPECT_EQ(v.type(), Val::Type::Color);
+        EXPECT_EQ(v.isNull(), false);
+        EXPECT_EQ(v.toBool(), true);
+        EXPECT_EQ(v.toInt(), 0);
+        EXPECT_EQ(v.toInt64(), 0);
+        EXPECT_EQ(v.toDouble(), 0.0);
+        EXPECT_EQ(v.toString(), "#80ff0a0a");
+        EXPECT_EQ(v.toList(), ValList());
+        EXPECT_EQ(v.toMap(), ValMap());
+        EXPECT_EQ(v.toQColor(), QColor(255, 10, 10, 128));
+    }
+}
+#endif
