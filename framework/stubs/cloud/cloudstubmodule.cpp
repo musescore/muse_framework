@@ -24,6 +24,7 @@
 #include "modularity/ioc.h"
 
 #include "authorizationservicestub.h"
+#include "musescorecomservicestub.h"
 
 using namespace muse;
 using namespace muse::cloud;
@@ -38,6 +39,7 @@ std::string CloudModule::moduleName() const
 
 void CloudModule::registerExports()
 {
+    globalIoc()->registerExport<IMuseScoreComService>(mname, new MuseScoreComServiceStub());
 }
 
 IContextSetup* CloudModule::newContext(const muse::modularity::ContextPtr& ctx) const
