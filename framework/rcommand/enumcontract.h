@@ -49,14 +49,16 @@ using EnumTable = std::array<EnumEntry<E>, N>;
 template<typename E, std::size_t N>
 void accepts_table(const EnumTable<E, N>&);
 
+// *INDENT-OFF* // Uncrustify doesn't understand `requires`
 template<typename T, typename E>
 concept IsEnumTable = requires(const std::remove_cvref_t<T>& table) {
     accepts_table<E>(table);
 };
 
-// *INDENT-OFF* // Uncrustify doesn't understand `requires`
 template<typename C>
 concept IsEnumContract = requires {
+    { C::key } -> std::convertible_to<const std::string_view&>;
+    { C::def } -> Enumeration;
     { C::table } -> IsEnumTable<std::remove_cvref_t<decltype(C::def)>>;
 };
 // *INDENT-ON*

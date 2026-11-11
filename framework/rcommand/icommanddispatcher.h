@@ -45,7 +45,7 @@ public:
     using CallBackParamsRet = std::function<Ret (const Params& params)>;
     using CallBackParamsPromiseRet = std::function<async::Promise<Ret>(const Params& params)>;
 
-    virtual async::Promise<Response> dispatch(const Request& request) = 0;
+    virtual async::Promise<Response> dispatch(const Request& request, bool maybeRedirect = true) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) = 0;
     virtual void unreg(Commandable* client) = 0;
@@ -95,11 +95,15 @@ public:
     template<TypedCommand C>
     async::Promise<Response> dispatch(const C& command)
     {
+        if constexpr (HasRedirect<C>) {
+            return dispatch(C::redirect);
+        }
+
         Params params;
         if constexpr (HasInput<C>) {
             params = toInputParams(command);
         }
-        return dispatch(make_request(command.id, params));
+        return dispatch(make_request(command.id, params), false);
     }
 
     template<TypedCommand C>

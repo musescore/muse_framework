@@ -20,14 +20,19 @@
 
 #include "../icommanddispatcher.h"
 
+#include "global/modularity/ioc.h"
+#include "../icommandsregister.h"
+
 namespace muse::rcommand {
 class CommandDispatcher : public ICommandDispatcher
 {
+    GlobalInject<ICommandsRegister> commandsRegister;
+
 public:
     CommandDispatcher() = default;
     ~CommandDispatcher() override;
 
-    async::Promise<Response> dispatch(const Request& request) override;
+    async::Promise<Response> dispatch(const Request& request, bool maybeRedirect = true) override;
     void onRequest(Commandable* client, const Command& command, const CallBack& callback) override;
     void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) override;
     void unreg(Commandable* client) override;

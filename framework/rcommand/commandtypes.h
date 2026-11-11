@@ -248,6 +248,11 @@ struct CommandInfo
     Availabilities availabilities = Availability::All; // All temporarily, when we set the flag for all commands, it needs to be replaced with Availability::Disabled;
     Annotations annotations = Annotation::Destructive;  // Default to destructive
 
+    //! NOTE There can be command aliases (typically a command without parameters)
+    // that redirect to a command with fixed parameters.
+    // command://module/somecommand/type -> command://module/somecommand?type=value
+    std::optional<std::pair<Command, Params> > redirect;
+
     CommandInfo() = default;
     CommandInfo(const Command& command, const MnemonicString& title, const TranslatableString& description,
                 const InputSchema& inputSchema, const Decoration& decoration)

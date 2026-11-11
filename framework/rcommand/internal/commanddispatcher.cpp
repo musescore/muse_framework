@@ -40,8 +40,18 @@ CommandDispatcher::~CommandDispatcher()
     m_clients.clear();
 }
 
-async::Promise<Response> CommandDispatcher::dispatch(const Request& request)
+async::Promise<Response> CommandDispatcher::dispatch(const Request& request, bool maybeRedirect)
 {
+    if (maybeRedirect) {
+        auto redirect = commandsRegister()->commandInfo(request.command).redirect;
+        if (redirect) {
+            Request redirectRequest = request;
+            redirectRequest.command = redirect->first;
+            redirectRequest.params = redirect->second;
+            return dispatch(redirectRequest, false);
+        }
+    }
+
     if (request.command == NONE_COMMAND) {
         return async::make_promise<Response>([request](auto resolve) {
             return resolve(make_response(request, make_ret(Ret::Code::Ok)));
