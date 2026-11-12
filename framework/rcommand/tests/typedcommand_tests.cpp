@@ -107,6 +107,18 @@ struct TestCommand {
     };
 };
 
+//! A command that delegates to another command, fixing some of its input values
+struct TestAliasCommand {
+    static const inline auto id = muse::rcommand::Command("command://rcommand/test-alias");
+    static const inline auto title = MnemonicString("action", "Alias test command");
+    static const inline auto description = TranslatableString("action", "Delegates to the test command");
+
+    static const inline auto redirect = TestCommand {
+        .bVal = true,
+        .iVal = 1,
+    };
+};
+
 //! A command without parameters that declares its decoration and its availabilities
 struct TestInternalCommand {
     static const inline auto id = muse::rcommand::Command("command://rcommand/test-internal");
@@ -279,7 +291,18 @@ TEST_F(RCommand_TypedCommandTests, TypedCommand_Concepts)
     static_assert(HasDecoration<TestInternalCommand>);
     static_assert(HasAvailabilities<TestInternalCommand>);
 
+    //! redirect
+    static_assert(HasRedirect<TestAliasCommand>);
+    static_assert(!HasRedirect<TestCommand>);
+    static_assert(!HasRedirect<TestInternalCommand>);
+
     static_assert(!TypedCommand<Command>);
+
+    //! the type of a static data member is const-qualified,
+    //! so the underlying command is checked through TypedCommandType
+    static_assert(TypedCommandType<decltype(TestAliasCommand::redirect)>);
+    static_assert(std::is_same_v<std::remove_cvref_t<decltype(TestAliasCommand::redirect)>, TestCommand>);
+    static_assert(!TypedCommandType<decltype(TestAliasCommand::id)>);
 }
 
 TEST_F(RCommand_TypedCommandTests, MakeCommandInfo_TakesEverythingFromTheStruct)

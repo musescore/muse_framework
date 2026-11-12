@@ -19,13 +19,33 @@
 
 #pragma once
 
+#include <concepts>
 #include <tuple>
+#include <type_traits>
 
 #include "global/stringutils.h"
 
 #include "commandtypes.h"
 
 #include "log.h"
+
+//! NOTE Convenience macro for declaring a static const inline auto property.
+#define cprop_decl static const inline auto
+
+/* Example of a typed command
+
+struct SelectCommand {
+    cprop_decl id = Command("command://somemodule/select");
+    cprop_decl title = MnemonicString("action", "Select");
+    cprop_decl description = TranslatableString("action", "Select items by target");
+    cprop_decl availabilities = Availability::API;
+    cprop_decl annotations = Annotation::None;
+    cprop_decl input = FieldsScheme {
+        Field{ "target", &SelectCommand::target, "Selection target" },
+        Field{ "play-mode", &SelectCommand::playMode, "Play mode", Presence::Optional },
+    };
+};
+*/
 
 namespace muse::rcommand {
 // concepts --------
@@ -37,6 +57,11 @@ concept TypedCommand = requires {
     { C::title } -> std::convertible_to<const MnemonicString&>;
     { C::description } -> std::convertible_to<const TranslatableString&>;
 };
+
+//! NOTE Same as `TypedCommand`, but accepts cv/ref qualified types as well,
+//! for example the type of an expression or the result of `decltype()`.
+template<typename T>
+concept TypedCommandType = TypedCommand<std::remove_cvref_t<T> >;
 
 template<typename C>
 concept HasInput = TypedCommand<C> && requires(const C& c) {
@@ -69,6 +94,16 @@ template<typename C>
 concept HasAnnotations = TypedCommand<C> && requires(const C& c) {
     { C::annotations } -> std::convertible_to<const Annotations&>;
 };
+
+//! NOTE An alias command delegates to another command and may fix some of its input values:
+//!     `static const inline auto redirect = SomeCommand { ... };`
+template<typename C>
+concept HasRedirect = TypedCommand<C>
+                      //! NOTE `decltype(C::redirect)` is cv-qualified (`const SomeCommand`),
+                      //! that's why we compare through `TypedCommandType`
+                      && TypedCommandType<decltype(C::redirect)>
+                      //! NOTE it must be a static data member, not a field of an instance
+                      && !std::is_member_pointer_v<decltype(&C::redirect)>;
 
 // *INDENT-ON*
 
@@ -383,6 +418,32 @@ ConvertParamsResult fromParams(const Params& params, O& o, const F& fields, Conv
 }
 }     // namespace internal
 
+// dispatch (params) --------
+template<HasInput C>
+Params toInputParams(const C& o)
+{
+    return internal::toParams(o, C::input);
+}
+
+template<HasInput C>
+ConvertParamsResult fromInputParams(const Params& params, C& o, ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
+{
+    return internal::fromParams(params, o, C::input, policy);
+}
+
+template<HasOutput C>
+Params toOutputParams(const typename C::Output& o)
+{
+    return internal::toParams(o, C::output);
+}
+
+template<HasOutput C>
+ConvertParamsResult fromOutputParams(const Params& params, typename C::Output& o,
+                                     ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
+{
+    return internal::fromParams(params, o, C::output, policy);
+}
+
 // command info --------
 
 template<HasInput C>
@@ -432,32 +493,15 @@ CommandInfo makeCommandInfo()
     if constexpr (HasAnnotations<C>) {
         info.annotations = C::annotations;
     }
+
+    if constexpr (HasRedirect<C>) {
+        Params params;
+        using Redirect = std::remove_cvref_t<decltype(C::redirect)>;
+        if constexpr (HasInput<Redirect>) {
+            params = toInputParams(C::redirect);
+        }
+        info.redirect = std::make_pair(C::redirect.id, params);
+    }
     return info;
-}
-
-// dispatch (params) --------
-template<HasInput C>
-Params toInputParams(const C& o)
-{
-    return internal::toParams(o, C::input);
-}
-
-template<HasInput C>
-ConvertParamsResult fromInputParams(const Params& params, C& o, ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
-{
-    return internal::fromParams(params, o, C::input, policy);
-}
-
-template<HasOutput C>
-Params toOutputParams(const typename C::Output& o)
-{
-    return internal::toParams(o, C::output);
-}
-
-template<HasOutput C>
-ConvertParamsResult fromOutputParams(const Params& params, typename C::Output& o,
-                                     ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
-{
-    return internal::fromParams(params, o, C::output, policy);
 }
 }
