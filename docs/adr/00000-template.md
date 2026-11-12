@@ -1,4 +1,4 @@
-# XXXXX Title
+# XXXXX Component: Title
 
 Date: YYYY-MM-DD   
 Tags: tag1, tag2   
