@@ -83,7 +83,7 @@ struct TestCommand {
         TestEnum eVal = TestEnum::Value1;
     };
 
-    static const inline auto input = FieldsScheme {
+    static const inline auto input = std::tuple {
         Field("b_val", &TestCommand::bVal, "Boolean value"),
         Field("i_val", &TestCommand::iVal, "Integer value", -100, 100),
         Field("u_val", &TestCommand::uVal, "Unsigned integer value", Presence::Optional),
@@ -96,7 +96,7 @@ struct TestCommand {
     };
 
     using O = TestCommand::Output;
-    static const inline auto output = FieldsScheme {
+    static const inline auto output = std::tuple {
         Field("b_val", &O::bVal, "Boolean value"),
         Field("i_val", &O::iVal, "Integer value", -100, 100),
         Field("u_val", &O::uVal, "Unsigned integer value", Presence::Optional),
