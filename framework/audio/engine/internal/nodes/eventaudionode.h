@@ -68,6 +68,9 @@ private:
         bool isValid() const { return mode != ProcessMode::Undefined; }
     };
 
+    //! NOTE From the synth's playback data, which follows score changes
+    std::optional<secs_t> firstNoteTime() const override;
+
     void onModeChanged(const ProcessMode mode) override;
     void onOutputSpecChanged(const OutputSpec& spec) override;
 

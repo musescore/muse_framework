@@ -158,6 +158,8 @@ void VstSynthesiser::setMode(const muse::audio::ProcessMode mode)
     m_vstAudioClient->setIsPlaying(isActive);
     m_vstAudioClient->setIsActive(isActive);
 
+    m_vstAudioClient->setIsOffline(mode == ProcessMode::PlayingOffline);
+
     if (mode == ProcessMode::PlayingOffline) {
         m_vstAudioClient->setProcessMode(VstProcessMode::kOffline);
     } else {

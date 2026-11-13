@@ -124,6 +124,7 @@ enum class MsgCode {
 
     // Export
     SaveSoundTrack,
+    SaveSoundTracks,
     AbortSavingAllSoundTracks,
     GetSaveSoundTrackProgress,
 
@@ -223,6 +224,7 @@ inline std::string to_string(MsgCode m)
     case MsgCode::GetAutomatedControlParamsChanges: return "GetAutomatedControlParamsChanges";
 
     case MsgCode::SaveSoundTrack: return "SaveSoundTrack";
+    case MsgCode::SaveSoundTracks: return "SaveSoundTracks";
     case MsgCode::AbortSavingAllSoundTracks: return "AbortSavingAllSoundTracks";
     case MsgCode::GetSaveSoundTrackProgress: return "GetSaveSoundTrackProgress";
 

@@ -43,6 +43,11 @@ public:
 
     void setIsActive(const bool isActive);
     void setIsPlaying(const bool isPlaying);
+
+    //! NOTE While offline (export), transport events requested by the plugin are dropped: they only
+    //! make sense for live playback, and forwarding them from an export worker thread would need
+    //! that thread to register with the engine's message queue while the engine is blocked on it.
+    void setIsOffline(const bool isOffline);
     void setOutputSpec(const audio::OutputSpec& spec);
     void setProcessMode(VstProcessMode mode);
     void setVolumeGain(const muse::audio::gain_t newVolumeGain);
@@ -77,6 +82,7 @@ private:
     void addParamChange(const ParamChangeEvent& param);
 
     bool m_isActive = false;
+    bool m_isOffline = false;
     muse::audio::gain_t m_volumeGain = 1.f; // 0.0 - 1.0
 
     IVstPluginInstancePtr m_pluginPtr = nullptr;

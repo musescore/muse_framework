@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "audionode.h"
 
 #include "global/async/notification.h"
@@ -58,6 +60,9 @@ public:
     virtual InputProcessingProgress inputProcessingProgress() const = 0;
 
     virtual void clearCache() = 0;
+
+    //! NOTE Time of the source's first note, if it has any (used to keep a track idle until then)
+    virtual std::optional<secs_t> firstNoteTime() const { return std::nullopt; }
 };
 
 using AudioSourceNodePtr = std::shared_ptr<AudioSourceNode>;
