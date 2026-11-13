@@ -48,6 +48,10 @@ public:
     virtual void setup(const mpe::PlaybackData& playbackData) = 0;
     virtual const mpe::PlaybackData& playbackData() const = 0;
 
+    // Optional host track/instrument name, forwarded to instruments that auto-select their sound
+    // from it (e.g. via VST3 channel context). Ignored by default.
+    virtual void setHostTrackName(const std::string& /*name*/) {}
+
     virtual const audio::AudioInputParams& params() const = 0;
     virtual async::Channel<audio::AudioInputParams> paramsChanged() const = 0;
 

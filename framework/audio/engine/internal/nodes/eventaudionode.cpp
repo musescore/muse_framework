@@ -32,9 +32,9 @@ using namespace muse::audio::engine;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-EventAudioNode::EventAudioNode(TrackId trackId, const mpe::PlaybackData& playbackData,
+EventAudioNode::EventAudioNode(TrackId trackId, const std::string& hostTrackName, const mpe::PlaybackData& playbackData,
                                OnOffStreamEventsReceived onOffStreamReceived)
-    : m_trackId(trackId), m_playbackData(playbackData)
+    : m_trackId(trackId), m_hostTrackName(hostTrackName), m_playbackData(playbackData)
 {
     ONLY_AUDIO_ENGINE_THREAD;
 
@@ -145,6 +145,7 @@ void EventAudioNode::applyInputParams(const AudioInputParams& requiredParams)
     }
 
     m_synth = synth.val;
+    m_synth->setHostTrackName(m_hostTrackName);
 
     m_synth->paramsChanged().onReceive(this, [this](const AudioInputParams& params) {
         m_paramsChanges.send(params);
