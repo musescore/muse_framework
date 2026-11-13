@@ -32,6 +32,14 @@ class DataFormatter
 public:
     static double roundDouble(const double& val, const int decimals = 2);
     static String formatReal(double val, int prec = 2);
+
+    //! Formats in the default locale, trimming trailing zeros. Editable fields
+    //! pass omitGroupSeparator, as grouped text cannot be typed back.
+    static String formatLocalizedReal(double val, int prec = 2, bool omitGroupSeparator = false);
+
+    //! Fractional digits needed to show a step, capped at maxDecimals
+    static int decimalsForStep(double step, int maxDecimals = 6);
+
     static String formatTimeSince(const Date& date);
     static String formatFileSize(size_t size);
 };
