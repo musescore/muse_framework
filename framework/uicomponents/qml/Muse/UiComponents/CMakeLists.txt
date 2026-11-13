@@ -72,6 +72,8 @@ qt_add_qml_module(muse_uicomponents_qml
         menuitem.h
         menuview.cpp
         menuview.h
+        pagetabsmodel.cpp
+        pagetabsmodel.h
         polylineplot.cpp
         polylineplot.h
         popupview.cpp
@@ -134,6 +136,7 @@ qt_add_qml_module(muse_uicomponents_qml
         NavigationFocusBorder.qml
         NumberInputField.qml
         PageIndicator.qml
+        PageTabBar.qml
         PageTabButton.qml
         PopupButton.qml
         PopupPanel.qml

@@ -163,32 +163,28 @@ void WorkspaceListModel::createNewWorkspace()
     }
 
     UriQuery uri("muse://workspace/create");
-    uri.addParam("sync", Val(true));
     uri.addParam("workspaceNames", Val(workspaceNames.join(',')));
 
-    RetVal<Val> obj = interactive()->openSync(uri);
-    if (!obj.ret) {
-        return;
-    }
+    interactive()->open(uri).onResolve(this, [this](const Val& val) {
+        QVariantMap meta = val.toQVariant().toMap();
+        QString name = meta.value("name").toString();
+        IF_ASSERT_FAILED(!name.isEmpty()) {
+            return;
+        }
 
-    QVariantMap meta = obj.val.toQVariant().toMap();
-    QString name = meta.value("name").toString();
-    IF_ASSERT_FAILED(!name.isEmpty()) {
-        return;
-    }
+        IWorkspacePtr newWorkspace = workspacesManager()->cloneWorkspace(m_selectedWorkspace, name.toStdString());
+        if (!newWorkspace) {
+            return;
+        }
 
-    IWorkspacePtr newWorkspace = workspacesManager()->cloneWorkspace(m_selectedWorkspace, name.toStdString());
-    if (!newWorkspace) {
-        return;
-    }
+        int newWorkspaceIndex = m_workspaces.size();
 
-    int newWorkspaceIndex = m_workspaces.size();
+        beginInsertRows(QModelIndex(), newWorkspaceIndex, newWorkspaceIndex);
+        m_workspaces << newWorkspace;
+        endInsertRows();
 
-    beginInsertRows(QModelIndex(), newWorkspaceIndex, newWorkspaceIndex);
-    m_workspaces << newWorkspace;
-    endInsertRows();
-
-    selectWorkspace(newWorkspaceIndex);
+        selectWorkspace(newWorkspaceIndex);
+    });
 }
 
 void WorkspaceListModel::selectWorkspace(int workspaceIndex)
