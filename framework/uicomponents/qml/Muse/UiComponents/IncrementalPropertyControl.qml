@@ -152,6 +152,7 @@ Item {
         anchors.bottom: parent.bottom
 
         currentText: ui.df.formatReal(root.currentValue ? root.currentValue : 0.0, decimals)
+        contextMenuEnabled: false
 
         navigation.accessible.role: MUAccessible.SpinBox
         navigation.accessible.value: currentValue + (measureUnitsSymbol !== "" ? " " + measureUnitsSymbol : "")

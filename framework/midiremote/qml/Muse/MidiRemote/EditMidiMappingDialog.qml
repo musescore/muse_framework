@@ -108,6 +108,7 @@ StyledDialogView {
                 background.border.color: ui.theme.accentColor
 
                 readOnly: true
+                contextMenuEnabled: false
 
                 currentText: model.mappingTitle
 

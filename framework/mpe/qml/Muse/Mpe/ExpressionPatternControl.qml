@@ -114,6 +114,7 @@ Column {
             Layout.preferredWidth: 64
 
             currentText: offsetPointValueSlider.value / 100
+            contextMenuEnabled: false
 
             validator: IntValidator {
                 top: 100

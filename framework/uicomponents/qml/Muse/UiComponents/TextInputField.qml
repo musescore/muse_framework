@@ -40,6 +40,7 @@ FocusScope {
     property alias hint: valueInput.placeholderText
     property alias hintIcon: hintIcon.iconCode
     property bool clearTextButtonVisible: false
+    property bool contextMenuEnabled: true
 
     property alias textHorizontalAlignment: valueInput.horizontalAlignment
     property alias textVerticalAlignment: valueInput.verticalAlignment
@@ -171,6 +172,9 @@ FocusScope {
             font: ui.theme.bodyFont
 
             background: Item {}
+
+            // Use TextInputContextMenu instead of Qt's default
+            ContextMenu.menu: null
 
             focus: false
             activeFocusOnPress: false
@@ -341,11 +345,37 @@ FocusScope {
         propagateComposedEvents: true
         hoverEnabled: true
         cursorShape: root.readOnly ? Qt.ArrowCursor : Qt.IBeamCursor
+        acceptedButtons: root.contextMenuEnabled ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
 
         onPressed: function(mouse) {
+            // Before focusing, as it selects all and may scroll the text
+            let wasFocused = valueInput.activeFocus
+            let posOnInput = clickableArea.mapToItem(valueInput, mouse.x, mouse.y)
+            let clickedPos = valueInput.positionAt(posOnInput.x, posOnInput.y)
+
             root.ensureActiveFocus()
             navCtrl.requestActiveByInteraction()
+
+            if (mouse.button === Qt.RightButton) {
+                editMenuLoader.active = true
+                editMenuLoader.item.moveCursor(posOnInput, clickedPos, wasFocused)
+                editMenuLoader.item.open(Qt.point(mouse.x, mouse.y))
+                return
+            }
+
             mouse.accepted = false
+        }
+
+        Loader {
+            id: editMenuLoader
+
+            active: false
+            // Absolute, as this file is also copied to MuseApi.Controls without internal/
+            source: "qrc:/qt/qml/Muse/UiComponents/internal/TextInputContextMenu.qml"
+
+            onLoaded: {
+                editMenuLoader.item.textInput = valueInput
+            }
         }
     }
 }
