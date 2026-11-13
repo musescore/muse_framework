@@ -40,6 +40,7 @@ public:
         : Contextable(ctx) {}
 
     void init();
+    void deinit();
 
     async::Promise<Ret> prepareToPlay() override;
 

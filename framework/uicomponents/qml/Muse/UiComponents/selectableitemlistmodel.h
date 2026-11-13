@@ -42,15 +42,7 @@ class SelectableItemListModel : public QAbstractListModel
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
 
 public:
-    class Item : public QObject
-    {
-    public:
-        virtual ~Item() = default;
-
-        explicit Item(QObject* parent = nullptr);
-    };
-
-    using ItemList = QList<Item*>;
+    using ItemList = QList<QObject*>;
 
     explicit SelectableItemListModel(QObject* parent = nullptr);
 
@@ -89,10 +81,10 @@ protected:
     virtual void onRowsRemoved();
 
     const ItemList& items() const;
-    Item* item(const QModelIndex& index) const;
+    QObject* item(const QModelIndex& index) const;
 
     void setItems(const ItemList& items);
-    void insertItem(int row, Item* item);
+    void insertItem(int row, QObject* item);
 
     void setIsMovingUpAvailable(bool isMovingUpAvailable);
     void setIsMovingDownAvailable(bool isMovingDownAvailable);

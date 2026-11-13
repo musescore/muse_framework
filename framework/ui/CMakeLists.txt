@@ -28,11 +28,7 @@ target_sources(muse_ui PRIVATE
     iuicontextconfiguration.h
     uierrors.h
     uitypes.h
-    uiaction.h
     imainwindow.h
-    iuiactionsregister.h
-    iuiactionsmodule.h
-    iuicontextresolver.h
     inavigation.h
     inavigationcontroller.h
     idragcontroller.h
@@ -65,16 +61,12 @@ target_sources(muse_ui PRIVATE
     internal/themeconverter.cpp
     internal/themeconverter.h
     internal/iplatformtheme.h
-    internal/uiactionsregister.cpp
-    internal/uiactionsregister.h
     internal/navigationcommandsregister.cpp
     internal/navigationcommandsregister.h
     internal/navigationcommandsstate.cpp
     internal/navigationcommandsstate.h
     internal/navigationcontroller.cpp
     internal/navigationcontroller.h
-    internal/navigationuiactions.cpp
-    internal/navigationuiactions.h
     internal/uiarrangement.cpp
     internal/uiarrangement.h
     internal/dragcontroller.cpp
@@ -107,6 +99,19 @@ target_sources(muse_ui PRIVATE
     view/widgetstyle.h
     view/widgetutils.h
 )
+
+if (MUSE_MODULE_ACTIONS_SUPPORT)
+    target_sources(muse_ui PRIVATE
+        iuiactionsregister.h
+        iuiactionsmodule.h
+        iuicontextresolver.h
+        uiaction.h
+        internal/uiactionsregister.cpp
+        internal/uiactionsregister.h
+        internal/navigationuiactions.cpp
+        internal/navigationuiactions.h
+    )
+endif()
 
 if (OS_IS_MAC)
     target_sources(muse_ui PRIVATE

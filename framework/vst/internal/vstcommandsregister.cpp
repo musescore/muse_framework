@@ -35,7 +35,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("vst", "Use old view"),
         InputSchema(),
         Decoration(Checkable::Yes),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         VST_USE_NEWVIEW_COMMAND,
@@ -43,7 +43,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("vst", "Use new view"),
         InputSchema(),
         Decoration(Checkable::Yes),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         VST_OPEN_FX_EDITOR_COMMAND,
@@ -51,13 +51,13 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("vst", "Open FX editor"),
         InputSchema({
             { "resourceId", Arg(DataType::String, u"VST FX resource ID") },
-            { "trackId", Arg(DataType::Integer, u"Track ID (optional)") },
-            { "chainOrder", Arg(DataType::Integer, u"FX chain order (optional)") },
+            { "trackId", Arg(DataType::Int, u"Track ID (optional)") },
+            { "chainOrder", Arg(DataType::Int, u"FX chain order (optional)") },
             { "operation", Arg(DataType::String, u"Editor operation: open or close (optional)") },
-            { "sync", Arg(DataType::Boolean, u"Use synchronous open/close (optional)") }
+            { "sync", Arg(DataType::Bool, u"Use synchronous open/close (optional)") }
         }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         VST_OPEN_INSTRUMENT_EDITOR_COMMAND,
@@ -65,12 +65,12 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("vst", "Open instrument editor"),
         InputSchema({
             { "resourceId", Arg(DataType::String, u"VST instrument resource ID") },
-            { "trackId", Arg(DataType::Integer, u"Track ID (optional)") },
+            { "trackId", Arg(DataType::Int, u"Track ID (optional)") },
             { "operation", Arg(DataType::String, u"Editor operation: open or close (optional)") },
-            { "sync", Arg(DataType::Boolean, u"Use synchronous open/close (optional)") }
+            { "sync", Arg(DataType::Bool, u"Use synchronous open/close (optional)") }
         }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
 };
 

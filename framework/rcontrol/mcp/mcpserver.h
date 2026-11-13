@@ -42,7 +42,7 @@ public:
     using ToolsListHandler = std::function<void (ToolsListResultHandler)>;
     using ToolsCallResultHandler = std::function<void (const ToolResult&)>;
     using ToolsCallHandler = std::function<void (const std::string& name,
-                                                 const JsonObject& arguments,
+                                                 const std::map<std::string, Val>& args,
                                                  ToolsCallResultHandler)>;
 
     void onToolsListRequest(const ToolsListHandler& onToolsList);
@@ -56,9 +56,6 @@ private:
     void onToolsList(const JsonObject& request, const std::function<void(const JsonObject&)>& onResponse);
     void onToolsCall(const JsonObject& request, const std::function<void(const JsonObject&)>& onResponse);
     void onNotifications(const String& method);
-
-    void replyError(const JsonObject& request, int code, const std::string& message,
-                    const std::function<void(const JsonObject&)>& onResponse);
 
     std::string m_version;
     ITransport* m_transport = nullptr;

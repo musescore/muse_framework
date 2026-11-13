@@ -58,8 +58,6 @@ target_sources(muse_extensions PRIVATE
     internal/scriptengine.h
     internal/jsmoduleloader.cpp
     internal/jsmoduleloader.h
-    internal/extensionsuiactions.cpp
-    internal/extensionsuiactions.h
     internal/extensionsactioncontroller.cpp
     internal/extensionsactioncontroller.h
     internal/extensionscommandsregister.cpp

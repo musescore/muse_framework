@@ -30,8 +30,6 @@ target_sources(muse_diagnostics PRIVATE
 
     internal/diagnosticsconfiguration.cpp
     internal/diagnosticsconfiguration.h
-    internal/diagnosticsactions.cpp
-    internal/diagnosticsactions.h
     internal/diagnosticsactionscontroller.cpp
     internal/diagnosticsactionscontroller.h
     internal/diagnosticscommandsregister.cpp

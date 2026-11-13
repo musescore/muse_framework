@@ -129,42 +129,55 @@ void AccessibilityController::init()
         m_treeConnected = true;
     });
 
-    auto dispatcher = actionsDispatcher();
-    if (!dispatcher) {
-        return;
-    }
-
-    dispatcher->preDispatch().onReceive(this, [this](actions::ActionCode) {
+    auto preDispatch = [this]() {
         // About to perform an action. Let's store some values to see if the action changes them.
         m_preDispatchFocus = m_lastFocused;
         m_preDispatchName = m_preDispatchFocus ? m_preDispatchFocus->accessibleName() : QString();
-        m_announcement.clear(); // So we can detect if the action sets its own announcement.
-    });
+        m_announcement.clear();             // So we can detect if the action sets its own announcement.
+    };
 
-    dispatcher->postDispatch().onReceive(this, [this](actions::ActionCode actionCode) {
+    auto postDispatch = [this](const QString& title) {
         // Just performed an action. Let's make sure the screen reader says something.
 
         if (!m_lastFocused || !m_announcement.isEmpty()) {
-            return; // No focus item (prevents announcements), or the action set its own announcement.
+            return;     // No focus item (prevents announcements), or the action set its own announcement.
         }
 
         if (m_lastFocused != m_preDispatchFocus || m_lastFocused->accessibleName() != m_preDispatchName) {
-            return; // The screen reader will say something anyway.
+            return;     // The screen reader will say something anyway.
         }
 
-        const ui::UiAction action = actionsRegister()->action(actionCode);
-        if (!action.isValid()) {
-            return;
-        }
-
-        QString title = action.title.qTranslatedWithoutMnemonic();
         if (title.isEmpty()) {
             // E.g. UI navigation shortcuts: Tab, Space, Enter, Esc, etc.
-            return; // Let the screen reader decide what to say.
+            return;     // Let the screen reader decide what to say.
         }
 
-        announce(title); // Say the name of the action we just performed.
-    });
+        announce(title);     // Say the name of the action we just performed.
+    };
+
+    if (auto dispatcher = commandDispatcher()) {
+        dispatcher->preDispatch().onReceive(this, [preDispatch](rcommand::Command, bool*) {
+            preDispatch();
+        });
+
+        dispatcher->postDispatch().onReceive(this, [this, postDispatch](rcommand::Command command) {
+            const auto& info = commandsRegister()->commandInfo(command);
+            postDispatch(info.title.qTranslatedWithoutMnemonic());
+        });
+    }
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    if (auto dispatcher = actionsDispatcher()) {
+        dispatcher->preDispatch().onReceive(this, [preDispatch](actions::ActionCode) {
+            preDispatch();
+        });
+
+        dispatcher->postDispatch().onReceive(this, [this, postDispatch](actions::ActionCode actionCode) {
+            const ui::UiAction action = actionsRegister()->action(actionCode);
+            postDispatch(action.title.qTranslatedWithoutMnemonic());
+        });
+    }
+#endif
 }
 
 void AccessibilityController::reg(IAccessible* item)

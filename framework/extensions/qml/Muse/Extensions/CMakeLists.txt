@@ -38,6 +38,7 @@ qt_add_qml_module(muse_extensions_qml
         extensionstoolbarmodel.h
     QML_FILES
         ExtensionErrorMessage.qml
+        ExtensionPanel.qml
         ExtensionsApiDump.qml
         ExtensionsApiDumpDialog.qml
         ExtensionsListPanel.qml
@@ -55,6 +56,8 @@ qt_add_qml_module(muse_extensions_qml
 )
 
 fixup_qml_module_dependencies(muse_extensions_qml)
+
+target_link_libraries(muse_extensions_qml PRIVATE muse::uicomponents_qml)
 
 # Necessary for the auto-generated sources
 target_include_directories(muse_extensions_qml PRIVATE devtools)

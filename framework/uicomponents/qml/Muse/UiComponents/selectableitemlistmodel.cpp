@@ -26,11 +26,6 @@
 
 using namespace muse::uicomponents;
 
-SelectableItemListModel::Item::Item(QObject* parent)
-    : QObject(parent)
-{
-}
-
 SelectableItemListModel::SelectableItemListModel(QObject* parent)
     : QAbstractListModel(parent), m_selection(new ItemMultiSelectionModel(this))
 {
@@ -238,7 +233,7 @@ const SelectableItemListModel::ItemList& SelectableItemListModel::items() const
     return m_items;
 }
 
-SelectableItemListModel::Item* SelectableItemListModel::item(const QModelIndex& index) const
+QObject* SelectableItemListModel::item(const QModelIndex& index) const
 {
     int row = index.row();
 
@@ -263,7 +258,7 @@ void SelectableItemListModel::setItems(const ItemList& items)
     emit countChanged();
 }
 
-void SelectableItemListModel::insertItem(int row, Item* item)
+void SelectableItemListModel::insertItem(int row, QObject* item)
 {
     TRACEFUNC;
 

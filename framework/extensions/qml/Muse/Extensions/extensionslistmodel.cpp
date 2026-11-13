@@ -24,9 +24,14 @@
 
 #include "global/translation.h"
 
-#include "shortcuts/shortcutstypes.h"
-
 #include "extensionscommands.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/shortcutstypes.h"
+#else
+#include "shortcuts/shortcutstypes.h"
+#endif
 
 #include "log.h"
 
@@ -124,13 +129,13 @@ QVariant ExtensionsListModel::data(const QModelIndex& index, int role) const
             return muse::qtrc("extensions", "Not defined");
         }
 
-        //! TODO add actions support
-        std::string code = makeCommand(manifest.uri, manifest.actions.at(0).code).toString();
-        shortcuts::Shortcut shortcut = shortcutsRegister()->shortcut(code);
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        rcommand::Command command = makeCommand(manifest.uri, manifest.actions.at(0).code);
+        shortcuts::Shortcut shortcut = commandShortcutsRegister()->shortcut(command);
         return shortcuts::sequencesToNativeText(shortcut.sequences);
-
-        //: No keyboard shortcut is assigned to this plugin.
-        //return muse::qtrc("extensions", "Not defined");
+#else
+        return muse::qtrc("extensions", "Not defined");
+#endif
     }
     case rIsRemovable: {
         return manifest.isRemovable;

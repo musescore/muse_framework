@@ -72,6 +72,10 @@ async::Channel<Command, CommandState> CommandsState::commandStateChanged() const
 
 CommandState CommandsState::commandState(const Command& command) const
 {
+    if (command == NONE_COMMAND) {
+        return CommandState(true);
+    }
+
     {
         auto it = m_cache.find(command);
         if (it != m_cache.end()) {

@@ -55,6 +55,7 @@ static const QUrl MUSESCORECOM_SCORE_DOWNLOAD_API_URL(MUSESCORECOM_API_ROOT_URL 
 static const QUrl MUSESCORECOM_SCORE_DOWNLOAD_SHARED_API_URL(MUSESCORECOM_API_ROOT_URL + "/score/download-shared");
 static const QUrl MUSESCORECOM_UPLOAD_SCORE_API_URL(MUSESCORECOM_API_ROOT_URL + "/score/upload");
 static const QUrl MUSESCORECOM_UPLOAD_AUDIO_API_URL(MUSESCORECOM_API_ROOT_URL + "/score/audio");
+static const QUrl MUSESCORECOM_SCORE_DELETE_API_URL(MUSESCORECOM_API_ROOT_URL + "/score/score");
 
 static const QUrl MUSESCORECOM_CONVERT_CONFIG_URL("https://musescore.com/static/musescore/studio/upload-config.json");
 static const QUrl MUSESCORECOM_CONVERT_UPLOAD_API_URL(MUSESCORECOM_API_ROOT_URL + "/score/convert/convert");
@@ -100,6 +101,7 @@ static RetVal<AccountInfo> parseMuseScoreComAccountInfo(const QByteArray& data)
 static QString convertTypeToApiString(ConvertType type)
 {
     switch (type) {
+    case ConvertType::Unknown: return QString();
     case ConvertType::Omr: return "omr";
     case ConvertType::Audio2Score: return "audio2score";
     }
@@ -117,8 +119,8 @@ static ConvertType convertTypeFromApiString(const QString& str)
         return ConvertType::Audio2Score;
     }
 
-    LOGW() << "Unknown convert type: \"" << str << "\", falling back to Omr";
-    return ConvertType::Omr;
+    LOGW() << "Unknown convert type: \"" << str << "\"";
+    return ConvertType::Unknown;
 }
 
 static ConvertStatus convertStatusFromApiString(const QString& str)
@@ -192,7 +194,7 @@ static std::optional<ScoreConversionInfo> parseScoreConversionInfo(const QJsonOb
 static RetVal<ScoresList> parseScoreList(const QByteArray& data, int batchNumber)
 {
     QJsonParseError err;
-    QJsonDocument doc = QJsonDocument::fromJson(data);
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         return RetVal<ScoresList>::make_ret((int)Ret::Code::InternalError, err.errorString().toStdString());
     }
@@ -238,7 +240,7 @@ static RetVal<ScoresList> parseScoreList(const QByteArray& data, int batchNumber
 static RetVal<ScoreInfo> parseScoreInfo(const QByteArray& data)
 {
     QJsonParseError err;
-    QJsonDocument doc = QJsonDocument::fromJson(data);
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         return RetVal<ScoreInfo>::make_ret((int)Ret::Code::InternalError, err.errorString().toStdString());
     }
@@ -862,6 +864,44 @@ Promise<Ret> MuseScoreComService::doDownloadScore(int scoreId, DevicePtr scoreDa
     });
 }
 
+Promise<Ret> MuseScoreComService::deleteScore(int scoreId)
+{
+    return executeAsyncRequest([this, scoreId]() {
+        return doDeleteScore(scoreId);
+    });
+}
+
+Promise<Ret> MuseScoreComService::doDeleteScore(int scoreId)
+{
+    return Promise<Ret>([this, scoreId](auto resolve, auto) {
+        QVariantMap params;
+        params[SCORE_ID_KEY] = scoreId;
+
+        RetVal<QUrl> url = prepareUrlForRequest(MUSESCORECOM_SCORE_DELETE_API_URL, params);
+        if (!url.ret) {
+            return resolve(url.ret);
+        }
+
+        auto receivedData = std::make_shared<QBuffer>();
+        RetVal<Progress> progress = m_networkManager->del(url.val, receivedData, headers());
+        if (!progress.ret) {
+            return resolve(progress.ret);
+        }
+
+        progress.val.finished().onReceive(this, [this, receivedData, resolve](const ProgressResult& res) {
+            if (!res.ret) {
+                printServerReply(*receivedData);
+                (void)resolve(uploadingDownloadingRetFromRawRet(res.ret));
+                return;
+            }
+
+            (void)resolve(make_ok());
+        });
+
+        return Promise<Ret>::dummy_result();
+    });
+}
+
 ProgressPtr MuseScoreComService::uploadScore(DevicePtr scoreData, const QString& title, Visibility visibility, const QUrl& sourceUrl,
                                              int revisionId)
 {
@@ -1033,15 +1073,16 @@ Promise<RetVal<ConvertConfig> > MuseScoreComService::fetchConfig()
     });
 }
 
-ProgressPtr MuseScoreComService::startConvert(const ConvertUploadDataPtr& data)
+ProgressPtr MuseScoreComService::uploadToConvert(const ConvertUploadDataPtr& data)
 {
     ProgressPtr progress = std::make_shared<Progress>();
     progress->start();
 
     executeAsyncRequest([this, data, progress]() {
-        return doUpload(data, progress);
+        return doUploadToConvert(data, progress);
     }).onResolve(this, [progress](const Ret& ret) {
-        if (progress->isStarted()) {
+        //! NOTE: cancel() finishes it by itself
+        if (progress->isStarted() && !progress->isCanceled()) {
             progress->finish(ret);
         }
     });
@@ -1049,11 +1090,20 @@ ProgressPtr MuseScoreComService::startConvert(const ConvertUploadDataPtr& data)
     return progress;
 }
 
-Promise<Ret> MuseScoreComService::doUpload(const ConvertUploadDataPtr& data, ProgressPtr progress)
+Promise<Ret> MuseScoreComService::doUploadToConvert(const ConvertUploadDataPtr& data, ProgressPtr progress)
 {
     TRACEFUNC;
 
     return make_promise<Ret>([this, data, progress](auto resolve, auto) {
+        IF_ASSERT_FAILED(data->type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
+        //! NOTE: possible when canceled while the tokens were being updated
+        if (progress->isCanceled()) {
+            return resolve(make_ret(Ret::Code::Cancel));
+        }
+
         RetVal<QUrl> uploadUrl = prepareUrlForRequest(MUSESCORECOM_CONVERT_UPLOAD_API_URL);
         if (!uploadUrl.ret) {
             return resolve(uploadUrl.ret);
@@ -1071,7 +1121,16 @@ Promise<Ret> MuseScoreComService::doUpload(const ConvertUploadDataPtr& data, Pro
             progress->progress(current, total, msg);
         });
 
-        uploadProgress.val.finished().onReceive(this, [this, data, receivedData, resolve, progress](const ProgressResult& res) {
+        progress->canceled().onNotify(this, [uploadProgress]() mutable {
+            uploadProgress.val.cancel();
+        });
+
+        uploadProgress.val.finished().onReceive(this, [this, data, receivedData, resolve, progress,
+                                                       uploadProgress](const ProgressResult& res) mutable {
+            //! NOTE: cancel() finishes it again after the aborted reply did
+            uploadProgress.val.finished().disconnect(this);
+            progress->canceled().disconnect(this);
+
             if (!res.ret) {
                 printServerReply(*receivedData);
                 Ret ret = uploadingDownloadingRetFromRawRet(res.ret);
@@ -1171,6 +1230,10 @@ Promise<Ret> MuseScoreComService::doSubmitReview(ConvertType type, int id, Revie
                                                  std::shared_ptr<ConvertResult> result)
 {
     return Promise<Ret>([this, type, id, review, comment, result](auto resolve, auto) {
+        IF_ASSERT_FAILED(type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         RetVal<QUrl> url = prepareUrlForRequest(MUSESCORECOM_CONVERT_REVIEW_API_URL);
         if (!url.ret) {
             return resolve(url.ret);
@@ -1211,6 +1274,10 @@ Promise<Ret> MuseScoreComService::deleteConversion(ConvertType type, int id)
 Promise<Ret> MuseScoreComService::doDeleteConversion(ConvertType type, int id)
 {
     return Promise<Ret>([this, type, id](auto resolve, auto) {
+        IF_ASSERT_FAILED(type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         QVariantMap params;
         params["type"] = convertTypeToApiString(type);
         params["id"] = id;
@@ -1252,6 +1319,10 @@ Promise<Ret> MuseScoreComService::submitReviewComment(ConvertType type, int id, 
 Promise<Ret> MuseScoreComService::doSubmitReviewComment(ConvertType type, int id, const QString& comment)
 {
     return Promise<Ret>([this, type, id, comment](auto resolve, auto) {
+        IF_ASSERT_FAILED(type != ConvertType::Unknown) {
+            return resolve(make_ret(cloud::Err::InvalidData));
+        }
+
         RetVal<QUrl> url = prepareUrlForRequest(MUSESCORECOM_CONVERT_COMMENT_API_URL);
         if (!url.ret) {
             return resolve(url.ret);

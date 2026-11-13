@@ -22,16 +22,19 @@
 
 #include "dockwindowactionscontroller.h"
 
-#include "rcommand/actiontocommand.h"
-
 #include "../idockwindow.h"
 #include "../dockcommands.h"
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "rcommand/actiontocommand.h"
+#endif
+
 using namespace muse;
 using namespace muse::dock;
-using namespace muse::actions;
 using namespace muse::rcommand;
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+using namespace muse::actions;
 static CommandQuery setOpenConv(const Command& command, const ActionData& args)
 {
     CommandQuery query(command);
@@ -53,6 +56,8 @@ static CommandQuery toggleConv(const Command& command, const ActionData& args)
     return query;
 }
 
+#endif
+
 void DockWindowActionsController::init()
 {
     auto cd = commandsDispatcher();
@@ -61,6 +66,7 @@ void DockWindowActionsController::init()
     cd->onRequest(this, DOCK_TOGGLE_FLOATING_COMMAND, [this](const rcommand::Params& params) { return toggleFloating(params); });
     cd->onRequest(this, DOCK_RESTORE_DEFAULT_LAYOUT_COMMAND, [this]() { return restoreDefaultLayout(); });
 
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     // compat
     {
         static std::vector<ActionToCommand> actionsToCommands = {
@@ -72,6 +78,7 @@ void DockWindowActionsController::init()
 
         rcommand::registerActionToCommand(this, actionsToCommands, commandsDispatcher(), dispatcher());
     }
+#endif
 }
 
 muse::Ret DockWindowActionsController::setDockOpen(const rcommand::Params& params)

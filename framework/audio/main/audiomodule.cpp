@@ -45,6 +45,7 @@
 #include "internal/startaudiocontroller.h"
 #include "internal/playback.h"
 #include "internal/audiodrivercontroller.h"
+#include "internal/audiodriverfactory.h"
 
 #include "audio/engine/enginesetup.h"
 
@@ -73,8 +74,10 @@ void AudioModule::registerExports()
     m_configuration = std::make_shared<AudioConfiguration>();
     m_audioDriverController = std::make_shared<AudioDriverController>();
 
+#ifndef Q_OS_WASM
     m_engineGlobalSetup = std::make_shared<engine::EngineGlobalSetup>();
     m_engineGlobalSetup->registerExports();
+#endif
 
 #ifdef Q_OS_WASM
     m_rpcChannel = std::make_shared<rpc::WebRpcChannel>();
@@ -90,6 +93,7 @@ void AudioModule::registerExports()
     globalIoc()->registerExport<IAudioThreadSecurer>(mname, std::make_shared<AudioThreadSecurer>());
     globalIoc()->registerExport<rpc::IRpcChannel>(mname, m_rpcChannel);
     globalIoc()->registerExport<IAudioDriverController>(mname, m_audioDriverController);
+    globalIoc()->registerExport<IAudioDriverFactory>(mname, std::make_shared<AudioDriverFactory>());
     globalIoc()->registerExport<IAudioTaskScheduler>(mname, m_audioDriverController->getAudioTaskScheduler());
     globalIoc()->registerExport<ISoundFontController>(mname, m_soundFontController);
     globalIoc()->registerExport<IStartAudioController>(mname, m_startAudioController);
@@ -97,7 +101,9 @@ void AudioModule::registerExports()
 
 void AudioModule::resolveImports()
 {
+#ifndef Q_OS_WASM
     m_engineGlobalSetup->resolveImports();
+#endif
 
     auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
     if (cr) {
@@ -141,7 +147,9 @@ void AudioModule::onDeinit()
 {
     m_rpcTicker.stop();
     m_startAudioController->stopAudioProcessing();
+#ifndef Q_OS_WASM
     m_engineGlobalSetup->onDeinit();
+#endif
 }
 
 modularity::IContextSetup* AudioModule::newContext(const muse::modularity::ContextPtr& ctx) const

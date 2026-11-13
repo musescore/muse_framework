@@ -21,6 +21,8 @@
  */
 #include "testflowscriptsmodel.h"
 
+#include <QCoreApplication>
+
 #include "io/path.h"
 
 #include "log.h"
@@ -55,6 +57,11 @@ TestflowScriptsModel::TestflowScriptsModel(QObject* parent)
 
 TestflowScriptsModel::~TestflowScriptsModel()
 {
+    //! NOTE The runs in new windows must not report to the model being destroyed
+    for (QProcess* process : m_processes) {
+        process->disconnect(this);
+    }
+
     stopRunAllTC();
 }
 
@@ -153,7 +160,24 @@ void TestflowScriptsModel::runAllTC()
     m_currentTCIndex = -1;
 
     setIsRunAllTCMode(true);
-    tryRunNextTC();
+
+    if (m_runInNewWindows) {
+        runNextInNewWindows();
+    } else {
+        tryRunNextTC();
+    }
+}
+
+int TestflowScriptsModel::takeNextTCIndex()
+{
+    const int count = static_cast<int>(m_scripts.size());
+    while (++m_currentTCIndex < count) {
+        if (m_scripts.at(m_currentTCIndex).type == ScriptType::TestCase && m_selected.value(m_currentTCIndex, true)) {
+            return m_currentTCIndex;
+        }
+    }
+
+    return -1;
 }
 
 bool TestflowScriptsModel::tryRunNextTC()
@@ -163,38 +187,90 @@ bool TestflowScriptsModel::tryRunNextTC()
         return false;
     }
 
-    int prevIndex = m_currentTCIndex;
-    ++m_currentTCIndex;
-    size_t currentIndex = static_cast<size_t>(m_currentTCIndex);
-    if (!(currentIndex < m_scripts.size())) {
-        LOGD() << "no more scripts";
-        return false;
-    }
-
-    //! NOTE Find next TC
-    for (size_t i = currentIndex; i < m_scripts.size(); ++i) {
-        currentIndex = i;
-        if (m_scripts.at(currentIndex).type == ScriptType::TestCase && m_selected.value(int(currentIndex), true)) {
-            break;
-        }
-    }
-
-    if (prevIndex == static_cast<int>(currentIndex)) {
+    const int index = takeNextTCIndex();
+    if (index < 0) {
         LOGD() << "no more TC scripts";
         return false;
     }
 
-    m_currentTCIndex = static_cast<int>(currentIndex);
-    const Script& tc = m_scripts.at(currentIndex);
+    const Script& tc = m_scripts.at(index);
     LOGD() << "requireStartTC: " << tc.path;
     emit requireStartTC(tc.path.toQString());
 
     return true;
 }
 
+void TestflowScriptsModel::runNextInNewWindows()
+{
+    while (isRunAllTCMode() && m_processes.size() < m_jobs) {
+        const int index = takeNextTCIndex();
+        if (index < 0) {
+            break;
+        }
+        runInNewWindow(m_scripts.at(index).path);
+    }
+
+    if (m_processes.empty()) {
+        setIsRunAllTCMode(false);
+    }
+}
+
+void TestflowScriptsModel::runInNewWindow(const io::path_t& path)
+{
+    QStringList args = { "--test-case", path.toQString() };
+    if (testflow()->speedMode() != SpeedMode::Undefined) {
+        args << "--test-case-speed" << speedMode();
+    }
+    //! NOTE Overrides the default of the test case run (disabled)
+    args << "--audio-output-disabled" << (m_audioDisabled ? "true" : "false");
+
+    QProcess* process = new QProcess(this);
+    process->setProcessChannelMode(QProcess::ForwardedChannels);
+    m_processes.append(process);
+
+    connect(process, &QProcess::finished, this, [this, process, path](int exitCode, QProcess::ExitStatus exitStatus) {
+        const bool passed = exitStatus == QProcess::NormalExit && exitCode == 0;
+        onRunInNewWindowFinished(process, path, passed, QString("exit code: %1").arg(exitCode));
+    });
+
+    connect(process, &QProcess::errorOccurred, this, [this, process, path](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart) {
+            return;
+        }
+
+        QMetaObject::invokeMethod(this, [this, process, path]() {
+            onRunInNewWindowFinished(process, path, false, "failed to start: " + process->errorString());
+        }, Qt::QueuedConnection);
+    });
+
+    LOGI() << "[testflow] run in a new window: " << path;
+    setStatus(path, ITestflow::Status::Running);
+    process->start(QCoreApplication::applicationFilePath(), args);
+}
+
+void TestflowScriptsModel::onRunInNewWindowFinished(QProcess* process, const io::path_t& path, bool passed, const QString& info)
+{
+    LOGI() << "[testflow] " << (passed ? "PASSED" : "FAILED") << ": " << path << ", " << info;
+    setStatus(path, passed ? ITestflow::Status::Finished : ITestflow::Status::Error);
+
+    m_processes.removeOne(process);
+    process->deleteLater();
+
+    //! NOTE Unlike the run in this window, a failed test case does not stop the run of the next ones
+    runNextInNewWindows();
+}
+
 void TestflowScriptsModel::stopRunAllTC()
 {
     setIsRunAllTCMode(false);
+
+    if (!m_processes.empty()) {
+        for (QProcess* process : m_processes) {
+            process->kill();
+        }
+        return;
+    }
+
     testflow()->abort();
 }
 
@@ -270,4 +346,46 @@ QString TestflowScriptsModel::speedMode() const
 void TestflowScriptsModel::setSpeedMode(const QString& newSpeedMode)
 {
     testflow()->setSpeedMode(speedModeFromString(newSpeedMode));
+}
+
+bool TestflowScriptsModel::runInNewWindows() const
+{
+    return m_runInNewWindows;
+}
+
+void TestflowScriptsModel::setRunInNewWindows(bool arg)
+{
+    if (m_runInNewWindows == arg) {
+        return;
+    }
+    m_runInNewWindows = arg;
+    emit runInNewWindowsChanged();
+}
+
+int TestflowScriptsModel::jobs() const
+{
+    return m_jobs;
+}
+
+void TestflowScriptsModel::setJobs(int arg)
+{
+    if (m_jobs == arg || arg < 1) {
+        return;
+    }
+    m_jobs = arg;
+    emit jobsChanged();
+}
+
+bool TestflowScriptsModel::audioDisabled() const
+{
+    return m_audioDisabled;
+}
+
+void TestflowScriptsModel::setAudioDisabled(bool arg)
+{
+    if (m_audioDisabled == arg) {
+        return;
+    }
+    m_audioDisabled = arg;
+    emit audioDisabledChanged();
 }

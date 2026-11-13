@@ -39,8 +39,6 @@ target_sources(muse_musesampler PRIVATE
     internal/musesamplerconfiguration.h
     internal/apitypes.h
     internal/libhandler.h
-    internal/musesampleruiactions.cpp
-    internal/musesampleruiactions.h
     internal/musesampleractioncontroller.cpp
     internal/musesampleractioncontroller.h
     internal/musesamplercommandsregister.cpp

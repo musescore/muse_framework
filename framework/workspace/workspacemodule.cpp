@@ -23,8 +23,7 @@
 
 #include "modularity/ioc.h"
 
-#include "framework/ui/iuiactionsregister.h"
-#include "framework/interactive/iinteractiveuriregister.h"
+#include "interactive/iinteractiveuriregister.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
 
@@ -33,10 +32,14 @@
 #include "internal/workspaceactioncontroller.h"
 #include "internal/workspacecommandsregister.h"
 #include "internal/workspacecommandsstate.h"
-#include "internal/workspaceuiactions.h"
 #include "internal/workspacesdataprovider.h"
 
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "ui/iuiactionsregister.h"
+#include "internal/workspaceuiactions.h"
+#endif
 
 #ifdef MUSE_MODULE_DIAGNOSTICS
 #include "diagnostics/idiagnosticspathsregister.h"
@@ -114,10 +117,12 @@ void WorkspaceContext::onInit(const IApplication::RunMode&)
 
 void WorkspaceContext::resolveImports()
 {
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
     auto ar = ioc()->resolve<ui::IUiActionsRegister>(mname);
     if (ar) {
         ar->reg(std::make_shared<WorkspaceUiActions>(m_actionController, iocContext()));
     }
+#endif
 
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {

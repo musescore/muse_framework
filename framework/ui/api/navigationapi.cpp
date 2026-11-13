@@ -21,6 +21,10 @@
  */
 #include "navigationapi.h"
 
+#include <QElapsedTimer>
+#include <QEventLoop>
+#include <QTimer>
+
 #include "navigationcommands.h"
 
 #include "log.h"
@@ -72,8 +76,71 @@ void NavigationApi::escape()
     dispatcher()->dispatch(ESCAPE_COMMAND);
 }
 
-bool NavigationApi::goToControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex)
+static constexpr int WAIT_POLL_INTERVAL_MSEC = 50;
+
+bool NavigationApi::waitFor(const std::function<bool()>& condition, int timeoutMsec) const
 {
+    QElapsedTimer elapsed;
+    elapsed.start();
+
+    while (true) {
+        if (condition()) {
+            return true;
+        }
+
+        if (elapsed.elapsed() >= timeoutMsec) {
+            return false;
+        }
+
+        //! NOTE Let the UI update (load QML, fill models) while waiting
+        QEventLoop loop;
+        bool polled = false;
+        QTimer::singleShot(WAIT_POLL_INTERVAL_MSEC, &loop, [&loop, &polled]() {
+            polled = true;
+            loop.quit();
+        });
+        loop.exec();
+
+        //! NOTE The loop was interrupted, for example, the application is exiting
+        if (!polled) {
+            return false;
+        }
+    }
+}
+
+bool NavigationApi::waitControl(const QString& section, const QString& panel, const QString& controlName, int timeoutMsec)
+{
+    const std::string sectionName = section.toStdString();
+    const std::string panelName = panel.toStdString();
+    const std::string name = controlName.toStdString();
+
+    return waitFor([this, &sectionName, &panelName, &name]() {
+        const INavigationControl* control = navigation()->findControl(sectionName, panelName, name);
+        return control && control->enabled();
+    }, timeoutMsec);
+}
+
+bool NavigationApi::goToControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex, int timeoutMsec)
+{
+    if (timeoutMsec > 0) {
+        bool waited = false;
+        if (controlNameOrIndex.isString()) {
+            waited = waitControl(section, panel, controlNameOrIndex.toString(), timeoutMsec);
+        } else {
+            const std::string sectionName = section.toStdString();
+            const std::string panelName = panel.toStdString();
+            waited = waitFor([this, &sectionName, &panelName]() {
+                const INavigationPanel* p = navigation()->findPanel(sectionName, panelName);
+                return p && p->enabled();
+            }, timeoutMsec);
+        }
+
+        if (!waited) {
+            LOGW() << "timeout " << timeoutMsec << " msec, waited for an enabled control: " << controlNameOrIndex.toString()
+                   << ", panel: " << panel << ", section: " << section;
+        }
+    }
+
     bool ok = false;
     if (controlNameOrIndex.isString()) {
         ok = navigation()->requestActivateByName(section.toStdString(), panel.toStdString(), controlNameOrIndex.toString().toStdString());
@@ -100,9 +167,10 @@ void NavigationApi::trigger()
     dispatcher()->dispatch(TRIGGER_CONTROL_COMMAND);
 }
 
-bool NavigationApi::triggerControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex)
+bool NavigationApi::triggerControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex,
+                                   int timeoutMsec)
 {
-    bool ok = goToControl(section, panel, controlNameOrIndex);
+    bool ok = goToControl(section, panel, controlNameOrIndex, timeoutMsec);
     if (ok) {
         trigger();
     }
@@ -159,6 +227,10 @@ QJSValue NavigationApi::sections() const
 QJSValue NavigationApi::panels(const QString& sectionName) const
 {
     const INavigationSection* s = navigation()->findSection(sectionName.toStdString());
+    if (!s) {
+        return engine()->newArray(0);
+    }
+
     QJSValue arr = engine()->newArray(s->panels().size());
     quint32 i = 0;
     for (const INavigationPanel* p : s->panels()) {
@@ -172,6 +244,10 @@ QJSValue NavigationApi::panels(const QString& sectionName) const
 QJSValue NavigationApi::controls(const QString& sectionName, const QString& panelName) const
 {
     const INavigationPanel* p = navigation()->findPanel(sectionName.toStdString(), panelName.toStdString());
+    if (!p) {
+        return engine()->newArray(0);
+    }
+
     QJSValue arr = engine()->newArray(p->controls().size());
     quint32 i = 0;
     for (const INavigationControl* c : p->controls()) {

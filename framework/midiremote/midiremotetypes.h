@@ -25,11 +25,12 @@
 #include <string>
 #include <vector>
 
-#include "midi/midievent.h"
-
 #include "global/types/string.h"
 #include "global/utils.h"
 #include "global/translation.h"
+#include "rcommand/commandtypes.h"
+
+#include "midi/midievent.h"
 
 namespace muse::midiremote {
 enum RemoteEventType {
@@ -78,21 +79,21 @@ struct RemoteEvent {
 };
 
 struct MidiControlsMapping {
-    std::string action;
+    muse::rcommand::Command command;
     RemoteEvent event;
 
     MidiControlsMapping() = default;
-    MidiControlsMapping(const std::string& action)
-        : action(action) {}
+    MidiControlsMapping(const muse::rcommand::Command& command)
+        : command(command) {}
 
     bool isValid() const
     {
-        return !action.empty() && event.isValid();
+        return command.isValid() && event.isValid();
     }
 
     bool operator ==(const MidiControlsMapping& other) const
     {
-        return action == other.action && other.event == event;
+        return command == other.command && other.event == event;
     }
 };
 

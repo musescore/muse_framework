@@ -43,8 +43,6 @@ target_sources(muse_workspace PRIVATE
     internal/workspacesdataprovider.h
     internal/workspacefile.cpp
     internal/workspacefile.h
-    internal/workspaceuiactions.cpp
-    internal/workspaceuiactions.h
     internal/workspaceactioncontroller.cpp
     internal/workspaceactioncontroller.h
     internal/workspacecommandsregister.cpp
@@ -54,6 +52,14 @@ target_sources(muse_workspace PRIVATE
     internal/workspaceutils.cpp
     internal/workspaceutils.h
 )
+
+if (MUSE_MODULE_ACTIONS_SUPPORT)
+    target_sources(muse_workspace PRIVATE
+        internal/workspaceuiactions.cpp
+        internal/workspaceuiactions.h
+    )
+endif()
+
 
 if (MUSE_MODULE_WORKSPACE_QML)
     add_subdirectory(qml/Muse/Workspace)

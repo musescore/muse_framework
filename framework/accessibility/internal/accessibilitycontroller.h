@@ -36,11 +36,17 @@
 #include "../iaccessibleapprootobject.h"
 #include "../iaccessibilitycontroller.h"
 #include "accessibleobject.h"
-#include "actions/iactionsdispatcher.h"
 #include "interactive/iinteractive.h"
 #include "ui/imainwindow.h"
 #include "ui/inavigationcontroller.h"
+#include "rcommand/icommanddispatcher.h"
+#include "rcommand/icommandsregister.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "actions/iactionsdispatcher.h"
 #include "ui/iuiactionsregister.h"
+#endif
 
 class QAccessibleInterface;
 class QAccessibleEvent;
@@ -56,11 +62,16 @@ class AccessibilityController : public IAccessibilityController, public IAccessi
 public:
     GlobalInject<IApplication> application;
     GlobalInject<IAccessibleAppRootObject> appRootObject;
-    ContextInject<actions::IActionsDispatcher> actionsDispatcher = { this };
+    GlobalInject<rcommand::ICommandsRegister> commandsRegister;
     ContextInject<IInteractive> interactive = { this };
     ContextInject<ui::IMainWindow> mainWindow = { this };
     ContextInject<ui::INavigationController> navigationController = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+    ContextInject<actions::IActionsDispatcher> actionsDispatcher = { this };
     ContextInject<ui::IUiActionsRegister> actionsRegister = { this };
+#endif
 
 public:
     AccessibilityController(const muse::modularity::ContextPtr& iocCtx);

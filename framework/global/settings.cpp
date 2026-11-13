@@ -22,6 +22,7 @@
 
 #include "settings.h"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
@@ -49,15 +50,13 @@ Settings* Settings::instance()
 Settings::Settings()
 {
 #ifdef WIN_PORTABLE
-    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dataPath());
-    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, dataPath());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dataPath().toQString());
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, dataPath().toQString());
 #endif
 
 #ifndef Q_OS_MAC
     QSettings::setDefaultFormat(QSettings::IniFormat);
 #endif
-
-    m_settings = new QSettings();
 }
 
 Settings::~Settings()
@@ -65,9 +64,17 @@ Settings::~Settings()
     delete m_settings;
 }
 
+QSettings* Settings::qsettings() const
+{
+    if (!m_settings) {
+        m_settings = new QSettings();
+    }
+    return m_settings;
+}
+
 io::path_t Settings::filePath() const
 {
-    return m_settings->fileName();
+    return qsettings()->fileName();
 }
 
 const Settings::Items& Settings::items() const
@@ -87,6 +94,21 @@ void Settings::reload()
     }
 }
 
+void Settings::setDataPath(const io::path_t& path)
+{
+    //! NOTE Otherwise the settings were already read from (and maybe written to) the previous path
+    IF_ASSERT_FAILED(!m_settings) {
+        delete m_settings;
+        m_settings = nullptr;
+    }
+
+    m_dataPath = path;
+
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, m_dataPath.toQString());
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, m_dataPath.toQString());
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+}
+
 void Settings::load()
 {
     m_items = readItems();
@@ -94,7 +116,7 @@ void Settings::load()
 
 void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool notifyOtherInstances)
 {
-    m_settings->clear();
+    qsettings()->clear();
 
     m_isTransactionStarted = false;
 
@@ -112,8 +134,8 @@ void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool not
     m_localSettings.clear();
 
     if (!keepDefaultSettings) {
-        QDir(dataPath()).removeRecursively();
-        QDir().mkpath(dataPath());
+        QDir(dataPath().toQString()).removeRecursively();
+        QDir().mkpath(dataPath().toQString());
     }
 
     if (!notifyAboutChanges) {
@@ -174,10 +196,10 @@ Settings::Items Settings::readItems() const
 #ifdef MUSE_MODULE_MULTIWINDOWS
     muse::mi::ReadResourceLockGuard resource_lock(multiwindowsProvider.get(), SETTINGS_RESOURCE_NAME);
 #endif
-    for (const QString& key : m_settings->allKeys()) {
+    for (const QString& key : qsettings()->allKeys()) {
         Item item;
         item.key = Key(std::string(), key.toStdString());
-        item.value = compat_QVariantToVal(m_settings->value(key));
+        item.value = compat_QVariantToVal(qsettings()->value(key));
 
         result[item.key] = item;
     }
@@ -236,15 +258,19 @@ void Settings::writeValue(const Key& key, const Val& value)
     muse::mi::WriteResourceLockGuard resource_lock(multiwindowsProvider.get(), SETTINGS_RESOURCE_NAME);
 #endif
     // TODO: implement writing/reading first part of key (module name)
-    m_settings->setValue(QString::fromStdString(key.key), value.toQVariant());
+    qsettings()->setValue(QString::fromStdString(key.key), value.toQVariant());
 }
 
-QString Settings::dataPath() const
+io::path_t Settings::dataPath() const
 {
+    if (!m_dataPath.empty()) {
+        return m_dataPath;
+    }
+
 #ifdef WIN_PORTABLE
-    return QDir::cleanPath(QString("%1/../../../Data/settings").arg(QCoreApplication::applicationDirPath()));
+    return io::path_t(QDir::cleanPath(QString("%1/../../../Data/settings").arg(QCoreApplication::applicationDirPath())));
 #else
-    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    return io::path_t(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
 #endif
 }
 

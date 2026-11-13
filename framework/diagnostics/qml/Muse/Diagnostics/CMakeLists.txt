@@ -4,8 +4,6 @@ qt_add_qml_module(muse_diagnostics_qml
     URI Muse.Diagnostics
     VERSION 1.0
     SOURCES
-        actionsviewmodel.cpp
-        actionsviewmodel.h
         devtools/crashhandlerdevtoolsmodel.cpp
         devtools/crashhandlerdevtoolsmodel.h
         diagnosticaccessiblemodel.cpp
@@ -43,6 +41,13 @@ qt_add_qml_module(muse_diagnostics_qml
         TARGET muse_ui_qml
         TARGET muse_uicomponents_qml
 )
+
+if (MUSE_MODULE_ACTIONS_SUPPORT)
+    target_sources(muse_diagnostics_qml PRIVATE
+        actionsviewmodel.cpp
+        actionsviewmodel.h
+    )
+endif()
 
 fixup_qml_module_dependencies(muse_diagnostics_qml)
 

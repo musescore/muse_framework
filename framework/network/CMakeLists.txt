@@ -29,6 +29,7 @@ target_sources(muse_network PRIVATE
     inetworkmanagercreator.h
     inetworkconfiguration.h
     inetworkinformation.h
+    offlinenetworkreply.h
 
     internal/networkmanager.cpp
     internal/networkmanager.h

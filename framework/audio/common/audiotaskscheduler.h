@@ -22,8 +22,12 @@
 
 #pragma once
 
+#include "muse_framework_config.h"
+
 #include "audioworkgroup.h"
+#ifdef MUSE_THREADS_SUPPORT
 #include "realtimethreadpool.h"
+#endif
 #include "iaudiodriver.h"
 #include "iaudiotaskscheduler.h"
 #include "audiosanitizer.h"
@@ -32,6 +36,7 @@
 #include <mutex>
 
 namespace muse::audio {
+#ifdef MUSE_THREADS_SUPPORT
 class AudioTaskScheduler : public IAudioTaskScheduler, public muse::async::Asyncable
 {
     constexpr static const char* threadpoolName = "audio_rt"; // The name must be no more than 12 characters.
@@ -94,4 +99,19 @@ private:
 
     std::recursive_mutex m_threadPoolMutex;
 };
+#else
+//! NOTE Without threads support the tasks are executed sequentially in the calling thread
+class AudioTaskScheduler : public IAudioTaskScheduler
+{
+public:
+    void submitRealtimeTasksAndWait(const std::vector<Task>& tasks) override
+    {
+        for (const auto& task : tasks) {
+            task();
+        }
+    }
+
+    void setAudioDriver(const IAudioDriverPtr&) {}
+};
+#endif // MUSE_THREADS_SUPPORT
 }

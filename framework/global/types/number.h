@@ -63,6 +63,8 @@ class number_t
 {
 public:
 
+    using value_type = T;
+
     constexpr number_t() = default;
     number_t(T v)
         : m_val(muse::check_valid(v)) {}

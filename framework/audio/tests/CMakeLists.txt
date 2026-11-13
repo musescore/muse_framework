@@ -21,10 +21,26 @@
 set(MODULE_TEST muse_audio_tests)
 
 set(MODULE_TEST_SRC
-    ${CMAKE_CURRENT_LIST_DIR}/rpcpacker_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/audioconfigurationmock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/audiocontextmock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/audiodriverfactorymock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/audiodrivermock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/audioenginemock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/rpcchannelmock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/startaudiocontrollermock.h
+
     ${CMAKE_CURRENT_LIST_DIR}/alignbuffer_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/audioresourcetypes_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/audiodrivercontroller_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/enginerpccontroller_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/playback_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/soundtracksaveoptions_tests.cpp
 )
 
+set(MODULE_TEST_LINK
+    muse_audio
+)
+
 include(SetupGTest)
+
+add_subdirectory(rpcpacker)

@@ -31,13 +31,16 @@
 #include "modularity/ioc.h"
 #include "rcommand/commandtypes.h"
 #include "types/uri.h"
-#include "ui/iuiactionsregister.h"
-#include "actions/iactionsdispatcher.h"
 #include "rcommand/icommanddispatcher.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
 
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "ui/iuiactionsregister.h"
+#include "actions/iactionsdispatcher.h"
+#endif
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
 #include "shortcuts_v2/icommandshortcutsregister.h"
@@ -126,6 +129,19 @@ protected:
 
     MenuItem* makeMenuItem(const muse::rcommand::Command& command, const TranslatableString& title = {});
     MenuItem* makeMenuItem(const muse::rcommand::CommandQuery& query, const TranslatableString& title = {});
+    MenuItem* makeMenuItem(const muse::rcommand::Command& command, const muse::rcommand::Params& params,
+                           const TranslatableString& title = {});
+
+    template<muse::rcommand::TypedCommand C>
+    MenuItem* makeMenuItem(const C& command, const TranslatableString& title = {})
+    {
+        if constexpr (muse::rcommand::HasInput<C>) {
+            return makeMenuItem(command.id, muse::rcommand::toInputParams(command), title);
+        } else {
+            return makeMenuItem(command.id, title);
+        }
+    }
+
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT
     MenuItem* makeMenuItem(const muse::actions::ActionCode& actionCode, const TranslatableString& title = {});
 #endif

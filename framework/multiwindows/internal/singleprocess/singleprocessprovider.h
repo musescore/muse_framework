@@ -33,10 +33,6 @@ namespace muse::ui {
 class IMainWindow;
 }
 
-namespace muse::actions {
-class IActionsDispatcher;
-}
-
 namespace muse::rcommand {
 class ICommandDispatcher;
 }
@@ -87,7 +83,6 @@ public:
 private:
     std::shared_ptr<IProjectProvider> projectProvider(const modularity::ContextPtr& ctx) const;
     std::shared_ptr<ui::IMainWindow> mainWindow(const modularity::ContextPtr& ctx) const;
-    std::shared_ptr<actions::IActionsDispatcher> dispatcher(const modularity::ContextPtr& ctx) const;
     std::shared_ptr<rcommand::ICommandDispatcher> commandDispatcher(const modularity::ContextPtr& ctx) const;
 
     async::Promise<Ret> quitWindows(const std::vector<modularity::ContextPtr>& ctxs);

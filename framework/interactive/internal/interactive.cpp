@@ -187,6 +187,7 @@ UriQuery Interactive::makeQuery(const std::string& type, const std::string& cont
             customButton["role"] = Val(static_cast<int>(buttonData.role));
             customButton["isAccent"] = Val(buttonData.accent);
             customButton["isLeftSide"] = Val(buttonData.leftSide);
+            customButton["icon"] = Val(buttonData.icon);
             customButtonsList.push_back(Val(customButton));
         }
     }
@@ -219,7 +220,7 @@ async::Promise<IInteractive::Result> Interactive::openStandardAsync(const std::s
     },
         [](int code, const std::string& msg, auto resolve, auto reject) {
         //! NOTE To simplify writing the handlers
-        (void)resolve(IInteractive::Result((int)IInteractive::Button::Cancel, false));
+        (void)resolve(IInteractive::Result((int)IInteractive::Button::Cancel));
         return reject(code, msg);
     });
 }
@@ -493,7 +494,7 @@ async::Promise<io::path_t> Interactive::selectSavingFile(const std::string& titl
         dlg->open();
 
         return async::Promise<io::path_t>::Result::unchecked();
-    }, async::PromiseType::AsyncByBody);
+    });
 
 #else
 
@@ -608,7 +609,11 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
 
     return async::make_promise<Color>([this, color, title, allowAlpha](auto resolve, auto reject) {
         //! FIX https://github.com/musescore/MuseScore/issues/23208
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+        shortcutsController()->setActive(false);
+#else
         shortcutsRegister()->setActive(false);
+#endif
 
         QColorDialog* dlg = new QColorDialog();
         if (!title.empty()) {
@@ -634,7 +639,11 @@ async::Promise<Color> Interactive::selectColor(const Color& color, const std::st
             uiConfiguration()->setColorDialogCustomColors(getCustomColors());
 
             m_isSelectColorOpened = false;
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+            shortcutsController()->setActive(true);
+#else
             shortcutsRegister()->setActive(true);
+#endif
 
             if (result != QDialog::Accepted) {
                 Ret ret = muse::make_ret(Ret::Code::Cancel);

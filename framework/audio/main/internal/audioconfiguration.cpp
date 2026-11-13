@@ -137,6 +137,16 @@ async::Notification AudioConfiguration::currentAudioDriverChanged() const
     return m_currentAudioDriverChanged;
 }
 
+bool AudioConfiguration::isOutputDisabled() const
+{
+    return m_outputDisabled;
+}
+
+void AudioConfiguration::setOutputDisabled(bool disabled)
+{
+    m_outputDisabled = disabled;
+}
+
 std::string AudioConfiguration::audioOutputDeviceId() const
 {
     return settings()->value(AUDIO_OUTPUT_DEVICE_ID_KEY).toString();

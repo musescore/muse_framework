@@ -26,10 +26,8 @@
 #include "interactive/iinteractiveuriregister.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
-#include "ui/iuiactionsregister.h"
 
 #include "internal/diagnosticsconfiguration.h"
-#include "internal/diagnosticsactions.h"
 #include "internal/diagnosticsactionscontroller.h"
 #include "internal/diagnosticscommandsregister.h"
 #include "internal/diagnosticscommandsstate.h"
@@ -129,11 +127,6 @@ void DiagnosticsContext::registerExports()
 
 void DiagnosticsContext::resolveImports()
 {
-    auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
-    if (ar) {
-        ar->reg(std::make_shared<DiagnosticsActions>());
-    }
-
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {
         cs->reg(std::make_shared<DiagnosticsCommandsState>(iocContext()));

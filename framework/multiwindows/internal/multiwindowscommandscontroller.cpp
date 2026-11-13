@@ -22,8 +22,6 @@
 
 #include "multiwindowscommandscontroller.h"
 
-#include "rcommand/actiontocommand.h"
-
 #include "../multiwindowscommands.h"
 
 #include "types/uri.h"
@@ -40,15 +38,6 @@ void MultiWindowsCommandsController::init()
         showInfo();
         return muse::make_ok();
     });
-
-    // compat
-    {
-        static const std::vector<ActionToCommand> actionToCommands = {
-            { "multiwindows-dev-show-info", MULTIWINDOWS_DEV_SHOW_INFO_COMMAND, {} },
-        };
-
-        rcommand::registerActionToCommand(this, actionToCommands, commandDispatcher(), dispatcher());
-    }
 }
 
 void MultiWindowsCommandsController::showInfo()

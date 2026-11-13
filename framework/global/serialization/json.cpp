@@ -87,6 +87,22 @@ JsonValue::JsonValue(const char* v)
     val_mut(m_data).set<std::string>(std::string(v));
 }
 
+JsonValue::JsonValue(const JsonArray& v)
+    : m_data(v.m_data)
+{
+    if (!m_data) {
+        m_data = std::make_shared<JsonData>();
+    }
+}
+
+JsonValue::JsonValue(const JsonObject& v)
+    : m_data(v.m_data)
+{
+    if (!m_data) {
+        m_data = std::make_shared<JsonData>();
+    }
+}
+
 JsonValue::JsonValue(std::shared_ptr<JsonData> d)
     : m_data(d)
 {
@@ -248,6 +264,71 @@ JsonValue& JsonValue::operator=(const JsonObject& obj)
     detach();
     val_mut(m_data) = val_const(obj.m_data);
     return *this;
+}
+
+Val JsonValue::toVal() const
+{
+    if (isNull()) {
+        return Val();
+    }
+    if (isBool()) {
+        return Val(toBool());
+    }
+    if (isNumber()) {
+        return Val(toDouble());
+    }
+    if (isString()) {
+        return Val(toStdString());
+    }
+    if (isArray()) {
+        muse::ValList list;
+        const JsonArray array = toArray();
+        for (size_t i = 0; i < array.size(); ++i) {
+            list.emplace_back(array[i].toVal());
+        }
+        return Val(list);
+    }
+    if (isObject()) {
+        muse::ValMap map;
+        const JsonObject object = toObject();
+        for (const auto& key : object.keys()) {
+            map[key] = object[key].toVal();
+        }
+        return muse::Val(map);
+    }
+
+    return muse::Val();
+}
+
+JsonValue JsonValue::fromVal(const Val& val)
+{
+    switch (val.type()) {
+    case Val::Type::Undefined: return JsonValue();
+    case Val::Type::Bool: return JsonValue(val.toBool());
+    case Val::Type::Int: return JsonValue(val.toInt());
+    case Val::Type::Int64: return JsonValue(val.toString());  // as string
+    case Val::Type::Double: return JsonValue(val.toDouble());
+    case Val::Type::String: return JsonValue(val.toString());
+    case Val::Type::List: {
+        JsonArray array;
+        for (const auto& item : val.toList()) {
+            array.append(fromVal(item));
+        }
+        return array;
+    }
+    case Val::Type::Map: {
+        JsonObject object;
+        for (const auto& [key, value] : val.toMap()) {
+            object[key] = fromVal(value);
+        }
+        return object;
+    }
+    default: {
+        NOT_SUPPORTED << "data type: " << (int)val.type();
+    }
+    }
+
+    return JsonValue();
 }
 
 // =======================================
@@ -548,6 +629,24 @@ JsonArray& JsonArray::append(const JsonObject& v)
     detach();
     array_mut(m_data).push_back(val_const(v.m_data));
     return *this;
+}
+
+JsonArray JsonArray::fromValList(const ValList& valList)
+{
+    JsonArray array;
+    for (const auto& item : valList) {
+        array.append(JsonValue::fromVal(item));
+    }
+    return array;
+}
+
+JsonArray JsonArray::fromStringList(const std::vector<std::string>& stringList)
+{
+    JsonArray array;
+    for (const auto& item : stringList) {
+        array.append(JsonValue(item));
+    }
+    return array;
 }
 
 JsonValue JsonArray::operator [](size_t i) const

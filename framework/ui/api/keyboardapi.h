@@ -25,9 +25,14 @@
 #include "api/apiobject.h"
 
 #include "modularity/ioc.h"
-#include "shortcuts/ishortcutscontroller.h"
 #include "ui/imainwindow.h"
 
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/ishortcutscontroller.h"
+#else
+#include "shortcuts/ishortcutscontroller.h"
+#endif
 class QWindow;
 namespace muse::api {
 class KeyboardApi : public api::ApiObject

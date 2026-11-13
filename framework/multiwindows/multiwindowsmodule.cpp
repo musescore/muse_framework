@@ -22,7 +22,6 @@
 
 #include "multiwindowsmodule.h"
 
-#include "internal/multiwindowsuiactions.h"
 #include "internal/multiwindowscommandscontroller.h"
 #include "internal/multiwindowscommandsregister.h"
 #include "internal/multiwindowscommandsstate.h"
@@ -31,7 +30,6 @@
 #include "interactive/iinteractiveuriregister.h"
 #include "rcommand/icommandsregister.h"
 #include "rcommand/icommandsstate.h"
-#include "ui/iuiactionsregister.h"
 
 #include "muse_framework_config.h"
 
@@ -97,11 +95,6 @@ void MultiWindowsContext::registerExports()
 
 void MultiWindowsContext::resolveImports()
 {
-    auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
-    if (ar) {
-        ar->reg(std::make_shared<MultiInstancesUiActions>());
-    }
-
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {
         cs->reg(std::make_shared<MultiWindowsCommandsState>(iocContext()));

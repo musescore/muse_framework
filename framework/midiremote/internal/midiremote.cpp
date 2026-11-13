@@ -42,7 +42,7 @@ static constexpr std::string_view MAPPING_ACTION_CODE_TAG("key");
 static constexpr std::string_view MAPPING_EVENT_TYPE_TAG("EventType");
 static constexpr std::string_view MAPPING_EVENT_VALUE_TAG("EventValue");
 
-static const std::string REALTIME_ADVANCE_ACTION_NAME("command://notation/realtime-advance");
+static const rcommand::Command REALTIME_ADVANCE_COMMAND("command://notation/realtime-advance");
 
 static const std::string MIDI_MAPPING_RESOURCE_NAME("MIDI_MAPPING");
 
@@ -131,12 +131,7 @@ Ret MidiRemote::process(const Event& ev)
 
     for (const MidiControlsMapping& midiMapping : m_midiMappings) {
         if (midiMapping.event == event) {
-            if (muse::strings::startsWith(midiMapping.action, rcommand::COMMAND_SCHEME)) {
-                commandDispatcher()->dispatch(rcommand::Command(midiMapping.action));
-            } else {
-                dispatcher()->dispatch(midiMapping.action);
-            }
-            dispatcher()->dispatch(midiMapping.action);
+            commandDispatcher()->dispatch(midiMapping.command);
             return make_ret(Ret::Code::Ok);
         }
     }
@@ -189,7 +184,7 @@ MidiControlsMapping MidiRemote::readMidiMapping(XmlStreamReader& reader) const
         const std::string tag(reader.name());
 
         if (tag == MAPPING_ACTION_CODE_TAG) {
-            midiMapping.action = reader.readAsciiText();
+            midiMapping.command = rcommand::Command(reader.readText().toStdString());
         } else if (tag == MAPPING_EVENT_TYPE_TAG) {
             midiMapping.event.type = static_cast<RemoteEventType>(reader.readInt());
         } else if (tag == MAPPING_EVENT_VALUE_TAG) {
@@ -236,7 +231,7 @@ bool MidiRemote::writeMidiMappings(const MidiMappingList& midiMappings) const
 void MidiRemote::writeMidiMapping(XmlStreamWriter& writer, const MidiControlsMapping& midiMapping) const
 {
     writer.startElement(EVENT_TAG);
-    writer.element(MAPPING_ACTION_CODE_TAG, midiMapping.action);
+    writer.element(MAPPING_ACTION_CODE_TAG, midiMapping.command.toString());
     writer.element(MAPPING_EVENT_TYPE_TAG, midiMapping.event.type);
     writer.element(MAPPING_EVENT_VALUE_TAG, midiMapping.event.value);
     writer.endElement();
@@ -269,7 +264,7 @@ bool MidiRemote::needIgnoreEvent(const Event& event) const
         }
 
         RemoteEvent remoteEvent = remoteEventFromMidiEvent(event);
-        RemoteEvent realtimeEvent = this->remoteEvent(REALTIME_ADVANCE_ACTION_NAME);
+        RemoteEvent realtimeEvent = this->remoteEvent(REALTIME_ADVANCE_COMMAND);
         if (!realtimeEvent.isValid() || remoteEvent != realtimeEvent) {
             return true;
         }
@@ -278,10 +273,10 @@ bool MidiRemote::needIgnoreEvent(const Event& event) const
     return false;
 }
 
-RemoteEvent MidiRemote::remoteEvent(const std::string& action) const
+RemoteEvent MidiRemote::remoteEvent(const rcommand::Command& command) const
 {
     for (const MidiControlsMapping& midiMapping : m_midiMappings) {
-        if (midiMapping.action == action) {
+        if (midiMapping.command == command) {
             return midiMapping.event;
         }
     }

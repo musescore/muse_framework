@@ -20,7 +20,7 @@
 
 muse_create_qml_module(muse_uicomponents_qml ALIAS muse::uicomponents_qml FOR muse_uicomponents)
 
-target_link_libraries(muse_uicomponents_qml PRIVATE Qt::Quick)
+target_link_libraries(muse_uicomponents_qml PUBLIC Qt::Quick)
 
 qt_add_qml_module(muse_uicomponents_qml
     URI Muse.UiComponents
@@ -72,6 +72,8 @@ qt_add_qml_module(muse_uicomponents_qml
         menuitem.h
         menuview.cpp
         menuview.h
+        pagetabsmodel.cpp
+        pagetabsmodel.h
         polylineplot.cpp
         polylineplot.h
         popupview.cpp
@@ -134,6 +136,7 @@ qt_add_qml_module(muse_uicomponents_qml
         NavigationFocusBorder.qml
         NumberInputField.qml
         PageIndicator.qml
+        PageTabBar.qml
         PageTabButton.qml
         PopupButton.qml
         PopupPanel.qml
@@ -227,20 +230,10 @@ if (OS_IS_WIN)
     )
 endif(OS_IS_WIN)
 
-if (${Qt6_VERSION} VERSION_GREATER_EQUAL 6.9)
-    qt_target_qml_sources(muse_uicomponents_qml
-        QML_FILES
-            StyledRectangularShadow.qml
-    )
-else()
-    qt_target_qml_sources(muse_uicomponents_qml
-        QML_FILES
-            StubStyledRectangularShadow.qml
-    )
-    set_source_files_properties(StubStyledRectangularShadow.qml PROPERTIES
-        QT_QML_SOURCE_TYPENAME StyledRectangularShadow.qml
-    )
-endif()
+qt_target_qml_sources(muse_uicomponents_qml
+    QML_FILES
+        StyledRectangularShadow.qml
+)
 
 if (MUSE_MODULE_SHORTCUTS_V2)
     target_sources(muse_uicomponents_qml PRIVATE

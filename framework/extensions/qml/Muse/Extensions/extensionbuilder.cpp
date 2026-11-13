@@ -21,10 +21,10 @@
  */
 #include "extensionbuilder.h"
 
+#include <QPointer>
 #include <QQmlEngine>
 
 #include "global/types/number.h"
-#include "global/async/async.h"
 #include "global/io/file.h"
 
 #include "api/v1/ipluginapiv1.h"
@@ -61,6 +61,7 @@ QString ExtensionBuilder::validateImports(const io::path_t& qmlFilePath) const
 
 void ExtensionBuilder::load(const QString& extension, const QString& action, QObject* itemParent)
 {
+    unload();
     const ExtensionUri uri = ExtensionUri(extension.toStdString());
     const Manifest& manifest = provider()->manifest(uri);
     IF_ASSERT_FAILED(manifest.isValid()) {
@@ -121,7 +122,10 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
     m_contentItem = qobject_cast<QQuickItem*>(qmlObj);
     if (!m_contentItem) {
         LOGE() << "Component not QuickItem, file: " << a.path << ", from extension: " << uri;
+        delete qmlObj;
+        return;
     }
+    qmlObj->setParent(this);
 
     if (m_contentItem) {
         if (muse::is_zero(m_contentItem->implicitHeight())) {
@@ -134,7 +138,7 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         if (muse::is_zero(m_contentItem->implicitWidth())) {
             m_contentItem->setImplicitWidth(m_contentItem->width());
             if (muse::is_zero(m_contentItem->implicitWidth())) {
-                m_contentItem->setImplicitWidth(600);
+                m_contentItem->setImplicitWidth(a.docked ? 360 : 600);
             }
         }
     }
@@ -142,7 +146,11 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
     emit contentItemChanged();
 
     if (a.apiversion == 1) {
-        apiv1::IPluginApiV1* plugin = dynamic_cast<apiv1::IPluginApiV1*>(m_contentItem);
+        apiv1::IPluginApiV1* plugin = dynamic_cast<apiv1::IPluginApiV1*>(m_contentItem.data());
+
+        if (!plugin) {
+            return;
+        }
 
         plugin->setup(engin);
 
@@ -150,16 +158,34 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
             emit closeRequested();
         });
 
-        //! NOTE For version 1 plugins we need to call run
-        async::Async::call(this, [plugin, a, uri]() {
+        //! NOTE For version 1 plugins we need to call run.
+        //! Queued on Qt's event loop rather than async::Async: the viewer is opened
+        //! with openSync from inside a command, that is from inside async message
+        //! processing, and the nested loop of the dialog cannot process async
+        //! messages again, so run would only arrive once the dialog had closed.
+        const QPointer<QQuickItem> contentItem = m_contentItem;
+        QMetaObject::invokeMethod(this, [this, contentItem, a, uri]() {
+            if (!contentItem || contentItem != m_contentItem) {
+                return;
+            }
+            auto plugin = dynamic_cast<apiv1::IPluginApiV1*>(contentItem.data());
             if (!plugin) {
                 LOGE() << "Qml Object not MuseScore plugin: " << a.path
                        << ", from extension: " << uri;
                 return;
             }
             plugin->runPlugin();
-        });
+        }, Qt::QueuedConnection);
     }
+}
+
+//! Destroy the plug-in synchronously when its dock closes or the active score changes.
+void ExtensionBuilder::unload()
+{
+    auto item = m_contentItem.data();
+    m_contentItem = nullptr;
+    emit contentItemChanged();
+    delete item;
 }
 
 QQuickItem* ExtensionBuilder::contentItem() const

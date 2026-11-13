@@ -22,6 +22,9 @@
 
 #include "docktoolbarview.h"
 
+#include <QCoreApplication>
+#include <QQuickWindow>
+
 #include "kddockwidgets/src/core/DockWidget.h"
 #include "kddockwidgets/src/core/FloatingWindow.h"
 #include "kddockwidgets/src/core/Draggable_p.h"
@@ -66,6 +69,13 @@ public:
         KDDockWidgets::Core::FloatingWindow* floatingWindow = m_dockWidget->floatingWindow();
         if (floatingWindow) {
             return std::make_unique<KDDockWidgets::Core::WindowBeingDragged>(floatingWindow, this);
+        }
+
+        //! NOTE: The drag controller consumes the mouse moves, so the main window keeps hovering
+        //! the press position, where other items appear after the toolbar is undocked
+        if (QQuickWindow* mainWindow = KDDockWidgets::QtQuick::asQQuickItem(m_dockWidget)->window()) {
+            QEvent leaveEvent(QEvent::Leave);
+            QCoreApplication::sendEvent(mainWindow, &leaveEvent);
         }
 
         m_dockWidget->setFloating(true);

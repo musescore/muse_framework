@@ -36,6 +36,7 @@ public:
     MOCK_METHOD(QString, name, (), (const, override));
 
     MOCK_METHOD(const Index&, index, (), (const, override));
+    MOCK_METHOD(void, setIndex, (const Index&), (override));
     MOCK_METHOD(async::Channel<Index>, indexChanged, (), (const, override));
 
     MOCK_METHOD(bool, enabled, (), (const, override));
@@ -46,6 +47,8 @@ public:
     MOCK_METHOD(async::Channel<bool>, activeChanged, (), (const, override));
 
     MOCK_METHOD(void, onEvent, (EventPtr), (override));
+
+    MOCK_METHOD(QQuickItem*, visualItem, (), (const, override));
 
     MOCK_METHOD(QWindow*, window, (), (const, override));
 
@@ -63,6 +66,7 @@ public:
     MOCK_METHOD(QString, name, (), (const, override));
 
     MOCK_METHOD(const Index&, index, (), (const, override));
+    MOCK_METHOD(void, setIndex, (const Index&), (override));
     MOCK_METHOD(async::Channel<Index>, indexChanged, (), (const, override));
 
     MOCK_METHOD(bool, enabled, (), (const, override));
@@ -73,6 +77,8 @@ public:
     MOCK_METHOD(async::Channel<bool>, activeChanged, (), (const, override));
 
     MOCK_METHOD(void, onEvent, (EventPtr), (override));
+
+    MOCK_METHOD(QQuickItem*, visualItem, (), (const, override));
 
     MOCK_METHOD(QWindow*, window, (), (const, override));
 
@@ -91,6 +97,7 @@ public:
     MOCK_METHOD(QString, name, (), (const, override));
 
     MOCK_METHOD(const Index&, index, (), (const, override));
+    MOCK_METHOD(void, setIndex, (const Index&), (override));
     MOCK_METHOD(async::Channel<Index>, indexChanged, (), (const, override));
 
     MOCK_METHOD(bool, enabled, (), (const, override));
@@ -102,11 +109,14 @@ public:
 
     MOCK_METHOD(void, onEvent, (EventPtr), (override));
 
+    MOCK_METHOD(QQuickItem*, visualItem, (), (const, override));
+
     MOCK_METHOD(QWindow*, window, (), (const, override));
 
     MOCK_METHOD(INavigationPanel*, panel, (), (const, override));
 
     MOCK_METHOD(void, trigger, (), (override));
+    MOCK_METHOD(async::Notification, triggered, (), (const, override));
     MOCK_METHOD(void, requestActive, (bool), (override));
 };
 class NavigationControllerMock : public INavigationController

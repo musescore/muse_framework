@@ -32,7 +32,6 @@
 #include "rcommand/commandtypes.h"
 
 #include "log.h"
-#include "thirdparty/kors_logger/src/log_base.h"
 
 using namespace muse;
 using namespace muse::shortcuts;
@@ -82,7 +81,6 @@ void CommandShortcutsRegister::reload(bool onlyDef)
     io::path_t userPath = userShortcutsPath();
 
     bool ok = readFromFile(m_defaultShortcuts, defPath);
-
     if (ok) {
         //! NOTE Platform and preset shortcuts files are diffs from the base one
         std::string defaultName = configuration()->defaultShortcutsName();
@@ -246,7 +244,7 @@ void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const Sho
                 sc.scope = defSc.scope;
                 sc.autoRepeat = defSc.autoRepeat;
                 found = true;
-            } else if (sc.scope == defSc.scope) {
+            } else if (sc.scope == defSc.scope && defSc.command != rcommand::NONE_COMMAND) {
                 for (const std::string& seq : sc.sequences) {
                     //! NOTE If user shortcut has sequence from default shortcut, remove the sequence from default shortcut
                     muse::remove_if(scForAdd.sequences, [&seq](const std::string& cmp){
@@ -308,7 +306,8 @@ void CommandShortcutsRegister::makeUnique(ShortcutList& shortcuts)
 
         Shortcut& foundSc = *it;
 
-        IF_ASSERT_FAILED(foundSc.scope == sc.scope) {
+        if (foundSc.scope != sc.scope) {
+            LOGW() << "scope mismatch for command: " << sc.command << ", scope1: " << foundSc.scope << ", scope2: " << sc.scope;
         }
 
         foundSc.sequences.insert(foundSc.sequences.end(), sc.sequences.begin(), sc.sequences.end());
@@ -353,7 +352,8 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
     }
 
     JsonArray rootArr = doc.rootArray();
-    for (size_t i = 0; i < rootArr.size(); ++i) {
+    const size_t scopesCount = rootArr.size();
+    for (size_t i = 0; i < scopesCount; ++i) {
         JsonValue value = rootArr.at(i);
         if (!value.isObject()) {
             LOGE() << "failed parse json: " << path;
@@ -361,12 +361,13 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
         }
 
         JsonObject obj = value.toObject();
+        std::string scope = obj.value("scope").toStdString();
 
         JsonArray shortcutsArr = obj.value("shortcuts").toArray();
         for (size_t j = 0; j < shortcutsArr.size(); ++j) {
             JsonObject shortcutObj = shortcutsArr.at(j).toObject();
             Shortcut shortcut;
-            shortcut.scope = obj.value("scope").toStdString();
+            shortcut.scope = scope;
             shortcut.command = rcommand::Command(shortcutObj.value("command").toStdString());
             shortcut.autoRepeat = shortcutObj.value("autorepeat", JsonValue(true)).toBool();
             JsonArray sequencesArr = shortcutObj.value("sequences").toArray();
@@ -503,9 +504,6 @@ Ret CommandShortcutsRegister::updateShortcuts(const ShortcutList& shortcuts)
     }
 
     if (ok) {
-        m_shortcuts = diff;
-        mergeShortcuts(m_shortcuts, m_defaultShortcuts);
-        mergeAdditionalShortcuts(m_shortcuts);
         m_shortcutsChanged.notify();
     }
 

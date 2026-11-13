@@ -22,14 +22,15 @@
 
 #include "mididevicemappingmodel.h"
 
+#include "rcommand/commandtypes.h"
 #include "translation.h"
 
 #include "log.h"
+#include <vector>
 
 using namespace muse::midi;
 using namespace muse::midiremote;
-using namespace muse::ui;
-using namespace muse::actions;
+using namespace muse::rcommand;
 
 static const QString TITLE_KEY("title");
 static const QString ICON_KEY("icon");
@@ -38,28 +39,29 @@ static const QString ENABLED_KEY("enabled");
 static const QString MAPPED_TYPE_KEY("mappedType");
 static const QString MAPPED_VALUE_KEY("mappedValue");
 
-inline static ActionCodeList allMidiActions()
+inline static std::vector<Command> allMidiCommands()
 {
+    //! TODO Move to config
     return {
-        "command://playback/rewind",
-        "command://playback/loop-toggle",
-        "command://playback/play",
-        "command://playback/stop",
-        "command://notation/toggle-note-input",
-        "command://notation/set-duration-whole",
-        "command://notation/set-duration-half",
-        "command://notation/set-duration-quarter",
-        "command://notation/set-duration-eighth",
-        "command://notation/set-duration-16th",
-        "command://notation/set-duration-32nd",
-        "command://notation/set-duration-64th",
-        "command://notation/undo",
-        "rest",
-        "command://notation/toggle-rest",
-        "tie",
-        "command://notation/toggle-dot",
-        "command://notation/toggle-dot2",
-        "command://notation/realtime-advance"
+        Command("command://playback/rewind"),
+        Command("command://playback/loop-toggle"),
+        Command("command://playback/play"),
+        Command("command://playback/stop"),
+        Command("command://notation/toggle-note-input"),
+        Command("command://notation/set-duration-whole"),
+        Command("command://notation/set-duration-half"),
+        Command("command://notation/set-duration-quarter"),
+        Command("command://notation/set-duration-eighth"),
+        Command("command://notation/set-duration-16th"),
+        Command("command://notation/set-duration-32nd"),
+        Command("command://notation/set-duration-64th"),
+        Command("command://notation/undo"),
+        Command("command://notation/enter-rest"),
+        Command("command://notation/toggle-rest"),
+        Command("command://notation/toggle-tie"),
+        Command("command://notation/toggle-dot"),
+        Command("command://notation/toggle-dot2"),
+        Command("command://notation/realtime-advance")
     };
 }
 
@@ -90,11 +92,11 @@ QVariant MidiDeviceMappingModel::data(const QModelIndex& index, int role) const
 
 QVariantMap MidiDeviceMappingModel::midiMappingToObject(const MidiControlsMapping& midiMapping) const
 {
-    const UiAction& action = uiActionsRegister()->action(midiMapping.action);
+    const CommandInfo& info = commandsRegister()->commandInfo(midiMapping.command);
 
     QVariantMap obj;
-    obj[TITLE_KEY] = !action.description.isEmpty() ? action.description.qTranslated() : action.title.qTranslatedWithoutMnemonic();
-    obj[ICON_KEY] = static_cast<int>(action.iconCode);
+    obj[TITLE_KEY] = !info.description.isEmpty() ? info.description.qTranslated() : info.title.qTranslatedWithoutMnemonic();
+    obj[ICON_KEY] = static_cast<int>(info.decoration.iconCode);
     obj[ENABLED_KEY] = midiMapping.isValid();
     obj[STATUS_KEY] = midiMapping.isValid() ? midiMapping.event.name().toQString() : muse::qtrc("global", "Inactive");
     obj[MAPPED_TYPE_KEY] = static_cast<int>(midiMapping.event.type);
@@ -131,9 +133,9 @@ void MidiDeviceMappingModel::load()
 
     const MidiMappingList& midiMappings = midiRemote()->midiMappings();
 
-    auto remoteEvent = [&midiMappings](const ActionCode& actionCode) {
+    auto remoteEvent = [&midiMappings](const Command& command) {
         for (const MidiControlsMapping& midiMapping : midiMappings) {
-            if (midiMapping.action == actionCode) {
+            if (midiMapping.command == command) {
                 return midiMapping.event;
             }
         }
@@ -141,12 +143,12 @@ void MidiDeviceMappingModel::load()
         return RemoteEvent();
     };
 
-    for (const ActionCode& actionCode : allMidiActions()) {
-        const UiAction& action = uiActionsRegister()->action(actionCode);
+    for (const Command& command : allMidiCommands()) {
+        const CommandInfo& info = commandsRegister()->commandInfo(command);
 
-        if (action.isValid()) {
-            MidiControlsMapping midiMapping(actionCode);
-            midiMapping.event = remoteEvent(actionCode);
+        if (info.isValid()) {
+            MidiControlsMapping midiMapping(command);
+            midiMapping.event = remoteEvent(command);
             m_midiMappings.push_back(midiMapping);
         }
     }

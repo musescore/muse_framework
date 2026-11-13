@@ -27,7 +27,7 @@
 #include "modularity/ioc.h"
 
 #include "interactive/iinteractive.h"
-#include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
 #include "multiwindows/imultiwindowsprovider.h"
 #include "network/inetworkinformation.h"
 #include "toast/itoastservice.h"
@@ -44,7 +44,7 @@ class AppUpdateScenario : public IAppUpdateScenario, public Contextable, public 
     GlobalInject<network::INetworkInformation> networkInformation;
     GlobalInject<toast::IToastService> toastService;
     ContextInject<IInteractive> interactive = { this };
-    ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IAppUpdateService> service = { this };
 
 public:

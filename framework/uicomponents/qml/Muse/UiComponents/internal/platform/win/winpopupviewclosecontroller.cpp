@@ -24,6 +24,8 @@
 
 #include <Windows.h>
 
+#include <QCursor>
+
 using namespace muse::uicomponents;
 
 WinPopupViewCloseController::WinPopupViewCloseController(const muse::modularity::ContextPtr& iocCtx, QObject* parent)

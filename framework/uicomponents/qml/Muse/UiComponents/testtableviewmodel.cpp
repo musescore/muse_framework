@@ -21,6 +21,7 @@
  */
 #include "testtableviewmodel.h"
 
+#include "global/types/translatablestring.h"
 #include "internal/tableviewheader.h"
 
 using namespace muse::uicomponents;
@@ -137,22 +138,13 @@ MenuItemList TestTableViewModel::makeAvailableFormats()
 {
     MenuItemList items;
 
-    ui::UiActionState enabledState;
-    enabledState.enabled = true;
-
-    ui::UiAction action;
-
-    action.code = "default";
-    action.title = TranslatableString::untranslatable("Default");
-    MenuItem* item1 = new MenuItem(action);
-    item1->setState(enabledState);
+    MenuItem* item1 = new MenuItem(this);
+    item1->setTitle(TranslatableString::untranslatable("Default"));
     item1->setSelectable(true);
     items << item1;
 
-    action.code = "accent";
-    action.title = TranslatableString::untranslatable("Accent");
-    MenuItem* item2 = new MenuItem(action);
-    item2->setState(enabledState);
+    MenuItem* item2 = new MenuItem(this);
+    item2->setTitle(TranslatableString::untranslatable("Accent"));
     item2->setSelectable(true);
     items << item2;
 

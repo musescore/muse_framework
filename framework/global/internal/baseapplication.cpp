@@ -234,6 +234,10 @@ void BaseApplication::applyCommandLineOptions(const std::shared_ptr<CmdOptions>&
     if (options->global.loggerLevel) {
         m_globalModule->setLoggerLevel(options->global.loggerLevel.value());
     }
+
+    if (options->global.userDataDir) {
+        m_globalModule->setUserDataDir(options->global.userDataDir.value());
+    }
 }
 
 BaseApplication::ContextData& BaseApplication::contextData(const muse::modularity::ContextPtr& ctx)

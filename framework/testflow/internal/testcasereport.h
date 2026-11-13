@@ -45,6 +45,8 @@ public:
     Ret beginReport(const TestCase& testCase);
     void endReport(bool aborted);
 
+    io::path_t reportPath() const;
+
     void onStepStatusChanged(const StepInfo& stepInfo, const ITestCaseContextPtr& ctx);
 
 private:

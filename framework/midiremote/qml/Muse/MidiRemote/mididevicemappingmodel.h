@@ -31,7 +31,7 @@
 #include "modularity/ioc.h"
 #include "imidiremote.h"
 #include "midi/imidiconfiguration.h"
-#include "ui/iuiactionsregister.h"
+#include "rcommand/icommandsregister.h"
 
 namespace muse::midiremote {
 class MidiDeviceMappingModel : public QAbstractListModel, public Contextable, public async::Asyncable
@@ -46,7 +46,7 @@ class MidiDeviceMappingModel : public QAbstractListModel, public Contextable, pu
     QML_ELEMENT
 
     GlobalInject<muse::midi::IMidiConfiguration> midiConfiguration;
-    ContextInject<muse::ui::IUiActionsRegister> uiActionsRegister = { this };
+    GlobalInject<muse::rcommand::ICommandsRegister> commandsRegister;
     ContextInject<IMidiRemote> midiRemote = { this };
 
 public:

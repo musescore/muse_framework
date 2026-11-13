@@ -72,14 +72,15 @@ public:
     virtual int defaultIntervalMsec() const = 0;
     virtual int intervalMsec() const = 0;
 
-    struct Options {
-        io::path_t context;
-        std::string contextVal;
-        std::string func;
-        std::string funcArgs;
+    struct RunResult {
+        Status status = Status::Undefined;
+        Ret ret;
+        int testCasesCount = 0;
+        QString failedStep;
+        io::path_t reportPath;
     };
 
-    virtual void execScript(const io::path_t& path, const Options& opt = Options()) = 0;
+    virtual RunResult execScript(const io::path_t& path, const ExecOptions& opt = ExecOptions()) = 0;
 
     virtual void runTestCase(const TestCase& testCase) = 0;
     virtual void sleep(int msec) = 0;
@@ -87,6 +88,11 @@ public:
     virtual void unpause() = 0;
     virtual void abort() = 0;
     virtual void fatal(const QString& msg) = 0;
+    virtual bool isInteractive() const = 0;
+
+    //! NOTE Nobody can answer dialogs while no test case runs (e.g. on the application startup in a command line run),
+    //! so they are skipped (see TestflowInteractive::UnattendedDialogs)
+    virtual void setSkipDialogsOutsideRun(bool skip) = 0;
 
     virtual ITestCaseContextPtr context() const = 0;
     virtual TestflowInteractivePtr testflowInteractive() const = 0;

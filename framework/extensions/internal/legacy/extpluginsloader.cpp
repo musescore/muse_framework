@@ -36,7 +36,9 @@ using namespace muse::extensions::legacy;
 
 static Uri makeUri(const io::path_t& rootPath, const io::path_t& path)
 {
-    return Uri("extension://plugin/v1" + path.toQString().sliced(rootPath.size()).toLower().toStdString());
+    std::string pathStr = path.toQString().sliced(rootPath.size()).toLower().toStdString();
+    std::replace(pathStr.begin(), pathStr.end(), '.', '-');
+    return Uri("extension://plugin/v1" + pathStr);
 }
 
 std::map<std::string /*codeKey*/, Uri> ExtPluginsLoader::loadCodekeyUriMap(const io::path_t& defPath, const io::path_t& extPath) const
@@ -159,7 +161,7 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
 
     Manifest m;
     m.uri = makeUri(rootPath, path);
-    m.type = Type::Macros;
+    m.type = ExtensionType::Macros;
     m.apiversion = 1;
     m.legacyPlugin = true;
 
@@ -184,6 +186,7 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
     m.context = std::string(DEFAULT_CONTEXT);
     int needProperties = 7; // title, description, pluginType, category, thumbnail, requiresScore, version
     int propertiesFound = 0;
+    bool docked = false;
     bool insideMuseScoreItem = false;
     size_t current, previous = 0;
     current = content.indexOf(u"\n");
@@ -236,8 +239,9 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
             ++propertiesFound;
         } else if (line.startsWith(u"pluginType:")) {
             String pluginType = dropQuotes(line.mid(11).trimmed());
+            docked = pluginType == "dock";
             if (pluginType == "dialog" || pluginType == "dock") {
-                m.type = Type::Form;
+                m.type = ExtensionType::Form;
             }
             ++propertiesFound;
         } else if (line.startsWith(u"categoryCode:")) {
@@ -270,8 +274,12 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
     }
 
     Action a;
+    if (docked) {
+        m.context = std::string(PROJECT_OPENED_CONTEXT);
+    }
     a.code = "main";
     a.type = m.type;
+    a.docked = docked;
     a.title = m.title;
     a.context = m.context;
     a.apiversion = m.apiversion;

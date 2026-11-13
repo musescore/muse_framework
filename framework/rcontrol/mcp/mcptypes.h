@@ -21,18 +21,31 @@
 
 #include <string>
 
-#include "global/serialization/json.h"
+#include "global/types/ret.h"
+#include "global/types/val.h"
 
 namespace muse::rcontrol::mcp {
 enum class DataType {
     Undefined = 0,
     String,
     Integer,
-    Float,
+    Number,
     Boolean,
     Object,
     Array,
     Null
+};
+
+enum class Format {
+    Undefined = 0,
+    Int64,
+    Float,
+    Double
+};
+
+struct TypeSchema {
+    DataType type = DataType::Undefined;
+    Format format = Format::Undefined;
 };
 
 inline std::string to_string(DataType type)
@@ -41,25 +54,49 @@ inline std::string to_string(DataType type)
     case DataType::Undefined: return "undefined";
     case DataType::String: return "string";
     case DataType::Integer: return "integer";
-    case DataType::Float: return "number";
+    case DataType::Number: return "number";
     case DataType::Boolean: return "boolean";
     case DataType::Object: return "object";
     case DataType::Array: return "array";
     case DataType::Null: return "null";
-    default: return "undefined";
     }
+    return "undefined";
+}
+
+inline std::string to_string(Format format)
+{
+    switch (format) {
+    case Format::Undefined: return "undefined";
+    case Format::Int64: return "int64";
+    case Format::Float: return "float";
+    case Format::Double: return "double";
+    }
+    return "undefined";
 }
 
 struct Property {
-    DataType type;
+    TypeSchema type;
     std::string description;
-    JsonValue minimum;
-    JsonValue maximum;
+    std::optional<ValList> enumValues;
+    std::optional<Val> minimum;
+    std::optional<Val> maximum;
 };
 
-struct InputSchema {
+struct PropertiesSchema {
     std::string type = "object";
     std::map<std::string, Property> properties;
+    std::vector<std::string> required;
+};
+
+using InputSchema = PropertiesSchema;
+using OutputSchema = PropertiesSchema;
+
+struct Annotations
+{
+    bool readOnly = false;
+    bool destructive = true;      // MCP: destructiveHint defaults to true
+    bool idempotent = false;
+    bool openWorld = true;        // MCP: openWorldHint defaults to true
 };
 
 struct Tool {
@@ -67,9 +104,12 @@ struct Tool {
     std::string title;
     std::string description;
     InputSchema inputSchema;
+    OutputSchema outputSchema;
+    Annotations annotations;
 };
 
 struct ToolResult {
-    bool isError = false;
+    muse::Ret ret;
+    std::map<std::string, Val> result;
 };
 }

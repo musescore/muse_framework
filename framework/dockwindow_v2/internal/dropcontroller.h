@@ -75,6 +75,7 @@ private:
     DockBase* draggedDock() const;
 
     KDDockWidgets::Core::ClassicDropIndicatorOverlay* m_classicIndicators = nullptr;
+    KDDockWidgets::Core::DropArea* m_dropArea = nullptr;
     DropDestination m_currentDropDestination;
 };
 }

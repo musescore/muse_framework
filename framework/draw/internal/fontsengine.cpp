@@ -35,6 +35,16 @@
 using namespace muse;
 using namespace muse::draw;
 
+static bool isFtx(const ByteArray& data)
+{
+#ifdef MUSE_MODULE_DRAW_USE_FONTFACE_XT
+    return FontFaceXT::isFtx(data);
+#else
+    UNUSED(data);
+    return false;
+#endif
+}
+
 static const double DEFAULT_PIXEL_SIZE = 100.0;
 static const double LOADED_PIXEL_SIZE = 200.0;
 static const double FONT_METRICS_DPI = 1200.0;
@@ -281,8 +291,8 @@ double FontsEngine::horizontalAdvance(const Font& f, const std::u32string& text)
         }
 
         const double pixelScale = rf->pixelScaleFor(fontFace);
-        std::vector<GlyphPos> glyphs = fontFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
-        for (const GlyphPos& g : glyphs) {
+        std::vector<ShapedGlyph> glyphs = fontFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
+        for (const ShapedGlyph& g : glyphs) {
             advance += from_f26d6(g.x_advance) * pixelScale;
         }
     }
@@ -336,9 +346,9 @@ RectF FontsEngine::boundingRect(const Font& f, const std::u32string& text) const
             fontFace = rf->face;
         }
 
-        std::vector<GlyphPos> glyphs = fontFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
+        std::vector<ShapedGlyph> glyphs = fontFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
 
-        for (const GlyphPos& g : glyphs) {
+        for (const ShapedGlyph& g : glyphs) {
             FBBox bbox = fontFace->glyphBbox(g.idx);
             f26dot6_t x = xOffset + bbox.x();
             f26dot6_t y = bbox.y();
@@ -407,9 +417,9 @@ RectF FontsEngine::tightBoundingRect(const Font& f, const std::u32string& text) 
             fontFace = rf->face;
         }
 
-        std::vector<GlyphPos> glyphs = fontFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
+        std::vector<ShapedGlyph> glyphs = fontFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
 
-        for (const GlyphPos& g : glyphs) {
+        for (const ShapedGlyph& g : glyphs) {
             FBBox bbox = fontFace->glyphBbox(g.idx);
             f26dot6_t x = xOffset + bbox.x();
             f26dot6_t y = bbox.y();
@@ -452,10 +462,6 @@ std::vector<GlyphImage> FontsEngine::render(const Font& f, const std::u32string&
         return std::vector<GlyphImage>();
     }
 
-    static const std::set<glyph_idx_t> NOT_RENDER_GLYPHS = {
-        3 // space
-    };
-
     std::vector<GlyphImage> images;
 
     if (text.empty()) {
@@ -488,10 +494,10 @@ std::vector<GlyphImage> FontsEngine::render(const Font& f, const std::u32string&
 
         double layoutScale = rf->pixelScaleFor(layoutFace);
         double sdfToLayoutScale = rf->pixelScaleFor(sdfFace);
-        std::vector<GlyphPos> glyphs = layoutFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
+        std::vector<ShapedGlyph> glyphs = layoutFace->glyphs(ffBlock.text.text, ffBlock.text.lenght);
 
-        for (const GlyphPos& g : glyphs) {
-            if (NOT_RENDER_GLYPHS.find(g.idx) == NOT_RENDER_GLYPHS.end()) {
+        for (const ShapedGlyph& g : glyphs) {
+            if (!layoutFace->glyphBbox(g.idx).isEmpty()) {
                 GlyphImage image = m_renderCache.load(sdfFace->key(), g.idx);
                 if (image.isNull()) {
                     image = sdfFace->glyphImage(g.idx);
@@ -517,14 +523,15 @@ void FontsEngine::setFontFaceFactory(const FontFaceFactory& f)
     m_fontFaceFactory = f;
 }
 
-IFontFace* FontsEngine::createFontFace(const FontDataKey& dataKey, Font::Type type) const
+IFontFace* FontsEngine::createFontFace(const FontData& fontData, Font::Type type) const
 {
+    const FontDataKey& dataKey = fontData.key;
     if (m_fontFaceFactory) {
         return m_fontFaceFactory(dataKey, type);
     }
 
     IFontFace* origin = nullptr;
-    if (fontsDatabase()->isFtxFont(dataKey, type)) {
+    if (isFtx(fontData.data)) {
 #ifdef MUSE_MODULE_DRAW_USE_FONTFACE_XT
         origin = new FontFaceXT();
 #else
@@ -564,7 +571,7 @@ IFontFace* FontsEngine::fontFaceByActualDataKey(const FontDataKey& actualDataKey
     loadedKey.type = type;
     loadedKey.pixelSize = loadedPixelSize;
 
-    IFontFace* face = createFontFace(fontData.key, type);
+    IFontFace* face = createFontFace(fontData, type);
     IF_ASSERT_FAILED(face) {
         return nullptr;
     }
@@ -617,7 +624,8 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
     //! (for example, if there is no required one)
     FontDataKey actualDataKey = fontsDatabase()->actualFont(requireKey.dataKey, requireKey.type);
 
-    const int loadedPixelSize = fontsDatabase()->isFtxFont(actualDataKey, requireKey.type) ? static_cast<int>(LOADED_PIXEL_SIZE)
+    const int loadedPixelSize = isFtx(fontsDatabase()->fontData(actualDataKey, requireKey.type).data)
+                                ? static_cast<int>(LOADED_PIXEL_SIZE)
                                 : requireKey.pixelSize;
     IFontFace* face = fontFaceByActualDataKey(actualDataKey, requireKey.type, loadedPixelSize, isSymbolMode);
     if (!face) {
@@ -633,7 +641,7 @@ FontsEngine::RequireFace* FontsEngine::fontFace(const Font& f, bool isSymbolMode
     auto subtitutionFontDataKeys = fontsDatabase()->substitutionFonts(requireKey.dataKey);
     for (const FontDataKey& dataKey : subtitutionFontDataKeys) {
         const FontDataKey actualSubtitutionDataKey = fontsDatabase()->actualFont(dataKey, requireKey.type);
-        const int subtitutionLoadedPixelSize = fontsDatabase()->isFtxFont(actualSubtitutionDataKey, requireKey.type)
+        const int subtitutionLoadedPixelSize = isFtx(fontsDatabase()->fontData(actualSubtitutionDataKey, requireKey.type).data)
                                                ? static_cast<int>(LOADED_PIXEL_SIZE) : requireKey.pixelSize;
         IFontFace* subtitutionFace = fontFaceByActualDataKey(actualSubtitutionDataKey, requireKey.type, subtitutionLoadedPixelSize,
                                                              isSymbolMode);

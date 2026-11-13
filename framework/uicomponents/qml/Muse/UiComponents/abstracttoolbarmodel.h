@@ -29,13 +29,16 @@
 #include "async/asyncable.h"
 
 #include "modularity/ioc.h"
-#include "ui/iuiactionsregister.h"
-
-#include "actions/iactionsdispatcher.h"
 #include "rcommand/icommandsstate.h"
 #include "rcommand/icommandsregister.h"
+#include "rcommand/typedcommand.h"
 
 #include "muse_framework_config.h"
+
+#ifdef MUSE_MODULE_ACTIONS_SUPPORT
+#include "ui/iuiactionsregister.h"
+#include "actions/iactionsdispatcher.h"
+#endif
 
 #ifdef MUSE_MODULE_SHORTCUTS_V2
 #include "shortcuts_v2/icommandshortcutsregister.h"
@@ -90,8 +93,6 @@ public:
 public:
     explicit AbstractToolBarModel(QObject* parent = nullptr);
 
-    const actions::ActionCode SEPARATOR_ID = "";
-
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
@@ -141,6 +142,18 @@ protected:
     void updateState(QList<MenuItem*>& items, const rcommand::Command& command, const rcommand::CommandState& state);
 
     ToolBarItem* makeItem(const rcommand::Command& command, const TranslatableString& title = {});
+    ToolBarItem* makeItem(const rcommand::Command& command, const rcommand::Params& params, const TranslatableString& title = {});
+
+    template<rcommand::TypedCommand C>
+    ToolBarItem* makeItem(const C& command, const TranslatableString& title = {})
+    {
+        if constexpr (rcommand::HasInput<C>) {
+            return makeItem(command.id, rcommand::toInputParams(command), title);
+        } else {
+            return makeItem(command.id, title);
+        }
+    }
+
     ToolBarItem& findItem(const rcommand::Command& command) const;
     ToolBarItem* findItemPtr(const rcommand::Command& command) const;
 

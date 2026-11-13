@@ -27,6 +27,8 @@ target_sources(muse_rcommand PRIVATE
     imodulecommandsstate.h
     commandable.h
     commandtypes.h
+    enumcontract.h
+    typedcommand.h
     actiontocommand.h
 
     internal/commanddispatcher.cpp

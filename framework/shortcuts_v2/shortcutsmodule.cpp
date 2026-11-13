@@ -26,6 +26,7 @@
 #include "internal/commandshortcutsregister.h"
 #include "internal/shortcutscontroller.h"
 #include "internal/shortcutsconfiguration.h"
+#include "internal/shortcutsresolver.h"
 
 #include "global/api/iapiregister.h"
 #include "api/shortcutsapi.h"
@@ -90,6 +91,7 @@ void ShortcutsContext::registerExports()
     m_shortcutsController = std::make_shared<ShortcutsController>(iocContext());
 
     ioc()->registerExport<IShortcutsController>(mname, m_shortcutsController);
+    ioc()->registerExport<IShortcutsResolver>(mname, std::make_shared<ShortcutsResolver>());
 }
 
 void ShortcutsContext::onInit(const IApplication::RunMode&)

@@ -29,12 +29,9 @@
 
 #include "audio/engine/isynthresolver.h"
 
-#include "ui/iuiactionsregister.h"
-
 #include "imusesamplerinfo.h"
 #include "internal/musesamplerconfiguration.h"
 #include "internal/musesamplerresolver.h"
-#include "internal/musesampleruiactions.h"
 #include "internal/musesampleractioncontroller.h"
 #include "internal/musesamplercommandsregister.h"
 #include "internal/musesamplercommandsstate.h"
@@ -104,11 +101,6 @@ void MuseSamplerContext::registerExports()
 
 void MuseSamplerContext::resolveImports()
 {
-    auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
-    if (ar) {
-        ar->reg(std::make_shared<MuseSamplerUiActions>());
-    }
-
     auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
     if (cs) {
         cs->reg(std::make_shared<MuseSamplerCommandsState>(iocContext()));

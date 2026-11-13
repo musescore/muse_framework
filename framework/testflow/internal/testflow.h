@@ -31,15 +31,23 @@
 #include "../itestflowconfiguration.h"
 #include "io/ifilesystem.h"
 #include "ui/inavigationcontroller.h"
-#include "shortcuts/ishortcutsregister.h"
 #include "interactive/iinteractive.h"
 #include "ui/imainwindow.h"
 #include "global/iapplication.h"
+#include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
 
 #include "scriptengine.h"
 #include "testcaserunner.h"
 #include "testcasereport.h"
 #include "testflowinteractive.h"
+
+#include "muse_framework_config.h"
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+#include "shortcuts_v2/icommandshortcutsregister.h"
+#else
+#include "shortcuts/ishortcutsregister.h"
+#endif
 
 namespace muse::testflow {
 class Testflow : public ITestflow, public Contextable, public async::Asyncable
@@ -48,9 +56,15 @@ class Testflow : public ITestflow, public Contextable, public async::Asyncable
     GlobalInject<io::IFileSystem> fileSystem;
     GlobalInject<IApplication> application;
     ContextInject<muse::ui::INavigationController> navigation = { this };
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+    GlobalInject<shortcuts::ICommandShortcutsRegister> commandShortcutsRegister;
+#else
     ContextInject<shortcuts::IShortcutsRegister> shortcutsRegister = { this };
+#endif
     ContextInject<IInteractive> interactive = { this };
     ContextInject<muse::ui::IMainWindow> mainWindow = { this };
+    ContextInject<actions::IActionsDispatcher> actionsDispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
 
 public:
     Testflow(const modularity::ContextPtr& iocCtx)
@@ -69,7 +83,9 @@ public:
     int defaultIntervalMsec() const override;
     int intervalMsec() const override;
 
-    void execScript(const io::path_t& path, const Options& opt = Options()) override;
+    RunResult execScript(const io::path_t& path, const ExecOptions& opt = ExecOptions()) override;
+    bool isInteractive() const override;
+    void setSkipDialogsOutsideRun(bool skip) override;
 
     void runTestCase(const TestCase& testCase) override;
     void sleep(int msec) override;
@@ -88,8 +104,10 @@ private:
 
     void affectOnServices();
     void restoreAffectOnServices();
+    void setTestflowInteractiveInstalled(bool installed);
 
     void setStatus(Status st);
+    void failRunningStep(const QString& what);
 
     struct AffectedServiceState {
         bool fontDisabledMerging = false;
@@ -99,6 +117,9 @@ private:
     async::Channel<io::path_t, Status> m_statusChanged;
     async::Channel<StepInfo, Ret> m_stepStatusChanged;
     ScriptEngine* m_engine = nullptr;
+    RunResult m_runResult;
+    bool m_interactive = true;
+    bool m_skipDialogsOutsideRun = false;
     ITestCaseContextPtr m_context = nullptr;
     TestCaseRunner m_runner;
     TestCaseReport m_report;
