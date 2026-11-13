@@ -305,7 +305,7 @@ constexpr bool isAggregateInitializableWith(std::index_sequence<I...>)
 template<typename C, std::size_t N = 32>
 constexpr std::size_t memberCount()
 {
-    static_assert(std::is_aggregate_v<C>, "A typed command must be an aggregate");
+    static_assert(std::is_aggregate_v<C>, "Only the members of an aggregate can be counted");
     if constexpr (N == 0) {
         return 0;
     } else if constexpr (isAggregateInitializableWith<C>(std::make_index_sequence<N> {})) {
@@ -573,14 +573,22 @@ ConvertParamsResult fromOutputParams(const Params& params, typename C::Output& o
 
 // command info --------
 
-//! A member left out of `input` (or `output`) would silently never be sent
+//! A member left out of `input` (or `output`) would silently never be sent.
+//! Only an aggregate can be checked: the members of a command with constructors cannot be counted.
 template<typename S, typename F>
-constexpr bool fieldsCoverAllMembers = std::tuple_size_v<std::remove_cv_t<F> > == internal::memberCount<S>();
+constexpr bool fieldsCoverAllMembers()
+{
+    if constexpr (std::is_aggregate_v<S>) {
+        return std::tuple_size_v<std::remove_cv_t<F> > == internal::memberCount<S>();
+    } else {
+        return true;
+    }
+}
 
 template<HasInput C>
 InputSchema inputSchema()
 {
-    static_assert(fieldsCoverAllMembers<C, decltype(C::input)>, "Every data member of the command must be declared in `input`");
+    static_assert(fieldsCoverAllMembers<C, decltype(C::input)>(), "Every data member of the command must be declared in `input`");
 
     InputSchema schema;
     int order = 0;
@@ -593,7 +601,7 @@ InputSchema inputSchema()
 template<HasOutput C>
 OutputSchema outputSchema()
 {
-    static_assert(fieldsCoverAllMembers<typename C::Output, decltype(C::output)>,
+    static_assert(fieldsCoverAllMembers<typename C::Output, decltype(C::output)>(),
                   "Every data member of the command's Output must be declared in `output`");
 
     OutputSchema schema;

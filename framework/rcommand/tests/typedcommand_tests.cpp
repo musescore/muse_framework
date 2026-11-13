@@ -140,6 +140,24 @@ struct TestRequiredCommand {
     };
 };
 
+//! A command with constructors: not an aggregate, so its members cannot be counted
+struct TestConstructedCommand {
+    static const inline auto id = muse::rcommand::Command("command://rcommand/test-constructed");
+    static const inline auto title = MnemonicString("action", "Constructed test command");
+    static const inline auto description = TranslatableString("action", "Constructed test command");
+
+    int iVal = 0;
+    int notInTheScheme = 0;
+
+    static const inline auto input = std::tuple {
+        Field("i_val", &TestConstructedCommand::iVal, "Integer value"),
+    };
+
+    TestConstructedCommand() = default;
+    TestConstructedCommand(int v)
+        : iVal(v) {}
+};
+
 //! A command without parameters that declares its decoration and its availabilities
 struct TestInternalCommand {
     static const inline auto id = muse::rcommand::Command("command://rcommand/test-internal");
@@ -631,7 +649,12 @@ TEST_F(RCommand_TypedCommandTests, MemberCount_MatchesTheDeclaredFields)
     static_assert(internal::memberCount<TestCommand::Output>() == 9);
     static_assert(internal::memberCount<TestRequiredCommand>() == 3);
     static_assert(internal::memberCount<TestInternalCommand>() == 0);
-    static_assert(fieldsCoverAllMembers<TestRequiredCommand, decltype(TestRequiredCommand::input)>);
+    static_assert(fieldsCoverAllMembers<TestRequiredCommand, decltype(TestRequiredCommand::input)>());
+
+    //! CHECK a command with constructors is not checked, since its members cannot be counted
+    static_assert(!std::is_aggregate_v<TestConstructedCommand>);
+    static_assert(fieldsCoverAllMembers<TestConstructedCommand, decltype(TestConstructedCommand::input)>());
+    EXPECT_EQ(inputSchema<TestConstructedCommand>().args.size(), 1);
 }
 
 TEST_F(RCommand_TypedCommandTests, EnumContract_RoundTrip)
