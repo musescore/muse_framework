@@ -59,6 +59,8 @@ void WindowView::init()
     });
 
     navigationController()->navigationChanged().onNotify(this, [this]() {
+        updateNavigationParentControl();
+
         if (!(m_focusPolicies & FocusPolicy::TabFocus)) {
             return;
         }
@@ -528,23 +530,44 @@ void WindowView::setNavigationParentControl(ui::INavigationControl* navigationPa
         return;
     }
 
+    QObject* oldCtrl = dynamic_cast<QObject*>(m_navigationParentControl);
+
+    if (oldCtrl) {
+        disconnect(oldCtrl, &QObject::destroyed, this, nullptr);
+    }
+
     m_navigationParentControl = navigationParentControl;
+
+    //! NOTE At the moment we have only qml navigation controls
+    QObject* qmlCtrl = dynamic_cast<QObject*>(navigationParentControl);
+
+    if (qmlCtrl) {
+        connect(qmlCtrl, &QObject::destroyed, this, [this]() {
+            m_navigationParentControl = nullptr;
+            emit navigationParentControlChanged(nullptr);
+        });
+    }
+
     emit navigationParentControlChanged(m_navigationParentControl);
 }
 
 void WindowView::resolveNavigationParentControl()
 {
-    ui::INavigationControl* ctrl = navigationController()->activeControl();
-    setNavigationParentControl(ctrl);
+    setNavigationParentControl(navigationController()->activeControl());
+}
 
-    //! NOTE At the moment we have only qml navigation controls
-    QObject* qmlCtrl = dynamic_cast<QObject*>(ctrl);
-
-    if (qmlCtrl) {
-        connect(qmlCtrl, &QObject::destroyed, this, [this]() {
-            setNavigationParentControl(nullptr);
-        });
+void WindowView::updateNavigationParentControl()
+{
+    if (!isOpened() || !m_parentWindow) {
+        return;
     }
+
+    ui::INavigationControl* activeControl = navigationController()->activeControl();
+    if (!activeControl || activeControl->window() != m_parentWindow) {
+        return;
+    }
+
+    setNavigationParentControl(activeControl);
 }
 
 void WindowView::activateNavigationParentControl()

@@ -195,6 +195,7 @@ protected:
     void updateSize(const QSize& newSize);
 
     void resolveNavigationParentControl();
+    void updateNavigationParentControl();
     void activateNavigationParentControl();
 
     QQmlEngine* m_engine = nullptr;
