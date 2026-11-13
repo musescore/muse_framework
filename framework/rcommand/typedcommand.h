@@ -23,6 +23,7 @@
 #include <tuple>
 #include <type_traits>
 
+#include "global/types/required.h"
 #include "global/stringutils.h"
 
 #include "commandtypes.h"
@@ -205,7 +206,9 @@ namespace internal {
 template<typename T>
 DataType dataType()
 {
-    if constexpr (std::is_same<T, bool>::value) {
+    if constexpr (muse::is_required_t<T>::value) {
+        return dataType<typename T::value_type>();
+    } else if constexpr (std::is_same<T, bool>::value) {
         return DataType::Bool;
     } else if constexpr (std::is_same<T, int>::value) {
         return DataType::Int;
@@ -238,6 +241,8 @@ Val toVal(const T& val)
 {
     if constexpr (std::is_enum<T>::value) {
         return Val(EnumContract<T>::str_val(val));
+    } else if constexpr (muse::is_required_t<T>::value) {
+        return toVal(val.value);
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         return Val(static_cast<int>(val));
     } else if constexpr (std::is_same<T, uint64_t>::value) {
@@ -260,6 +265,12 @@ std::optional<T> fromVal(const Val& v)
 {
     if constexpr (std::is_enum<T>::value) {
         return EnumContract<T>::enum_val(v.toString());
+    } else if constexpr (muse::is_required_t<T>::value) {
+        auto opt = fromVal<typename T::value_type>(v);
+        if (opt) {
+            return T(*opt);
+        }
+        return std::nullopt;
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         auto opt = v.toType<int>();
         if (opt) {

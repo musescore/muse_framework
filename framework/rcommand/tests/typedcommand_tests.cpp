@@ -25,6 +25,8 @@
  #include <string>
  #include <type_traits>
 
+ #include "global/types/required.h"
+
 #include "rcommand/typedcommand.h"
 #include "rcommand/enumcontract.h"
 
@@ -61,7 +63,7 @@ struct TestCommand {
     static const inline auto title = MnemonicString("action", "Test command");
     static const inline auto description = TranslatableString("action", "Test command");
 
-    bool bVal = false;
+    muse::required_t<bool> bVal;
     int iVal = 0;
     unsigned int uVal = 0;
     int64_t i64Val = 0;
@@ -161,7 +163,8 @@ TEST_F(RCommand_TypedCommandTests, TypedCommand_Convert)
     EXPECT_EQ(params["e_val"].toString(), "value2");
 
     //! DO convert from params
-    TestCommand result;
+    // TestCommand result{}; //<--- not compiled, bVal is requered
+    TestCommand result;   //<--- allowed
     EXPECT_TRUE(fromInputParams(params, result));
 
     //! CHECK result
@@ -385,7 +388,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsMissingRequiredParamet
 TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsWrongType)
 {
     //! GIVEN Valid params with a non-numeric value for an integer parameter
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("i_val", Val("not a number"));
 
     //! DO convert from params
@@ -398,7 +401,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsWrongType)
 TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsWrongTypeOfOptionalParameter)
 {
     //! GIVEN Valid params with a non-numeric value for an optional double parameter
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("d_val", Val("not a number"));
 
     //! DO convert from params
@@ -411,7 +414,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsWrongTypeOfOptionalPar
 TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsUnknownEnumValue)
 {
     //! GIVEN Valid params with a value outside the enum contract
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("e_val", Val("value4"));
 
     //! DO convert from params
@@ -424,7 +427,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsUnknownEnumValue)
 TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsValueBelowMinimum)
 {
     //! GIVEN Valid params with the bounded f_val below its minimum
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("f_val", Val(-1.0));
 
     //! DO convert from params
@@ -437,7 +440,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsValueBelowMinimum)
 TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsValueAboveMaximum)
 {
     //! GIVEN Valid params with the bounded f_val above its maximum
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("f_val", Val(101.0));
 
     //! DO convert from params
@@ -451,7 +454,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsNaNInBoundedField)
 {
     //! GIVEN Valid params with a NaN value for the bounded f_val,
     //! arriving as a string, since string inputs can reach float conversion
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("f_val", Val("nan"));
 
     //! DO convert from params
@@ -464,7 +467,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsNaNInBoundedField)
 TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsInfinityInBoundedField)
 {
     //! GIVEN Valid params with an infinity value for the bounded f_val
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("f_val", Val("inf"));
 
     //! DO convert from params
@@ -477,7 +480,7 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_RejectsInfinityInBoundedField
 TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesOnTheBounds)
 {
     //! GIVEN Valid params with f_val exactly on the minimum, then on the maximum
-    Params params = toInputParams(TestCommand {});
+    Params params = toInputParams(TestCommand { .bVal = true });
     params.set("f_val", Val(0.0));
 
     //! DO convert from params
