@@ -23,6 +23,7 @@
 #define MUSE_EXTENSIONS_EXTPLUGINRUNNER_H
 
 #include "global/types/ret.h"
+#include "interactive/iinteractive.h"
 
 #include "../../extensionstypes.h"
 
@@ -35,12 +36,19 @@ namespace muse::extensions::legacy {
 class ExtPluginRunner : public Contextable
 {
     ContextInject<IExtensionsUiEngine> engine = { this };
+    ContextInject<IInteractive> interactive = { this };
 
 public:
+    //! Creates a runner in the given dependency-injection context.
     ExtPluginRunner(const modularity::ContextPtr& iocCtx)
         : Contextable(iocCtx) {}
 
+    //! Loads and runs the legacy plug-in described by `action`.
     Ret run(const Action& action);
+
+private:
+    //! Displays `errorMessage` in a copyable error dialog.
+    void showError(const QString& errorMessage);
 };
 }
 
