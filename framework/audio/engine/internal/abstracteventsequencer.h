@@ -23,6 +23,7 @@
 #pragma once
 
 #include <map>
+#include <memory_resource>
 #include <set>
 
 #include "global/async/asyncable.h"
@@ -37,8 +38,8 @@ class AbstractEventSequencer : public async::Asyncable
 {
 public:
     using EventType = std::variant<Types...>;
-    using EventSequence = std::vector<EventType>;
-    using EventSequenceMap = std::map<msecs_t, EventSequence>;
+    using EventSequence = std::pmr::vector<EventType>;
+    using EventSequenceMap = std::pmr::map<msecs_t, EventSequence>;
 
     typedef typename EventSequenceMap::const_iterator SequenceIterator;
     typedef typename EventSequence::const_iterator EventIterator;
@@ -164,36 +165,37 @@ public:
         m_onMainStreamFlushed = flushed;
     }
 
-    EventSequenceMap movePlaybackForward(const msecs_t nextMsecs)
+    // Returned reference is valid until the next call to movePlaybackForward() or until this object is destroyed
+    const EventSequenceMap& movePlaybackForward(const msecs_t nextMsecs)
     {
         ONLY_AUDIO_ENGINE_THREAD;
 
-        EventSequenceMap result;
+        m_forwardResult.clear();
 
         if (!m_isActive) {
-            result.emplace(m_offstreamPosition, EventSequence());
+            m_forwardResult.try_emplace(m_offstreamPosition);
 
             if (m_currentOffSequenceIt == m_offStreamEvents.cend()) {
-                return result;
+                return m_forwardResult;
             }
 
             m_offstreamPosition += nextMsecs;
-            handleOffStream(result);
+            handleOffStream(m_forwardResult);
 
-            return result;
+            return m_forwardResult;
         }
 
         // Empty sequence means to continue the previous sequence
-        result.emplace(m_playbackPosition, EventSequence());
+        m_forwardResult.try_emplace(m_playbackPosition);
         m_playbackPosition += nextMsecs;
 
         if (m_currentMainSequenceIt == m_mainStreamEvents.cend()) {
-            return result;
+            return m_forwardResult;
         }
 
-        handleMainStream(result);
+        handleMainStream(m_forwardResult);
 
-        return result;
+        return m_forwardResult;
     }
 
 protected:
@@ -265,5 +267,9 @@ protected:
 private:
     bool m_shouldUpdateMainStreamEvents = false;
     bool m_updateMainStreamWhenInactive = false;
+
+    // Reused across movePlaybackForward() calls to avoid allocating on the audio thread
+    std::pmr::unsynchronized_pool_resource m_forwardResultPool;
+    EventSequenceMap m_forwardResult { &m_forwardResultPool };
 };
 }

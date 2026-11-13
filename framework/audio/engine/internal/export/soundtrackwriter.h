@@ -57,6 +57,7 @@ private:
     void sendProgress(uint64_t framesWritten, uint64_t totalFrames);
 
     IAudioNodePtr m_source;
+    IAudioNodePtr m_outputNode;
 
     std::vector<float> m_intermBuffer;
     samples_t m_renderStep = 0;
