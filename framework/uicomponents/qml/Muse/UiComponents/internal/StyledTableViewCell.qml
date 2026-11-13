@@ -567,10 +567,18 @@ TableViewDelegate {
         SeparatorLine {
             anchors.bottom: parent.bottom
             orientation: Qt.Horizontal
+            // Drop the underline on the last row only when the rows fill the
+            // viewport, so its bottom edge coincides with the container border.
+            // With empty space below, the last row still needs its separator.
+            visible: root.row !== tableView.rows - 1 || tableView.contentHeight < tableView.height
         }
         SeparatorLine {
             anchors.right: parent.right
             orientation: Qt.Vertical
+            // Likewise, drop the trailing edge on the last column only when the
+            // columns fill the viewport width (otherwise it delimits the column
+            // from the empty space to its right).
+            visible: root.column !== tableView.model.columnCount() - 1 || tableView.contentWidth < tableView.width
         }
 
         Component.onCompleted: {

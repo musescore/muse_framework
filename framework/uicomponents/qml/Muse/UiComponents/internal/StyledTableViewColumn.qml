@@ -31,6 +31,10 @@ Item {
     property string title: ""
     property int preferredWidth: 0
 
+    // Hidden for the last column, whose right edge coincides with the
+    // table's container border (avoids a doubled border line).
+    property bool showTrailingSeparator: true
+
     property var availableFormats: null
 
     property real leftMargin: 0
@@ -137,6 +141,7 @@ Item {
     SeparatorLine {
         anchors.right: parent.right
         orientation: Qt.Vertical
+        visible: root.showTrailingSeparator
     }
 
     NavigationFocusBorder {
