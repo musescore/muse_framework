@@ -25,6 +25,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QMap>
+#include <QPointer>
 #include <QStack>
 
 #include "async/asyncable.h"
@@ -162,7 +163,7 @@ private:
         async::Promise<Val>::Resolve resolve;
         async::Promise<Val>::Reject reject;
         QVariant objectId;
-        QObject* window = nullptr;
+        QPointer<QObject> window;
     };
 
     async::Promise<Val> openAsync(const UriQuery& uri);
