@@ -90,6 +90,15 @@ public:
     virtual std::string defaultFontFamily() const = 0;
     virtual int defaultFontSize() const = 0;
 
+    //! The scale of the whole interface, applied through Qt's own scale factor
+    //! (QT_SCALE_FACTOR) and therefore from the next start on. "auto" follows the
+    //! desktop: the size of its UI font against defaultFontSize(), the size this
+    //! interface is drawn for. A number ("1.25") is a fixed factor.
+    virtual std::string interfaceScale() const = 0;
+    virtual void setInterfaceScale(const std::string& scale) = 0;
+    //! The factor "auto" stands for on this desktop, measured now.
+    virtual double systemInterfaceScale() const = 0;
+
     virtual void resetFonts() = 0;
 
     //! NOTE Maybe set from command line
