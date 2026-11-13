@@ -110,7 +110,7 @@ public:
     void onRequest(Commandable* client, std::function<Ret(const C&)> callback)
     {
         onRequest(client, C::id, CallBack([callback](const Request& request) {
-            C command;
+            C command = internal::Construct::make<C>();
             if constexpr (HasInput<C>) {
                 ConvertParamsResult res = fromInputParams(request.params, command);
                 if (!res) {
@@ -125,7 +125,7 @@ public:
     void onRequest(Commandable* client, std::function<RetVal<typename C::Output>(const C&)> callback)
     {
         onRequest(client, C::id, CallBack([callback](const Request& request) {
-            C command;
+            C command = internal::Construct::make<C>();
             if constexpr (HasInput<C>) {
                 ConvertParamsResult res = fromInputParams(request.params, command);
                 if (!res) {

@@ -28,6 +28,8 @@
 #include "rcommand/typedcommand.h"
 #include "rcommand/enumcontract.h"
 
+#include "mocks/commanddispatchermock.h"
+
 using namespace muse;
 using namespace muse::rcommand;
 
@@ -83,7 +85,7 @@ struct TestCommand {
         TestEnum eVal = TestEnum::Value1;
     };
 
-    static const inline auto input = FieldsScheme {
+    static const inline auto input = std::tuple {
         Field("b_val", &TestCommand::bVal, "Boolean value"),
         Field("i_val", &TestCommand::iVal, "Integer value", -100, 100),
         Field("u_val", &TestCommand::uVal, "Unsigned integer value", Presence::Optional),
@@ -96,7 +98,7 @@ struct TestCommand {
     };
 
     using O = TestCommand::Output;
-    static const inline auto output = FieldsScheme {
+    static const inline auto output = std::tuple {
         Field("b_val", &O::bVal, "Boolean value"),
         Field("i_val", &O::iVal, "Integer value", -100, 100),
         Field("u_val", &O::uVal, "Unsigned integer value", Presence::Optional),
@@ -119,6 +121,41 @@ struct TestAliasCommand {
         .bVal = true,
         .iVal = 1,
     };
+};
+
+//! A command whose first two fields every sender has to set, and a third one it may leave out
+struct TestRequiredCommand {
+    static const inline auto id = muse::rcommand::Command("command://rcommand/test-required");
+    static const inline auto title = MnemonicString("action", "Required test command");
+    static const inline auto description = TranslatableString("action", "Required test command");
+
+    Required<int> iVal;
+    Required<std::string> sVal;
+    double dVal = 0.0;
+
+    static const inline auto input = std::tuple {
+        Field("i_val", &TestRequiredCommand::iVal, "Integer value", -100, 100),
+        Field("s_val", &TestRequiredCommand::sVal, "String value"),
+        Field("d_val", &TestRequiredCommand::dVal, "Double value", Presence::Optional),
+    };
+};
+
+//! A command with constructors: not an aggregate, so its members cannot be counted
+struct TestConstructedCommand {
+    static const inline auto id = muse::rcommand::Command("command://rcommand/test-constructed");
+    static const inline auto title = MnemonicString("action", "Constructed test command");
+    static const inline auto description = TranslatableString("action", "Constructed test command");
+
+    int iVal = 0;
+    int notInTheScheme = 0;
+
+    static const inline auto input = std::tuple {
+        Field("i_val", &TestConstructedCommand::iVal, "Integer value"),
+    };
+
+    TestConstructedCommand() = default;
+    TestConstructedCommand(int v)
+        : iVal(v) {}
 };
 
 //! A command without parameters that declares its decoration and its availabilities
@@ -488,6 +525,136 @@ TEST_F(RCommand_TypedCommandTests, FromInputParams_AcceptsValuesOnTheBounds)
     params.set("f_val", Val(100.0));
     ASSERT_TRUE(fromInputParams(params, result));
     EXPECT_EQ(result.fVal, 100.0f);
+}
+
+TEST_F(RCommand_TypedCommandTests, Required_MustBeSetBySenders)
+{
+    //! CHECK a sender cannot leave a Required<T> field out, but can set it from a plain value
+    static_assert(std::is_aggregate_v<TestRequiredCommand>);
+    static_assert(!std::is_default_constructible_v<TestRequiredCommand>);
+    static_assert(!std::is_default_constructible_v<Required<int> >);
+    static_assert(std::is_constructible_v<Required<int>, int>);
+    static_assert(std::is_constructible_v<Required<std::string>, const char*>);
+
+    //! GIVEN A command built the way senders do
+    const TestRequiredCommand command { .iVal = 7, .sVal = "test" };
+
+    //! CHECK the fields read as plain values
+    EXPECT_EQ(command.iVal, 7);
+    EXPECT_EQ(command.sVal, "test");
+    EXPECT_EQ(command.dVal, 0.0);
+
+    const int i = command.iVal;
+    const std::string& s = command.sVal;
+    EXPECT_EQ(i, 7);
+    EXPECT_EQ(s, "test");
+}
+
+TEST_F(RCommand_TypedCommandTests, Required_IsAPlainValueInTheSchemaAndTheParams)
+{
+    //! DO make the input schema
+    const InputSchema schema = inputSchema<TestRequiredCommand>();
+
+    //! CHECK Required<T> fields are typed as T and required, with their bounds
+    EXPECT_EQ(schema.args.size(), 3);
+    EXPECT_EQ(schema.args.at("i_val").dataType, DataType::Int);
+    EXPECT_EQ(schema.args.at("i_val").presence, Presence::Required);
+    EXPECT_EQ(schema.args.at("i_val").min->toInt(), -100);
+    EXPECT_EQ(schema.args.at("i_val").max->toInt(), 100);
+    EXPECT_EQ(schema.args.at("s_val").dataType, DataType::String);
+    EXPECT_EQ(schema.args.at("s_val").presence, Presence::Required);
+    EXPECT_EQ(schema.args.at("d_val").presence, Presence::Optional);
+
+    //! DO convert to params
+    const Params params = toInputParams(TestRequiredCommand { .iVal = 7, .sVal = "test" });
+
+    //! CHECK
+    EXPECT_EQ(params.size(), 3);
+    EXPECT_EQ(params.at("i_val").toInt(), 7);
+    EXPECT_EQ(params.at("s_val").toString(), "test");
+    EXPECT_EQ(params.at("d_val").toDouble(), 0.0);
+}
+
+TEST_F(RCommand_TypedCommandTests, Required_IsFilledFromParamsOnTheHandlerSide)
+{
+    //! GIVEN A command built the way the dispatcher does, before the params are known
+    TestRequiredCommand result = internal::Construct::make<TestRequiredCommand>();
+
+    //! DO convert from params
+    const Params params = {
+        { "i_val", Val("7") },
+        { "s_val", Val("test") },
+    };
+    ASSERT_TRUE(fromInputParams(params, result));
+
+    //! CHECK
+    EXPECT_EQ(result.iVal, 7);
+    EXPECT_EQ(result.sVal, "test");
+    EXPECT_EQ(result.dVal, 0.0);
+}
+
+TEST_F(RCommand_TypedCommandTests, Required_IsRejectedWhenMissingOrOutOfBounds)
+{
+    TestRequiredCommand result = internal::Construct::make<TestRequiredCommand>();
+
+    //! CHECK a missing Required<T> field is rejected
+    EXPECT_FALSE(fromInputParams(Params { { "s_val", Val("test") } }, result));
+
+    //! CHECK the bounds apply to the value inside
+    EXPECT_FALSE(fromInputParams(Params { { "i_val", Val(101) }, { "s_val", Val("test") } }, result));
+}
+
+TEST_F(RCommand_TypedCommandTests, Dispatcher_BuildsARequiredCommandFromTheRequest)
+{
+    //! GIVEN A handler of a command with Required<T> fields, registered through the typed overload
+    testing::NiceMock<CommandDispatcherMock> mock;
+    ICommandDispatcher::CallBack registered;
+    EXPECT_CALL(mock, onRequest(testing::_, TestRequiredCommand::id, testing::A<const ICommandDispatcher::CallBack&>()))
+    .WillOnce(testing::SaveArg<2>(&registered));
+
+    std::optional<TestRequiredCommand> received;
+    ICommandDispatcher& dispatcher = mock;
+    dispatcher.onRequest<TestRequiredCommand>(nullptr, [&received](const TestRequiredCommand& command) {
+        received = command;
+        return make_ok();
+    });
+    ASSERT_TRUE(registered);
+
+    //! DO deliver a request carrying the params of a query
+    const Params params = {
+        { "i_val", Val("7") },
+        { "s_val", Val("test") },
+    };
+    const Response response = registered(make_request(TestRequiredCommand::id, params));
+
+    //! CHECK the handler received the filled command
+    EXPECT_TRUE(response.ret);
+    ASSERT_TRUE(received);
+    EXPECT_EQ(received->iVal, 7);
+    EXPECT_EQ(received->sVal, "test");
+
+    //! DO deliver a request without a Required<T> field
+    received.reset();
+    const Response rejected = registered(make_request(TestRequiredCommand::id, Params { { "s_val", Val("test") } }));
+
+    //! CHECK the handler is not called and the request is answered with BadArgs
+    EXPECT_FALSE(received);
+    EXPECT_EQ(rejected.ret.code(), static_cast<int>(Ret::Code::BadArgs));
+}
+
+TEST_F(RCommand_TypedCommandTests, MemberCount_MatchesTheDeclaredFields)
+{
+    //! CHECK the count the `input`/`output` completeness check relies on
+    static_assert(internal::memberCount<TestCommand>() == 9);
+    static_assert(internal::memberCount<TestCommand::Output>() == 9);
+    static_assert(internal::memberCount<TestRequiredCommand>() == 3);
+    static_assert(internal::memberCount<TestInternalCommand>() == 0);
+    static_assert(fieldsCoverAllMembers<TestRequiredCommand, decltype(TestRequiredCommand::input)>());
+
+    //! CHECK a command with constructors is not checked, since its members cannot be counted
+    static_assert(!std::is_aggregate_v<TestConstructedCommand>);
+    static_assert(fieldsCoverAllMembers<TestConstructedCommand, decltype(TestConstructedCommand::input)>());
+    EXPECT_EQ(inputSchema<TestConstructedCommand>().args.size(), 1);
 }
 
 TEST_F(RCommand_TypedCommandTests, EnumContract_RoundTrip)
