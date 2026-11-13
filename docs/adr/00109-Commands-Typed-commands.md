@@ -1,4 +1,4 @@
-# 00109 Component: Typed commands
+# 00109 Commands: Typed commands
 
 Date: 2026-10-09   
 Tags: commands, dispatch   
