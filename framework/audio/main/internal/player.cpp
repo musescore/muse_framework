@@ -21,6 +21,8 @@
  */
 #include "player.h"
 
+#include <set>
+
 #include "audio/common/rpc/rpcpacker.h"
 #include "audio/common/audiosanitizer.h"
 
@@ -31,9 +33,35 @@ using namespace muse::async;
 using namespace muse::audio;
 using namespace muse::audio::rpc;
 
+//! NOTE Playback is contextual (each window has its own), and every context can hand out
+//! more than one player, so live playback is ongoing as long as any of them is running.
+static std::set<const Player*>& runningPlayers()
+{
+    static std::set<const Player*> s_runningPlayers;
+    return s_runningPlayers;
+}
+
+Player::~Player()
+{
+    if (runningPlayers().erase(this) != 0) {
+        updateLivePlaybackOngoing();
+    }
+}
+
 rpc::CtxId Player::ctxId() const
 {
     return rpc::ctxId(iocContext());
+}
+
+void Player::updateLivePlaybackOngoing()
+{
+    ONLY_AUDIO_MAIN_THREAD;
+
+    //! NOTE Can already be gone on shutdown
+    const std::shared_ptr<IAudioDriverController>& controller = audioDriverController.get();
+    if (controller) {
+        controller->setLivePlaybackOngoing(!runningPlayers().empty());
+    }
 }
 
 void Player::init()
@@ -45,6 +73,16 @@ void Player::init()
     {
         m_playbackStatusChanged.onReceive(this, [this](PlaybackStatus st) {
             m_playbackStatus = st;
+
+            //! NOTE Only while running is audio actually being produced;
+            //! when paused or stopped there is nothing to keep the system awake for
+            if (m_playbackStatus == PlaybackStatus::Running) {
+                runningPlayers().insert(this);
+            } else {
+                runningPlayers().erase(this);
+            }
+
+            updateLivePlaybackOngoing();
         });
 
         Msg msg = rpc::make_request(ctxId(), MsgCode::GetPlaybackStatus);

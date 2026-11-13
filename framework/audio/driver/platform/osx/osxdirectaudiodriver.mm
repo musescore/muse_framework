@@ -39,6 +39,7 @@
 
 #include "common/audiotypes.h"
 #include "common/audioworkgroup.h"
+#include "osxidlesleeppolicy.h"
 #include "translation.h"
 #include "log.h"
 
@@ -668,6 +669,10 @@ bool OSXDirectAudioDriver::open(const Spec& spec, Spec* activeSpec)
         return false;
     }
 
+    //! NOTE From now on the device is running, so make sure the system knows whether
+    //! it is allowed to go to sleep while that is the case
+    OSXIdleSleepPolicy::setPreventIdleSleep(m_livePlaybackOngoing);
+
     m_audioWorkGroup = createAudioWorkgroup(*deviceId);
     m_currentWorkgroupChanged.notify();
 
@@ -715,6 +720,12 @@ void OSXDirectAudioDriver::doClose()
 bool OSXDirectAudioDriver::isOpened() const
 {
     return m_data->procId != nullptr;
+}
+
+void OSXDirectAudioDriver::setLivePlaybackOngoing(bool ongoing)
+{
+    m_livePlaybackOngoing = ongoing;
+    OSXIdleSleepPolicy::setPreventIdleSleep(ongoing);
 }
 
 const OSXDirectAudioDriver::Spec& OSXDirectAudioDriver::activeSpec() const
