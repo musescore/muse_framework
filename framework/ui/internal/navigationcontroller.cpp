@@ -924,10 +924,16 @@ void NavigationController::goToNextPanel()
         return;
     }
 
+    INavigationPanel* nextPanel = nextEnabled(activeSec->panels(), activePanel->index());
+    if (!nextPanel && activeSec->type() == INavigationSection::Type::Exclusive
+        && firstEnabled(activeSec->panels()) == activePanel) {
+        goToControl(MoveDirection::Right, activePanel);
+        return;
+    }
+
     saveLastActiveControl(activeSec);
     doDeactivatePanel(activePanel);
 
-    INavigationPanel* nextPanel = nextEnabled(activeSec->panels(), activePanel->index());
     if (nextPanel) {
         doActivatePanel(nextPanel);
         m_navigationChanged.notify();
@@ -972,10 +978,16 @@ void NavigationController::goToPrevPanel()
         return;
     }
 
+    INavigationPanel* prevPanel = prevEnabled(activeSec->panels(), activePanel->index());
+    if (!prevPanel && activeSec->type() == INavigationSection::Type::Exclusive
+        && lastEnabled(activeSec->panels()) == activePanel) {
+        goToControl(MoveDirection::Left, activePanel);
+        return;
+    }
+
     saveLastActiveControl(activeSec);
     doDeactivatePanel(activePanel);
 
-    INavigationPanel* prevPanel = prevEnabled(activeSec->panels(), activePanel->index());
     if (prevPanel) {
         doActivatePanel(prevPanel);
         m_navigationChanged.notify();
@@ -1269,6 +1281,9 @@ void NavigationController::goToControl(MoveDirection direction, INavigationPanel
                 INavigation::Index index = activeControl->index();
                 index.column = -1;
                 toControl = firstEnabled(activePanel->controls(), index, MoveDirection::Right); // the first to be the next
+                if (toControl == activeControl) {
+                    toControl = nullptr;
+                }
 
                 if (!toControl && tryOtherOrientation) {
                     index = activeControl->index();
@@ -1295,6 +1310,9 @@ void NavigationController::goToControl(MoveDirection direction, INavigationPanel
                 INavigation::Index index = activeControl->index();
                 index.row = -1;
                 toControl = firstEnabled(activePanel->controls(), index, MoveDirection::Down); // the first to be the next
+                if (toControl == activeControl) {
+                    toControl = nullptr;
+                }
 
                 if (!toControl && tryOtherOrientation) {
                     index = activeControl->index();
@@ -1321,6 +1339,9 @@ void NavigationController::goToControl(MoveDirection direction, INavigationPanel
                 INavigation::Index index = activeControl->index();
                 index.column = std::numeric_limits<int>::max();
                 toControl = lastEnabled(activePanel->controls(), index, MoveDirection::Left); // the last to be the next
+                if (toControl == activeControl) {
+                    toControl = nullptr;
+                }
 
                 if (!toControl && tryOtherOrientation) {
                     index = activeControl->index();
@@ -1347,6 +1368,9 @@ void NavigationController::goToControl(MoveDirection direction, INavigationPanel
                 INavigation::Index index = activeControl->index();
                 index.row = std::numeric_limits<int>::max();
                 toControl = lastEnabled(activePanel->controls(), index, MoveDirection::Up); // the last to be the next
+                if (toControl == activeControl) {
+                    toControl = nullptr;
+                }
 
                 if (!toControl && tryOtherOrientation) {
                     index = activeControl->index();
