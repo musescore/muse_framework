@@ -21,7 +21,9 @@
  */
  #include <gtest/gtest.h>
 
+ #include <array>
  #include <string>
+ #include <type_traits>
 
 #include "rcommand/typedcommand.h"
 #include "rcommand/enumcontract.h"
@@ -51,7 +53,7 @@ struct TestEnumContract {
 };
 
 namespace muse::rcommand {
-DECLARE_ENUM_CONTRACT(TestEnum, TestEnumContract);
+DECLARE_ENUM_CONTRACT(TestEnumContract);
 }
 
 struct TestCommand {
@@ -493,4 +495,17 @@ TEST_F(RCommand_TypedCommandTests, EnumContract_RoundTrip)
     EXPECT_EQ(EnumContract<TestEnum>::str_val(TestEnum::Value2), "value2");
     EXPECT_EQ(EnumContract<TestEnum>::enum_val("value3"), TestEnum::Value3);
     EXPECT_FALSE(EnumContract<TestEnum>::enum_val("value4").has_value());
+}
+
+TEST_F(RCommand_TypedCommandTests, EnumContract_Concepts)
+{
+    static_assert(IsEnumTable<decltype(TestEnumContract::table)>);
+    static_assert(IsEnumTable<const EnumTable<TestEnum, 3>&>);
+    static_assert(!IsEnumTable<std::array<int, 3> >);
+    static_assert(!IsEnumTable<int>);
+    static_assert(std::is_same_v<EnumTableEnum<decltype(TestEnumContract::table)>, TestEnum>);
+
+    static_assert(IsEnumContract<TestEnumContract>);
+    static_assert(!IsEnumContract<TestCommand>);
+    SUCCEED();
 }
