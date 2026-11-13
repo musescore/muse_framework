@@ -45,6 +45,8 @@ class SoundTrackWriter : public async::Asyncable
 
 public:
     SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format, const secs_t totalDuration, IAudioNodePtr source);
+    SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format, const secs_t totalDuration, const secs_t fadeInDuration,
+                     const secs_t fadeOutDuration, IAudioNodePtr source);
 
     Ret write();
     void abort();
@@ -53,6 +55,7 @@ public:
 
 private:
     Ret writeStreaming();
+    void applyFades(samples_t audioFramesWritten, samples_t frameCount);
 
     void sendProgress(uint64_t framesWritten, uint64_t totalFrames);
 
@@ -63,6 +66,8 @@ private:
     samples_t m_leadingSilenceSamples = 0;
     samples_t m_dataSamples = 0;
     samples_t m_totalSamples = 0;
+    samples_t m_fadeInSamples = 0;
+    samples_t m_fadeOutSamples = 0;
 
     encode::AbstractAudioEncoderPtr m_encoderPtr;
 

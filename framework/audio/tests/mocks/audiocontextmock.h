@@ -96,7 +96,7 @@ public:
     MOCK_METHOD(secs_t, playbackPosition, (), (const, override));
     MOCK_METHOD(async::Channel<secs_t>, playbackPositionChanged, (), (const, override));
 
-    MOCK_METHOD(async::Promise<Ret>, saveSoundTrack, (io::IODevice&, const SoundTrackFormat&), (override));
+    MOCK_METHOD(async::Promise<Ret>, saveSoundTrack, (io::IODevice&, const SoundTrackFormat&, const SoundTrackSaveOptions&), (override));
     MOCK_METHOD(SaveSoundTrackProgress, saveSoundTrackProgressChanged, (), (const, override));
     MOCK_METHOD(void, abortSavingAllSoundTracks, (), (override));
 };

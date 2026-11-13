@@ -117,7 +117,8 @@ public:
     virtual async::Promise<AutomatedControlParamsChanges> automatedControlParamsChanges(const TrackId trackId) const = 0;
 
     // Export
-    virtual async::Promise<bool> saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice) = 0;
+    virtual async::Promise<bool> saveSoundTrack(const SoundTrackFormat& format, io::IODevice& dstDevice,
+                                                const SoundTrackSaveOptions& options = {}) = 0;
     virtual void abortSavingAllSoundTracks() = 0;
     virtual SaveSoundTrackProgress saveSoundTrackProgressChanged() const = 0;
 };
