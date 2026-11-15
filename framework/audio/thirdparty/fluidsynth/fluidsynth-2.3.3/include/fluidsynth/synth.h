@@ -68,6 +68,9 @@ FLUID_DEPRECATED FLUIDSYNTH_API const char *fluid_synth_error(fluid_synth_t *syn
  * @{
  */
 FLUIDSYNTH_API int fluid_synth_noteon(fluid_synth_t *synth, int chan, int key, int vel);
+typedef void (*fluid_voice_created_callback_t)(fluid_voice_t *voice, void *data);
+FLUIDSYNTH_API int fluid_synth_noteon_with_callback(fluid_synth_t *synth, int chan, int key, int vel,
+        fluid_voice_created_callback_t callback, void *data);
 FLUIDSYNTH_API int fluid_synth_noteoff(fluid_synth_t *synth, int chan, int key);
 FLUIDSYNTH_API int fluid_synth_cc(fluid_synth_t *synth, int chan, int ctrl, int val);
 FLUIDSYNTH_API int fluid_synth_get_cc(fluid_synth_t *synth, int chan, int ctrl, int *pval);

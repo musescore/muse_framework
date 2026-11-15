@@ -1273,6 +1273,25 @@ fluid_synth_noteon(fluid_synth_t *synth, int chan, int key, int vel)
     FLUID_API_RETURN(result);
 }
 
+int
+fluid_synth_noteon_with_callback(fluid_synth_t *synth, int chan, int key, int vel,
+                                 fluid_voice_created_callback_t callback, void *data)
+{
+    int result;
+    fluid_return_val_if_fail(key >= 0 && key <= 127, FLUID_FAILED);
+    fluid_return_val_if_fail(vel >= 0 && vel <= 127, FLUID_FAILED);
+    FLUID_API_ENTRY_CHAN(FLUID_FAILED);
+    FLUID_API_RETURN_IF_CHAN_DISABLED(FLUID_FAILED);
+
+    synth->voice_created_callback = callback;
+    synth->voice_created_callback_data = data;
+    result = fluid_synth_noteon_LOCAL(synth, chan, key, vel);
+    synth->voice_created_callback = NULL;
+    synth->voice_created_callback_data = NULL;
+
+    FLUID_API_RETURN(result);
+}
+
 /* Local synthesis thread variant of fluid_synth_noteon */
 static int
 fluid_synth_noteon_LOCAL(fluid_synth_t *synth, int chan, int key, int vel)
@@ -5323,6 +5342,10 @@ fluid_synth_start_voice(fluid_synth_t *synth, fluid_voice_t *voice)
     fluid_voice_start(voice);     /* Start the new voice */
     fluid_voice_lock_rvoice(voice);
     fluid_rvoice_eventhandler_add_rvoice(synth->eventhandler, voice->rvoice);
+    if(synth->voice_created_callback != NULL)
+    {
+        synth->voice_created_callback(voice, synth->voice_created_callback_data);
+    }
     fluid_synth_api_exit(synth);
 }
 
