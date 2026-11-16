@@ -91,6 +91,12 @@ signals:
     void retChanged(QVariantMap ret);
 
 private:
+    class EnterKeyFilter;
+
+    bool handleShortcutOverride(QEvent* event);
+    bool shortcutOverrideIsAllowed() const;
+    QObject* findEnterTarget() const;
+
     void initView() override;
 
     void beforeOpen() override;
@@ -106,5 +112,6 @@ private:
     bool m_frameless = false;
     bool m_alwaysAboveApp = false;
     QVariantMap m_ret;
+    EnterKeyFilter* m_enterKeyFilter = nullptr;
 };
 }
