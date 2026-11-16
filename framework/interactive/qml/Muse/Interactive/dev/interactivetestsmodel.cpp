@@ -168,17 +168,19 @@ QString InteractiveTestsModel::currentUri() const
 
 void InteractiveTestsModel::question()
 {
-    IInteractive::Result result = interactive()->questionSync(
+    auto promise = interactive()->question(
         "Do you really want to delete the 'xxx' workspace?", "",
         { interactive()->buttonData(IInteractive::Button::No),
           interactive()->buttonData(IInteractive::Button::Yes) }, 0,
         IInteractive::Option::WithIcon);
 
-    if (result.standardButton() == IInteractive::Button::Yes) {
-        LOGI() << "Yes!!";
-    } else {
-        LOGI() << "No!!";
-    }
+    promise.onResolve(this, [](const IInteractive::Result& res) {
+        if (res.standardButton() == IInteractive::Button::Yes) {
+            LOGI() << "Yes!!";
+        } else {
+            LOGI() << "No!!";
+        }
+    });
 }
 
 void InteractiveTestsModel::questionByUri()
@@ -202,16 +204,18 @@ void InteractiveTestsModel::questionByUri()
 void InteractiveTestsModel::customQuestion()
 {
     int maybeBtn = int(IInteractive::Button::CustomButton) + 1;
-    IInteractive::Result result = interactive()->questionSync("Test", "It works?", {
+    auto promise = interactive()->question("Test", "It works?", {
         IInteractive::ButtonData(maybeBtn, "Maybe"),
         interactive()->buttonData(IInteractive::Button::No)
     });
 
-    if (result.button() == maybeBtn) {
-        LOGI() << "Maybe!!";
-    } else {
-        LOGE() << "No!!";
-    }
+    promise.onResolve(this, [maybeBtn](const IInteractive::Result& res) {
+        if (res.button() == maybeBtn) {
+            LOGI() << "Maybe!!";
+        } else {
+            LOGE() << "No!!";
+        }
+    });
 }
 
 void InteractiveTestsModel::information()
