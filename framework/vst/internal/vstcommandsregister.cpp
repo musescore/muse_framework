@@ -35,7 +35,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("vst", "Use old view"),
         InputSchema(),
         Decoration(Checkable::Yes),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         VST_USE_NEWVIEW_COMMAND,
@@ -43,7 +43,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("vst", "Use new view"),
         InputSchema(),
         Decoration(Checkable::Yes),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         VST_OPEN_FX_EDITOR_COMMAND,
@@ -57,7 +57,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
             { "sync", Arg(DataType::Bool, u"Use synchronous open/close (optional)") }
         }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         VST_OPEN_INSTRUMENT_EDITOR_COMMAND,
@@ -70,7 +70,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
             { "sync", Arg(DataType::Bool, u"Use synchronous open/close (optional)") }
         }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
 };
 

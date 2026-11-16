@@ -57,9 +57,6 @@ private:
     void onToolsCall(const JsonObject& request, const std::function<void(const JsonObject&)>& onResponse);
     void onNotifications(const String& method);
 
-    void replyError(const JsonObject& request, int code, const std::string& message,
-                    const std::function<void(const JsonObject&)>& onResponse);
-
     std::string m_version;
     ITransport* m_transport = nullptr;
     ToolsListHandler m_onToolsList;

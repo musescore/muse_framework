@@ -29,6 +29,14 @@
 static const char* PROTOCOL_VERSION = "2025-11-25";
 static const char* SERVER_NAME = "MuseMCP";
 
+using ErrorCode = std::pair<int, const char*>;
+
+static constexpr ErrorCode PARSE_ERROR_CODE = { -32700, "Parse error" };
+static constexpr ErrorCode INVALID_REQUEST_CODE = { -32600, "Invalid request" };
+static constexpr ErrorCode METHOD_NOT_FOUND_CODE = { -32601, "Method not found" };
+static constexpr ErrorCode INVALID_PARAMS_CODE = { -32602, "Invalid params" };
+static constexpr ErrorCode INTERNAL_ERROR_CODE = { -32603, "Internal error" };
+
 using namespace muse::rcontrol::mcp;
 
 static std::map<std::string, muse::Val> toArgs(const muse::JsonObject& obj)
@@ -38,6 +46,29 @@ static std::map<std::string, muse::Val> toArgs(const muse::JsonObject& obj)
         args[key] = obj[key].toVal();
     }
     return args;
+}
+
+static void replyError(const muse::JsonObject& request, const ErrorCode& errorCode,
+                       const std::function<void(const muse::JsonObject&)>& onResponse)
+{
+    muse::JsonObject error;
+    error["code"] = errorCode.first;
+    error["message"] = errorCode.second;
+
+    muse::JsonObject response;
+    response["jsonrpc"] = "2.0";
+    response["id"] = request.value("id");
+    response["error"] = error;
+
+    onResponse(response);
+}
+
+static void replyError(const muse::JsonObject& request, const ErrorCode& errorCode,
+                       const ITransport::ResponseHandler& onResponse)
+{
+    replyError(request, errorCode, [onResponse](const muse::JsonObject& res) {
+        onResponse(muse::JsonDocument(res).toJson(muse::JsonDocument::Format::Compact));
+    });
 }
 
 McpServer::McpServer(const std::string& version, ITransport* transport)
@@ -63,10 +94,26 @@ void McpServer::init()
     }
 
     m_transport->onRequest([this](const ByteArray& request, const ITransport::ResponseHandler& onResponse) {
-        JsonObject req = JsonDocument::fromJson(request).rootObject();
+        std::string err;
+        JsonDocument json = JsonDocument::fromJson(request, &err);
+
+        if (!err.empty()) {
+            LOGE() << "Parse error: " << err;
+            replyError(JsonObject(), PARSE_ERROR_CODE, onResponse);
+            return;
+        }
+
+        if (!json.isObject()) {
+            LOGE() << "Invalid request: not an object";
+            replyError(JsonObject(), INVALID_REQUEST_CODE, onResponse);
+            return;
+        }
+
+        JsonObject req = json.rootObject();
         onRequest(req, [onResponse](const JsonObject& res) {
             JsonDocument doc(res);
-            onResponse(doc.toJson(JsonDocument::Format::Compact));
+            ByteArray json = doc.toJson(JsonDocument::Format::Compact);
+            onResponse(json);
         });
     });
 
@@ -80,6 +127,11 @@ void McpServer::deinit()
 
 void McpServer::onRequest(const JsonObject& request, const std::function<void(const JsonObject&)>& onResponse)
 {
+    if (!request.contains("method")) {
+        replyError(request, INVALID_REQUEST_CODE, onResponse);
+        return;
+    }
+
     const String method = request.value("method").toString();
     if (method == u"initialize") {
         onInitialize(request, onResponse);
@@ -92,7 +144,7 @@ void McpServer::onRequest(const JsonObject& request, const std::function<void(co
         onResponse(JsonObject());
     } else {
         LOGE() << "Unknown method: " << method;
-        replyError(request, -32601, "Method not found", onResponse);
+        replyError(request, METHOD_NOT_FOUND_CODE, onResponse);
     }
 }
 
@@ -130,7 +182,7 @@ void McpServer::onToolsListRequest(const ToolsListHandler& onToolsList)
 void McpServer::onToolsList(const JsonObject& request, const std::function<void(const JsonObject&)>& onResponse)
 {
     if (!m_onToolsList) {
-        replyError(request, -32603, "No tools list handler", onResponse);
+        replyError(request, INTERNAL_ERROR_CODE, onResponse);
         return;
     }
 
@@ -147,9 +199,7 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
             obj["title"] = tool.title;
             obj["description"] = tool.description;
 
-            // input
-            {
-                const InputSchema& schema = tool.inputSchema;
+            auto propertiesSchema = [](const PropertiesSchema& schema) {
                 JsonObject schemaObj;
                 schemaObj["type"] = schema.type;
                 JsonObject properties;
@@ -160,36 +210,42 @@ void McpServer::onToolsList(const JsonObject& request, const std::function<void(
                         propertyObj["format"] = to_string(property.type.format);
                     }
                     propertyObj["description"] = property.description;
-                    if (!property.minimum.isNull()) {
-                        propertyObj["minimum"] = JsonValue::fromVal(property.minimum);
+
+                    if (property.enumValues) {
+                        propertyObj["enum"] = JsonArray::fromValList(*property.enumValues);
                     }
-                    if (!property.maximum.isNull()) {
-                        propertyObj["maximum"] = JsonValue::fromVal(property.maximum);
+                    if (property.minimum) {
+                        propertyObj["minimum"] = JsonValue::fromVal(*property.minimum);
+                    }
+                    if (property.maximum) {
+                        propertyObj["maximum"] = JsonValue::fromVal(*property.maximum);
                     }
                     properties[name] = propertyObj;
                 }
-                schemaObj["properties"] = properties;
-                obj["inputSchema"] = schemaObj;
+
+                if (!properties.empty()) {
+                    schemaObj["properties"] = properties;
+
+                    if (!schema.required.empty()) {
+                        schemaObj["required"] = JsonArray::fromStringList(schema.required);
+                    }
+                }
+
+                return schemaObj;
+            };
+
+            obj["inputSchema"] = propertiesSchema(tool.inputSchema);
+
+            if (!tool.outputSchema.properties.empty()) {
+                obj["outputSchema"] = propertiesSchema(tool.outputSchema);
             }
 
-            // output
-            {
-                const OutputSchema& schema = tool.outputSchema;
-                JsonObject schemaObj;
-                schemaObj["type"] = schema.type;
-                JsonObject properties;
-                for (const auto& [name, property] : schema.properties) {
-                    JsonObject propertyObj;
-                    propertyObj["type"] = to_string(property.type.type);
-                    if (property.type.format != Format::Undefined) {
-                        propertyObj["format"] = to_string(property.type.format);
-                    }
-                    propertyObj["description"] = property.description;
-                    properties[name] = propertyObj;
-                }
-                schemaObj["properties"] = properties;
-                obj["outputSchema"] = schemaObj;
-            }
+            JsonObject annotations;
+            annotations["readOnlyHint"] = tool.annotations.readOnly;
+            annotations["destructiveHint"] = tool.annotations.destructive;
+            annotations["idempotentHint"] = tool.annotations.idempotent;
+            annotations["openWorldHint"] = tool.annotations.openWorld;
+            obj["annotations"] = annotations;
 
             arr << obj;
         }
@@ -211,14 +267,38 @@ void McpServer::onToolsCallRequest(const ToolsCallHandler& onToolsCall)
 void McpServer::onToolsCall(const JsonObject& request, const std::function<void(const JsonObject&)>& onResponse)
 {
     if (!m_onToolsCall) {
-        replyError(request, -32603, "No tools call handler", onResponse);
+        replyError(request, INTERNAL_ERROR_CODE, onResponse);
+        return;
+    }
+
+    if (!request.contains("id")) {
+        replyError(request, INVALID_REQUEST_CODE, onResponse);
+        return;
+    }
+
+    if (!(request.contains("params") && request.value("params").isObject())) {
+        replyError(request, INVALID_PARAMS_CODE, onResponse);
         return;
     }
 
     const JsonValue id = request.value("id");
     const JsonObject params = request.value("params").toObject();
+
+    if (!(params.contains("name") && params.value("name").isString())) {
+        replyError(request, INVALID_PARAMS_CODE, onResponse);
+        return;
+    }
+
     const std::string name = params.value("name").toString().toStdString();
-    const JsonObject arguments = params.value("arguments").toObject();
+    JsonObject arguments;
+    if (params.contains("arguments") && !params.value("arguments").isNull()) {
+        if (params.value("arguments").isObject()) {
+            arguments = params.value("arguments").toObject();
+        } else {
+            replyError(request, INVALID_PARAMS_CODE, onResponse);
+            return;
+        }
+    }
 
     m_onToolsCall(name, toArgs(arguments), [id, onResponse](const ToolResult& toolResult) {
         JsonObject response;
@@ -259,19 +339,4 @@ void McpServer::onToolsCall(const JsonObject& request, const std::function<void(
 void McpServer::onNotifications(const String& method)
 {
     LOGI() << "Notification: " << method;
-}
-
-void McpServer::replyError(const JsonObject& request, int code, const std::string& message,
-                           const std::function<void(const JsonObject&)>& onResponse)
-{
-    JsonObject error;
-    error["code"] = code;
-    error["message"] = message;
-
-    JsonObject response;
-    response["jsonrpc"] = "2.0";
-    response["id"] = request.value("id");
-    response["error"] = error;
-
-    onResponse(response);
 }

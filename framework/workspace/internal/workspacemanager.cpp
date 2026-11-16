@@ -130,52 +130,42 @@ void WorkspaceManager::createAndAppendNewWorkspace()
 {
     prepareCurrentWorkspaceForChange();
 
-    IWorkspacePtrList workspaces = this->workspaces();
-
     QStringList workspaceNames;
-    for (const IWorkspacePtr& workspace: workspaces) {
+    for (const IWorkspacePtr& workspace: workspaces()) {
         workspaceNames << QString::fromStdString(workspace->name());
     }
 
     UriQuery uri("muse://workspace/create");
-    uri.addParam("sync", Val(true));
     uri.addParam("workspaceNames", Val(workspaceNames.join(',')));
 
-    auto i = modularity::ioc(iocContext())->resolve<IInteractive>("workspace");
-    RetVal<Val> obj = i->openSync(uri);
-    if (!obj.ret) {
-        return;
-    }
+    interactive()->open(uri).onResolve(this, [this](const Val& val) {
+        QVariantMap meta = val.toQVariant().toMap();
+        QString name = meta.value("name").toString();
+        IF_ASSERT_FAILED(!name.isEmpty()) {
+            return;
+        }
 
-    QVariantMap meta = obj.val.toQVariant().toMap();
-    QString name = meta.value("name").toString();
-    IF_ASSERT_FAILED(!name.isEmpty()) {
-        return;
-    }
+        IWorkspacePtr newWorkspace = cloneWorkspace(currentWorkspace(), name.toStdString());
+        if (!newWorkspace) {
+            return;
+        }
 
-    IWorkspacePtr newWorkspace = cloneWorkspace(currentWorkspace(), name.toStdString());
-    if (!newWorkspace) {
-        return;
-    }
+        IWorkspacePtrList workspaces = this->workspaces();
+        workspaces.emplace_back(newWorkspace);
 
-    workspaces.emplace_back(newWorkspace);
+        setWorkspaces(workspaces);
 
-    setWorkspaces(workspaces);
-
-    configuration()->setCurrentWorkspaceName(name.toStdString());
+        configuration()->setCurrentWorkspaceName(name.toStdString());
+    });
 }
 
 void WorkspaceManager::openConfigureWorkspacesDialog()
 {
     prepareCurrentWorkspaceForChange();
 
-    RetVal<Val> result = interactive()->openSync("muse://workspace/select");
-    if (!result.ret) {
-        return;
-    }
-
-    std::string selectedWorkspace = result.val.toString();
-    doChangeCurrentWorkspace(selectedWorkspace);
+    interactive()->open("muse://workspace/select").onResolve(this, [this](const Val& val) {
+        doChangeCurrentWorkspace(val.toString());
+    });
 }
 
 WorkspacePtr WorkspaceManager::doNewWorkspace(const std::string& workspaceName) const

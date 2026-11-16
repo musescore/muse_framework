@@ -51,6 +51,8 @@ protected:
     size_t writeData(const uint8_t* data, size_t len) override;
 
 private:
+    Ret closeStream();
+
     path_t m_filePath;
     size_t m_size = 0;
 

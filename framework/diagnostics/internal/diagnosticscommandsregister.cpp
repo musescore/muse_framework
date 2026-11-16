@@ -44,7 +44,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show paths"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_PROFILER_COMMAND,
@@ -52,7 +52,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show profiler"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_GRAPHICSINFO_COMMAND,
@@ -60,7 +60,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show graphics info"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_NAVIGATION_TREE_COMMAND,
@@ -68,7 +68,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show navigation tree"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ACCESSIBLE_TREE_COMMAND,
@@ -76,7 +76,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show accessibility tree"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_DUMP_ACCESSIBLE_TREE_COMMAND,
@@ -84,7 +84,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Dump accessibility tree to console"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ENGRAVING_ELEMENTS_COMMAND,
@@ -92,7 +92,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show engraving elements"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ENGRAVING_UNDOSTACK_COMMAND,
@@ -100,7 +100,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show engraving undo stack"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ENGRAVING_STYLE_COMMAND,
@@ -108,7 +108,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show engraving style options list"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_ACTIONS_COMMAND,
@@ -116,7 +116,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show actions list"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo{
         DIAGNOSTICS_SHOW_RCOMMANDS_COMMAND,
@@ -124,7 +124,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("diagnostics", "Show commands list"),
         InputSchema(),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
 };
 

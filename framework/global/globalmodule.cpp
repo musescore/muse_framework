@@ -284,6 +284,17 @@ void GlobalModule::setLoggerLevel(const muse::logger::Level& level)
     m_loggerLevel = level;
 }
 
+void GlobalModule::setUserDataDir(const io::path_t& dir)
+{
+    m_configuration->setUserDataDir(dir);
+    settings()->setDataPath(m_configuration->userAppDataPath());
+
+    auto fsRestriction = globalIoc()->resolve<api::IFileSystemApiRestriction>(moduleName());
+    if (fsRestriction) {
+        fsRestriction->addAllowedPathBase("userData", m_configuration->userDataPath());
+    }
+}
+
 IContextSetup* GlobalModule::newContext(const kors::modularity::ContextPtr& ctx) const
 {
     return new GlobalContext(ctx);

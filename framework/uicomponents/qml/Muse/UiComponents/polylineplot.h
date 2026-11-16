@@ -28,11 +28,7 @@
 #include <QVector>
 #include <qqmlintegration.h>
 
-#include "actions/actionable.h"
-#include "async/asyncable.h"
-
 #include "modularity/ioc.h"
-#include "actions/iactionsdispatcher.h"
 #include "ui/iuiconfiguration.h"
 
 #include "internal/polylinepointstyle.h"
@@ -45,7 +41,7 @@ struct GhostPoint {
     qreal distToSegment = 1e18;
 };
 
-class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, public muse::actions::Actionable, public muse::Contextable
+class PolylinePlot : public QQuickPaintedItem
 {
     Q_OBJECT
 
@@ -94,12 +90,10 @@ class PolylinePlot : public QQuickPaintedItem, public muse::async::Asyncable, pu
 
     muse::GlobalInject<muse::ui::IUiConfiguration> uiConfiguration;
 
-    muse::ContextInject<muse::actions::IActionsDispatcher> dispatcher { this };
-
 public:
     explicit PolylinePlot(QQuickItem* parent = nullptr);
 
-    Q_INVOKABLE void init();
+    Q_INVOKABLE void cancelEdit();
 
     PolylinePointStyle* standardPointStyle();
     PolylinePointStyle* ghostPointStyle();
@@ -186,7 +180,6 @@ signals:
     void pointAdded(qreal x, qreal y, bool completed);
     void pointMoved(int index, qreal x, qreal y, bool completed);
     void pointRemoved(int index, bool completed);
-    void dragCancelled();
     void interactionFinished();
 
     void xRangeFromChanged();

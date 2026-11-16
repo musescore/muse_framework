@@ -22,18 +22,26 @@ set(MODULE_TEST muse_dockwindow_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/topleveltoolbarslayout_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/dockwindow_tests.cpp
     )
+
+get_property(kddockwidgets_src_dir GLOBAL PROPERTY kddockwidgets_SOURCE_DIR)
 
 set(MODULE_TEST_INCLUDE
     ${CMAKE_CURRENT_LIST_DIR}/..
     ${CMAKE_CURRENT_LIST_DIR}/../qml/Muse/Dock
+    ${kddockwidgets_src_dir}
+    ${kddockwidgets_src_dir}/kddockwidgets/src
     )
 
 set(MODULE_TEST_LINK
     muse_dockwindow
+    muse_rcommand
     muse_dockwindow_qml
     muse_ui_qml
     muse_uicomponents_qml
+    kddockwidgets
+    Qt::Qml
     Qt::Quick
     )
 

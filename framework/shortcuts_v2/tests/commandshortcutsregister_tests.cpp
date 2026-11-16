@@ -35,11 +35,13 @@
 
 #include "mocks/shortcutsconfigurationmock.h"
 #include "multiwindows/tests/mocks/multiwindowsprovidermock.h"
+#include "rcommand/tests/mocks/commandsregistermock.h"
 
 using ::testing::_;
 using ::testing::Invoke;
 using ::testing::NiceMock;
 using ::testing::Return;
+using ::testing::ReturnRef;
 
 using namespace muse;
 using namespace muse::shortcuts;
@@ -57,9 +59,15 @@ public:
 
         m_configuration = std::make_shared<NiceMock<ShortcutsConfigurationMock> >();
         m_multiWindowsProvider = std::make_shared<NiceMock<mi::MultiWindowsProviderMock> >();
+        m_commandsRegister = std::make_shared<NiceMock<CommandsRegisterMock> >();
 
         modularity::globalIoc()->registerExport<IShortcutsConfiguration>("utests", m_configuration);
         modularity::globalIoc()->registerExport<mi::IMultiWindowsProvider>("utests", m_multiWindowsProvider);
+        modularity::globalIoc()->registerExport<ICommandsRegister>("utests", m_commandsRegister);
+
+        //! NOTE Every command is available for shortcuts by default
+        ON_CALL(*m_commandsRegister, commandInfo(_))
+        .WillByDefault(ReturnRef(m_commandInfo));
 
         ON_CALL(*m_configuration, defaultShortcutsName())
         .WillByDefault(Return("shortcuts"));
@@ -95,6 +103,7 @@ public:
 
         modularity::globalIoc()->unregister<IShortcutsConfiguration>("utests");
         modularity::globalIoc()->unregister<mi::IMultiWindowsProvider>("utests");
+        modularity::globalIoc()->unregister<ICommandsRegister>("utests");
     }
 
     void initRegister()
@@ -145,6 +154,8 @@ protected:
 
     std::shared_ptr<NiceMock<ShortcutsConfigurationMock> > m_configuration;
     std::shared_ptr<NiceMock<mi::MultiWindowsProviderMock> > m_multiWindowsProvider;
+    std::shared_ptr<NiceMock<CommandsRegisterMock> > m_commandsRegister;
+    CommandInfo m_commandInfo;
 
     std::unique_ptr<CommandShortcutsRegister> m_register;
 };
@@ -239,7 +250,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, AppliesPresetDiffOverPlatformDif
 TEST_F(Shortcuts_CommandShortcutsRegisterTests, AppliesUserDiff)
 {
     //! [GIVEN] A user diff file for the default shortcuts
-    writeUserFile("shortcuts", R"({ "TEST": [ { "command": "test://a", "sequences": ["X"] } ] })");
+    writeUserFile("shortcuts", R"([ { "scope": "TEST", "shortcuts": [ { "command": "test://a", "sequences": ["X"] } ] } ])");
 
     //! [WHEN] The register is initialized
     initRegister();
@@ -260,7 +271,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, AppliesUserDiff)
 TEST_F(Shortcuts_CommandShortcutsRegisterTests, UserDiffIsPerPreset)
 {
     //! [GIVEN] A user diff file for the default shortcuts, but the azerty preset is selected
-    writeUserFile("shortcuts", R"({ "TEST": [ { "command": "test://a", "sequences": ["X"] } ] })");
+    writeUserFile("shortcuts", R"([ { "scope": "TEST", "shortcuts": [ { "command": "test://a", "sequences": ["X"] } ] } ])");
     m_currentPresetName = "shortcuts_azerty";
 
     //! [WHEN] The register is initialized
@@ -291,10 +302,13 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, SetShortcutsWritesOnlyDiff)
     ByteArray data;
     ASSERT_TRUE(io::File::readFile(userPath("shortcuts"), data));
 
-    JsonObject root = JsonDocument::fromJson(data).rootObject();
-    EXPECT_EQ(root.keys().size(), 1u);
+    JsonArray root = JsonDocument::fromJson(data).rootArray();
+    ASSERT_EQ(root.size(), 1u);
 
-    JsonArray scopeArr = root.value("TEST").toArray();
+    JsonObject scopeObj = root.at(0).toObject();
+    EXPECT_EQ(scopeObj.value("scope").toStdString(), "TEST");
+
+    JsonArray scopeArr = scopeObj.value("shortcuts").toArray();
     ASSERT_EQ(scopeArr.size(), 1u);
     EXPECT_EQ(scopeArr.at(0).toObject().value("command").toString().toStdString(), "test://a");
 
@@ -467,7 +481,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, IsPresetEditedReflectsUserFile)
 TEST_F(Shortcuts_CommandShortcutsRegisterTests, BuiltinPresetsCannotBeDeleted)
 {
     //! [GIVEN] The register and an edited builtin preset
-    writeUserFile("shortcuts_azerty", R"({ "TEST": [ { "command": "test://a", "sequences": ["X"] } ] })");
+    writeUserFile("shortcuts_azerty", R"([ { "scope": "TEST", "shortcuts": [ { "command": "test://a", "sequences": ["X"] } ] } ])");
     initRegister();
 
     //! [THEN] Neither the default set nor builtin presets can be deleted
@@ -484,7 +498,7 @@ TEST_F(Shortcuts_CommandShortcutsRegisterTests, BuiltinPresetsCannotBeDeleted)
 TEST_F(Shortcuts_CommandShortcutsRegisterTests, DeletePresetRemovesUserFileAndFallsBackToDefault)
 {
     //! [GIVEN] A custom preset (user file without a builtin twin) is selected
-    writeUserFile("my_preset", R"({ "TEST": [ { "command": "test://a", "sequences": ["X"] } ] })");
+    writeUserFile("my_preset", R"([ { "scope": "TEST", "shortcuts": [ { "command": "test://a", "sequences": ["X"] } ] } ])");
     m_currentPresetName = "my_preset";
     initRegister();
 

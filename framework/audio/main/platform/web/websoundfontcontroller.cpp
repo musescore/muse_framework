@@ -44,6 +44,6 @@ void WebSoundFontController::addSoundFont(const synth::SoundFontUri& uri)
             return;
         }
 
-        channel()->send(rpc::make_request(Method::AddSoundFontData, RpcPacker::pack(uri, rv.val)));
+        channel()->send(rpc::make_request(GLOBAL_CTX_ID, MsgCode::AddSoundFontData, RpcPacker::pack(uri, rv.val)));
     });
 }

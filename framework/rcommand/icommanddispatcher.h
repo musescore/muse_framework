@@ -45,13 +45,14 @@ public:
     using CallBackParamsRet = std::function<Ret (const Params& params)>;
     using CallBackParamsPromiseRet = std::function<async::Promise<Ret>(const Params& params)>;
 
-    virtual async::Promise<Response> dispatch(const Request& request) = 0;
+    virtual async::Promise<Response> dispatch(const Request& request, bool maybeRedirect = true) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const CallBack& callback) = 0;
     virtual void onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback) = 0;
     virtual void unreg(Commandable* client) = 0;
 
     virtual async::Channel<Command, bool* /*allow dispatch*/> preDispatch() const = 0;
     virtual async::Channel<Command> postDispatch() const = 0;
+    virtual async::Channel<Command> notRegistered() const = 0;
 
     // Helpers for convenience
     async::Promise<Response> dispatch(const Command& command)
@@ -94,11 +95,15 @@ public:
     template<TypedCommand C>
     async::Promise<Response> dispatch(const C& command)
     {
+        if constexpr (HasRedirect<C>) {
+            return dispatch(C::redirect);
+        }
+
         Params params;
         if constexpr (HasInput<C>) {
             params = toInputParams(command);
         }
-        return dispatch(make_request(command.id, params));
+        return dispatch(make_request(command.id, params), false);
     }
 
     template<TypedCommand C>
@@ -107,8 +112,9 @@ public:
         onRequest(client, C::id, CallBack([callback](const Request& request) {
             C command;
             if constexpr (HasInput<C>) {
-                if (!fromInputParams(request.params, command)) {
-                    return make_response(request, muse::make_ret(Ret::Code::BadArgs));
+                ConvertParamsResult res = fromInputParams(request.params, command);
+                if (!res) {
+                    return make_response(request, res.ret);
                 }
             }
             return make_response(request, callback(command));
@@ -121,8 +127,9 @@ public:
         onRequest(client, C::id, CallBack([callback](const Request& request) {
             C command;
             if constexpr (HasInput<C>) {
-                if (!fromInputParams(request.params, command)) {
-                    return make_response(request, muse::make_ret(Ret::Code::BadArgs));
+                ConvertParamsResult res = fromInputParams(request.params, command);
+                if (!res) {
+                    return make_response(request, res.ret);
                 }
             }
             RetVal<typename C::Output> rv = callback(command);

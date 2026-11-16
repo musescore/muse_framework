@@ -22,6 +22,8 @@
 #ifndef MUSE_API_NAVIGATIONAPI_H
 #define MUSE_API_NAVIGATIONAPI_H
 
+#include <functional>
+
 #include <QString>
 #include <QJSValue>
 
@@ -49,9 +51,10 @@ public:
     Q_INVOKABLE void up();
     Q_INVOKABLE void down();
     Q_INVOKABLE void escape();
-    Q_INVOKABLE bool goToControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex);
+    Q_INVOKABLE bool goToControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex, int timeoutMsec = 0);
     Q_INVOKABLE void trigger();
-    Q_INVOKABLE bool triggerControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex);
+    Q_INVOKABLE bool triggerControl(const QString& section, const QString& panel, const QJSValue& controlNameOrIndex, int timeoutMsec = 0);
+    Q_INVOKABLE bool waitControl(const QString& section, const QString& panel, const QString& controlName, int timeoutMsec);
 
     Q_INVOKABLE QString activeSection() const;
     Q_INVOKABLE QString activePanel() const;
@@ -62,6 +65,9 @@ public:
     Q_INVOKABLE QJSValue controls(const QString& sectionName, const QString& panelName) const;  // array of controls
 
     Q_INVOKABLE void dump() const;
+
+private:
+    bool waitFor(const std::function<bool()>& condition, int timeoutMsec) const;
 };
 }
 

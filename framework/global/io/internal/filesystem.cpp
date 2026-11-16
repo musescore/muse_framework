@@ -566,6 +566,13 @@ Ret FileSystem::closeStream(StreamId fileId)
     }
 
     file->close();
+
+    if (file->error() != QFileDevice::NoError) {
+        Ret ret = make_ret(Err::FSWriteError);
+        ret.setText(file->errorString().toStdString());
+        return ret;
+    }
+
     return make_ret(Err::NoError);
 }
 

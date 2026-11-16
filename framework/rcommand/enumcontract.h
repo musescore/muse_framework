@@ -19,49 +19,76 @@
 
 #pragma once
 
-#include <tuple>
-
-#include "rcommand/commandtypes.h"
+#include <array>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <vector>
 
 #include "log.h"
 
 namespace muse::rcommand {
 template<typename E>
-struct Contract;
+struct EnumContract;
 
 template<typename T>
 concept Enumeration = std::is_enum_v<std::remove_cvref_t<T> >;
 
-template<typename E>
+template<Enumeration E>
 struct EnumEntry {
     std::string_view sval;
     E eval;
     std::string_view description;
 };
 
-template<typename E, std::size_t N>
-using Table = std::array<EnumEntry<E>, N>;
+template<Enumeration E, std::size_t N>
+using EnumTable = std::array<EnumEntry<E>, N>;
 
-template<typename E, std::size_t N>
-void accepts_table(const Table<E, N>&);
-
-template<typename T, typename E>
-concept EnumTable = requires(const std::remove_cvref_t<T>& table) {
-    accepts_table<E>(table);
+namespace internal {
+//! NOTE `EnumTable` is an alias template, so it can't be matched as is.
+//! This trait recognizes `std::array<EnumEntry<E>, N>` and recovers `E` and `N`.
+template<typename T>
+struct EnumTableTraits {
+    static constexpr bool valid = false;
 };
+
+template<Enumeration E, std::size_t N>
+struct EnumTableTraits<std::array<EnumEntry<E>, N> > {
+    static constexpr bool valid = true;
+    using Enum = E;
+};
+}
+
+template<typename T>
+concept IsEnumTable = internal::EnumTableTraits<std::remove_cvref_t<T> >::valid;
+
+//! NOTE The enum type of an `EnumTable`, e.g. `Foo` for `EnumTable<Foo, 3>`.
+template<typename T>
+using EnumTableEnum = typename internal::EnumTableTraits<std::remove_cvref_t<T> >::Enum;
 
 // *INDENT-OFF* // Uncrustify doesn't understand `requires`
 template<typename C>
-concept EnumContract = requires {
-    { C::key } -> std::convertible_to<const std::string_view&>;
-    { C::def } -> Enumeration;
-    { C::table } -> EnumTable<std::remove_cvref_t<decltype(C::def)>>;
+concept IsEnumContract = requires {
+    { C::table } -> IsEnumTable<>;
 };
 // *INDENT-ON*
 
-template<EnumContract C>
-struct BaseContract {
-    static std::string str_val(decltype(C::def) eval)
+template<IsEnumContract C>
+struct BaseEnumContract {
+    using Enum = EnumTableEnum<decltype(C::table)>;
+
+    static std::vector<std::string> str_vals()
+    {
+        std::vector<std::string> result;
+        for (const auto& row : C::table) {
+            result.push_back(std::string(row.sval));
+        }
+        return result;
+    }
+
+    static std::string str_val(Enum eval)
     {
         for (const auto& row : C::table) {
             if (row.eval == eval) {
@@ -72,7 +99,7 @@ struct BaseContract {
         return std::string();
     }
 
-    static std::optional<decltype(C::def)> enum_val(const std::string& sval)
+    static std::optional<Enum> enum_val(const std::string& sval)
     {
         for (const auto& row : C::table) {
             if (row.sval == sval) {
@@ -81,24 +108,8 @@ struct BaseContract {
         }
         return std::nullopt;
     }
-
-    static std::pair<std::string, muse::Val> param(decltype(C::def) eval)
-    {
-        return { std::string(C::key), muse::Val(str_val(eval)) };
-    }
-
-    static decltype(C::def) get(const muse::rcommand::Params& params)
-    {
-        auto sval = params.at(C::key).toString();
-        auto value = enum_val(sval);
-        return value ? *value : C::def;
-    }
-
-    static void set(muse::rcommand::Params& params, decltype(C::def) eval)
-    {
-        params.set(param(eval));
-    }
 };
 
-#define DECLARE_CONTRACT(E, C) template<> struct Contract<E> : BaseContract<C> {};
+//! NOTE The enum type is deduced from the contract's `table`.
+#define DECLARE_ENUM_CONTRACT(C) template<> struct EnumContract<EnumTableEnum<decltype(C::table)> > : BaseEnumContract<C> {};
 }

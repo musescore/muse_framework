@@ -126,20 +126,18 @@ void KeyboardApi::releaseKey(const QString& key, const QString& mod)
     doReleaseKey(w, code, keyMod(mod), key);
 }
 
+//! NOTE Keys are sent synchronously, in the order of the calls,
+//! so a script does not continue before its text is typed
 void KeyboardApi::repeatKey(const QString& k, int count)
 {
     for (int i = 0; i < count; ++i) {
-        QTimer::singleShot(10, this, [this, k]() {
-            key(k);
-        });
+        key(k);
     }
 }
 
 void KeyboardApi::text(const QString& text)
 {
     for (const QChar& ch : text) {
-        QTimer::singleShot(10, this, [this, ch]() {
-            key(ch);
-        });
+        key(ch);
     }
 }

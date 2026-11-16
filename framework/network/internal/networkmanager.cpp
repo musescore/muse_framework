@@ -21,6 +21,8 @@
  */
 #include "networkmanager.h"
 
+#include "network/offlinenetworkreply.h"
+
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QUrl>
@@ -267,6 +269,11 @@ QNetworkRequest NetworkManager::prepareRequest(const QUrl& url, const RequestHea
 
 QNetworkReply* NetworkManager::sendRequest(RequestType type, const QNetworkRequest& request, const OutgoingDeviceVar& device)
 {
+    if (configuration()->isOffline() && isNetworkUrl(request.url())) {
+        LOGW() << "offline mode, the request is blocked: " << request.url().toString();
+        return new OfflineNetworkReply(QNetworkAccessManager::CustomOperation, request, m_manager);
+    }
+
     switch (type) {
     case GET_REQUEST: return m_manager->get(request);
     case HEAD_REQUEST: return m_manager->head(request);

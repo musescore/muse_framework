@@ -238,6 +238,16 @@ private:
     Type m_type = Type::Undefined;
 };
 
+template<typename T>
+ValList toValList(const std::vector<T>& list)
+{
+    ValList result;
+    for (const auto& item : list) {
+        result.push_back(Val::fromType(item));
+    }
+    return result;
+}
+
 //! NOTE Helper class for the serialization/deserialization of lists and maps
 class ValJson
 {

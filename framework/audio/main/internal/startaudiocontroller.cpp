@@ -192,6 +192,9 @@ void StartAudioController::startAudioProcessing(const IApplication::RunMode& mod
                 once = true;
             }
 
+            //! NOTE The engine runs in the driver callback, the async messages
+            //! of this thread (promises, notifications) are processed here, as in the hybrid mode worker
+            async::processMessages();
             m_rpcChannel->process();
             m_engineController->process(procDest, (unsigned)procSamplesPerChannel);
         } else {

@@ -23,6 +23,7 @@
 
 #include <qqmlintegration.h>
 
+#include <QPointer>
 #include <QQmlParserStatus>
 #include <QQuickItem>
 #include <QQuickView>
@@ -197,7 +198,7 @@ protected:
     void activateNavigationParentControl();
 
     QQmlEngine* m_engine = nullptr;
-    QWindow* m_parentWindow = nullptr;
+    QPointer<QWindow> m_parentWindow;
     QQuickView* m_view = nullptr;
 
     QQuickItem* m_contentItem = nullptr;

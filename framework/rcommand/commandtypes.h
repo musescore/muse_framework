@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <map>
+#include <optional>
 #include <string>
 
 #include "global/types/uri.h"
@@ -122,36 +124,70 @@ enum class DataType {
     Float,
     Double,
     String,
+    Enum,
     List,
     Map
 };
 
+enum class Presence {
+    Required,
+    Optional,
+};
+
+struct UiHints {
+    int order = 0;
+};
+
 struct Arg {
-    DataType type = DataType::Undefined;
-    String description;
-    Val min;
-    Val max;
+    TranslatableString label;
+    TranslatableString description;
+    DataType dataType = DataType::Undefined;
+    Presence presence = Presence::Required;
+    std::optional<ValList> allowedValues; //! NOTE Typically, these are enum values.
+    std::optional<Val> min;
+    std::optional<Val> max;
+    UiHints uiHints;
 
     Arg() = default;
-    Arg(DataType type, const String& description, const Val& min = Val(), const Val& max = Val())
-        : type(type), description(description), min(min), max(max) {}
+
+    Arg(DataType dataType, const String& description,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : description(TranslatableString::untranslatable(description)), dataType(dataType), min(min), max(max) {}
+
+    Arg(DataType dataType, const std::string& description, Presence presence,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : description(TranslatableString::untranslatable(String::fromStdString(description))), dataType(dataType),
+        presence(presence), min(min), max(max) {}
+
+    Arg(DataType dataType, const std::string& description,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : description(TranslatableString::untranslatable(String::fromStdString(description))), dataType(dataType),
+        min(min), max(max) {}
+
+    Arg(DataType dataType, const TranslatableString& label, const TranslatableString& description,
+        Presence presence = Presence::Required, const std::optional<ValList>& allowedValues = std::nullopt,
+        const std::optional<Val>& min = std::nullopt, const std::optional<Val>& max = std::nullopt)
+        : label(label), description(description), dataType(dataType), presence(presence),
+        allowedValues(allowedValues), min(min), max(max) {}
 };
 
-struct InputSchema {
-    InputSchema() {}
-    InputSchema(std::map<std::string, Arg> _args)
-        : args(std::move(_args)) {}
+struct ArgsSchema {
+    ArgsSchema() {}
+    ArgsSchema(std::initializer_list<std::pair<std::string, Arg> > _args)
+    {
+        int order = 0;
+        for (const auto& [key, arg] : _args) {
+            Arg ordered = arg;
+            ordered.uiHints = UiHints { ++order };
+            args.emplace(key, std::move(ordered));
+        }
+    }
 
     std::map<std::string, Arg> args;
 };
 
-struct OutputSchema {
-    OutputSchema() {}
-    OutputSchema(std::map<std::string, Arg> _args)
-        : args(std::move(_args)) {}
-
-    std::map<std::string, Arg> args;
-};
+using InputSchema = ArgsSchema;
+using OutputSchema = ArgsSchema;
 
 enum class Checkable {
     No = 0,
@@ -178,15 +214,28 @@ struct Decoration {
 
 enum class Availability {
     Disabled = 0,
-    Dispatch = 1 << 0,  // If only dispatch is available, then the command is essentially internal.
+    Internal = 1 << 0,
     Shortcut = 1 << 1,
-    API = 1 << 2,
+    Extension = 1 << 2,
     MCP = 1 << 3,
 
-    All = Dispatch | Shortcut | API | MCP
+    UI = Internal | Shortcut,
+    API = Extension | MCP,
+    All = UI | API
 };
 DECLARE_FLAGS(Availabilities, Availability)
 DECLARE_OPERATORS_FOR_FLAGS(Availabilities)
+
+//! NOTE Annotation for a command action (used in MCP)
+enum class Annotation {
+    None = 0,                 // Not readonly, not destructive, not idempotent, not open world (select next...)
+    ReadOnly = 1 << 0,        // Does not change state (getters...)
+    Destructive = 1 << 1,     // Can irreversibly change state (delete, cut...)
+    Idempotent = 1 << 2,      // A repeated call produces no new effect (getters, selections...)
+    OpenWorld = 1 << 3,       // Interacts with the outside world (network, file system, open, save...)
+};
+DECLARE_FLAGS(Annotations, Annotation)
+DECLARE_OPERATORS_FOR_FLAGS(Annotations)
 
 struct CommandInfo
 {
@@ -197,6 +246,12 @@ struct CommandInfo
     OutputSchema outputSchema;
     Decoration decoration;
     Availabilities availabilities = Availability::All; // All temporarily, when we set the flag for all commands, it needs to be replaced with Availability::Disabled;
+    Annotations annotations = Annotation::Destructive;  // Default to destructive
+
+    //! NOTE There can be command aliases (typically a command without parameters)
+    // that redirect to a command with fixed parameters.
+    // command://module/somecommand/type -> command://module/somecommand?type=value
+    std::optional<std::pair<Command, Params> > redirect;
 
     CommandInfo() = default;
     CommandInfo(const Command& command, const MnemonicString& title, const TranslatableString& description,

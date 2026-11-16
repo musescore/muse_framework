@@ -22,6 +22,12 @@ muse_create_module(muse_audio_driver)
 
 target_include_directories(muse_audio_driver PRIVATE ..)
 
+# Discards the audio, used when the audio output is disabled
+target_sources(muse_audio_driver PRIVATE
+    platform/dummy/dummyaudiodriver.cpp
+    platform/dummy/dummyaudiodriver.h
+)
+
 if (OS_IS_WIN)
     target_sources(muse_audio_driver PRIVATE
         platform/win/wasapiaudiodriver.cpp

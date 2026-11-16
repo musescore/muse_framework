@@ -35,6 +35,10 @@ public:
     virtual ~ITestflowScriptsRepository() = default;
 
     virtual Scripts scripts() const = 0;
+
+    //! NOTE Accepts a path (absolute or relative to the current dir) or a script name
+    //! (with or without .js) in the scripts dirs. Returns an empty path if not found.
+    virtual io::path_t resolveScript(const QString& nameOrFile) const = 0;
 };
 }
 

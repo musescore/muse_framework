@@ -39,6 +39,7 @@ public:
     // IRpcChannel
     // msgs
     void send(const Msg& msg, const ResponseHandler& onResponse = nullptr) override;
+    void cancelAllRequests(CtxId ctxId) override;
     void onRequest(CtxId ctxId, MsgCode code, RequestHandler h) override;
     void onNotification(CtxId ctxId, MsgCode code, NotificationHandler h) override;
 
@@ -53,7 +54,12 @@ private:
     struct RpcData {
         // msgs
         std::map<MsgKey, RequestHandler> onRequests;
-        std::map<CallId, ResponseHandler> onResponses;
+        struct PendingResponse {
+            CtxId ctxId = 0;
+            ResponseHandler handler;
+        };
+
+        std::map<CallId, PendingResponse> onResponses;
         std::map<MsgKey, NotificationHandler> onNotifications;
 
         // stream

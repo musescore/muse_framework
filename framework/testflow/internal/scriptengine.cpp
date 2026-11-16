@@ -36,6 +36,8 @@ ScriptEngine::ScriptEngine(const modularity::ContextPtr& iocContext)
     : m_iocContext(iocContext)
 {
     m_engine = new QJSEngine();
+    //! NOTE Script APIs (e.g. engraving) read the version from the engine
+    m_engine->setProperty("apiversion", 2);
     m_apiengine = new JsApiEngine(m_engine, m_iocContext);
     m_api = new ScriptApi(this, m_engine);
 

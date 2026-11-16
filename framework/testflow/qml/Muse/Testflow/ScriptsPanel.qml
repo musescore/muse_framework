@@ -22,7 +22,7 @@
 
 pragma ComponentBehavior: Bound
 
-import QtQuick 
+import QtQuick
 
 import Muse.UiComponents
 import Muse.Testflow
@@ -36,7 +36,7 @@ Rectangle {
     TestflowScriptsModel {
         id: scriptsModel
 
-        onRequireStartTC: function(path) {
+        onRequireStartTC: function (path) {
             testCaseRun.run(path)
         }
     }
@@ -49,12 +49,14 @@ Rectangle {
         id: topPanel
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 48
+        height: 84
 
         FlatButton {
+            id: runAllButton
+            anchors.top: parent.top
+            anchors.topMargin: 8
             anchors.left: parent.left
             anchors.leftMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
             text: scriptsModel.isRunAllTCMode ? "Stop Run All TC" : "Run All TC"
             onClicked: {
                 if (scriptsModel.isRunAllTCMode) {
@@ -68,10 +70,53 @@ Rectangle {
         StyledDropdown {
             anchors.right: parent.right
             anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: runAllButton.verticalCenter
             model: ["Default", "Fast", "Normal", "Slow"]
             currentIndex: indexOfValue(scriptsModel.speedMode)
-            onCurrentValueChanged:scriptsModel.speedMode = currentValue
+            onActivated: function (index, value) {
+                scriptsModel.speedMode = value
+            }
+        }
+
+        Row {
+            anchors.top: runAllButton.bottom
+            anchors.topMargin: 8
+            anchors.left: parent.left
+            anchors.leftMargin: 8
+            spacing: 16
+
+            CheckBox {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "In new windows"
+                checked: scriptsModel.runInNewWindows
+                enabled: !scriptsModel.isRunAllTCMode
+                onClicked: scriptsModel.runInNewWindows = !checked
+            }
+
+            StyledDropdown {
+                width: 64
+                anchors.verticalCenter: parent.verticalCenter
+                model: [1, 2, 3, 4, 6, 8]
+                currentIndex: indexOfValue(scriptsModel.jobs)
+                enabled: scriptsModel.runInNewWindows && !scriptsModel.isRunAllTCMode
+                onActivated: function (index, value) {
+                    scriptsModel.jobs = value
+                }
+            }
+
+            StyledTextLabel {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "at once"
+            }
+
+            CheckBox {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Audio off"
+                checked: scriptsModel.audioDisabled
+                //! NOTE The audio driver is chosen at the application start, so only for new windows
+                enabled: scriptsModel.runInNewWindows && !scriptsModel.isRunAllTCMode
+                onClicked: scriptsModel.audioDisabled = !checked
+            }
         }
     }
 

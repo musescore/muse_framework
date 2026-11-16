@@ -99,7 +99,7 @@ muse::Ret ExtensionsProvider::perform(const ExtensionUri& uri, const ExtensionAc
     }
 
     switch (a.type) {
-    case Type::Form: {
+    case ExtensionType::Form: {
         if (a.docked) {
             m_dockRequested.send(uri, actionCode);
             return muse::make_ok();
@@ -110,7 +110,7 @@ muse::Ret ExtensionsProvider::perform(const ExtensionUri& uri, const ExtensionAc
         q.addParam("modal", Val(a.modal));
         return interactive()->openSync(q).ret;
     } break;
-    case Type::Macros:
+    case ExtensionType::Macros:
         return run(a, m);
     default:
         break;

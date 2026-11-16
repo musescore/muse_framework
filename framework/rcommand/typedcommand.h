@@ -19,8 +19,33 @@
 
 #pragma once
 
+#include <concepts>
 #include <tuple>
+#include <type_traits>
+
+#include "global/stringutils.h"
+
 #include "commandtypes.h"
+
+#include "log.h"
+
+//! NOTE Convenience macro for declaring a static const inline auto property.
+#define cprop_decl static const inline auto
+
+/* Example of a typed command
+
+struct SelectCommand {
+    cprop_decl id = Command("command://somemodule/select");
+    cprop_decl title = MnemonicString("action", "Select");
+    cprop_decl description = TranslatableString("action", "Select items by target");
+    cprop_decl availabilities = Availability::API;
+    cprop_decl annotations = Annotation::None;
+    cprop_decl input = FieldsScheme {
+        Field{ "target", &SelectCommand::target, "Selection target" },
+        Field{ "play-mode", &SelectCommand::playMode, "Play mode", Presence::Optional },
+    };
+};
+*/
 
 namespace muse::rcommand {
 // concepts --------
@@ -32,6 +57,11 @@ concept TypedCommand = requires {
     { C::title } -> std::convertible_to<const MnemonicString&>;
     { C::description } -> std::convertible_to<const TranslatableString&>;
 };
+
+//! NOTE Same as `TypedCommand`, but accepts cv/ref qualified types as well,
+//! for example the type of an expression or the result of `decltype()`.
+template<typename T>
+concept TypedCommandType = TypedCommand<std::remove_cvref_t<T> >;
 
 template<typename C>
 concept HasInput = TypedCommand<C> && requires(const C& c) {
@@ -54,36 +84,122 @@ concept HasAvailabilities = TypedCommand<C> && requires(const C& c) {
     { C::availabilities } -> std::convertible_to<const Availabilities&>;
 };
 
+// For bug detection
+template<typename C>
+concept HasAvailability = TypedCommand<C> && requires(const C& c) {
+    C::availability;
+};
+
+template<typename C>
+concept HasAnnotations = TypedCommand<C> && requires(const C& c) {
+    { C::annotations } -> std::convertible_to<const Annotations&>;
+};
+
+//! NOTE An alias command delegates to another command and may fix some of its input values:
+//!     `static const inline auto redirect = SomeCommand { ... };`
+template<typename C>
+concept HasRedirect = TypedCommand<C>
+                      //! NOTE `decltype(C::redirect)` is cv-qualified (`const SomeCommand`),
+                      //! that's why we compare through `TypedCommandType`
+                      && TypedCommandType<decltype(C::redirect)>
+                      //! NOTE it must be a static data member, not a field of an instance
+                      && !std::is_member_pointer_v<decltype(&C::redirect)>;
+
 // *INDENT-ON*
 
 // data fields --------
+enum class ConvertParamsPolicy {
+    StrictCompliance,
+    WarningUnknown,
+    IgnoreUnknown,
+};
 
-enum class FieldType {
-    Required,
-    Optional,
+struct ConvertParamsResult {
+    Ret ret;
+    std::vector<std::string> unknownParams; // Available in params, not in the schema
+    std::vector<std::string> missingParams; // Required, but not available
+    std::vector<std::string> invalidParams; // Available, but not converted to the target type
+
+    operator bool() const
+    {
+        return ret.success();
+    }
+
+    void applyPolicy(ConvertParamsPolicy policy)
+    {
+        // missing/invalid params are always an error,
+        // unknown params are an error only for StrictCompliance
+        const bool ok = missingParams.empty()
+                        && invalidParams.empty()
+                        && (policy != ConvertParamsPolicy::StrictCompliance || unknownParams.empty());
+
+        ret = ok ? make_ok() : muse::make_ret(Ret::Code::BadArgs, infoAsString());
+    }
+
+    void printResult(ConvertParamsPolicy policy) const
+    {
+        if (ret) {
+            if (policy == ConvertParamsPolicy::WarningUnknown) {
+                if (!unknownParams.empty()) {
+                    LOGW() << "convert success, but unknown params: " << strings::join(unknownParams, ", ");
+                    return;
+                }
+            }
+            LOGD() << "convert success, info: " + infoAsString();
+        } else {
+            LOGE() << "convert failed, info: " + infoAsString();
+        }
+    }
+
+    std::string infoAsString(const std::vector<std::string>& info) const
+    {
+        return info.empty() ? "none" : strings::join(info, ", ");
+    }
+
+    std::string infoAsString() const
+    {
+        std::stringstream ss;
+        ss << "unknown params: " << infoAsString(unknownParams)
+           << ", missing params: " << infoAsString(missingParams)
+           << ", invalid params: " << infoAsString(invalidParams);
+        return ss.str();
+    }
 };
 
 template<typename S, typename T>
 struct Field {
     std::string_view key;
     T S::* member = nullptr;
-    std::string_view description;
+    TranslatableString label;
+    TranslatableString description;
     std::optional<T> min;
     std::optional<T> max;
-    FieldType type = FieldType::Required;
+    Presence presence = Presence::Required;
 
-    constexpr Field(std::string_view key, T S::* member, std::string_view description
-                    , FieldType type = FieldType::Required)
-        : key(key), member(member), description(description), type(type) {}
+    Field(std::string_view key, T S::* member, std::string_view description
+          , Presence presence = Presence::Required)
+        : key(key), member(member), description(TranslatableString::untranslatable(String::fromUtf8(description))),
+        presence(presence) {}
 
-    constexpr Field(std::string_view key, T S::* member, std::string_view description,
-                    const T& min, const T& max, FieldType type = FieldType::Required)
-        : key(key), member(member), description(description), min(min), max(max), type(type) {}
+    Field(std::string_view key, T S::* member, std::string_view description,
+          const T& min, const T& max, Presence presence = Presence::Required)
+        : key(key), member(member), description(TranslatableString::untranslatable(String::fromUtf8(description))),
+        min(min), max(max), presence(presence) {}
+
+    Field(std::string_view key, T S::* member, const TranslatableString& label, const TranslatableString& description
+          , Presence presence = Presence::Required)
+        : key(key), member(member), label(label), description(description), presence(presence) {}
+
+    Field(std::string_view key, T S::* member, const TranslatableString& label, const TranslatableString& description,
+          const T& min, const T& max, Presence presence = Presence::Required)
+        : key(key), member(member), label(label), description(description), min(min), max(max), presence(presence) {}
 };
 
-// enum contract
+template<typename S, typename ... T>
+using FieldsScheme = std::tuple<Field<S, T>...>;
+
 template<typename E>
-struct Contract;
+struct EnumContract;
 
 namespace internal {
 template<typename T>
@@ -105,8 +221,8 @@ DataType dataType()
         return DataType::Double;
     } else if constexpr (std::is_same<T, std::string>::value) {
         return DataType::String;
-    } else if constexpr (std::is_enum<T>::value) {  // enum as string!!
-        return DataType::String;
+    } else if constexpr (std::is_enum<T>::value) {
+        return DataType::Enum;
     } else if constexpr (std::is_same<T, std::vector<T> >::value) {
         return DataType::List;
     } else if constexpr (std::is_same<T, std::map<std::string, T> >::value) {
@@ -121,7 +237,7 @@ template<typename T>
 Val toVal(const T& val)
 {
     if constexpr (std::is_enum<T>::value) {
-        return Val(Contract<T>::str_val(val));
+        return Val(EnumContract<T>::str_val(val));
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         return Val(static_cast<int>(val));
     } else if constexpr (std::is_same<T, uint64_t>::value) {
@@ -143,7 +259,7 @@ template<typename T>
 std::optional<T> fromVal(const Val& v)
 {
     if constexpr (std::is_enum<T>::value) {
-        return Contract<T>::enum_val(v.toString());
+        return EnumContract<T>::enum_val(v.toString());
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         auto opt = v.toType<int>();
         if (opt) {
@@ -182,17 +298,89 @@ bool fromVal(S& o, T S::* member, const Val& v)
 template<typename S, typename T>
 bool fromVal(S& o, const Field<S, T>& f, const Val& v)
 {
-    if (v.isNull()) {
-        return (f.type == FieldType::Required) ? false : true;
-    } else {
-        return fromVal(o, f.member, v);
+    return fromVal(o, f.member, v);
+}
+
+template<typename T>
+bool isWithinBounds(const T& value, const std::optional<T>& min, const std::optional<T>& max)
+{
+    //! NOTE The comparisons are negated on purpose.
+    //! For NaN both `value < min` and `value > max` are false, so checking only
+    //! "below the minimum" / "above the maximum" would let NaN through.
+    //! Requiring the value to be inside the bounds rejects it, because `NaN >= min` is false.
+    if (min && !(value >= *min)) {
+        return false;
     }
+    if (max && !(value <= *max)) {
+        return false;
+    }
+    return true;
 }
 
 template<typename S, typename T>
-Arg makeArg(const Field<S, T>& f)
+void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResult& res)
 {
-    Arg arg(dataType<T>(), String::fromUtf8(f.description));
+    if (params.find(f.key) == params.end()) {
+        if (f.presence == Presence::Required) {
+            res.missingParams.push_back(std::string(f.key));
+        }
+        return;
+    }
+
+    const Val& v = params.at(f.key);
+
+    if (v.isNull()) {
+        if (f.presence == Presence::Required) {
+            res.invalidParams.push_back(std::string(f.key));
+        }
+        return;
+    }
+
+    bool ok = fromVal(o, f.member, v);
+    if (!ok) {
+        res.invalidParams.push_back(std::string(f.key));
+        return;
+    }
+
+    if (!isWithinBounds(o.*f.member, f.min, f.max)) {
+        res.invalidParams.push_back(std::string(f.key));
+    }
+}
+
+template<typename F>
+constexpr auto keysOf(const F& fields)
+{
+    std::array<std::string_view, std::tuple_size_v<F> > keys{};
+    std::apply([&keys](const auto&... f) {
+        std::size_t i = 0;
+        ((keys[i++] = f.key), ...);
+    }, fields);
+    return keys;
+}
+
+template<typename F>
+std::vector<std::string> unknownKeys(const Params& params, const F& fields)
+{
+    const auto keys = keysOf(fields);
+    std::vector<std::string> unknown;
+    for (const auto& [key, value] : params) {
+        if (std::find(keys.begin(), keys.end(), std::string_view(key)) == keys.end()) {
+            unknown.push_back(key);
+        }
+    }
+    return unknown;
+}
+
+template<typename S, typename T>
+Arg makeArg(const Field<S, T>& f, int order)
+{
+    Arg arg(dataType<T>(), f.label, f.description, f.presence);
+    arg.uiHints = UiHints { order };
+
+    if constexpr (std::is_enum<T>::value) {
+        arg.allowedValues = toValList(EnumContract<T>::str_vals());
+    }
+
     if (f.min) {
         arg.min = toVal(*f.min);
     }
@@ -201,28 +389,83 @@ Arg makeArg(const Field<S, T>& f)
     }
     return arg;
 }
-} // namespace internal
+
+template<typename O, typename F>
+Params toParams(const O& o, const F& fields)
+{
+    Params params;
+    std::apply([&](const auto&... f) {
+        (params.emplace(f.key, internal::toVal(o, f.member)), ...);
+    }, fields);
+    return params;
+}
+
+template<typename O, typename F>
+ConvertParamsResult fromParams(const Params& params, O& o, const F& fields, ConvertParamsPolicy policy)
+{
+    ConvertParamsResult res;
+    std::apply([&](const auto&... f) {
+        ((internal::convert(o, f, params, res)), ...);
+    }, fields);
+
+    res.unknownParams = internal::unknownKeys(params, fields);
+
+    res.applyPolicy(policy);
+
+    res.printResult(policy);
+
+    return res;
+}
+}     // namespace internal
+
+// dispatch (params) --------
+template<HasInput C>
+Params toInputParams(const C& o)
+{
+    return internal::toParams(o, C::input);
+}
+
+template<HasInput C>
+ConvertParamsResult fromInputParams(const Params& params, C& o, ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
+{
+    return internal::fromParams(params, o, C::input, policy);
+}
+
+template<HasOutput C>
+Params toOutputParams(const typename C::Output& o)
+{
+    return internal::toParams(o, C::output);
+}
+
+template<HasOutput C>
+ConvertParamsResult fromOutputParams(const Params& params, typename C::Output& o,
+                                     ConvertParamsPolicy policy = ConvertParamsPolicy::StrictCompliance)
+{
+    return internal::fromParams(params, o, C::output, policy);
+}
 
 // command info --------
 
 template<HasInput C>
 InputSchema inputSchema()
 {
-    std::map<std::string, Arg> args;
+    InputSchema schema;
+    int order = 0;
     std::apply([&](const auto&... f) {
-        (args.emplace(f.key, internal::makeArg(f)), ...);
+        (schema.args.emplace(f.key, internal::makeArg(f, ++order)), ...);
     }, C::input);
-    return InputSchema(std::move(args));
+    return schema;
 }
 
 template<HasOutput C>
 OutputSchema outputSchema()
 {
-    std::map<std::string, Arg> args;
+    OutputSchema schema;
+    int order = 0;
     std::apply([&](const auto&... f) {
-        (args.emplace(f.key, internal::makeArg(f)), ...);
+        (schema.args.emplace(f.key, internal::makeArg(f, ++order)), ...);
     }, C::output);
-    return OutputSchema(std::move(args));
+    return schema;
 }
 
 template<TypedCommand C>
@@ -241,50 +484,24 @@ CommandInfo makeCommandInfo()
     if constexpr (HasDecoration<C>) {
         info.decoration = C::decoration;
     }
+
+    static_assert(!HasAvailability<C>, "`availability` is not correct, use `availabilities` instead");
     if constexpr (HasAvailabilities<C>) {
         info.availabilities = C::availabilities;
     }
+
+    if constexpr (HasAnnotations<C>) {
+        info.annotations = C::annotations;
+    }
+
+    if constexpr (HasRedirect<C>) {
+        Params params;
+        using Redirect = std::remove_cvref_t<decltype(C::redirect)>;
+        if constexpr (HasInput<Redirect>) {
+            params = toInputParams(C::redirect);
+        }
+        info.redirect = std::make_pair(C::redirect.id, params);
+    }
     return info;
-}
-
-// dispatch (params) --------
-template<HasInput C>
-Params toInputParams(const C& o)
-{
-    Params params;
-    std::apply([&](const auto&... f) {
-        (params.emplace(f.key, internal::toVal(o, f.member)), ...);
-    }, C::input);
-    return params;
-}
-
-template<HasInput C>
-bool fromInputParams(const Params& params, C& o)
-{
-    bool ok = true;
-    std::apply([&](const auto&... f) {
-        ((ok = ok && internal::fromVal(o, f, params.at(f.key))), ...);
-    }, C::input);
-    return ok;
-}
-
-template<HasOutput C>
-Params toOutputParams(const typename C::Output& o)
-{
-    Params params;
-    std::apply([&](const auto&... f) {
-        (params.emplace(f.key, internal::toVal(o, f.member)), ...);
-    }, C::output);
-    return params;
-}
-
-template<HasOutput C>
-bool fromOutputParams(const Params& params, typename C::Output& o)
-{
-    bool ok = true;
-    std::apply([&](const auto&... f) {
-        ((ok = ok && internal::fromVal(o, f, params.at(f.key))), ...);
-    }, C::output);
-    return ok;
 }
 }

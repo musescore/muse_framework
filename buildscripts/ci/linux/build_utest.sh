@@ -43,18 +43,14 @@ cat $BUILD_TOOLS/environment.sh
 source $BUILD_TOOLS/environment.sh
 
 TESTS_ENABLE_CODE_COVERAGE=OFF
-TESTS_COMPILE_USE_UNITY=ON
 
 if [[ "$ENABLE_CODE_COVERAGE" == "true" ]]; then
     TESTS_ENABLE_CODE_COVERAGE=ON
-    TESTS_COMPILE_USE_UNITY=OFF
-else
-    TESTS_ENABLE_CODE_COVERAGE=OFF
-    TESTS_COMPILE_USE_UNITY=ON
 fi
 
 echo "=== BUILD ==="
 
+MUSE_UNIT_TESTS_ENABLE_CODE_COVERAGE=$TESTS_ENABLE_CODE_COVERAGE \
 bash ./ninja_build_utests.sh -t installdebug
 
 df -h .

@@ -38,6 +38,7 @@ public:
         : Contextable(iocCtx) {}
 
     Scripts scripts() const override;
+    io::path_t resolveScript(const QString& nameOrFile) const override;
 };
 }
 

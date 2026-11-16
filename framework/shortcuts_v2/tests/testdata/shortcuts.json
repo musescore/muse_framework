@@ -1,22 +1,28 @@
-{
-    "TEST": [
-        {
-            "command": "test://a",
-            "sequences": ["Ctrl+A"]
-        },
-        {
-            "command": "test://b",
-            "sequences": ["Ctrl+B"]
-        },
-        {
-            "command": "test://c",
-            "sequences": ["1", "Num+1"]
-        }
-    ],
-    "OTHER": [
-        {
-            "command": "test://d",
-            "sequences": ["D"]
-        }
-    ]
-}
+[
+    {
+        "scope": "TEST",
+        "shortcuts": [
+            {
+                "command": "test://a",
+                "sequences": ["Ctrl+A"]
+            },
+            {
+                "command": "test://b",
+                "sequences": ["Ctrl+B"]
+            },
+            {
+                "command": "test://c",
+                "sequences": ["1", "Num+1"]
+            }
+        ]
+    },
+    {
+        "scope": "OTHER",
+        "shortcuts": [
+            {
+                "command": "test://d",
+                "sequences": ["D"]
+            }
+        ]
+    }
+]

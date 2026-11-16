@@ -39,7 +39,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
             { "open", Arg(DataType::Bool, u"Open") }
         }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo {
         DOCK_TOGGLE_COMMAND,
@@ -47,7 +47,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("dock", "Dock: Toggle dock"),
         InputSchema({ { "dock_name", Arg(DataType::String, u"Dock name") } }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo {
         DOCK_TOGGLE_FLOATING_COMMAND,
@@ -55,7 +55,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         TranslatableString("dock", "Dock: Toggle dock floating"),
         InputSchema({ { "dock_name", Arg(DataType::String, u"Dock name") } }),
         Decoration(),
-        Availability::Dispatch
+        Availability::Internal
     },
     CommandInfo {
         DOCK_RESTORE_DEFAULT_LAYOUT_COMMAND,

@@ -35,15 +35,26 @@ FileStream::FileStream(const path_t& filePath)
 
 FileStream::~FileStream()
 {
-    doClose();
+    closeStream();
 }
 
 void FileStream::doClose()
 {
-    if (m_streamId != INVALID_STREAM_ID) {
-        fileSystem()->closeStream(m_streamId);
-        m_streamId = INVALID_STREAM_ID;
+    Ret ret = closeStream();
+    if (!ret) {
+        setError(ret.code(), ret.text());
     }
+}
+
+Ret FileStream::closeStream()
+{
+    if (m_streamId == INVALID_STREAM_ID) {
+        return make_ok();
+    }
+
+    Ret ret = fileSystem()->closeStream(m_streamId);
+    m_streamId = INVALID_STREAM_ID;
+    return ret;
 }
 
 const path_t& FileStream::filePath() const
@@ -53,10 +64,7 @@ const path_t& FileStream::filePath() const
 
 bool FileStream::doOpen(OpenMode m)
 {
-    if (m_streamId != INVALID_STREAM_ID) {
-        fileSystem()->closeStream(m_streamId);
-        m_streamId = INVALID_STREAM_ID;
-    }
+    closeStream();
 
     io::OpenMode fsMode;
     switch (m) {

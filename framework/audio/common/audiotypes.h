@@ -311,12 +311,12 @@ inline bool hasNativeEditorSupport(const AudioResourceMeta& meta)
     return boolAttribute(meta, HAS_NATIVE_EDITOR_SUPPORT_ATTRIBUTE);
 }
 
-static const std::map<AudioResourceType, QString> RESOURCE_TYPE_MAP = {
-    { AudioResourceType::Undefined, "undefined" },
-    { AudioResourceType::MuseSamplerSoundPack, "muse_sampler_sound_pack" },
-    { AudioResourceType::FluidSoundfont, "fluid_soundfont" },
-    { AudioResourceType::VstPlugin, "vst_plugin" },
-    { AudioResourceType::NativeEffect, "muse_plugin" },
+static const std::map<AudioResourceType, String> RESOURCE_TYPE_MAP = {
+    { AudioResourceType::Undefined, u"undefined" },
+    { AudioResourceType::MuseSamplerSoundPack, u"muse_sampler_sound_pack" },
+    { AudioResourceType::FluidSoundfont, u"fluid_soundfont" },
+    { AudioResourceType::VstPlugin, u"vst_plugin" },
+    { AudioResourceType::NativeEffect, u"muse_plugin" },
 };
 
 static const AudioResourceId MUSE_REVERB_ID("Muse Reverb");

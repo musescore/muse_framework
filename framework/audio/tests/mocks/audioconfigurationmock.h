@@ -36,6 +36,9 @@ public:
     MOCK_METHOD(void, setCurrentAudioDriverName, (const std::string&), (override));
     MOCK_METHOD(async::Notification, currentAudioDriverChanged, (), (const, override));
 
+    MOCK_METHOD(bool, isOutputDisabled, (), (const, override));
+    MOCK_METHOD(void, setOutputDisabled, (bool), (override));
+
     MOCK_METHOD(std::string, audioOutputDeviceId, (), (const, override));
     MOCK_METHOD(void, setAudioOutputDeviceId, (const std::string&), (override));
     MOCK_METHOD(async::Notification, audioOutputDeviceIdChanged, (), (const, override));

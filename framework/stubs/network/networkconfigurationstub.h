@@ -28,5 +28,11 @@ class NetworkConfigurationStub : public INetworkConfiguration
 {
 public:
     RequestHeaders defaultHeaders(const std::string& userAgentName = {}) const override;
+
+    bool isOffline() const override;
+    void setOffline(bool offline) override;
+
+private:
+    bool m_offline = false;
 };
 }

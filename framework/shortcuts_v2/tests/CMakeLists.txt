@@ -23,6 +23,7 @@ set(MODULE_TEST muse_shortcuts_tests)
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/shortcutsconfigurationmock.h
     ${CMAKE_CURRENT_LIST_DIR}/commandshortcutsregister_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/shortcutsresolver_tests.cpp
 )
 
 set(MODULE_TEST_LINK

@@ -44,6 +44,10 @@ public:
     virtual void setCurrentAudioDriverName(const std::string& name) = 0;
     virtual async::Notification currentAudioDriverChanged() const = 0;
 
+    //! NOTE No audio device is used, the audio is discarded (e.g. for automated tests), is not saved
+    virtual bool isOutputDisabled() const = 0;
+    virtual void setOutputDisabled(bool disabled) = 0;
+
     virtual std::string audioOutputDeviceId() const = 0;
     virtual void setAudioOutputDeviceId(const std::string& deviceId) = 0;
     virtual async::Notification audioOutputDeviceIdChanged() const = 0;

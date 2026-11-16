@@ -161,7 +161,7 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
 
     Manifest m;
     m.uri = makeUri(rootPath, path);
-    m.type = Type::Macros;
+    m.type = ExtensionType::Macros;
     m.apiversion = 1;
     m.legacyPlugin = true;
 
@@ -241,7 +241,7 @@ Manifest ExtPluginsLoader::parseManifest(const io::path_t& rootPath, const io::p
             String pluginType = dropQuotes(line.mid(11).trimmed());
             docked = pluginType == "dock";
             if (pluginType == "dialog" || pluginType == "dock") {
-                m.type = Type::Form;
+                m.type = ExtensionType::Form;
             }
             ++propertiesFound;
         } else if (line.startsWith(u"categoryCode:")) {

@@ -97,7 +97,7 @@ void WebRpcChannel::process()
     //noop
 }
 
-void WebRpcChannel::send(const Msg& msg, const Handler& onResponse)
+void WebRpcChannel::send(const Msg& msg, const ResponseHandler& onResponse)
 {
     RPCLOG() << "ctxId: " << msg.ctxId
              << ", callId: " << msg.callId
@@ -117,10 +117,21 @@ void WebRpcChannel::send(const Msg& msg, const Handler& onResponse)
     }
 
     if (onResponse) {
-        m_data.onResponses[msg.callId] = onResponse;
+        m_data.onResponses[msg.callId] = { msg.ctxId, onResponse };
     }
 
     rpcSend(&buffer[0], buffer.size());
+}
+
+void WebRpcChannel::cancelAllRequests(CtxId ctxId)
+{
+    std::erase_if(m_data.onResponses, [ctxId](const auto& pair) {
+        return pair.second.ctxId == ctxId;
+    });
+
+    std::erase_if(m_data.streams, [ctxId](const auto& pair) {
+        return pair.second->ctxId() == ctxId;
+    });
 }
 
 void WebRpcChannel::receive(const ByteArray& data)
@@ -148,10 +159,6 @@ void WebRpcChannel::receive(const Msg& msg)
              << ", type: " << to_string(msg.type)
              << ", data.size: " << msg.data.size();
 
-    // all
-    if (m_data.listenerAll) {
-        m_data.listenerAll(msg);
-    }
     switch (msg.type) {
     case MsgType::Stream: {
         auto it = m_data.onStreams.find(msg.callId);
@@ -160,13 +167,16 @@ void WebRpcChannel::receive(const Msg& msg)
         }
     } break;
     case MsgType::Request: {
-        auto it = m_data.onRequests.find(msg.code);
+        auto it = m_data.onRequests.find({ msg.ctxId, msg.code });
         if (it != m_data.onRequests.end() && it->second) {
-            it->second(msg);
+            Msg resp = it->second(msg);
+            if (resp.type != MsgType::ResponseDelayed) {
+                send(resp);  // send response
+            }
         }
     } break;
     case MsgType::Notification: {
-        auto it = m_data.onNotifications.find(msg.code);
+        auto it = m_data.onNotifications.find({ msg.ctxId, msg.code });
         if (it != m_data.onNotifications.end() && it->second) {
             it->second(msg);
         }
@@ -174,10 +184,11 @@ void WebRpcChannel::receive(const Msg& msg)
     case MsgType::Response: {
         auto it = m_data.onResponses.find(msg.callId);
         if (it != m_data.onResponses.end()) {
-            if (it->second) {
-                it->second(msg);
-            }
+            ResponseHandler handler = std::move(it->second.handler);
             m_data.onResponses.erase(it);
+            if (handler) {
+                handler(msg);
+            }
         }
     } break;
     default: {
@@ -187,19 +198,14 @@ void WebRpcChannel::receive(const Msg& msg)
     }
 }
 
-void WebRpcChannel::onRequest(MsgCode code, Handler h)
+void WebRpcChannel::onRequest(CtxId ctxId, MsgCode code, RequestHandler h)
 {
-    m_data.onRequests[code] = h;
+    m_data.onRequests[{ ctxId, code }] = h;
 }
 
-void WebRpcChannel::onNotification(MsgCode code, Handler h)
+void WebRpcChannel::onNotification(CtxId ctxId, MsgCode code, NotificationHandler h)
 {
-    m_data.onNotifications[code] = h;
-}
-
-void WebRpcChannel::listenAll(Handler h)
-{
-    m_data.listenerAll = h;
+    m_data.onNotifications[{ ctxId, code }] = h;
 }
 
 void WebRpcChannel::addStream(std::shared_ptr<IRpcStream> s)

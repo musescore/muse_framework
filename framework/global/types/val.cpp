@@ -126,8 +126,22 @@ std::optional<int> Val::doToInt() const
     switch (valueType()) {
     case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
     case Type::Int: return std::get<int>(m_val);
-    case Type::Int64: return static_cast<int>(std::get<int64_t>(m_val));
-    case Type::Double: return static_cast<int>(std::get<double>(m_val));
+    case Type::Int64: {
+        const int64_t value = std::get<int64_t>(m_val);
+        if (!(value >= std::numeric_limits<int>::min() && value <= std::numeric_limits<int>::max())) {
+            return std::nullopt;
+        }
+        return static_cast<int>(value);
+    }
+    case Type::Double: {
+        const double value = std::get<double>(m_val);
+        //! NOTE NaN fails both comparisons, so it is rejected as well.
+        if (!(value > static_cast<double>(std::numeric_limits<int>::min()) - 1.0
+              && value < static_cast<double>(std::numeric_limits<int>::max()) + 1.0)) {
+            return std::nullopt;
+        }
+        return static_cast<int>(value);
+    }
     case Type::String: {
         std::string str = std::get<std::string>(m_val);
         if (str == VAL_TRUE) {
@@ -354,7 +368,14 @@ Val::Val(const QString& str)
     : m_val(str.toStdString()), m_type(Type::String) {}
 
 Val::Val(const QColor& color)
-    : m_val(color.name().toStdString()), m_type(Type::Color) {}
+    : m_val(
+        (color.alpha() == 255
+         ? color.name()
+         : color.name(QColor::HexArgb)
+        ).toStdString()
+        ),
+    m_type(Type::Color)
+{}
 
 QString Val::toQString() const
 {

@@ -631,6 +631,24 @@ JsonArray& JsonArray::append(const JsonObject& v)
     return *this;
 }
 
+JsonArray JsonArray::fromValList(const ValList& valList)
+{
+    JsonArray array;
+    for (const auto& item : valList) {
+        array.append(JsonValue::fromVal(item));
+    }
+    return array;
+}
+
+JsonArray JsonArray::fromStringList(const std::vector<std::string>& stringList)
+{
+    JsonArray array;
+    for (const auto& item : stringList) {
+        array.append(JsonValue(item));
+    }
+    return array;
+}
+
 JsonValue JsonArray::operator [](size_t i) const
 {
     return at(i);

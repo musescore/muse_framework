@@ -22,10 +22,19 @@
 
 #include "qmlnetworkaccessmanagerfactory.h"
 
+#include "network/offlinenetworkreply.h"
+
+#include "log.h"
+
 using namespace muse::ui;
 
 QNetworkReply* QmlNetworkAccessManager::createRequest(Operation operation, const QNetworkRequest& originalRequest, QIODevice* outgoingData)
 {
+    if (networkConfiguration()->isOffline() && muse::network::isNetworkUrl(originalRequest.url())) {
+        LOGW() << "offline mode, the request is blocked: " << originalRequest.url().toString();
+        return new muse::network::OfflineNetworkReply(operation, originalRequest, this);
+    }
+
     QNetworkRequest request(originalRequest);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, true);
 

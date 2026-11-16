@@ -54,6 +54,7 @@ public:
     void onDeinit() override;
 
     void setLoggerLevel(const muse::logger::Level& level);
+    void setUserDataDir(const io::path_t& dir);
 
     modularity::IContextSetup* newContext(const muse::modularity::ContextPtr& ctx) const override;
 

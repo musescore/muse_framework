@@ -26,6 +26,8 @@
 #include "common/iaudiotaskscheduler.h"
 #include "global/async/async.h"
 
+#include "audio/driver/platform/dummy/dummyaudiodriver.h"
+
 #include "log.h"
 
 using namespace muse;
@@ -94,6 +96,15 @@ std::string AudioDriverController::currentAudioDriverName() const
     return configuration()->currentAudioDriverName();
 }
 
+IAudioDriverPtr AudioDriverController::createDriver(const std::string& name) const
+{
+    if (configuration()->isOutputDisabled()) {
+        return audioDriverFactory()->createDriver(DummyAudioDriver::NAME);
+    }
+
+    return audioDriverFactory()->createDriver(name);
+}
+
 void AudioDriverController::changeCurrentAudioDriver(const std::string& name)
 {
     IF_ASSERT_FAILED(m_audioDriver) {
@@ -104,7 +115,7 @@ void AudioDriverController::changeCurrentAudioDriver(const std::string& name)
         m_audioDriver->close();
     }
 
-    IAudioDriverPtr driver = audioDriverFactory()->createDriver(name);
+    IAudioDriverPtr driver = createDriver(name);
     setNewDriver(driver);
     m_audioDriver->init();
     LOGI() << "Used audio driver: " << m_audioDriver->name();
@@ -152,7 +163,7 @@ bool AudioDriverController::open(const IAudioDriver::Spec& spec, IAudioDriver::S
     m_callback = spec.callback;
 
     const std::string currentAudioDriverName = configuration()->currentAudioDriverName();
-    IAudioDriverPtr driver = audioDriverFactory()->createDriver(currentAudioDriverName);
+    IAudioDriverPtr driver = createDriver(currentAudioDriverName);
     driver->init();
     setNewDriver(driver);
 
@@ -300,7 +311,7 @@ bool AudioDriverController::switchToDefaultAudioDriver(IAudioDriver::Spec* activ
 
     LOGW() << "Switching from " << currentAudioDriverName << " to default audio driver: " << defaultAudioDriverName;
 
-    IAudioDriverPtr defaultDriver = audioDriverFactory()->createDriver(defaultAudioDriverName);
+    IAudioDriverPtr defaultDriver = createDriver(defaultAudioDriverName);
     defaultDriver->init();
     setNewDriver(defaultDriver);
 

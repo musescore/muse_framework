@@ -29,6 +29,8 @@
 
 #include "modularity/ioc.h"
 #include "actions/iactionsdispatcher.h"
+#include "rcommand/icommanddispatcher.h"
+#include "rcommand/icommandsstate.h"
 #include "../../itestflow.h"
 #include "../../itestflowconfiguration.h"
 #include "interactive/iinteractive.h"
@@ -44,6 +46,8 @@ class TestflowApi : public muse::api::ApiObject, public async::Asyncable
     GlobalInject<io::IFileSystem> fileSystem;
     ContextInject<testflow::ITestflow> testflow = { this };
     ContextInject<actions::IActionsDispatcher> dispatcher = { this };
+    ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
+    ContextInject<rcommand::ICommandsState> commandsState = { this };
     ContextInject<IInteractive> interactive = { this };
     ContextInject<muse::ui::IMainWindow> mainWindow = { this };
 
@@ -57,6 +61,9 @@ public:
     Q_INVOKABLE void abort();
     Q_INVOKABLE void error(const QString& msg); //! TODO At the moment same as fatal, but should be not fatal error
     Q_INVOKABLE void fatal(const QString& msg);
+
+    Q_INVOKABLE bool isCommandEnabled(const QString& command) const;
+    Q_INVOKABLE bool isCommandChecked(const QString& command) const;
 
     Q_INVOKABLE bool openProject(const QString& name);
     Q_INVOKABLE void saveProject(const QString& name = QString());

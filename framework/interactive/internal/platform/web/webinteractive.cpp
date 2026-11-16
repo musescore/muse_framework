@@ -361,37 +361,22 @@ RetVal<bool> WebInteractive::isCurrentUriDialog() const
     return m_origin->isCurrentUriDialog();
 }
 
+async::Notification WebInteractive::currentUriAboutToBeChanged() const
+{
+    return m_origin->currentUriAboutToBeChanged();
+}
+
 std::vector<Uri> WebInteractive::stack() const
 {
     return m_origin->stack();
 }
 
-Ret WebInteractive::openUrl(const std::string& url) const
+QWindow* WebInteractive::topWindow() const
 {
-    return openUrl(QUrl(QString::fromStdString(url)));
+    return m_origin->topWindow();
 }
 
-Ret WebInteractive::openUrl(const QUrl& url) const
+bool WebInteractive::topWindowIsWidget() const
 {
-    return m_origin->openUrl(url);
-}
-
-Ret WebInteractive::isAppExists(const std::string& appIdentifier) const
-{
-    return m_origin->isAppExists(appIdentifier);
-}
-
-Ret WebInteractive::canOpenApp(const UriQuery& uri) const
-{
-    return m_origin->canOpenApp(uri);
-}
-
-async::Promise<Ret> WebInteractive::openApp(const UriQuery& uri) const
-{
-    return m_origin->openApp(uri);
-}
-
-Ret WebInteractive::revealInFileBrowser(const io::path_t& filePath) const
-{
-    return m_origin->revealInFileBrowser(filePath);
+    return m_origin->topWindowIsWidget();
 }
