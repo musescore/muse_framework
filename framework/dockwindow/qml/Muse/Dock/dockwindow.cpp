@@ -476,12 +476,14 @@ void DockWindow::handleUnknownDock(const DockPageView* page, DockBase* unknownDo
 
     auto* holderDockWidgetView = qobject_cast<KDDockWidgets::QtQuick::DockWidget*>(
         KDDockWidgets::QtQuick::asQQuickItem(holder->dockWidget()));
-    if (holderDockWidgetView) {
-        KDDockWidgets::Core::Group* group = holderDockWidgetView->group();
-        if (group) {
-            group->addTab(unknownPanel->dockWidget());
-        }
+    KDDockWidgets::Core::Group* group = holderDockWidgetView ? holderDockWidgetView->group() : nullptr;
+    if (!group) {
+        holder->close();
+        addDock(unknownDock, unknownDock->location(), page->centralDock());
+        return;
     }
+
+    group->addTab(unknownPanel->dockWidget());
 
     holder->close();
 
