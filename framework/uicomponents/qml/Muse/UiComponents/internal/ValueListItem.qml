@@ -49,6 +49,8 @@ ListItemBlank {
     property int zebraIndex: index
 
     property int keyColumnWidth: 0
+    property string keyTitle: ""
+    property string valueTitle: ""
     property bool startEditByDoubleClick: false
     property int textInputSidePadding: 12
     property int textInputHeight: 28
@@ -244,6 +246,7 @@ ListItemBlank {
             signal escaped()
 
             property bool isKey: parent && parent === keyLoader
+            readonly property string fieldName: isKey ? root.keyTitle : (Boolean(root.item[root.keyRoleName]) ? root.item[root.keyRoleName] : root.valueTitle)
 
             property NavigationPanel navPanel: (root.keysEditable && !root.keyReadOnly) || !isKey ? root.navigation.panel : null
             property int navRow: !isKey ? root.navigation.row * 2 + 1 : root.navigation.row * 2
@@ -282,7 +285,7 @@ ListItemBlank {
                     property string val
                     signal changed(string newVal)
 
-                    property string accessibleName: navigation.accessible.name
+                    property string accessibleName: inputField.text
                     property NavigationPanel navPanel: textLoader.navPanel
                     property int navRow: textLoader.navRow
                     property int navColumn: 0
@@ -290,6 +293,7 @@ ListItemBlank {
                     navigation.panel: navPanel
                     navigation.row: navRow
                     navigation.column: navColumn
+                    navigation.accessible.name: textLoader.fieldName + ": " + inputField.text
 
                     currentText: val
 
@@ -311,7 +315,7 @@ ListItemBlank {
                     width: 10
 
                     property string val
-                    property string accessibleName: navigation.accessible.name
+                    property string accessibleName: val
                     property NavigationPanel navPanel: textLoader.navPanel
                     property int navRow: textLoader.navRow
                     property int navColumn
@@ -335,6 +339,9 @@ ListItemBlank {
                             panel: doubleClickItem.navPanel
                             row: doubleClickItem.navRow
                             column: doubleClickItem.navColumn
+                            accessible.role: MUAccessible.EditableText
+                            accessible.name: textLoader.fieldName + ": " + doubleClickItem.val
+                            accessible.visualItem: doubleClickItem
 
                             onTriggered: {
                                 valueEditLoader.edit(doubleClickItem.val)
