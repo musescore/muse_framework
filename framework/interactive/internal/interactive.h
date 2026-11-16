@@ -171,6 +171,7 @@ private:
 
     async::Promise<Val> openAsync(const UriQuery& uri);
     async::Promise<Val> openAsync(const Uri& uri, const QVariantMap& params);
+    async::Promise<Val> doOpenAsync(const async::Promise<Val>::BodyResolveReject& open);
 
     async::Promise<Val>::BodyResolveReject openFunc(const UriQuery& q);
     async::Promise<Val>::BodyResolveReject openFunc(const UriQuery& q, const QVariantMap& params);

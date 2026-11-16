@@ -22,7 +22,13 @@ set(MODULE_TEST muse_interactive_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/filedialogfilters_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/interactive_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/mocks/interactivemock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/interactiveuriregistermock.h
+)
+
+set(MODULE_TEST_INCLUDE
+    ${CMAKE_CURRENT_LIST_DIR}/..
 )
 
 set(MODULE_TEST_LINK
