@@ -795,7 +795,39 @@ QAccessibleInterface* AccessibilityController::parentIface(const IAccessible* it
     return it.iface;
 }
 
-int AccessibilityController::childCount(const IAccessible* item) const
+bool AccessibilityController::belongsToWindow(const IAccessible* item, const QWindow* window)
+{
+    if (!window) {
+        return true;
+    }
+
+    //! NOTE: An item whose window is not known yet is shown by every window; that is better than
+    //! hiding it from all of them
+    const QWindow* itemWindow = item->accessibleWindow();
+    return !itemWindow || itemWindow == window;
+}
+
+const IAccessible* AccessibilityController::childInWindow(const IAccessible* item, int index, const QWindow* window)
+{
+    size_t count = item->accessibleChildCount();
+    int shown = 0;
+    for (size_t i = 0; i < count; ++i) {
+        IAccessible* child = item->accessibleChild(i);
+        if (!belongsToWindow(child, window)) {
+            continue;
+        }
+
+        if (shown == index) {
+            return child;
+        }
+
+        ++shown;
+    }
+
+    return nullptr;
+}
+
+int AccessibilityController::childCount(const IAccessible* item, const QWindow* window) const
 {
     IF_ASSERT_FAILED(item) {
         return 0;
@@ -805,16 +837,29 @@ int AccessibilityController::childCount(const IAccessible* item) const
     IF_ASSERT_FAILED(it.isValid()) {
         return 0;
     }
-    return static_cast<int>(it.item->accessibleChildCount());
+
+    size_t count = it.item->accessibleChildCount();
+    if (!window) {
+        return static_cast<int>(count);
+    }
+
+    int shown = 0;
+    for (size_t i = 0; i < count; ++i) {
+        if (belongsToWindow(it.item->accessibleChild(i), window)) {
+            ++shown;
+        }
+    }
+
+    return shown;
 }
 
-QAccessibleInterface* AccessibilityController::child(const IAccessible* item, int i) const
+QAccessibleInterface* AccessibilityController::child(const IAccessible* item, int i, const QWindow* window) const
 {
     IF_ASSERT_FAILED(item) {
         return nullptr;
     }
 
-    const IAccessible* chld = item->accessibleChild(static_cast<size_t>(i));
+    const IAccessible* chld = window ? childInWindow(item, i, window) : item->accessibleChild(static_cast<size_t>(i));
     IF_ASSERT_FAILED(chld) {
         return nullptr;
     }
@@ -851,7 +896,7 @@ static bool isHitTestTarget(QAccessibleInterface* iface)
     }
 }
 
-QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, int x, int y) const
+QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, int x, int y, const QWindow* window) const
 {
     IF_ASSERT_FAILED(item) {
         return nullptr;
@@ -878,6 +923,10 @@ QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, 
     size_t count = item->accessibleChildCount();
     for (size_t i = count; i > 0; --i) {
         const IAccessible* child = item->accessibleChild(i - 1);
+        if (!belongsToWindow(child, window)) {
+            continue;
+        }
+
         const Item& chIt = findItem(child);
         if (!chIt.isValid() || !chIt.iface) {
             continue;
@@ -894,7 +943,7 @@ QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, 
         //! the innermost control there
         //! An item that is accessibleIgnored() is still a target: that flag only keeps it from being
         //! announced, while the platform still exposes it (e.g. the buttons of a StandardDialog)
-        if (QAccessibleInterface* iface = childAt(child, x, y)) {
+        if (QAccessibleInterface* iface = childAt(child, x, y, window)) {
             consider(iface, iface->rect());
         } else if (!rect.isEmpty() && isHitTestTarget(chIt.iface)) {
             consider(chIt.iface, rect);
@@ -904,31 +953,42 @@ QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, 
     return found;
 }
 
-int AccessibilityController::indexOfChild(const IAccessible* item, const QAccessibleInterface* iface) const
+int AccessibilityController::indexOfChild(const IAccessible* item, const QAccessibleInterface* iface, const QWindow* window) const
 {
     TRACEFUNC;
     size_t count = item->accessibleChildCount();
+    int index = 0;
     for (size_t i = 0; i < count; ++i) {
         const IAccessible* ch = item->accessibleChild(i);
+        if (!belongsToWindow(ch, window)) {
+            continue;
+        }
+
         const Item& chIt = findItem(ch);
         if (!chIt.isValid()) {
             continue;
         }
 
         if (chIt.iface == iface) {
-            return static_cast<int>(i);
+            return index;
         }
+
+        ++index;
     }
 
     return -1;
 }
 
-QAccessibleInterface* AccessibilityController::focusedChild(const IAccessible* item) const
+QAccessibleInterface* AccessibilityController::focusedChild(const IAccessible* item, const QWindow* window) const
 {
     TRACEFUNC;
     size_t count = item->accessibleChildCount();
     for (size_t i = 0; i < count; ++i) {
         const IAccessible* ch = item->accessibleChild(i);
+        if (!belongsToWindow(ch, window)) {
+            continue;
+        }
+
         const Item& chIt = findItem(ch);
         if (!chIt.isValid() || !chIt.iface || chIt.item->accessibleIgnored()) {
             continue;
@@ -939,7 +999,7 @@ QAccessibleInterface* AccessibilityController::focusedChild(const IAccessible* i
         }
 
         if (chIt.item->accessibleChildCount() > 0) {
-            QAccessibleInterface* subItem = focusedChild(chIt.item);
+            QAccessibleInterface* subItem = focusedChild(chIt.item, window);
             if (subItem) {
                 return subItem;
             }

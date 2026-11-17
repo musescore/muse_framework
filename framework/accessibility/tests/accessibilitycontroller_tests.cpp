@@ -87,7 +87,7 @@ public:
         const IAccessible* accessibleParent() const override { return m_parent; }
         size_t accessibleChildCount() const override { return m_children.size(); }
         IAccessible* accessibleChild(size_t i) const override { return m_children.at(i); }
-        QWindow* accessibleWindow() const override { return nullptr; }
+        QWindow* accessibleWindow() const override { return m_window; }
         muse::modularity::ContextPtr iocContext() const override { return muse::modularity::globalCtx(); }
         IAccessible::Role accessibleRole() const override { return m_role; }
         QString accessibleName() const override { return QString(); }
@@ -132,6 +132,7 @@ public:
 
         IAccessible* m_parent = nullptr;
         std::vector<IAccessible*> m_children;
+        QWindow* m_window = nullptr;
         IAccessible::Role m_role = IAccessible::NoRole;
         QRect m_rect;
         bool m_enabled = true;
@@ -339,4 +340,36 @@ TEST_F(Accessibility_ControllerTests, ChildAtSkipsWhatThePlatformIgnores)
     //! [THEN] The button is found under both
     EXPECT_EQ(itemOf(m_controller->childAt(root(), 5, 5)), button);
     EXPECT_EQ(itemOf(m_controller->childAt(root(), 25, 25)), button);
+}
+
+TEST_F(Accessibility_ControllerTests, WindowShowsOnlyItsOwnItems)
+{
+    QWindow window1;
+    QWindow window2;
+
+    //! [GIVEN] Overlapping items at the root: one in each window, and one whose window is not known
+    AccessibleItem* item1 = makeItem(IAccessible::Button, QRect(0, 0, 50, 50));
+    item1->m_window = &window1;
+    AccessibleItem* item2 = makeItem(IAccessible::Button, QRect(0, 0, 10, 10));
+    item2->m_window = &window2;
+    AccessibleItem* unknown = makeItem(IAccessible::Button, QRect(100, 100, 50, 50));
+    m_controller->reg(item1);
+    m_controller->reg(item2);
+    m_controller->reg(unknown);
+
+    //! [THEN] The first window shows its own item and the one whose window is not known
+    ASSERT_EQ(m_controller->childCount(root(), &window1), 2);
+    EXPECT_EQ(itemOf(m_controller->child(root(), 0, &window1)), item1);
+    EXPECT_EQ(itemOf(m_controller->child(root(), 1, &window1)), unknown);
+
+    QAccessibleInterface* unknownIface = m_controller->child(root(), 1, &window1);
+    EXPECT_EQ(m_controller->indexOfChild(root(), unknownIface, &window1), 1);
+    EXPECT_EQ(m_controller->indexOfChild(root(), m_controller->child(root(), 1), &window1), -1);
+
+    //! [THEN] The item of the other window is not hit in the first, although it is smaller
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 5, 5, &window1)), item1);
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 5, 5, &window2)), item2);
+
+    //! [THEN] Without a window, all items are shown
+    EXPECT_EQ(m_controller->childCount(root()), 3);
 }
