@@ -61,15 +61,10 @@ bool TestflowApi::pause(bool immediately)
     }
 
     if (immediately) {
-        IInteractive::Result res = interactive()->questionSync("Pause", "Continue?",
-                                                               { IInteractive::Button::Continue, IInteractive::Button::Abort });
-
-        if (res.standardButton() == IInteractive::Button::Abort) {
-            abort();
-            return false;
-        }
-
-        return true;
+        return askAndWait("Pause", "Continue?", {
+            interactive()->buttonData(IInteractive::Button::Continue),
+            interactive()->buttonData(IInteractive::Button::Abort)
+        }) == int(IInteractive::Button::Continue);
     }
 
     testflow()->pause();
@@ -83,24 +78,42 @@ bool TestflowApi::confirm(const QString& msg)
         return true;
     }
 
-    int pauseBtn = int(IInteractive::Button::CustomButton) + 1;
-    IInteractive::Result res = interactive()->questionSync("Confirm", msg.toStdString(), {
+    return askAndWait("Confirm", msg.toStdString(), {
         interactive()->buttonData(IInteractive::Button::Continue),
-        IInteractive::ButtonData(pauseBtn, "Pause"),
+        IInteractive::ButtonData(PAUSE_BTN, "Pause"),
         interactive()->buttonData(IInteractive::Button::Abort)
+    }) == int(IInteractive::Button::Continue);
+}
+
+int TestflowApi::askAndWait(const std::string& title, const std::string& text, const IInteractive::ButtonDatas& buttons)
+{
+    //! NOTE The step is paused while the question is asked,
+    //! and sleeps until the answer unpauses it (the same as when the user pauses it during a sleep)
+    testflow()->pause();
+
+    auto answer = std::make_shared<int>(int(IInteractive::Button::NoButton));
+
+    interactive()->question(title, text, buttons)
+    .onResolve(this, [this, answer](const IInteractive::Result& res) {
+        if (res.standardButton() == IInteractive::Button::Abort) {
+            *answer = int(IInteractive::Button::Abort);
+            abort();
+            return;
+        }
+
+        if (res.button() == PAUSE_BTN) {
+            //! NOTE The step stays paused until the test case is unpaused
+            *answer = PAUSE_BTN;
+            return;
+        }
+
+        *answer = int(IInteractive::Button::Continue);
+        testflow()->unpause();
     });
 
-    if (res.standardButton() == IInteractive::Button::Abort) {
-        abort();
-        return false;
-    }
+    testflow()->sleep(-1); // sleeps while paused
 
-    if (res.button() == pauseBtn) {
-        pause();
-        return false;
-    }
-
-    return true;
+    return *answer;
 }
 
 void TestflowApi::abort()

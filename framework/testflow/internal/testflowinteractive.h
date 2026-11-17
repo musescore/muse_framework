@@ -41,6 +41,7 @@ public:
     void setRealInteractive(std::shared_ptr<IInteractive> real);
     std::shared_ptr<IInteractive> realInteractive() const;
 
+    [[deprecated("Use question() instead")]]
     Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
                         const Options& options = {}, const std::string& dialogTitle = {}) override;
 

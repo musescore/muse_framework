@@ -109,19 +109,24 @@ std::vector<muse::IInteractive::Button> InteractiveApi::buttons(const QJSValueLi
  * @param {String} title Title
  * @param {String} text Message
  * @param {ButtonCode[]} buttons Code of buttons
- * @return {ButtonCode} - selected button
+ * @return {Promise<ButtonCode>} - selected button
  * @example
- * let btn = api.interactive.question("My question", "Yes or No?", [ButtonCode.Yes, ButtonCode.No]);
- * if (btn === ButtonCode.Yes) {
- *      ...
- * }
+ * api.interactive.question("My question", "Yes or No?", [ButtonCode.Yes, ButtonCode.No]).then(function(btn) {
+ *     if (btn === ButtonCode.Yes) {
+ *         ...
+ *     }
+ * })
  */
-QString InteractiveApi::question(const QString& contentTitle, const QString& text, const QJSValueList& btns)
+QJSValue InteractiveApi::question(const QString& contentTitle, const QString& text, const QJSValueList& btns)
 {
-    IInteractive::Result res = interactive()->questionSync(contentTitle.toStdString(),
-                                                           text.toStdString(),
-                                                           buttons(btns));
-    return buttonToString(res.standardButton());
+    api::JsPromise promise = engine()->newPromise();
+
+    interactive()->question(contentTitle.toStdString(), text.toStdString(), buttons(btns))
+    .onResolve(this, [resolve = promise.resolve](const IInteractive::Result& res) {
+        resolve.call({ QJSValue(buttonToString(res.standardButton())) });
+    });
+
+    return promise.promise;
 }
 
 /** APIDOC

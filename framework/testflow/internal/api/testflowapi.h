@@ -83,6 +83,11 @@ public:
 
     // Window
     Q_INVOKABLE void showMainWindowOnFront();
+
+private:
+    static constexpr int PAUSE_BTN = int(IInteractive::Button::CustomButton) + 1;
+
+    int askAndWait(const std::string& title, const std::string& text, const IInteractive::ButtonDatas& buttons);
 };
 }
 
