@@ -91,6 +91,7 @@ public:
                                    const std::string& dialogTitle = "") override;
 
     // error
+    [[deprecated("Use error() instead")]]
     Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
                      const Options& options = { WithIcon }, const std::string& dialogTitle = "") override;
 
