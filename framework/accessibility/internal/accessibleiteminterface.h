@@ -31,7 +31,7 @@
 
 namespace muse::accessibility {
 class AccessibleItemInterface : public QAccessibleInterface, public QAccessibleValueInterface, public QAccessibleTextInterface,
-    public QAccessibleTableCellInterface, public muse::Contextable
+    public QAccessibleTableCellInterface, public QAccessibleActionInterface, public muse::Contextable
 {
     ContextInject<IInteractive> interactive = { this };
 
@@ -97,12 +97,18 @@ public:
 
     QAccessibleInterface* table() const override;
 
+    // Action Interface
+    QStringList actionNames() const override;
+    void doAction(const QString& actionName) override;
+    QStringList keyBindingsForAction(const QString& actionName) const override;
+
 protected:
     void* interface_cast(QAccessible::InterfaceType t) override;
 
 private:
 
     IAccessible::TextBoundaryType muBoundaryType(QAccessible::TextBoundaryType qtBoundaryType) const;
+    IAccessible::Action muAction(const QString& actionName) const;
     QString announcement() const;
     QString description() const;
 

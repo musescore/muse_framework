@@ -74,6 +74,8 @@ enum Role {
 Q_ENUM_NS(Role)
 }
 
+class NavigationControl;
+
 class AccessibleItem : public QObject, public QQmlParserStatus, public accessibility::IAccessible, public Contextable
 {
     Q_OBJECT
@@ -128,6 +130,8 @@ public:
     QString accessibleName() const override;
     QString accessibleDescription() const override;
     bool accessibleState(State st) const override;
+    bool accessibleSupportsAction(Action action) const override;
+    void accessibleDoAction(Action action) override;
     QRect accessibleRect() const override;
     bool accessibleIgnored() const override;
 
@@ -231,6 +235,7 @@ private:
     void removeChild(AccessibleItem* item);
 
     QQuickItem* resolveVisualItem() const;
+    NavigationControl* navigationControl() const;
 
     AccessibleItem* m_accessibleParent = nullptr;
     QList<AccessibleItem*> m_children;

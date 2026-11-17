@@ -82,6 +82,13 @@ public:
         Checked
     };
 
+    //! Actions that an accessibility client (a screen reader, or the platform itself) can perform on an item
+    enum class Action {
+        Undefined = 0,
+        Press,
+        SetFocus
+    };
+
     enum class Property {
         Undefined = 0,
         Parent,
@@ -136,6 +143,8 @@ public:
     virtual QString accessibleName() const = 0;
     virtual QString accessibleDescription() const = 0;
     virtual bool accessibleState(State st) const = 0;
+    virtual bool accessibleSupportsAction(Action) const { return false; }
+    virtual void accessibleDoAction(Action) {}
     virtual QRect accessibleRect() const = 0;
     virtual bool accessibleIgnored() const = 0;
 

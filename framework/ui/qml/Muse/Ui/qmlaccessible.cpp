@@ -22,6 +22,8 @@
 
 #include "qmlaccessible.h"
 
+#include "navigationcontrol.h"
+
 #include <QQuickWindow>
 #include <QTextBoundaryFinder>
 
@@ -84,6 +86,50 @@ QString AccessibleItem::accessibleDescription() const
 bool AccessibleItem::accessibleState(State st) const
 {
     return m_state.value(st, false);
+}
+
+bool AccessibleItem::accessibleSupportsAction(Action action) const
+{
+    if (!navigationControl()) {
+        return false;
+    }
+
+    switch (action) {
+    case Action::Press:
+    case Action::SetFocus:
+        return accessibleState(State::Enabled);
+    case Action::Undefined:
+        break;
+    }
+
+    return false;
+}
+
+void AccessibleItem::accessibleDoAction(Action action)
+{
+    NavigationControl* control = navigationControl();
+    if (!control || !accessibleSupportsAction(action)) {
+        return;
+    }
+
+    switch (action) {
+    case Action::Press:
+        //! NOTE: Activate first, so that the control is the active one while it handles the trigger,
+        //! like it would be when the user reaches it with the keyboard
+        control->requestActive();
+        control->trigger();
+        break;
+    case Action::SetFocus:
+        control->requestActive();
+        break;
+    case Action::Undefined:
+        break;
+    }
+}
+
+NavigationControl* AccessibleItem::navigationControl() const
+{
+    return qobject_cast<NavigationControl*>(parent());
 }
 
 size_t AccessibleItem::accessibleChildCount() const

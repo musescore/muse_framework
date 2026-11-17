@@ -528,6 +528,63 @@ QAccessibleInterface* AccessibleItemInterface::table() const
     return parent();
 }
 
+QStringList AccessibleItemInterface::actionNames() const
+{
+    IAccessible* item = m_object->item();
+
+    QStringList names;
+    if (item->accessibleSupportsAction(IAccessible::Action::Press)) {
+        //! NOTE: A checkable item has to offer "toggle" too: the platform bridges translate their
+        //! own press action to either "toggle" or "press" depending on the role of the item,
+        //! and ignore an action that the item does not list
+        switch (role()) {
+        case QAccessible::CheckBox:
+        case QAccessible::RadioButton:
+            names << toggleAction();
+            break;
+        default:
+            break;
+        }
+
+        names << pressAction();
+    }
+
+    if (item->accessibleSupportsAction(IAccessible::Action::SetFocus)) {
+        names << setFocusAction();
+    }
+
+    return names;
+}
+
+void AccessibleItemInterface::doAction(const QString& actionName)
+{
+    IAccessible::Action action = muAction(actionName);
+    if (action == IAccessible::Action::Undefined) {
+        NOT_SUPPORTED << actionName;
+        return;
+    }
+
+    m_object->item()->accessibleDoAction(action);
+}
+
+QStringList AccessibleItemInterface::keyBindingsForAction(const QString&) const
+{
+    NOT_IMPLEMENTED;
+    return QStringList();
+}
+
+IAccessible::Action AccessibleItemInterface::muAction(const QString& actionName) const
+{
+    if (actionName == pressAction() || actionName == toggleAction()) {
+        return IAccessible::Action::Press;
+    }
+    if (actionName == setFocusAction()) {
+        return IAccessible::Action::SetFocus;
+    }
+
+    return IAccessible::Action::Undefined;
+}
+
 void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
 {
     QAccessible::Role itemRole = role();
@@ -537,22 +594,19 @@ void* AccessibleItemInterface::interface_cast(QAccessible::InterfaceType type)
         return static_cast<QAccessibleTextInterface*>(this);
     }
 
-    bool isTableType = type == QAccessible::InterfaceType::TableCellInterface;
-#ifdef Q_OS_WIN
-    //! NOTE: Without Action and Text interfaces NVDA doesn't work
-    isTableType |= type == QAccessible::InterfaceType::ActionInterface;
-#endif
+    if (type == QAccessible::InterfaceType::ActionInterface) {
+        return static_cast<QAccessibleActionInterface*>(this);
+    }
 
-    if (isTableType && itemRole == QAccessible::ListItem) {
+    if (type == QAccessible::InterfaceType::TableCellInterface && itemRole == QAccessible::ListItem) {
         //! NOTE: Qt's platform bridges require a cell to have a table: they only assert the result
         //! of QAccessibleTableCellInterface::table() before dereferencing it. Our table() returns
         //! the parent interface, which can be null, for example while the accessible parent of the
         //! item is not assigned yet. Don't present the item as a cell in that case.
-        if (type == QAccessible::InterfaceType::TableCellInterface && !parent()) {
+        if (!parent()) {
             return nullptr;
         }
 
-        //! NOTE: Without Action and Text interfaces NVDA doesn't work
         return static_cast<QAccessibleTableCellInterface*>(this);
     }
 
