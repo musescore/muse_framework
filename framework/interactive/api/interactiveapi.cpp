@@ -94,10 +94,22 @@ QJSValue InteractiveApi::warning(const QString& contentTitle, const QString& tex
  * @method
  * @param {String} title Title
  * @param {String} text Message
+ * @return {Promise} - resolved when the message is closed
+ * @example
+ * Interactive.error("My title", "Some error").then(function() {
+ *     ...
+ * })
  */
-void InteractiveApi::error(const QString& contentTitle, const QString& text)
+QJSValue InteractiveApi::error(const QString& contentTitle, const QString& text)
 {
-    interactive()->errorSync(contentTitle.toStdString(), text.toStdString());
+    api::JsPromise promise = engine()->newPromise();
+
+    interactive()->error(contentTitle.toStdString(), IInteractive::Text(text.toStdString()))
+    .onResolve(this, [resolve = promise.resolve](const IInteractive::Result&) {
+        resolve.call();
+    });
+
+    return promise.promise;
 }
 
 static muse::IInteractive::Button buttonFromString(const QString& str)
