@@ -71,10 +71,22 @@ QJSValue InteractiveApi::info(const QString& contentTitle, const QString& text)
  * @method
  * @param {String} title Title
  * @param {String} text Message
+ * @return {Promise} - resolved when the message is closed
+ * @example
+ * Interactive.warning("My title", "Some warning").then(function() {
+ *     ...
+ * })
  */
-void InteractiveApi::warning(const QString& contentTitle, const QString& text)
+QJSValue InteractiveApi::warning(const QString& contentTitle, const QString& text)
 {
-    interactive()->warningSync(contentTitle.toStdString(), text.toStdString());
+    api::JsPromise promise = engine()->newPromise();
+
+    interactive()->warning(contentTitle.toStdString(), IInteractive::Text(text.toStdString()))
+    .onResolve(this, [resolve = promise.resolve](const IInteractive::Result&) {
+        resolve.call();
+    });
+
+    return promise.promise;
 }
 
 /** APIDOC

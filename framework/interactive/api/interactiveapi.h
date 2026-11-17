@@ -75,7 +75,7 @@ public:
     Q_ENUM(ButtonCode);
 
     Q_INVOKABLE QJSValue info(const QString& contentTitle, const QString& text);
-    Q_INVOKABLE void warning(const QString& contentTitle, const QString& text);
+    Q_INVOKABLE QJSValue warning(const QString& contentTitle, const QString& text);
     Q_INVOKABLE void error(const QString& contentTitle, const QString& text);
 
     Q_INVOKABLE QJSValue question(const QString& contentTitle, const QString& text, const QJSValueList& buttons);
