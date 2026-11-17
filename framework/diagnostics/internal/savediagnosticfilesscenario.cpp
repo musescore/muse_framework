@@ -24,6 +24,7 @@
 
 #include <QCursor>
 #include <QGuiApplication>
+#include <QTimer>
 
 #include "diagnosticfileswriter.h"
 #include "translation.h"
@@ -31,30 +32,61 @@
 using namespace muse::diagnostics;
 using namespace muse;
 
-Ret SaveDiagnosticFilesScenario::saveDiagnosticFiles()
+async::Promise<Ret> SaveDiagnosticFilesScenario::saveDiagnosticFiles()
 {
-    if (configuration()->shouldWarnBeforeSavingDiagnosticFiles()) {
-        IInteractive::Result result = interactive()->warningSync(
+    if (!configuration()->shouldWarnBeforeSavingDiagnosticFiles()) {
+        return selectPathAndSave();
+    }
+
+    return async::make_promise<Ret>([this](auto resolve) {
+        interactive()->warning(
             muse::trc("diagnostics", "Save diagnostic files?"),
             muse::qtrc("diagnostics", "This will create a .zip file with information about your %1 setup "
                                       "to help developers diagnose any problems you are having. "
                                       "You can inspect the contents of this file before sending it to anyone.")
             .arg(application()->title().toQString()).toStdString(),
             { IInteractive::Button::Cancel, IInteractive::Button::Save }, IInteractive::Button::Save,
-            IInteractive::Option::WithIcon | IInteractive::Option::WithDontShowAgainCheckBox);
+            IInteractive::Option::WithIcon | IInteractive::Option::WithDontShowAgainCheckBox)
+        .onResolve(this, [this, resolve](const IInteractive::Result& result) {
+            if (result.standardButton() != IInteractive::Button::Save) {
+                (void)resolve(make_ret(Ret::Code::Cancel));
+                return;
+            }
 
-        if (result.standardButton() != IInteractive::Button::Save) {
-            return make_ret(Ret::Code::Cancel);
-        }
+            configuration()->setShouldWarnBeforeSavingDiagnosticFiles(result.showAgain());
 
-        configuration()->setShouldWarnBeforeSavingDiagnosticFiles(result.showAgain());
-    }
+            selectPathAndSave().onResolve(this, [resolve](const Ret& ret) {
+                (void)resolve(ret);
+            });
+        });
 
-    muse::io::path_t path = interactive()->selectSavingFileSync(
-        muse::trc("diagnostics", "Save diagnostic files"),
-        configuration()->diagnosticFilesDefaultSavingPath(),
-        { "(*.zip)" });
+        return async::Promise<Ret>::dummy_result();
+    }, async::PromiseType::AsyncByBody);
+}
 
+async::Promise<Ret> SaveDiagnosticFilesScenario::selectPathAndSave()
+{
+    return async::make_promise<Ret>([this](auto resolve) {
+        interactive()->selectSavingFile(
+            muse::trc("diagnostics", "Save diagnostic files"),
+            configuration()->diagnosticFilesDefaultSavingPath(),
+            { "(*.zip)" })
+        .onResolve(this, [this, resolve](const io::path_t& path) {
+            //! NOTE Writing processes the events, so it does not happen while the dialog is still closing
+            QTimer::singleShot(0, &m_timersContext, [this, resolve, path]() {
+                (void)resolve(saveTo(path));
+            });
+        })
+        .onReject(this, [resolve](int code, const std::string& msg) {
+            (void)resolve(make_ret(code, msg));
+        });
+
+        return async::Promise<Ret>::dummy_result();
+    }, async::PromiseType::AsyncByBody);
+}
+
+Ret SaveDiagnosticFilesScenario::saveTo(const io::path_t& path)
+{
     if (path.empty()) {
         return make_ret(Ret::Code::Cancel);
     }

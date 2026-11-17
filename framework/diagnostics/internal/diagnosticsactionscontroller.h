@@ -21,14 +21,16 @@
  */
 #pragma once
 
-#include "modularity/ioc.h"
+#include "async/asyncable.h"
 #include "rcommand/commandable.h"
+
+#include "modularity/ioc.h"
 #include "rcommand/icommanddispatcher.h"
 #include "interactive/iinteractive.h"
 #include "isavediagnosticfilesscenario.h"
 
 namespace muse::diagnostics {
-class DiagnosticsActionsController : public Contextable, public rcommand::Commandable
+class DiagnosticsActionsController : public Contextable, public rcommand::Commandable, public async::Asyncable
 {
     ContextInject<rcommand::ICommandDispatcher> commandDispatcher = { this };
     ContextInject<IInteractive> interactive = { this };

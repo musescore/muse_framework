@@ -24,6 +24,7 @@
 
 #include "modularity/imoduleinterface.h"
 
+#include "async/promise.h"
 #include "types/ret.h"
 
 namespace muse::diagnostics {
@@ -34,7 +35,7 @@ class ISaveDiagnosticFilesScenario : MODULE_CONTEXT_INTERFACE
 public:
     virtual ~ISaveDiagnosticFilesScenario() = default;
 
-    virtual muse::Ret saveDiagnosticFiles() = 0;
+    virtual async::Promise<Ret> saveDiagnosticFiles() = 0;
 };
 }
 
