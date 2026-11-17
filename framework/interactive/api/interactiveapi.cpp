@@ -48,10 +48,22 @@ InteractiveApi::InteractiveApi(api::IApiEngine* e)
  * @method
  * @param {String} title Title
  * @param {String} text Message
+ * @return {Promise} - resolved when the message is closed
+ * @example
+ * Interactive.info("My title", "Some information").then(function() {
+ *     ...
+ * })
  */
-void InteractiveApi::info(const QString& contentTitle, const QString& text)
+QJSValue InteractiveApi::info(const QString& contentTitle, const QString& text)
 {
-    interactive()->infoSync(contentTitle.toStdString(), text.toStdString());
+    api::JsPromise promise = engine()->newPromise();
+
+    interactive()->info(contentTitle.toStdString(), IInteractive::Text(text.toStdString()))
+    .onResolve(this, [resolve = promise.resolve](const IInteractive::Result&) {
+        resolve.call();
+    });
+
+    return promise.promise;
 }
 
 /** APIDOC
