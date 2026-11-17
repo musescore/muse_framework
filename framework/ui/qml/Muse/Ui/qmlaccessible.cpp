@@ -550,8 +550,11 @@ void AccessibleItem::setAccessibleParent(AccessibleItem* p)
 
     if (m_accessibleParent) {
         m_accessibleParent->addChild(this);
-        m_accessiblePropertyChanged.send(IAccessible::Property::Parent, Val());
     }
+
+    //! NOTE: Also when the item is left without a parent of its own, because it becomes a child
+    //! of the root again, which the controller has to know about too
+    m_accessiblePropertyChanged.send(IAccessible::Property::Parent, Val());
 
     emit accessiblePrnChanged();
 }

@@ -373,3 +373,30 @@ TEST_F(Accessibility_ControllerTests, WindowShowsOnlyItsOwnItems)
     //! [THEN] Without a window, all items are shown
     EXPECT_EQ(m_controller->childCount(root()), 3);
 }
+
+TEST_F(Accessibility_ControllerTests, ItemLeavesTheRootWhenItGetsAParent)
+{
+    //! [GIVEN] A panel, and an item that is registered before it has a parent of its own
+    AccessibleItem* panel = makeItem(IAccessible::Panel, QRect());
+    AccessibleItem* item = makeItem(IAccessible::Button, QRect());
+    m_controller->reg(panel);
+    m_controller->reg(item);
+    ASSERT_EQ(m_controller->childCount(root()), 2);
+
+    //! [WHEN] The item is given the panel as its parent
+    item->setParent(panel);
+    panel->m_children.push_back(item);
+    item->m_propertyChanged.send(IAccessible::Property::Parent, Val());
+
+    //! [THEN] It is no longer a child of the root
+    ASSERT_EQ(m_controller->childCount(root()), 1);
+    EXPECT_EQ(itemOf(m_controller->child(root(), 0)), panel);
+
+    //! [WHEN] The item is left without a parent again
+    panel->m_children.clear();
+    item->setParent(m_controller.get());
+    item->m_propertyChanged.send(IAccessible::Property::Parent, Val());
+
+    //! [THEN] It is a child of the root again
+    EXPECT_EQ(m_controller->childCount(root()), 2);
+}

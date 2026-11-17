@@ -385,8 +385,19 @@ void AccessibilityController::propertyChanged(IAccessible* item, IAccessible::Pr
     switch (property) {
     case IAccessible::Property::Undefined:
         return;
-    case IAccessible::Property::Parent: etype = QAccessible::ParentChanged;
-        break;
+    case IAccessible::Property::Parent: {
+        //! NOTE: An item that was registered before it was given a parent of its own is a child of
+        //! the root; as soon as it has one it has to stop being one, or it stays in the tree twice
+        if (item->accessibleParent() == this) {
+            if (!m_children.contains(item)) {
+                m_children.append(item);
+            }
+        } else {
+            m_children.removeOne(item);
+        }
+
+        etype = QAccessible::ParentChanged;
+    } break;
     case IAccessible::Property::Name:
     case IAccessible::Property::Description: {
         if (item == m_lastFocused) {
