@@ -231,19 +231,20 @@ void InteractiveTestsModel::information()
 
 void InteractiveTestsModel::warning()
 {
-    IInteractive::Result result = interactive()->warningSync("Do you want to save changes to the score “Untitled” before closing?",
-                                                             "Your changes will be lost if you don’t save them.",
-                                                             { interactive()->buttonData(IInteractive::Button::DontSave),
-                                                               interactive()->buttonData(IInteractive::Button::Save),
-                                                               interactive()->buttonData(IInteractive::Button::Cancel) });
-
-    if (result.standardButton() == IInteractive::Button::DontSave) {
-        LOGI() << "Don’t save!!";
-    } else if (result.standardButton() == IInteractive::Button::Save) {
-        LOGE() << "Save!!";
-    } else {
-        LOGE() << "Cancel!!";
-    }
+    interactive()->warning("Do you want to save changes to the score “Untitled” before closing?",
+                           IInteractive::Text("Your changes will be lost if you don’t save them."),
+                           { interactive()->buttonData(IInteractive::Button::DontSave),
+                             interactive()->buttonData(IInteractive::Button::Save),
+                             interactive()->buttonData(IInteractive::Button::Cancel) })
+    .onResolve(this, [](const IInteractive::Result& result) {
+        if (result.standardButton() == IInteractive::Button::DontSave) {
+            LOGI() << "Don’t save!!";
+        } else if (result.standardButton() == IInteractive::Button::Save) {
+            LOGE() << "Save!!";
+        } else {
+            LOGE() << "Cancel!!";
+        }
+    });
 }
 
 void InteractiveTestsModel::critical()
