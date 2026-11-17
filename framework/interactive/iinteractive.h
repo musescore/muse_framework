@@ -200,6 +200,18 @@ public:
         return warning(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    //! Asks whether to continue with what `ret`, returned by a can-check, is about
+    async::Promise<bool> askToContinue(const Ret& ret)
+    {
+        return async::make_promise<bool>([this, ret](auto resolve) {
+            warning(std::string(), ret.text(), { Button::Cancel, Button::Ok })
+            .onResolve(nullptr, [resolve](const Result& result) {
+                (void)resolve(result.standardButton() == Button::Ok);
+            });
+            return async::Promise<bool>::dummy_result();
+        }, async::PromiseType::AsyncByBody);
+    }
+
     // error
     virtual async::Promise<Result> error(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                          int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
