@@ -299,10 +299,12 @@ public:
         return infoSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    [[deprecated("Use warning() instead")]]
     virtual Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
                                const std::string& dialogTitle = {}) = 0;
 
+    [[deprecated("Use warning() instead")]]
     Result warningSync(const std::string& contentTitle, const std::string& text, const Buttons& buttons,
                        const Button& defBtn = Button::NoButton, const Options& options = { WithIcon }, const std::string& dialogTitle = {})
     {
