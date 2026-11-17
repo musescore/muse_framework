@@ -62,6 +62,8 @@ public:
     Q_INVOKABLE void error(const QString& msg); //! TODO At the moment same as fatal, but should be not fatal error
     Q_INVOKABLE void fatal(const QString& msg);
 
+    Q_INVOKABLE void expectQuit(int timeoutMsec = 10000);
+
     Q_INVOKABLE bool isCommandEnabled(const QString& command) const;
     Q_INVOKABLE bool isCommandChecked(const QString& command) const;
 

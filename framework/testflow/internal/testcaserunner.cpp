@@ -30,6 +30,18 @@
 using namespace muse;
 using namespace muse::testflow;
 
+TestCaseRunner::TestCaseRunner()
+{
+    m_quitTimer.setSingleShot(true);
+    QObject::connect(&m_quitTimer, &QTimer::timeout, [this]() {
+        const QString msg = QString("the application did not quit in %1 msec").arg(m_testCase.quitTimeoutMsec);
+        LOGE() << msg << ", at step: " << m_testCase.lastStepName;
+        m_stepStatusChanged.send(StepInfo(m_testCase.lastStepName, StepStatus::Error),
+                                 make_ret(Ret::Code::UnknownError, msg.toStdString()));
+        doAbort();
+    });
+}
+
 SpeedMode TestCaseRunner::speedMode() const
 {
     return m_speedMode;
@@ -63,6 +75,7 @@ int TestCaseRunner::defaultInterval() const
 void TestCaseRunner::run(const TestCase& testCase)
 {
     m_abort = false;
+    m_quitTimer.stop();
     m_testCase.reset();
     m_testCase.testCase = testCase;
     m_testCase.steps = testCase.steps();
@@ -72,6 +85,16 @@ void TestCaseRunner::run(const TestCase& testCase)
 
     if (m_testCase.currentStepIdx < m_testCase.stepsCount) {
         m_testCase.loop.exec();
+    }
+
+    m_quitTimer.stop();
+
+    //! NOTE The loop was quit from outside, because the application quit as the test case expected
+    if (!m_testCase.stopped && m_testCase.stepsCount > 0 && m_testCase.quitExpected) {
+        m_testCase.stopped = true;
+        LOGI() << "test case finished by the expected quit, at step: " << m_testCase.lastStepName;
+        m_allFinished.send(false);
+        return;
     }
 
     //! NOTE The loop was quit from outside (for example, the application is exiting),
@@ -107,6 +130,23 @@ void TestCaseRunner::unpause(bool isNextStep)
 void TestCaseRunner::abort()
 {
     m_abort = true;
+
+    //! NOTE No step runs while waiting for the quit, so nothing else checks the abort flag
+    if (m_quitTimer.isActive()) {
+        doAbort();
+    }
+}
+
+void TestCaseRunner::expectQuit(int timeoutMsec)
+{
+    m_testCase.quitExpected = true;
+    m_testCase.quitTimeoutMsec = timeoutMsec;
+}
+
+void TestCaseRunner::waitForQuit()
+{
+    LOGI() << "waiting for the application to quit, at step: " << m_testCase.lastStepName;
+    m_quitTimer.start(m_testCase.quitTimeoutMsec);
 }
 
 async::Channel<StepInfo, Ret> TestCaseRunner::stepStatusChanged() const
@@ -121,6 +161,7 @@ async::Channel<bool> TestCaseRunner::allFinished() const
 
 void TestCaseRunner::doAbort()
 {
+    m_quitTimer.stop();
     m_testCase.stopped = true;
     m_allFinished.send(true);
     m_testCase.loop.quit();
@@ -155,7 +196,13 @@ void TestCaseRunner::nextStep(bool byInterval)
         return;
     }
 
-    QTimer::singleShot(byInterval ? intervalMsec() : 0, [this]() {
+    //! NOTE The context cancels the timer with the runner
+    QTimer::singleShot(byInterval ? intervalMsec() : 0, &m_stepTimerContext, [this]() {
+        //! NOTE The test case was interrupted from outside while waiting for this step
+        if (m_testCase.stopped) {
+            return;
+        }
+
         Step step = m_testCase.steps.step(m_testCase.currentStepIdx);
         QString name = step.name();
         m_testCase.lastStepName = name;
@@ -181,6 +228,12 @@ void TestCaseRunner::nextStep(bool byInterval)
 
             LOGD() << "step: " << name << " Finished";
             m_stepStatusChanged.send(StepInfo(step.name(), StepStatus::Finished, m_elapsed.elapsed()), muse::make_ok());
+
+            //! NOTE The remaining steps are not run, the test case is finished when the application quits
+            if (m_testCase.quitExpected) {
+                waitForQuit();
+                return;
+            }
         }
 
         bool withInterval = step.skip() ? false : true;

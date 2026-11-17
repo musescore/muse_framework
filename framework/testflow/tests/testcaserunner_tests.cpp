@@ -41,6 +41,7 @@ inline void PrintTo(const QString& str, std::ostream* os)
     *os << '"' << str.toStdString() << '"';
 }
 
+namespace muse::testflow {
 class Testflow_TestCaseRunnerTests : public ::testing::Test, public async::Asyncable
 {
 public:
@@ -100,6 +101,19 @@ public:
         }
         QTimer::singleShot(msec, &loop, &QEventLoop::quit);
         loop.exec();
+    }
+
+    //! NOTE Quits the test case loop from outside, like the application quitting does
+    void quitFromOutside(int msec)
+    {
+        QTimer::singleShot(msec, [this]() {
+            m_runner.m_testCase.loop.quit();
+        });
+    }
+
+    bool hasErrorText(const std::string& text) const
+    {
+        return !m_events.empty() && m_events.back().ret.text().find(text) != std::string::npos;
     }
 
     QJSEngine m_engine;
@@ -275,4 +289,101 @@ TEST_F(Testflow_TestCaseRunnerTests, SpeedModeInterval)
 
     m_runner.setSpeedMode(SpeedMode::Slow);
     EXPECT_EQ(m_runner.intervalMsec(), 2000);
+}
+
+TEST_F(Testflow_TestCaseRunnerTests, ExpectedQuitFinishesTestCase)
+{
+    // [GIVEN] The step `a` quits the application, as expected
+    m_handler.handlers["a"] = [this]() {
+        m_runner.expectQuit(5000);
+        quitFromOutside(10);
+        return true;
+    };
+
+    // [WHEN] Run
+    m_runner.run(makeTestCase(step("a") + "," + step("b")));
+
+    // [THEN] The test case is finished, the remaining steps are not run
+    EXPECT_EQ(m_handler.calls, QStringList({ "a" }));
+    EXPECT_EQ(statusesOf("a"), std::vector<StepStatus>({ StepStatus::Started, StepStatus::Finished }));
+    EXPECT_EQ(m_allFinishedCount, 1);
+    EXPECT_FALSE(m_aborted);
+}
+
+TEST_F(Testflow_TestCaseRunnerTests, UnexpectedQuitAbortsTestCase)
+{
+    // [GIVEN] The application quits during the test case, not expected
+    m_runner.setDefaultInterval(100);
+    m_handler.handlers["a"] = [this]() {
+        quitFromOutside(10);
+        return true;
+    };
+
+    // [WHEN] Run
+    m_runner.run(makeTestCase(step("a") + "," + step("b")));
+
+    // [THEN] The test case is aborted
+    EXPECT_EQ(m_handler.calls, QStringList({ "a" }));
+    EXPECT_EQ(statusesOf("a"), std::vector<StepStatus>({ StepStatus::Started, StepStatus::Finished, StepStatus::Aborted }));
+    EXPECT_EQ(m_allFinishedCount, 1);
+    EXPECT_TRUE(m_aborted);
+}
+
+TEST_F(Testflow_TestCaseRunnerTests, ExpectedQuitDidNotHappen)
+{
+    // [GIVEN] The step `a` expects the application to quit, but it does not
+    m_handler.handlers["a"] = [this]() {
+        m_runner.expectQuit(50);
+        return true;
+    };
+
+    // [WHEN] Run
+    m_runner.run(makeTestCase(step("a") + "," + step("b")));
+
+    // [THEN] The step fails after the timeout, the remaining steps are not run
+    EXPECT_EQ(m_handler.calls, QStringList({ "a" }));
+    EXPECT_EQ(statusesOf("a"), std::vector<StepStatus>({ StepStatus::Started, StepStatus::Finished, StepStatus::Error }));
+    EXPECT_TRUE(hasErrorText("did not quit"));
+    EXPECT_EQ(m_allFinishedCount, 1);
+    EXPECT_TRUE(m_aborted);
+}
+
+TEST_F(Testflow_TestCaseRunnerTests, AbortWhileWaitingForQuit)
+{
+    // [GIVEN] The test case is aborted while it waits for the application to quit
+    m_handler.handlers["a"] = [this]() {
+        m_runner.expectQuit(5000);
+        QTimer::singleShot(10, [this]() {
+            m_runner.abort();
+        });
+        return true;
+    };
+
+    // [WHEN] Run
+    m_runner.run(makeTestCase(step("a") + "," + step("b")));
+
+    // [THEN] The test case is aborted without waiting for the timeout
+    EXPECT_EQ(m_handler.calls, QStringList({ "a" }));
+    EXPECT_EQ(statusesOf("a"), std::vector<StepStatus>({ StepStatus::Started, StepStatus::Finished }));
+    EXPECT_EQ(m_allFinishedCount, 1);
+    EXPECT_TRUE(m_aborted);
+}
+
+TEST_F(Testflow_TestCaseRunnerTests, RunAgainAfterExpectedQuit)
+{
+    m_handler.handlers["a"] = [this]() {
+        m_runner.expectQuit(5000);
+        quitFromOutside(10);
+        return true;
+    };
+    m_runner.run(makeTestCase(step("a")));
+
+    // [WHEN] Run another test case
+    m_runner.run(makeTestCase(step("b") + "," + step("c")));
+
+    // [THEN] It does not expect the quit, all its steps are run
+    EXPECT_EQ(m_handler.calls, QStringList({ "a", "b", "c" }));
+    EXPECT_EQ(m_allFinishedCount, 2);
+    EXPECT_FALSE(m_aborted);
+}
 }

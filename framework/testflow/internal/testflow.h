@@ -93,6 +93,7 @@ public:
     void unpause() override;
     void abort() override;
     void fatal(const QString& msg) override;
+    void expectQuit(int timeoutMsec) override;
 
     ITestCaseContextPtr context() const override;
     TestflowInteractivePtr testflowInteractive() const override;

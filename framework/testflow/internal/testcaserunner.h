@@ -27,6 +27,7 @@
 #include <QJSValue>
 #include <QEventLoop>
 #include <QElapsedTimer>
+#include <QTimer>
 
 #include "async/channel.h"
 #include "async/asyncable.h"
@@ -38,7 +39,7 @@ namespace muse::testflow {
 class TestCaseRunner : public async::Asyncable
 {
 public:
-    TestCaseRunner() = default;
+    TestCaseRunner();
 
     SpeedMode speedMode() const;
     void setSpeedMode(SpeedMode mode);
@@ -52,6 +53,8 @@ public:
     void pause();
     void unpause(bool isNextStep);
     void abort();
+
+    void expectQuit(int timeoutMsec);
 
     async::Channel<StepInfo, Ret> stepStatusChanged() const;
 
@@ -68,6 +71,8 @@ private:
         int finishedCount = 0;
         QString lastStepName;
         bool stopped = false;
+        bool quitExpected = false;
+        int quitTimeoutMsec = 0;
         QEventLoop loop;
 
         void reset()
@@ -79,14 +84,19 @@ private:
             finishedCount = 0;
             lastStepName.clear();
             stopped = false;
+            quitExpected = false;
+            quitTimeoutMsec = 0;
             if (loop.isRunning()) {
                 loop.quit();
             }
         }
     };
 
+    friend class Testflow_TestCaseRunnerTests;
+
     void nextStep(bool byInterval = true);
     void doAbort();
+    void waitForQuit();
 
     int m_intervalMsec = 1000;
     TestCaseData m_testCase;
@@ -95,6 +105,8 @@ private:
     bool m_stepExecuting = false;
 
     QElapsedTimer m_elapsed;
+    QTimer m_quitTimer;
+    QObject m_stepTimerContext;
 
     async::Channel<StepInfo, Ret> m_stepStatusChanged;
     async::Channel<bool /*aborted*/> m_allFinished;

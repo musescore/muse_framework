@@ -360,6 +360,11 @@ void Testflow::abort()
     fatal("abort");
 }
 
+void Testflow::expectQuit(int timeoutMsec)
+{
+    m_runner.expectQuit(timeoutMsec);
+}
+
 void Testflow::fatal(const QString& msg)
 {
     if (status() == Status::Paused) {

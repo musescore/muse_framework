@@ -113,6 +113,11 @@ void TestflowApi::error(const QString& msg)
     testflow()->fatal(msg);
 }
 
+void TestflowApi::expectQuit(int timeoutMsec)
+{
+    testflow()->expectQuit(timeoutMsec);
+}
+
 void TestflowApi::fatal(const QString& msg)
 {
     testflow()->fatal(msg);
