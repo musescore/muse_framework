@@ -249,9 +249,11 @@ void InteractiveTestsModel::warning()
 
 void InteractiveTestsModel::critical()
 {
-    IInteractive::Result result = interactive()->errorSync("Cannot read file C:/Users/Username/Desktop/Composition.mscz",
-                                                           std::string("An error has occurred when trying to open this file"));
-    LOGD() << interactive()->buttonData(result.standardButton()).text;
+    interactive()->error("Cannot read file C:/Users/Username/Desktop/Composition.mscz",
+                         IInteractive::Text("An error has occurred when trying to open this file"))
+    .onResolve(this, [this](const IInteractive::Result& result) {
+        LOGD() << interactive()->buttonData(result.standardButton()).text;
+    });
 }
 
 void InteractiveTestsModel::criticalWithDetailedText()
@@ -259,8 +261,11 @@ void InteractiveTestsModel::criticalWithDetailedText()
     IInteractive::Text text;
     text.text = std::string("An error has occurred when trying to open this file");
     text.detailedText = std::string("Permission denied");
-    IInteractive::Result result = interactive()->errorSync("Cannot read file C:/Users/Username/Desktop/Composition.mscz", text);
-    LOGD() << interactive()->buttonData(result.standardButton()).text;
+
+    interactive()->error("Cannot read file C:/Users/Username/Desktop/Composition.mscz", text)
+    .onResolve(this, [this](const IInteractive::Result& result) {
+        LOGD() << interactive()->buttonData(result.standardButton()).text;
+    });
 }
 
 void InteractiveTestsModel::require()
