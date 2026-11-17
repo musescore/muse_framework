@@ -155,6 +155,8 @@ public:
     virtual QVariant accessibleValueStepSize() const = 0;
 
     // Text Interface
+    virtual bool accessibleTextEditable() const { return false; }
+    virtual void accessibleSetText(const QString&) {}
     virtual void accessibleSelection(int selectionIndex, int* startOffset, int* endOffset) const = 0;
     virtual int accessibleSelectionCount() const = 0;
 

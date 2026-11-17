@@ -24,6 +24,7 @@
 
 #include "navigationcontrol.h"
 
+#include <QMetaMethod>
 #include <QQuickWindow>
 #include <QTextBoundaryFinder>
 
@@ -212,6 +213,21 @@ void AccessibleItem::accessibleSelection(int selectionIndex, int* startOffset, i
 int AccessibleItem::accessibleSelectionCount() const
 {
     return m_selectedText.size();
+}
+
+bool AccessibleItem::accessibleTextEditable() const
+{
+    static const QMetaMethod textEditRequestedSignal = QMetaMethod::fromSignal(&AccessibleItem::textEditRequested);
+    return accessibleState(State::Enabled) && isSignalConnected(textEditRequestedSignal);
+}
+
+void AccessibleItem::accessibleSetText(const QString& text)
+{
+    if (!accessibleTextEditable()) {
+        return;
+    }
+
+    emit textEditRequested(text);
 }
 
 int AccessibleItem::accessibleCursorPosition() const

@@ -145,6 +145,8 @@ public:
     void accessibleSelection(int selectionIndex, int* startOffset, int* endOffset) const override;
     int accessibleSelectionCount() const override;
 
+    bool accessibleTextEditable() const override;
+    void accessibleSetText(const QString& text) override;
     int accessibleCursorPosition() const override;
 
     QString accessibleText(int startOffset, int endOffset) const override;
@@ -227,6 +229,10 @@ signals:
     void visualItemChanged(QQuickItem* item);
     void stateChanged();
     void windowChanged();
+
+    //! Emitted when an accessibility client sets the text of the item; the item is
+    //! editable through accessibility only if this signal is connected
+    void textEditRequested(const QString& text);
 
 private:
     const IAccessible* accessibleRoot() const;

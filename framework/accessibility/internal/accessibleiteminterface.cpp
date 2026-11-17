@@ -150,6 +150,7 @@ QAccessible::State AccessibleItemInterface::state() const
     case IAccessible::Role::EditableText: {
         state.focusable = true;
         state.focused = item->accessibleState(IAccessible::State::Focused);
+        state.editable = item->accessibleTextEditable();
     } break;
     case IAccessible::Role::StaticText: {
         state.focusable = true;
@@ -361,9 +362,15 @@ QString AccessibleItemInterface::text(QAccessible::Text textType) const
     return QString();
 }
 
-void AccessibleItemInterface::setText(QAccessible::Text, const QString&)
+void AccessibleItemInterface::setText(QAccessible::Text textType, const QString& text)
 {
-    NOT_IMPLEMENTED;
+    IAccessible* item = m_object->item();
+    if (textType != QAccessible::Value || !item->accessibleTextEditable()) {
+        NOT_SUPPORTED << textType;
+        return;
+    }
+
+    item->accessibleSetText(text);
 }
 
 QVariant AccessibleItemInterface::currentValue() const
