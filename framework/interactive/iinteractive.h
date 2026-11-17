@@ -276,9 +276,11 @@ public:
         return questionSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    [[deprecated("Use info() instead")]]
     virtual Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                             int defBtn = int(Button::NoButton), const Options& options = {}, const std::string& dialogTitle = {}) = 0;
 
+    [[deprecated("Use info() instead")]]
     Result infoSync(const std::string& contentTitle, const std::string& text, const Buttons& buttons,
                     const Button& defBtn = Button::NoButton, const Options& options = {}, const std::string& dialogTitle = {})
     {

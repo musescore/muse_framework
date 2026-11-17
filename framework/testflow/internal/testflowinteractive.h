@@ -52,6 +52,7 @@ public:
     ButtonData buttonData(Button b) const override;
 
     // info
+    [[deprecated("Use info() instead")]]
     Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
                     const Options& options = {}, const std::string& dialogTitle = {}) override;
 
