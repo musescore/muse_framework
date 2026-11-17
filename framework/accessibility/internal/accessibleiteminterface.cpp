@@ -100,10 +100,9 @@ int AccessibleItemInterface::indexOfChild(const QAccessibleInterface* iface) con
     return idx;
 }
 
-QAccessibleInterface* AccessibleItemInterface::childAt(int, int) const
+QAccessibleInterface* AccessibleItemInterface::childAt(int x, int y) const
 {
-    NOT_IMPLEMENTED;
-    return nullptr;
+    return m_object->controller().lock()->childAt(m_object->item(), x, y);
 }
 
 QAccessibleInterface* AccessibleItemInterface::focusChild() const

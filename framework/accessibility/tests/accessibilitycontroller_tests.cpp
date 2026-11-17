@@ -34,6 +34,7 @@
 
 #include "accessibility/iaccessible.h"
 #include "accessibility/internal/accessibilitycontroller.h"
+#include "accessibility/internal/accessibleobject.h"
 #include "global/tests/mocks/applicationmock.h"
 
 #include "modularity/ioc.h"
@@ -84,15 +85,15 @@ public:
         void setParent(IAccessible* parent) { m_parent = parent; }
 
         const IAccessible* accessibleParent() const override { return m_parent; }
-        size_t accessibleChildCount() const override { return 0; }
-        IAccessible* accessibleChild(size_t) const override { return nullptr; }
+        size_t accessibleChildCount() const override { return m_children.size(); }
+        IAccessible* accessibleChild(size_t i) const override { return m_children.at(i); }
         QWindow* accessibleWindow() const override { return nullptr; }
         muse::modularity::ContextPtr iocContext() const override { return muse::modularity::globalCtx(); }
-        IAccessible::Role accessibleRole() const override { return IAccessible::NoRole; }
+        IAccessible::Role accessibleRole() const override { return m_role; }
         QString accessibleName() const override { return QString(); }
         QString accessibleDescription() const override { return QString(); }
-        bool accessibleState(State) const override { return true; }
-        QRect accessibleRect() const override { return QRect(); }
+        bool accessibleState(State st) const override { return st == State::Enabled ? m_enabled : true; }
+        QRect accessibleRect() const override { return m_rect; }
         bool accessibleIgnored() const override { return false; }
 
         QVariant accessibleValue() const override { return QString(); }
@@ -130,7 +131,53 @@ public:
         async::Channel<IAccessible::State, bool> m_stateChanged;
 
         IAccessible* m_parent = nullptr;
+        std::vector<IAccessible*> m_children;
+        IAccessible::Role m_role = IAccessible::NoRole;
+        QRect m_rect;
+        bool m_enabled = true;
     };
+
+    void TearDown() override
+    {
+        for (auto it = m_items.rbegin(); it != m_items.rend(); ++it) {
+            m_controller->unreg(it->get());
+        }
+        m_items.clear();
+
+        //! NOTE: need if tested class was created as a shared pointer
+        testing::Mock::AllowLeak(m_mainWindow.get());
+        testing::Mock::AllowLeak(m_application.get());
+        testing::Mock::AllowLeak(m_appRootObject.get());
+        testing::Mock::AllowLeak(m_navigationController.get());
+    }
+
+    //! Makes an item that is owned by the test; without a parent, it is a child of the root
+    AccessibleItem* makeItem(IAccessible::Role role, const QRect& rect, AccessibleItem* parent = nullptr)
+    {
+        auto item = std::make_unique<AccessibleItem>();
+        item->m_role = role;
+        item->m_rect = rect;
+
+        if (parent) {
+            item->setParent(parent);
+            parent->m_children.push_back(item.get());
+        } else {
+            item->setParent(m_controller.get());
+        }
+
+        m_items.push_back(std::move(item));
+        return m_items.back().get();
+    }
+
+    static const IAccessible* itemOf(const QAccessibleInterface* iface)
+    {
+        return iface ? static_cast<AccessibleObject*>(iface->object())->item() : nullptr;
+    }
+
+    const IAccessible* root() const
+    {
+        return m_controller.get();
+    }
 
     AccessibleItem* makeItemWithRegisteredParent()
     {
@@ -180,6 +227,8 @@ public:
     std::shared_ptr<AccessibleAppRootObjectMock> m_appRootObject;
     std::shared_ptr<ApplicationMock> m_application;
     std::shared_ptr<muse::ui::NavigationControllerMock> m_navigationController;
+
+    std::vector<std::unique_ptr<AccessibleItem> > m_items;
 };
 
 TEST_F(Accessibility_ControllerTests, SendEventOnFocusChanged)
@@ -248,4 +297,46 @@ TEST_F(Accessibility_ControllerTests, NotSendEventOnFocusChangedIfAccessibilityI
     testing::Mock::AllowLeak(m_application.get());
     testing::Mock::AllowLeak(m_appRootObject.get());
     testing::Mock::AllowLeak(m_navigationController.get());
+}
+
+TEST_F(Accessibility_ControllerTests, ChildAtFindsTheMostSpecificItem)
+{
+    //! [GIVEN] A panel with a list item and a smaller button that overlap without being nested
+    AccessibleItem* panel = makeItem(IAccessible::Panel, QRect(0, 0, 200, 200));
+    AccessibleItem* listItem = makeItem(IAccessible::ListItem, QRect(0, 0, 100, 50), panel);
+    AccessibleItem* button = makeItem(IAccessible::Button, QRect(10, 10, 20, 20), panel);
+    m_controller->reg(panel);
+
+    //! [THEN] The button is found where it covers the list item, and the list item elsewhere
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 15, 15)), button);
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 80, 40)), listItem);
+
+    //! [THEN] Nothing is found outside every item
+    EXPECT_EQ(m_controller->childAt(root(), 500, 500), nullptr);
+}
+
+TEST_F(Accessibility_ControllerTests, ChildAtLooksIntoItemsWithoutGeometry)
+{
+    //! [GIVEN] A button inside a container that has no geometry of its own
+    AccessibleItem* container = makeItem(IAccessible::Panel, QRect());
+    AccessibleItem* button = makeItem(IAccessible::Button, QRect(10, 10, 20, 20), container);
+    m_controller->reg(container);
+
+    //! [THEN] The button is found
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 15, 15)), button);
+}
+
+TEST_F(Accessibility_ControllerTests, ChildAtSkipsWhatThePlatformIgnores)
+{
+    //! [GIVEN] A button, covered by a smaller item without a role and by a smaller disabled button
+    AccessibleItem* panel = makeItem(IAccessible::Panel, QRect(0, 0, 200, 200));
+    AccessibleItem* button = makeItem(IAccessible::Button, QRect(0, 0, 50, 50), panel);
+    makeItem(IAccessible::NoRole, QRect(0, 0, 10, 10), panel);
+    AccessibleItem* disabled = makeItem(IAccessible::Button, QRect(20, 20, 10, 10), panel);
+    disabled->m_enabled = false;
+    m_controller->reg(panel);
+
+    //! [THEN] The button is found under both
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 5, 5)), button);
+    EXPECT_EQ(itemOf(m_controller->childAt(root(), 25, 25)), button);
 }

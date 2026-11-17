@@ -148,6 +148,7 @@ public:
     QAccessibleInterface* parentIface(const IAccessible* item) const;
     int childCount(const IAccessible* item) const;
     QAccessibleInterface* child(const IAccessible* item, int i) const;
+    QAccessibleInterface* childAt(const IAccessible* item, int x, int y) const;
     int indexOfChild(const IAccessible* item, const QAccessibleInterface* iface) const;
     QAccessibleInterface* focusedChild(const IAccessible* item) const;
 

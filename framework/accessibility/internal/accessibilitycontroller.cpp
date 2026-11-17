@@ -827,6 +827,83 @@ QAccessibleInterface* AccessibilityController::child(const IAccessible* item, in
     return chldIt.iface;
 }
 
+//! NOTE: The platform resolves a hit on an element it ignores, one without a role of its own or a
+//! plain container, to the nearest ancestor it does not ignore, which is the window. So such an item
+//! is no answer to a hit test, and must not shadow the control it covers
+static bool isHitTestTarget(QAccessibleInterface* iface)
+{
+    const QAccessible::State state = iface->state();
+    if (state.invisible || state.offscreen || state.invalid) {
+        return false;
+    }
+
+    switch (iface->role()) {
+    case QAccessible::NoRole:
+    case QAccessible::Application:
+    case QAccessible::Border:
+    case QAccessible::Client:
+    case QAccessible::Pane:
+    case QAccessible::PopupMenu:
+    case QAccessible::ToolBar:
+        return false;
+    default:
+        return true;
+    }
+}
+
+QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, int x, int y) const
+{
+    IF_ASSERT_FAILED(item) {
+        return nullptr;
+    }
+
+    const QPoint pos(x, y);
+
+    QAccessibleInterface* found = nullptr;
+    qint64 foundArea = 0;
+
+    //! NOTE: Items that overlap are not necessarily nested: a panel can be a sibling of the controls
+    //! it spans, and a decorative item can cover them. So the most specific item wins, rather than
+    //! the first one that matches
+    auto consider = [&found, &foundArea](QAccessibleInterface* iface, const QRect& rect) {
+        const qint64 area = qint64(rect.width()) * rect.height();
+        if (!found || area < foundArea) {
+            found = iface;
+            foundArea = area;
+        }
+    };
+
+    //! NOTE: Items that come later are drawn on top of the earlier ones, so search from the back;
+    //! that way the one that is on top wins a tie
+    size_t count = item->accessibleChildCount();
+    for (size_t i = count; i > 0; --i) {
+        const IAccessible* child = item->accessibleChild(i - 1);
+        const Item& chIt = findItem(child);
+        if (!chIt.isValid() || !chIt.iface) {
+            continue;
+        }
+
+        const QRect rect = child->accessibleRect();
+
+        //! NOTE: An item that has no geometry of its own does not hide its children from the hit test
+        if (!rect.isEmpty() && !rect.contains(pos)) {
+            continue;
+        }
+
+        //! NOTE: An item counts only if none of its descendants contains the point: the platform needs
+        //! the innermost control there
+        //! An item that is accessibleIgnored() is still a target: that flag only keeps it from being
+        //! announced, while the platform still exposes it (e.g. the buttons of a StandardDialog)
+        if (QAccessibleInterface* iface = childAt(child, x, y)) {
+            consider(iface, iface->rect());
+        } else if (!rect.isEmpty() && isHitTestTarget(chIt.iface)) {
+            consider(chIt.iface, rect);
+        }
+    }
+
+    return found;
+}
+
 int AccessibilityController::indexOfChild(const IAccessible* item, const QAccessibleInterface* iface) const
 {
     TRACEFUNC;

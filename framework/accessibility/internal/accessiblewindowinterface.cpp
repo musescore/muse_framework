@@ -160,10 +160,19 @@ int AccessibleWindowInterface::indexOfChild(const QAccessibleInterface* iface) c
     return idx;
 }
 
-QAccessibleInterface* AccessibleWindowInterface::childAt(int, int) const
+QAccessibleInterface* AccessibleWindowInterface::childAt(int x, int y) const
 {
-    NOT_IMPLEMENTED;
-    return nullptr;
+    AccessibleObject* root = resolveWindowRoot();
+    if (!root) {
+        return nullptr;
+    }
+
+    auto controller = root->controller().lock();
+    if (!controller) {
+        return nullptr;
+    }
+
+    return controller->childAt(root->item(), x, y);
 }
 
 QAccessibleInterface* AccessibleWindowInterface::focusChild() const
