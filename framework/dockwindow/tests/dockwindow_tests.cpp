@@ -44,7 +44,11 @@
 #include "rcommand/internal/commandsregister.h"
 #include "rcommand/internal/commandsstate.h"
 
+#ifdef MUSE_MODULE_SHORTCUTS_V2
 #include "shortcuts_v2/tests/mocks/commandshortcutsregistermock.h"
+#else
+#include "shortcuts/tests/mocks/shortcutsregistermock.h"
+#endif
 #include "ui/tests/mocks/uistatemock.h"
 
 using ::testing::_;
@@ -54,6 +58,12 @@ using ::testing::ReturnRef;
 
 using namespace muse;
 using namespace muse::dock;
+
+#ifdef MUSE_MODULE_SHORTCUTS_V2
+using ShortcutsRegisterMock = muse::shortcuts::CommandShortcutsRegisterMock;
+#else
+using ShortcutsRegisterMock = muse::shortcuts::ShortcutsRegisterMock;
+#endif
 
 static const modularity::ContextPtr iocCtx = std::make_shared<modularity::Context>(1);
 static const std::string MODULE_NAME = "utests";
@@ -93,9 +103,13 @@ public:
         commandsState->reg(std::make_shared<DockCommandsState>(iocCtx));
         modularity::ioc(iocCtx)->registerExport<rcommand::ICommandsState>(MODULE_NAME, commandsState);
 
-        m_shortcutsRegister = std::make_shared<NiceMock<shortcuts::CommandShortcutsRegisterMock> >();
+        m_shortcutsRegister = std::make_shared<NiceMock<ShortcutsRegisterMock> >();
         ON_CALL(*m_shortcutsRegister, shortcut(_)).WillByDefault(ReturnRef(m_shortcut));
+#ifdef MUSE_MODULE_SHORTCUTS_V2
         modularity::globalIoc()->registerExport<shortcuts::ICommandShortcutsRegister>(MODULE_NAME, m_shortcutsRegister);
+#else
+        modularity::ioc(iocCtx)->registerExport<shortcuts::IShortcutsRegister>(MODULE_NAME, m_shortcutsRegister);
+#endif
 
         m_engine = new QQmlEngine();
 
@@ -120,7 +134,9 @@ public:
 
         modularity::removeIoC(iocCtx);
         modularity::globalIoc()->unregister<rcommand::ICommandsRegister>(MODULE_NAME);
+#ifdef MUSE_MODULE_SHORTCUTS_V2
         modularity::globalIoc()->unregister<shortcuts::ICommandShortcutsRegister>(MODULE_NAME);
+#endif
     }
 
     void setUpKDDockWidgets()
@@ -274,7 +290,7 @@ public:
     }
 
     std::shared_ptr<NiceMock<ui::UiStateMock> > m_uiState;
-    std::shared_ptr<NiceMock<shortcuts::CommandShortcutsRegisterMock> > m_shortcutsRegister;
+    std::shared_ptr<NiceMock<ShortcutsRegisterMock> > m_shortcutsRegister;
     shortcuts::Shortcut m_shortcut;
     QQmlEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
