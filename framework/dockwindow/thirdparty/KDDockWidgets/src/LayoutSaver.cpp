@@ -64,15 +64,20 @@ LayoutSaver::Layout *LayoutSaver::Layout::s_currentLayoutBeingRestored = nullptr
 
 inline InternalRestoreOptions internalRestoreOptions(RestoreOptions options)
 {
-    if (options == RestoreOption_None) {
-        return InternalRestoreOption::None;
-    } else if (options == RestoreOption_RelativeToMainWindow) {
-        return InternalRestoreOptions(InternalRestoreOption::SkipMainWindowGeometry)
-            | InternalRestoreOption::RelativeFloatingWindowGeometry;
-    } else {
-        qWarning() << Q_FUNC_INFO << "Unknown options" << options;
-        return {};
+    InternalRestoreOptions ret = {};
+    if (options.testFlag(RestoreOption_RelativeToMainWindow)) {
+        ret.setFlag(InternalRestoreOption::SkipMainWindowGeometry);
+        ret.setFlag(InternalRestoreOption::RelativeFloatingWindowGeometry);
+        options.setFlag(RestoreOption_RelativeToMainWindow, false);
     }
+    if (options.testFlag(RestoreOption_SkipMainWindowVisibility)) {
+        ret.setFlag(InternalRestoreOption::SkipMainWindowVisibility);
+        options.setFlag(RestoreOption_SkipMainWindowVisibility, false);
+    }
+    if (options != RestoreOption_None) {
+        qWarning() << Q_FUNC_INFO << "Unknown options" << options;
+    }
+    return ret;
 }
 
 bool LayoutSaver::Private::s_restoreInProgress = false;
@@ -247,7 +252,8 @@ bool LayoutSaver::restoreLayout(const QByteArray &data)
             continue;
 
         if (!(d->m_restoreOptions & InternalRestoreOption::SkipMainWindowGeometry)) {
-            d->deserializeWindowGeometry(mw, mainWindow->window()); // window(), as the MainWindow can be embedded
+            const bool applyVisibility = !(d->m_restoreOptions & InternalRestoreOption::SkipMainWindowVisibility);
+            d->deserializeWindowGeometry(mw, mainWindow->window(), applyVisibility); // window(), as the MainWindow can be embedded
             if (mw.windowState != Qt::WindowNoState && mw.windowState != Qt::WindowMinimized) {
                 if (auto w = mainWindow->windowHandle()) {
                     w->setWindowState(mw.windowState);
@@ -335,7 +341,7 @@ void LayoutSaver::Private::clearRestoredProperty()
 }
 
 template<typename T>
-void LayoutSaver::Private::deserializeWindowGeometry(const T &saved, QWidgetOrQuick *topLevel)
+void LayoutSaver::Private::deserializeWindowGeometry(const T &saved, QWidgetOrQuick *topLevel, bool applyVisibility)
 {
     // Not simply calling QWidget::setGeometry() here.
     // For QtQuick we need to modify the QWindow's geometry.
@@ -355,7 +361,9 @@ void LayoutSaver::Private::deserializeWindowGeometry(const T &saved, QWidgetOrQu
         KDDockWidgets::Private::setTopLevelGeometry(geometry, topLevel);
     }
 
-    topLevel->setVisible(saved.isVisible);
+    if (applyVisibility) {
+        topLevel->setVisible(saved.isVisible);
+    }
 }
 
 LayoutSaver::Private::Private(int ctx, RestoreOptions options)

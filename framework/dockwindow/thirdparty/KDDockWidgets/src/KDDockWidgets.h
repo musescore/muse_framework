@@ -183,6 +183,7 @@ enum RestoreOption
 {
     RestoreOption_None = 0,
     RestoreOption_RelativeToMainWindow = 1, ///< Skips restoring the main window geometry and the restored dock widgets will use relative sizing.
+    RestoreOption_SkipMainWindowVisibility = 2, ///< Don't show/hide the main window according to the saved layout when restoring.
         ///< Loading layouts won't change the main window geometry and just use whatever the user has at the moment.
 };
 Q_DECLARE_FLAGS(RestoreOptions, RestoreOption)
