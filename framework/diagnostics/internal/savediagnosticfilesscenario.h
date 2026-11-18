@@ -22,8 +22,11 @@
 #ifndef MUSE_DIAGNOSTICS_SAVEDIAGNOSTICFILESSCENARIO_H
 #define MUSE_DIAGNOSTICS_SAVEDIAGNOSTICFILESSCENARIO_H
 
+#include <QObject>
+
 #include "isavediagnosticfilesscenario.h"
 
+#include "async/asyncable.h"
 #include "modularity/ioc.h"
 #include "global/iapplication.h"
 #include "idiagnosticsconfiguration.h"
@@ -31,7 +34,7 @@
 #include "interactive/iplatforminteractive.h"
 
 namespace muse::diagnostics {
-class SaveDiagnosticFilesScenario : public ISaveDiagnosticFilesScenario, public Contextable
+class SaveDiagnosticFilesScenario : public ISaveDiagnosticFilesScenario, public Contextable, public async::Asyncable
 {
     GlobalInject<IApplication> application;
     GlobalInject<diagnostics::IDiagnosticsConfiguration> configuration;
@@ -43,7 +46,13 @@ public:
     SaveDiagnosticFilesScenario(const modularity::ContextPtr& iocCtx)
         : Contextable(iocCtx) {}
 
-    muse::Ret saveDiagnosticFiles() override;
+    async::Promise<Ret> saveDiagnosticFiles() override;
+
+private:
+    async::Promise<Ret> selectPathAndSave();
+    Ret saveTo(const io::path_t& path);
+
+    QObject m_timersContext;
 };
 }
 

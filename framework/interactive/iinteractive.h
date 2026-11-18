@@ -200,6 +200,18 @@ public:
         return warning(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    //! Asks whether to continue with what `ret`, returned by a can-check, is about
+    async::Promise<bool> askToContinue(const Ret& ret)
+    {
+        return async::make_promise<bool>([this, ret](auto resolve) {
+            warning(std::string(), ret.text(), { Button::Cancel, Button::Ok })
+            .onResolve(nullptr, [resolve](const Result& result) {
+                (void)resolve(result.standardButton() == Button::Ok);
+            });
+            return async::Promise<bool>::dummy_result();
+        }, async::PromiseType::AsyncByBody);
+    }
+
     // error
     virtual async::Promise<Result> error(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                          int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
@@ -276,29 +288,35 @@ public:
         return questionSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    [[deprecated("Use info() instead")]]
     virtual Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                             int defBtn = int(Button::NoButton), const Options& options = {}, const std::string& dialogTitle = {}) = 0;
 
+    [[deprecated("Use info() instead")]]
     Result infoSync(const std::string& contentTitle, const std::string& text, const Buttons& buttons,
                     const Button& defBtn = Button::NoButton, const Options& options = {}, const std::string& dialogTitle = {})
     {
         return infoSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    [[deprecated("Use warning() instead")]]
     virtual Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
                                const std::string& dialogTitle = {}) = 0;
 
+    [[deprecated("Use warning() instead")]]
     Result warningSync(const std::string& contentTitle, const std::string& text, const Buttons& buttons,
                        const Button& defBtn = Button::NoButton, const Options& options = { WithIcon }, const std::string& dialogTitle = {})
     {
         return warningSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    [[deprecated("Use error() instead")]]
     virtual Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                              int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
                              const std::string& dialogTitle = {}) = 0;
 
+    [[deprecated("Use error() instead")]]
     Result errorSync(const std::string& contentTitle, const std::string& text, const Buttons& buttons,
                      const Button& defBtn = Button::NoButton, const Options& options = { WithIcon }, const std::string& dialogTitle = {})
     {

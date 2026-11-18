@@ -729,12 +729,41 @@ async::Promise<Val> Interactive::open(const UriQuery& uri)
 
 Promise<Val> Interactive::openAsync(const UriQuery& q)
 {
-    return async::make_promise<Val>(openFunc(q), PromiseType::AsyncByBody);
+    return doOpenAsync(openFunc(q));
 }
 
 async::Promise<Val> Interactive::openAsync(const Uri& uri, const QVariantMap& params)
 {
-    return async::make_promise<Val>(openFunc(UriQuery(uri), params), PromiseType::AsyncByBody);
+    return doOpenAsync(openFunc(UriQuery(uri), params));
+}
+
+Promise<Val> Interactive::doOpenAsync(const Promise<Val>::BodyResolveReject& open)
+{
+    return async::make_promise<Val>([this, open](auto resolve, auto reject) {
+        //! NOTE The opening may fail synchronously, before the caller subscribes to the returned promise,
+        //! so the handlers are attached before it starts, and the failure is reported later
+        Promise<Val>::Resolve openResolve;
+        Promise<Val>::Reject openReject;
+        Promise<Val> opening = async::make_promise<Val>([&openResolve, &openReject](auto res, auto rej) {
+            openResolve = res;
+            openReject = rej;
+            return Promise<Val>::Result::unchecked();
+        }, PromiseType::AsyncByBody);
+
+        opening.onResolve(this, [resolve](const Val& val) {
+            (void)resolve(val);
+        });
+
+        opening.onReject(this, [this, reject](int code, const std::string& msg) {
+            Async::call(this, [reject, code, msg]() {
+                (void)reject(code, msg);
+            });
+        });
+
+        open(openResolve, openReject);
+
+        return Promise<Val>::Result::unchecked();
+    }, PromiseType::AsyncByBody);
 }
 
 Promise<Val>::BodyResolveReject Interactive::openFunc(const UriQuery& q)

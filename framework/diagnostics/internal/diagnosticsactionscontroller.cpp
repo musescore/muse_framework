@@ -86,8 +86,9 @@ void DiagnosticsActionsController::openUri(const UriQuery& uri, bool isSingle)
 
 void DiagnosticsActionsController::saveDiagnosticFiles()
 {
-    Ret ret = saveDiagnosticsScenario()->saveDiagnosticFiles();
-    if (!ret) {
-        LOGE() << ret.toString();
-    }
+    saveDiagnosticsScenario()->saveDiagnosticFiles().onResolve(this, [](const Ret& ret) {
+        if (!ret) {
+            LOGE() << ret.toString();
+        }
+    });
 }

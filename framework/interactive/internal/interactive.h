@@ -73,6 +73,7 @@ public:
                                     const std::string& dialogTitle = "") override;
 
     // info
+    [[deprecated("Use info() instead")]]
     Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
                     const Options& options = {}, const std::string& dialogTitle = "") override;
 
@@ -81,6 +82,7 @@ public:
                                 const std::string& dialogTitle = "") override;
 
     // warning
+    [[deprecated("Use warning() instead")]]
     Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
                        const Options& options = {}, const std::string& dialogTitle = "") override;
 
@@ -89,6 +91,7 @@ public:
                                    const std::string& dialogTitle = "") override;
 
     // error
+    [[deprecated("Use error() instead")]]
     Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
                      const Options& options = { WithIcon }, const std::string& dialogTitle = "") override;
 
@@ -168,6 +171,7 @@ private:
 
     async::Promise<Val> openAsync(const UriQuery& uri);
     async::Promise<Val> openAsync(const Uri& uri, const QVariantMap& params);
+    async::Promise<Val> doOpenAsync(const async::Promise<Val>::BodyResolveReject& open);
 
     async::Promise<Val>::BodyResolveReject openFunc(const UriQuery& q);
     async::Promise<Val>::BodyResolveReject openFunc(const UriQuery& q, const QVariantMap& params);
