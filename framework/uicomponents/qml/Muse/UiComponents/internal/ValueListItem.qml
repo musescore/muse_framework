@@ -420,6 +420,8 @@ ListItemBlank {
                             textSidePadding: 0
                             visible: false
 
+                            navigation.accessible.name: textLoader.fieldName
+
                             onTextChanged: function (text) {
                                 valueEdit.newValue = text
                             }
