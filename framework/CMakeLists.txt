@@ -42,7 +42,7 @@ if (MUSE_MODULE_TOAST)
 endif()
 
 if (MUSE_MODULE_DOCKWINDOW)
-    add_subdirectory(dockwindow_v2)
+    add_subdirectory(dockwindow)
 endif()
 
 if (MUSE_MODULE_ACCESSIBILITY)
