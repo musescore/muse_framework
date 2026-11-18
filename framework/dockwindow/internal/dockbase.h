@@ -33,8 +33,8 @@
 
 Q_MOC_INCLUDE("ui/qml/Muse/Ui/navigationsection.h")
 
-namespace KDDockWidgets {
-class DockWidgetQuick;
+namespace KDDockWidgets::Core {
+class DockWidget;
 }
 
 namespace muse::ui {
@@ -189,13 +189,16 @@ signals:
 protected:
     friend class DockWindow;
     friend class DropController;
+    friend class TopLevelToolBarsLayout;
 
     void componentComplete() override;
 
     DockType type() const;
-    KDDockWidgets::DockWidgetQuick* dockWidget() const;
+    KDDockWidgets::Core::DockWidget* dockWidget() const;
 
     void doSetFloating(bool floating);
+
+    void syncLayoutItemMinSize();
 
 protected slots:
     void applySizeConstraints();
@@ -206,6 +209,7 @@ private slots:
 
 private:
     void setUpFrameConnections();
+    void fitSizeIntoMaximum();
 
     void writeProperties();
 
@@ -232,7 +236,7 @@ private:
     bool m_floating = false;
 
     bool m_inited = false;
-    KDDockWidgets::DockWidgetQuick* m_dockWidget = nullptr;
+    KDDockWidgets::Core::DockWidget* m_dockWidget = nullptr;
 
     ui::NavigationSection* m_navigationSection = nullptr;
     int m_contentNavigationPanelOrderStart = 1;

@@ -34,6 +34,6 @@ DockPanelView {
     Loader {
         id: contentLoader
 
-        active: root.visible && root.inited
+        active: root.visible
     }
 }

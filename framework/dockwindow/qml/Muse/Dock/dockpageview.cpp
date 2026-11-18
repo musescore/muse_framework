@@ -74,7 +74,6 @@ void DockPageView::deinit()
     TRACEFUNC;
 
     for (DockBase* dock : allDocks()) {
-        dock->deinit();
         dock->disconnect(this);
     }
 }

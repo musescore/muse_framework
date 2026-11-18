@@ -24,6 +24,8 @@ qt_add_qml_module(muse_dockwindow_qml
         dockwindow.h
         foreign.cpp
         foreign.h
+        topleveltoolbarslayout.cpp
+        topleveltoolbarslayout.h
     QML_FILES
         DockFloatingWindow.qml
         DockFrame.qml
@@ -45,3 +47,11 @@ qt_add_qml_module(muse_dockwindow_qml
 fixup_qml_module_dependencies(muse_dockwindow_qml)
 
 target_link_libraries(muse_dockwindow_qml PRIVATE kddockwidgets)
+
+get_property(kddockwidgets_src_dir GLOBAL PROPERTY kddockwidgets_SOURCE_DIR)
+target_include_directories(muse_dockwindow_qml SYSTEM PRIVATE
+    ${kddockwidgets_src_dir}
+    ${kddockwidgets_src_dir}/kddockwidgets/src
+    ${kddockwidgets_src_dir}/kddockwidgets/src/3rdparty
+    ${kddockwidgets_src_dir}/kddockwidgets/src/3rdparty/nlohmann
+)

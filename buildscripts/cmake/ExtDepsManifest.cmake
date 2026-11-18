@@ -29,7 +29,7 @@ if (MUSE_MODULE_DRAW)
     endif()
 endif()
 
-if (MUSE_MODULE_DOCKWINDOW AND MUSE_MODULE_DOCKWINDOW_KDDOCKWIDGETS_V2)
+if (MUSE_MODULE_DOCKWINDOW)
     require_source_dep(kddockwidgets)
 endif()
 

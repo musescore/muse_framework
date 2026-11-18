@@ -24,14 +24,26 @@
 
 #include <QRect>
 #include <QTimer>
-#include <QAction>
 
 #include "log.h"
 
-#include "modularity/ioc.h"
-#include "thirdparty/KDDockWidgets/src/DockWidgetQuick.h"
-#include "thirdparty/KDDockWidgets/src/private/quick/FrameQuick_p.h"
-#include "thirdparty/KDDockWidgets/src/private/FloatingWindow_p.h"
+#include "kddockwidgets/src/core/DockWidget.h"
+#include "kddockwidgets/src/core/FloatingWindow.h"
+#include "kddockwidgets/src/core/Group.h"
+#include "kddockwidgets/src/qtquick/views/DockWidget.h"
+#include "kddockwidgets/src/qtquick/views/Group.h"
+#include "kddockwidgets/src/qtquick/views/View.h"
+#include "kddockwidgets/src/qtquick/Action.h"
+
+// This include pulls in kdbindings/signal.h which is incompatible with
+// Qt's `emit` macro being defined. Temporarily undefine it, then restore it.
+#ifdef emit
+#undef emit
+#include "kddockwidgets/src/core/layouting/Item_p.h"
+#define emit
+#else
+#include "kddockwidgets/src/core/layouting/Item_p.h"
+#endif
 
 #include "ui/qml/Muse/Ui/navigationsection.h"
 
@@ -43,33 +55,24 @@ static QSize adjustSizeByConstraints(const QSize& size, const QSize& min, const 
     return size.expandedTo(min).boundedTo(max);
 }
 
-static bool sizeInRange(const QSize& size, const QSize& min, const QSize& max)
+static KDDockWidgets::Core::Group* groupForDockWidget(KDDockWidgets::Core::DockWidget* dw)
 {
-    bool widthInRange = size.width() >= min.width() && size.width() <= max.width();
-    bool heightInRange = size.height() >= min.height() && size.height() <= max.height();
-
-    return widthInRange && heightInRange;
+    if (!dw) {
+        return nullptr;
+    }
+    auto* view = qobject_cast<KDDockWidgets::QtQuick::DockWidget*>(
+        KDDockWidgets::QtQuick::asQQuickItem(dw));
+    return view ? view->group() : nullptr;
 }
 
-class DockWidgetImpl : public KDDockWidgets::DockWidgetQuick
+static KDDockWidgets::QtQuick::Group* groupViewFor(KDDockWidgets::Core::Group* group)
 {
-public:
-    DockWidgetImpl(int ctx, const QString& uniqueName)
-        : KDDockWidgets::DockWidgetQuick(ctx, uniqueName)
-    {
-        setObjectName(uniqueName);
+    if (!group) {
+        return nullptr;
     }
-
-    QSize minimumSize() const override
-    {
-        return DockWidgetBase::minimumSize();
-    }
-
-    QSize maximumSize() const override
-    {
-        return DockWidgetBase::maximumSize();
-    }
-};
+    return qobject_cast<KDDockWidgets::QtQuick::Group*>(
+        KDDockWidgets::QtQuick::asQQuickItem(group));
+}
 }
 
 using namespace muse::dock;
@@ -142,12 +145,17 @@ QPoint DockBase::globalPosition() const
         return QPoint();
     }
 
-    auto frame = static_cast<const KDDockWidgets::FrameQuick*>(m_dockWidget->frame());
-    if (!frame) {
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+    if (!group) {
         return QPoint();
     }
 
-    return frame->mapToGlobal(QPoint(0, 0));
+    QQuickItem* groupView = KDDockWidgets::QtQuick::asQQuickItem(group);
+    if (!groupView) {
+        return QPoint();
+    }
+
+    return groupView->mapToGlobal(QPointF(0, 0)).toPoint();
 }
 
 QVariantList DockBase::dropDestinationsProperty() const
@@ -236,7 +244,7 @@ DockType DockBase::type() const
     return m_properties.type;
 }
 
-KDDockWidgets::DockWidgetQuick* DockBase::dockWidget() const
+KDDockWidgets::Core::DockWidget* DockBase::dockWidget() const
 {
     return m_dockWidget;
 }
@@ -460,7 +468,7 @@ void DockBase::open()
     }
 
     setVisible(true);
-    m_dockWidget->show();
+    m_dockWidget->open();
 
     applySizeConstraints();
 }
@@ -495,7 +503,7 @@ void DockBase::hideHighlighting()
 QRect DockBase::frameGeometry() const
 {
     if (m_dockWidget && m_dockWidget->isVisible()) {
-        return m_dockWidget->frameGeometry();
+        return m_dockWidget->groupGeometry();
     }
 
     return QRect();
@@ -507,14 +515,14 @@ bool DockBase::isInSameFrame(const DockBase* other) const
         return false;
     }
 
-    auto frame = static_cast<const KDDockWidgets::FrameQuick*>(m_dockWidget->frame());
-    auto otherFrame = static_cast<const KDDockWidgets::FrameQuick*>(other->dockWidget()->frame());
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+    KDDockWidgets::Core::Group* otherGroup = groupForDockWidget(other->dockWidget());
 
-    if (!frame || !otherFrame) {
+    if (!group || !otherGroup) {
         return false;
     }
 
-    return frame && otherFrame && frame == otherFrame;
+    return group == otherGroup;
 }
 
 void DockBase::setFramePanelOrder(int order)
@@ -523,16 +531,21 @@ void DockBase::setFramePanelOrder(int order)
         return;
     }
 
-    auto frame = static_cast<const KDDockWidgets::FrameQuick*>(m_dockWidget->frame());
-    if (!frame) {
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+    if (!group) {
         return;
     }
 
-    if (frame->beingDeletedLater()) {
+    if (group->beingDeletedLater()) {
         return;
     }
 
-    QQuickItem* frameVisualItem = frame->visualItem();
+    KDDockWidgets::QtQuick::Group* groupView = groupViewFor(group);
+    if (!groupView) {
+        return;
+    }
+
+    QQuickItem* frameVisualItem = groupView->visualItem();
     if (!frameVisualItem) {
         return;
     }
@@ -549,54 +562,47 @@ void DockBase::resize(int width, int height)
 {
     TRACEFUNC;
 
-    if (width == this->width() && height == this->height()) {
-        return;
-    }
-
     if (!m_dockWidget) {
         return;
     }
 
-    auto frame = static_cast<const KDDockWidgets::FrameQuick*>(m_dockWidget->frame());
-    if (!frame || m_dockWidget != frame->currentDockWidget()) {
+    width = std::max(width, m_minimumWidth);
+    height = std::max(height, m_minimumHeight);
+
+    if (m_maximumWidth > 0) {
+        width = std::min(width, std::max(m_maximumWidth, m_minimumWidth));
+    }
+
+    if (m_maximumHeight > 0) {
+        height = std::min(height, std::max(m_maximumHeight, m_minimumHeight));
+    }
+
+    //! NOTE: Use the actual size in the layout, the item size may be overridden from QML
+    const int deltaWidth = width - m_dockWidget->width();
+    const int deltaHeight = height - m_dockWidget->height();
+    if (deltaWidth == 0 && deltaHeight == 0) {
         return;
     }
 
-    const Layouting::Item* item = frame->layoutItem();
-    if (!item) {
-        return;
+    int left = 0;
+    int top = 0;
+    int right = 0;
+    int bottom = 0;
+
+    switch (location()) {
+    case Location::Bottom: top = deltaHeight;
+        break;
+    case Location::Top: bottom = deltaHeight;
+        break;
+    case Location::Left: right = deltaWidth;
+        break;
+    case Location::Right: left = deltaWidth;
+        break;
+    case Location::Center:
+    case Location::Undefined: break;
     }
 
-    Layouting::ItemBoxContainer* parentContainer = item->parentBoxContainer();
-    if (!parentContainer) {
-        return;
-    }
-
-    width = qBound(m_minimumWidth, width, m_maximumWidth);
-    height = qBound(m_minimumHeight, height, m_maximumHeight);
-
-    QSize minSizeBackup = QSize(m_minimumWidth, m_minimumHeight);
-    QSize maxSizeBackup = QSize(m_maximumWidth, m_maximumHeight);
-
-    m_minimumWidth = width;
-    m_maximumWidth = width;
-
-    const QQuickItem* visualItem = frame->visualItem();
-    int extraHeight = visualItem ? visualItem->property("nonContentsHeight").toInt() : 0;
-    height += extraHeight;
-
-    m_minimumHeight = height;
-    m_maximumHeight = height;
-
-    applySizeConstraints();
-    parentContainer->layoutEqually();
-
-    m_minimumWidth = minSizeBackup.width();
-    m_maximumWidth = maxSizeBackup.width();
-    m_minimumHeight = minSizeBackup.height();
-    m_maximumHeight = maxSizeBackup.height();
-
-    applySizeConstraints();
+    m_dockWidget->resizeInLayout(left, top, right, bottom);
 }
 
 muse::ui::INavigationSection* DockBase::navigationSection() const
@@ -630,22 +636,23 @@ void DockBase::componentComplete()
         return;
     }
 
-    const int ctx = iocContext()->id;
-
     const QString name = objectName();
 
     if (content->objectName().isEmpty()) {
         content->setObjectName(name + "_content");
     }
 
-    m_dockWidget = new DockWidgetImpl(ctx, name);
-    m_dockWidget->setWidget(content);
+    auto* dockWidgetView = new KDDockWidgets::QtQuick::DockWidget(iocContext()->id, name);
+    dockWidgetView->setObjectName(name);
+    m_dockWidget = dockWidgetView->dockWidget();
+    dockWidgetView->setGuestItem(content);
     m_dockWidget->setTitle(m_title);
 
     writeProperties();
     setUpFrameConnections();
 
-    connect(m_dockWidget, &KDDockWidgets::DockWidgetQuick::widthChanged, this, [this]() {
+    QQuickItem* dockWidgetItem = KDDockWidgets::QtQuick::asQQuickItem(m_dockWidget);
+    connect(dockWidgetItem, &QQuickItem::widthChanged, this, [this]() {
         if (m_dockWidget) {
             setWidth(m_dockWidget->width());
             if (inited()) {
@@ -654,7 +661,7 @@ void DockBase::componentComplete()
         }
     });
 
-    connect(m_dockWidget, &KDDockWidgets::DockWidgetQuick::heightChanged, this, [this]() {
+    connect(dockWidgetItem, &QQuickItem::heightChanged, this, [this]() {
         if (m_dockWidget) {
             setHeight(m_dockWidget->height());
             if (inited()) {
@@ -677,10 +684,12 @@ void DockBase::applySizeConstraints()
 
     TRACEFUNC;
 
-    int minWidth = m_minimumWidth > 0 ? m_minimumWidth : m_dockWidget->minimumWidth();
-    int minHeight = m_minimumHeight > 0 ? m_minimumHeight : m_dockWidget->minimumHeight();
-    int maxWidth = m_maximumWidth > 0 ? m_maximumWidth : m_dockWidget->maximumWidth();
-    int maxHeight = m_maximumHeight > 0 ? m_maximumHeight : m_dockWidget->maximumHeight();
+    KDDockWidgets::Core::View* dockWidgetView = m_dockWidget->view();
+
+    int minWidth = m_minimumWidth > 0 ? m_minimumWidth : dockWidgetView->minSize().width();
+    int minHeight = m_minimumHeight > 0 ? m_minimumHeight : dockWidgetView->minSize().height();
+    int maxWidth = m_maximumWidth > 0 ? m_maximumWidth : dockWidgetView->maxSizeHint().width();
+    int maxHeight = m_maximumHeight > 0 ? m_maximumHeight : dockWidgetView->maxSizeHint().height();
 
     minWidth = std::min(minWidth, maxWidth);
     minHeight = std::min(minHeight, maxHeight);
@@ -694,50 +703,109 @@ void DockBase::applySizeConstraints()
         maximumSize = minimumSize;
     }
 
-    KDDockWidgets::Frame* frame = m_dockWidget->frame();
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
 
-    if (frame) {
-        frame->setMinimumSize(minimumSize);
-        frame->setMaximumSize(maximumSize);
+    //! NOTE: Skip applying floating size constraints while the dock's group is still in the main
+    //!       layout - fixes the top row growing taller on undock.
+    if (m_floating && group && group->isInMainWindow()) {
+        return;
     }
 
-    m_dockWidget->setMinimumSize(minimumSize);
-    m_dockWidget->setMaximumSize(maximumSize);
+    if (group) {
+        group->view()->setMinimumSize(minimumSize);
+        group->view()->setMaximumSize(maximumSize);
+    }
 
-    if (KDDockWidgets::FloatingWindow* window = m_dockWidget->floatingWindow()) {
-        window->setMinimumSize(minimumSize);
-        window->setMaximumSize(maximumSize);
+    dockWidgetView->setMinimumSize(minimumSize);
+    dockWidgetView->setMaximumSize(maximumSize);
 
-        const QSize winSize = adjustSizeByConstraints(window->frameGeometry().size(), minimumSize, maximumSize);
-#ifdef Q_OS_MACOS
-        window->setWidth(winSize.width());
-        window->setHeight(winSize.height());
-#endif
+    if (KDDockWidgets::Core::FloatingWindow* window = m_dockWidget->floatingWindow()) {
+        //! NOTE: The floating window draws shadow around the dock content (see DockFloatingWindow.qml),
+        //! so the window must be larger than the content by that shadow on each side.
+        const int shadow = 2 * (DOCK_WINDOW_SHADOW + 1 /*border*/);
+        const QSize windowMinimumSize = minimumSize + QSize(shadow, shadow);
+        const QSize windowMaximumSize = maximumSize + QSize(shadow, shadow);
+
+        window->view()->setMinimumSize(windowMinimumSize);
+        window->view()->setMaximumSize(windowMaximumSize);
+
+        const QSize winSize = adjustSizeByConstraints(window->view()->geometry().size(), windowMinimumSize, windowMaximumSize);
         const QRect winRect(window->dragRect().topLeft(), winSize);
-        window->setGeometry(winRect);
+        window->view()->setGeometry(winRect);
     }
 
-    if (!frame || !m_inited) {
+    //! NOTE: The group derives its minimum size from its dock widgets, so the layout
+    //! picks up the old minimum when the group constraints are applied
+    syncLayoutItemMinSize();
+
+    //! NOTE: The layout doesn't shrink the item when the maximum size decreases
+    fitSizeIntoMaximum();
+}
+
+void DockBase::fitSizeIntoMaximum()
+{
+    if (!m_dockWidget || !m_inited) {
         return;
     }
 
-    QSize currentSize = m_dockWidget->size();
-
-    //! NOTE: Initial size for all dock-widgets
-    //! See QWidgetAdapter_quick.cpp, QWidgetAdapter::QWidgetAdapter
-    static constexpr QSize INITIAL_DOCK_SIZE(800, 800);
-    if (currentSize == INITIAL_DOCK_SIZE) {
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+    if (!group || !group->isInMainWindow()) {
         return;
     }
 
-    if (sizeInRange(currentSize, minimumSize, maximumSize)) {
+    //! NOTE: The layout treats the maximum size only as a hint and doesn't shrink the item
+    //! when it decreases, so shrink it explicitly. The side at the edge of the layout
+    //! isn't changed, so shrink the opposite side if the excess remains
+    auto excessWidth = [this]() {
+        return m_maximumWidth > 0 ? m_dockWidget->width() - std::max(m_maximumWidth, m_minimumWidth) : 0;
+    };
+
+    auto excessHeight = [this]() {
+        return m_maximumHeight > 0 ? m_dockWidget->height() - std::max(m_maximumHeight, m_minimumHeight) : 0;
+    };
+
+    //! NOTE: Left side
+    if (excessWidth() > 0) {
+        m_dockWidget->resizeInLayout(-excessWidth(), 0, 0, 0);
+    }
+
+    //! NOTE: Right side
+    if (excessWidth() > 0) {
+        m_dockWidget->resizeInLayout(0, 0, -excessWidth(), 0);
+    }
+
+    //! NOTE: Top side
+    if (excessHeight() > 0) {
+        m_dockWidget->resizeInLayout(0, -excessHeight(), 0, 0);
+    }
+
+    //! NOTE: Bottom side
+    if (excessHeight() > 0) {
+        m_dockWidget->resizeInLayout(0, 0, 0, -excessHeight());
+    }
+}
+
+void DockBase::syncLayoutItemMinSize()
+{
+    if (!m_dockWidget) {
         return;
     }
 
-    if (const Layouting::Item* layout = frame->layoutItem()) {
-        if (Layouting::ItemBoxContainer* container = layout->parentBoxContainer()) {
-            container->layoutEqually_recursive();
-        }
+    KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+    if (!group) {
+        return;
+    }
+
+    KDDockWidgets::Core::Item* item = group->layoutItem();
+    if (!item) {
+        return;
+    }
+
+    //! NOTE: The layouting item caches the guest minimum; force it to match the group's current
+    //! minimum so the container's minimum size reflects
+    const QSize min = group->view()->minSize();
+    if (item->minSize() != min) {
+        item->setMinSize(min);
     }
 }
 
@@ -747,10 +815,15 @@ void DockBase::setUpFrameConnections()
         return;
     }
 
+    QQuickItem* dockWidgetItem = KDDockWidgets::QtQuick::asQQuickItem(m_dockWidget);
+    IF_ASSERT_FAILED(dockWidgetItem) {
+        return;
+    }
+
     auto floatingChangedConnection = std::make_shared<QMetaObject::Connection>();
     auto widgetChangedConnection = std::make_shared<QMetaObject::Connection>();
 
-    connect(m_dockWidget, &KDDockWidgets::DockWidgetQuick::parentChanged, this,
+    connect(dockWidgetItem, &QQuickItem::parentChanged, this,
             [this, floatingChangedConnection, widgetChangedConnection]()
     {
         if (floatingChangedConnection) {
@@ -762,12 +835,13 @@ void DockBase::setUpFrameConnections()
             disconnect(*widgetChangedConnection);
         }
 
-        if (!m_dockWidget || !m_dockWidget->parentItem()) {
+        QQuickItem* dockWidgetItem = KDDockWidgets::QtQuick::asQQuickItem(m_dockWidget);
+        if (!m_dockWidget || !dockWidgetItem || !dockWidgetItem->parentItem()) {
             return;
         }
 
-        const KDDockWidgets::Frame* frame = m_dockWidget->frame();
-        if (!frame) {
+        KDDockWidgets::Core::Group* group = groupForDockWidget(m_dockWidget);
+        if (!group) {
             return;
         }
 
@@ -782,14 +856,19 @@ void DockBase::setUpFrameConnections()
             }
         });
 
-        *floatingChangedConnection = connect(frame, &KDDockWidgets::Frame::isInMainWindowChanged,
-                                             this, &DockBase::onIsInMainWindowChanged, Qt::UniqueConnection);
-
-        *widgetChangedConnection = connect(frame, &KDDockWidgets::Frame::currentDockWidgetChanged,
-                                           this, &DockBase::frameCurrentWidgetChanged, Qt::UniqueConnection);
+        KDDockWidgets::QtQuick::Group* groupView = groupViewFor(group);
+        if (groupView) {
+            *floatingChangedConnection = connect(groupView, &QQuickItem::parentChanged,
+                                                 this, &DockBase::onIsInMainWindowChanged,
+                                                 Qt::UniqueConnection);
+            *widgetChangedConnection = connect(groupView, &KDDockWidgets::QtQuick::Group::currentDockWidgetChanged,
+                                               this, &DockBase::frameCurrentWidgetChanged,
+                                               Qt::UniqueConnection);
+        }
     });
 
-    connect(m_dockWidget->toggleAction(), &QAction::toggled, this, [this]() {
+    auto* action = static_cast<KDDockWidgets::QtQuick::Action*>(m_dockWidget->toggleAction());
+    connect(action, &KDDockWidgets::QtQuick::Action::toggled, this, [this]() {
         if (!isOpen()) {
             doSetFloating(false);
         }
@@ -805,8 +884,8 @@ void DockBase::updateFloatingStatus()
 
 void DockBase::onIsInMainWindowChanged()
 {
-    applySizeConstraints();
     updateFloatingStatus();
+    applySizeConstraints();
 }
 
 void DockBase::doSetFloating(bool floating)

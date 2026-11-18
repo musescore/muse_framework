@@ -34,11 +34,13 @@
 #include "internal/dockcommandsregister.h"
 #include "internal/dockcommandsstate.h"
 
-#include "thirdparty/KDDockWidgets/src/ContextData.h"
-#include "thirdparty/KDDockWidgets/src/Config.h"
-#include "thirdparty/KDDockWidgets/src/DockWidgetBase.h"
-#include "thirdparty/KDDockWidgets/src/FrameworkWidgetFactory.h"
-#include "thirdparty/KDDockWidgets/src/private/FloatingWindow_p.h"
+#include "kddockwidgets/src/Config.h"
+#include "kddockwidgets/src/ContextData.h"
+#include "kddockwidgets/src/core/FloatingWindow.h"
+#include "kddockwidgets/src/qtquick/ViewFactory.h"
+#include "kddockwidgets/src/qtquick/Platform.h"
+#include "kddockwidgets/src/qtquick/QmlConfig.h"
+#include "kddockwidgets/src/qtquick/views/View.h"
 
 #include "modularity/ioc.h"
 #include "ui/iuiengine.h"
@@ -46,35 +48,58 @@
 #include "muse_framework_config.h"
 
 namespace muse::dock {
-class DockWidgetFactory : public KDDockWidgets::DefaultWidgetFactory
+class HiddenRubberBand : public KDDockWidgets::QtQuick::View
 {
 public:
-    DockWidgetFactory(const modularity::ContextPtr& iocCtx)
-        : KDDockWidgets::DefaultWidgetFactory(iocCtx->id), m_iocContext(iocCtx) {}
-
-    KDDockWidgets::DropIndicatorOverlayInterface* createDropIndicatorOverlay(KDDockWidgets::DropArea* dropArea) const override
+    explicit HiddenRubberBand(QQuickItem* parent)
+        : KDDockWidgets::QtQuick::View(nullptr, KDDockWidgets::Core::ViewType::RubberBand, parent)
     {
-        return new DropController(dropArea, m_iocContext);
+        KDDockWidgets::QtQuick::View::setVisible(false);
     }
 
-    Layouting::Separator* createSeparator(Layouting::Widget* parent = nullptr) const override
+    void setVisible(bool) override
     {
-        return new DockSeparator(parent);
+        KDDockWidgets::QtQuick::View::setVisible(false);
+    }
+};
+
+class DockWidgetFactory : public KDDockWidgets::QtQuick::ViewFactory
+{
+public:
+    explicit DockWidgetFactory(const modularity::ContextPtr& iocCtx)
+        : KDDockWidgets::QtQuick::ViewFactory(iocCtx->id), m_iocContext(iocCtx) {}
+
+    KDDockWidgets::Core::ClassicIndicatorWindowViewInterface*
+    createClassicIndicatorWindow(KDDockWidgets::Core::ClassicDropIndicatorOverlay* classicIndicators,
+                                 KDDockWidgets::Core::View* parent = nullptr) const override
+    {
+        return new DropController(classicIndicators, parent, m_iocContext);
     }
 
-    KDDockWidgets::TitleBar* createTitleBar(KDDockWidgets::Frame* frame) const override
+    KDDockWidgets::Core::View* createRubberBand(KDDockWidgets::Core::View* parent) const override
     {
-        return new DockTitleBar(m_ctx, frame);
+        return new HiddenRubberBand(KDDockWidgets::QtQuick::asQQuickItem(parent));
     }
 
-    KDDockWidgets::TitleBar* createTitleBar(KDDockWidgets::FloatingWindow* floatingWindow) const override
+    KDDockWidgets::Core::View* createSeparator(KDDockWidgets::Core::Separator* controller,
+                                               KDDockWidgets::Core::View* parent = nullptr) const override
     {
-        return new DockTitleBar(m_ctx, floatingWindow);
+        auto* parentItem = KDDockWidgets::QtQuick::asQQuickItem(parent);
+        return new DockSeparator(controller, parentItem);
     }
 
-    KDDockWidgets::TabBar* createTabBar(KDDockWidgets::TabWidget* parent) const override
+    KDDockWidgets::Core::View* createTitleBar(KDDockWidgets::Core::TitleBar* controller,
+                                              KDDockWidgets::Core::View* parent) const override
     {
-        return new DockTabBar(m_ctx, parent);
+        auto* parentItem = KDDockWidgets::QtQuick::asQQuickItem(parent);
+        return new DockTitleBar(controller, parentItem);
+    }
+
+    KDDockWidgets::Core::View* createTabBar(KDDockWidgets::Core::TabBar* controller,
+                                            KDDockWidgets::Core::View* parent = nullptr) const override
+    {
+        auto* parentItem = KDDockWidgets::QtQuick::asQQuickItem(parent);
+        return new DockTabBar(controller, parentItem);
     }
 
     QUrl titleBarFilename() const override
@@ -87,7 +112,7 @@ public:
         return QUrl("qrc:/qt/qml/Muse/Dock/DockWidget.qml");
     }
 
-    QUrl frameFilename() const override
+    QUrl groupFilename() const override
     {
         return QUrl("qrc:/qt/qml/Muse/Dock/DockFrame.qml");
     }
@@ -95,6 +120,11 @@ public:
     QUrl floatingWindowFilename() const override
     {
         return QUrl("qrc:/qt/qml/Muse/Dock/DockFloatingWindow.qml");
+    }
+
+    QUrl separatorFilename() const override
+    {
+        return QUrl("qrc:/qt/qml/Muse/Dock/DockSeparator.qml");
     }
 
 private:
@@ -167,18 +197,19 @@ void DockContext::onInit(const IApplication::RunMode&)
 
     KDDockWidgets::Config& config = KDDockWidgets::Config::self(ctx);
 
-    config.setFrameworkWidgetFactory(new DockWidgetFactory(iocContext()));
-    config.setQmlEngine(engine);
+    config.setViewFactory(new DockWidgetFactory(iocContext()));
+
+    KDDockWidgets::setCtxForEngine(engine, ctx);
+    KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(engine);
 
     auto flags = config.flags()
-                 | KDDockWidgets::Config::Flag_HideTitleBarWhenTabsVisible
-                 | KDDockWidgets::Config::Flag_TitleBarNoFloatButton;
+                 | KDDockWidgets::Config::Flag_HideTitleBarWhenTabsVisible;
 
     config.setFlags(flags);
 
-    KDDockWidgets::FloatingWindow::s_windowFlagsOverride = Qt::Tool
-                                                           | Qt::NoDropShadowWindowHint
-                                                           | Qt::FramelessWindowHint;
+    KDDockWidgets::Core::FloatingWindow::s_windowFlagsOverride = Qt::Tool
+                                                                 | Qt::NoDropShadowWindowHint
+                                                                 | Qt::FramelessWindowHint;
 
     auto internalFlags = config.internalFlags()
                          | KDDockWidgets::Config::InternalFlag_UseTransparentFloatingWindow;

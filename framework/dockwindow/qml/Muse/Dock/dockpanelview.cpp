@@ -22,9 +22,12 @@
 
 #include "dockpanelview.h"
 
-#include "thirdparty/KDDockWidgets/src/DockWidgetQuick.h"
-#include "thirdparty/KDDockWidgets/src/private/Frame_p.h"
+#include "kddockwidgets/src/core/DockWidget.h"
+#include "kddockwidgets/src/core/Group.h"
+#include "kddockwidgets/src/qtquick/views/DockWidget.h"
+#include "kddockwidgets/src/qtquick/views/View.h"
 
+#include "rcommand/commandtypes.h"
 #include "types/translatablestring.h"
 
 #include "uicomponents/qml/Muse/UiComponents/abstractmenumodel.h"
@@ -37,10 +40,6 @@ using namespace muse;
 using namespace muse::dock;
 using namespace muse::ui;
 using namespace muse::uicomponents;
-using namespace muse::actions;
-
-static const QString SET_DOCK_OPEN_ACTION_CODE = "dock-set-open";
-static const QString TOGGLE_FLOATING_ACTION_CODE = "dock-toggle-floating";
 
 class DockPanelView::DockPanelMenuModel : public muse::uicomponents::AbstractMenuModel
 {
@@ -152,15 +151,16 @@ DockPanelView::DockPanelView(QQuickItem* parent)
 
 DockPanelView::~DockPanelView()
 {
-    KDDockWidgets::DockWidgetQuick* dockWidget = this->dockWidget();
-    IF_ASSERT_FAILED(dockWidget) {
+    auto* dockWidgetView = qobject_cast<KDDockWidgets::QtQuick::DockWidget*>(
+        KDDockWidgets::QtQuick::asQQuickItem(dockWidget()));
+    if (!dockWidgetView) {
         return;
     }
 
-    dockWidget->setProperty(DOCK_PANEL_PROPERTY, QVariant::fromValue(nullptr));
-    dockWidget->setProperty(CONTEXT_MENU_MODEL_PROPERTY, QVariant::fromValue(nullptr));
-    dockWidget->setProperty(TITLEBAR_PROPERTY, QVariant::fromValue(nullptr));
-    dockWidget->setProperty(TOOLBAR_COMPONENT_PROPERTY, QVariant::fromValue(nullptr));
+    dockWidgetView->setProperty(DOCK_PANEL_PROPERTY, QVariant::fromValue(nullptr));
+    dockWidgetView->setProperty(CONTEXT_MENU_MODEL_PROPERTY, QVariant::fromValue(nullptr));
+    dockWidgetView->setProperty(TITLEBAR_PROPERTY, QVariant::fromValue(nullptr));
+    dockWidgetView->setProperty(TOOLBAR_COMPONENT_PROPERTY, QVariant::fromValue(nullptr));
 }
 
 QString DockPanelView::groupName() const
@@ -182,33 +182,40 @@ void DockPanelView::componentComplete()
 {
     DockBase::componentComplete();
 
-    KDDockWidgets::DockWidgetQuick* dockWidget = this->dockWidget();
-    IF_ASSERT_FAILED(dockWidget) {
+    auto* dockWidgetView = qobject_cast<KDDockWidgets::QtQuick::DockWidget*>(
+        KDDockWidgets::QtQuick::asQQuickItem(dockWidget()));
+    IF_ASSERT_FAILED(dockWidgetView) {
         return;
     }
 
     m_menuModel->load();
 
-    dockWidget->setProperty(DOCK_PANEL_PROPERTY, QVariant::fromValue(this));
-    dockWidget->setProperty(CONTEXT_MENU_MODEL_PROPERTY, QVariant::fromValue(m_menuModel));
-    dockWidget->setProperty(TITLEBAR_PROPERTY, QVariant::fromValue(m_titleBar));
-    dockWidget->setProperty(TOOLBAR_COMPONENT_PROPERTY, QVariant::fromValue(m_toolbarComponent));
+    dockWidgetView->setProperty(DOCK_PANEL_PROPERTY, QVariant::fromValue(this));
+    dockWidgetView->setProperty(CONTEXT_MENU_MODEL_PROPERTY, QVariant::fromValue(m_menuModel));
+    dockWidgetView->setProperty(TITLEBAR_PROPERTY, QVariant::fromValue(m_titleBar));
+    dockWidgetView->setProperty(TOOLBAR_COMPONENT_PROPERTY, QVariant::fromValue(m_toolbarComponent));
 
-    connect(m_menuModel, &AbstractMenuModel::itemsChanged, [dockWidget, this]() {
-        if (dockWidget) {
-            dockWidget->setProperty(CONTEXT_MENU_MODEL_PROPERTY, QVariant::fromValue(m_menuModel));
+    connect(m_menuModel, &AbstractMenuModel::itemsChanged, [dockWidgetView, this]() {
+        if (dockWidgetView) {
+            dockWidgetView->setProperty(CONTEXT_MENU_MODEL_PROPERTY, QVariant::fromValue(m_menuModel));
         }
     });
 
-    connect(this, &DockPanelView::toolbarComponentChanged, this, [this, dockWidget]() {
-        if (dockWidget) {
-            dockWidget->setProperty(TOOLBAR_COMPONENT_PROPERTY, QVariant::fromValue(m_toolbarComponent));
+    connect(this, &DockPanelView::toolbarComponentChanged, this, [this, dockWidgetView]() {
+        if (dockWidgetView) {
+            dockWidgetView->setProperty(TOOLBAR_COMPONENT_PROPERTY, QVariant::fromValue(m_toolbarComponent));
         }
     });
 
-    connect(this, &DockBase::frameCurrentWidgetChanged, this, [this, dockWidget](){
-        const KDDockWidgets::Frame* frame = dockWidget ? dockWidget->frame() : nullptr;
-        if (frame && frame->currentDockWidget() == dockWidget) {
+    connect(this, &DockBase::frameCurrentWidgetChanged, this, [this]() {
+        auto* ctrl = dockWidget();
+        if (!ctrl) {
+            return;
+        }
+        auto* dockWidgetView = qobject_cast<KDDockWidgets::QtQuick::DockWidget*>(
+            KDDockWidgets::QtQuick::asQQuickItem(ctrl));
+        auto* group = dockWidgetView ? dockWidgetView->group() : nullptr;
+        if (group && group->currentDockWidget() == ctrl) {
             emit panelShown();
         }
     });
@@ -305,8 +312,10 @@ void DockPanelView::setCurrentTabIndex(int index)
         return;
     }
 
-    KDDockWidgets::Frame* frame = dockWidget()->frame();
-    if (frame) {
-        frame->setCurrentTabIndex(index);
+    auto* dockWidgetView = qobject_cast<KDDockWidgets::QtQuick::DockWidget*>(
+        KDDockWidgets::QtQuick::asQQuickItem(dockWidget()));
+    auto* group = dockWidgetView ? dockWidgetView->group() : nullptr;
+    if (group) {
+        group->setCurrentTabIndex(index);
     }
 }

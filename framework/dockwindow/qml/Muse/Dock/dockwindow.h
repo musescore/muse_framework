@@ -39,9 +39,8 @@
 
 Q_MOC_INCLUDE(< QQuickWindow >)
 
-namespace KDDockWidgets {
-class MainWindowBase;
-class LayoutSaver;
+namespace KDDockWidgets::QtQuick {
+class MainWindow;
 }
 
 namespace muse::dock {
@@ -49,6 +48,7 @@ class DockToolBarView;
 class DockingHolderView;
 class DockPageView;
 class DockPanelView;
+class TopLevelToolBarsLayout;
 class DockWindow : public QQuickItem, public IDockWindow, public muse::Contextable, public async::Asyncable
 {
     Q_OBJECT
@@ -78,11 +78,11 @@ public:
 
     QQuickWindow* windowProperty() const;
 
-    Q_INVOKABLE void init();
     /* loadPage() is used internally by the InteractiveProvider. Regular code should call
      * openPage(), to ensure the Interactive's m_openingObject query will be properly set
      * by the time Interactive::onOpen() is called (from DockWindow>onPageLoaded).
      */
+    Q_INVOKABLE void init();
     Q_INVOKABLE void loadPage(const QString& uri, const QVariantMap& params);
     Q_INVOKABLE void openPage(const QString& uri);
 
@@ -101,6 +101,8 @@ public:
 
     void restoreDefaultLayout() override;
 
+    QList<DockToolBarView*> topLevelToolBars(const DockPageView* page) const;
+
 signals:
     void pageLoaded();
     void currentPageUriChanged(const QString& uri);
@@ -116,12 +118,12 @@ private:
 
     void componentComplete() override;
     void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
+    void updatePolish() override;
 
     void loadPageContent(const DockPageView* page);
     void loadToolBars(const DockPageView* page);
     void loadPanels(const DockPageView* page);
     void loadTopLevelToolBars(const DockPageView* page);
-    void alignTopLevelToolBars(const DockPageView* page);
 
     void addDock(DockBase* dock, Location location = Location::Left, const DockBase* relativeTo = nullptr);
     void addPanelAsTab(DockPanelView* panel, DockPanelView* destinationPanel);
@@ -142,24 +144,17 @@ private:
 
     void initDocks(DockPageView* page);
 
-    void adjustContentForAvailableSpace(DockPageView* page);
-
     void notifyAboutDocksOpenStatus();
 
-    QList<DockToolBarView*> topLevelToolBars(const DockPageView* page) const;
-
-    int m_ctx = 0;
-    KDDockWidgets::MainWindowBase* m_mainWindow = nullptr;
+    KDDockWidgets::QtQuick::MainWindow* m_mainWindow = nullptr;
     DockPageView* m_currentPage = nullptr;
     uicomponents::QmlListProperty<DockToolBarView> m_toolBars;
     uicomponents::QmlListProperty<DockPageView> m_pages;
     async::Channel<QStringList> m_docksOpenStatusChanged;
 
-    class UniqueConnectionHolder;
-    QHash<DockPageView*, UniqueConnectionHolder*> m_pageConnections;
+    TopLevelToolBarsLayout* m_topLevelToolBarsLayout = nullptr;
 
     bool m_hasGeometryBeenRestored = false;
     bool m_reloadCurrentPageAllowed = false;
-    bool m_reloadCurrentPageScheduled = false;
 };
 }
