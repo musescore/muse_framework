@@ -74,6 +74,7 @@ private:
     void downloadUpdateInBackground();
 
     muse::async::Promise<Ret> downloadRelease(bool confirmRestart = true);
+    muse::async::Promise<Ret> completeInstall(bool confirmRestart);
     muse::async::Promise<Ret> askToCloseAppAndCompleteInstall();
     void closeAppAndCompleteInstall();
 
