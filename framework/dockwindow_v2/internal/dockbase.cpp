@@ -55,14 +55,6 @@ static QSize adjustSizeByConstraints(const QSize& size, const QSize& min, const 
     return size.expandedTo(min).boundedTo(max);
 }
 
-static bool sizeInRange(const QSize& size, const QSize& min, const QSize& max)
-{
-    bool widthInRange = size.width() >= min.width() && size.width() <= max.width();
-    bool heightInRange = size.height() >= min.height() && size.height() <= max.height();
-
-    return widthInRange && heightInRange;
-}
-
 static KDDockWidgets::Core::Group* groupForDockWidget(KDDockWidgets::Core::DockWidget* dw)
 {
     if (!dw) {
