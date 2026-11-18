@@ -24,6 +24,8 @@
 #include <string>
 #include "types/ret.h"
 
+#include "deathtest.h"
+
 using namespace muse;
 
 class Global_RetTests : public ::testing::Test
@@ -63,41 +65,18 @@ TEST(Global_RetTests, Data_KeyNotFound_ReturnsDefault)
 
 // === Type Mismatch ===
 
-TEST(Global_RetTests, Data_KeyExistsButTypeMismatch_ReturnsDefaultInReleaseANDTriggersAssertionInDebug)
+TEST(Global_RetTests, Data_KeyExistsButTypeMismatch_AssertsAndReturnsDefault)
 {
     Ret ret;
     ret.setData("answer", 42); // int stored, but requesting as string
-#ifdef NDEBUG
-    const auto result = ret.data<std::string>("answer", std::string("0"));
-    EXPECT_EQ(result, std::string("0"));
-#else
-    // In debug builds, expect the assertion to trigger
-    EXPECT_DEATH({
+    EXPECT_DEBUG_DEATH({
+        muse::testing::exitOnAbortInDebug();
         const auto result = ret.data<std::string>("answer", std::string("0"));
-        UNUSED(result);
+        EXPECT_EQ(result, std::string("0"));
     }, ".*Assertion.*failed");
-#endif
 }
 
-// === Bad Any Cast Protection ===
-
-TEST(Global_RetTests, Data_BadAnyCast_ReturnsDefaultInReleaseANDTriggersAssertionInDebug)
-{
-    Ret ret;
-    // This test is harder to trigger since type checking happens first
-    // but the method has protection against std::bad_any_cast
-    ret.setData("value", std::string("text"));
-
-#ifdef NDEBUG
-    const auto result = ret.data<int>("value", 999);
-    EXPECT_EQ(result, 999);
-#else
-    EXPECT_DEATH({
-        const auto result = ret.data<int>("value", 999);
-        UNUSED(result);
-    }, ".*Assertion.*failed");
-#endif
-}
+// The bad_any_cast fallback in Ret::data() is not tested: the type check before the cast makes it unreachable
 
 // === Enum Class Support ===
 
