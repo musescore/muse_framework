@@ -156,8 +156,6 @@ void VstActionsController::editorOperation(const std::string& operation, int ins
 
     if (interactive()->isOpened(editorUri).val) {
         interactive()->raise(editorUri);
-    } else if (sync) {
-        interactive()->openSync(editorUri);
     } else {
         interactive()->open(editorUri);
     }
