@@ -47,8 +47,7 @@ namespace muse::ui {
  * @brief The IconCode class simplifies access to the icons from the icon font
  *
  * @details Each enum value is a UTF-16-like address of the icon in the icon font.
- *          The current icon-font (MusescoreIcon.ttf) is located in the 'MuseScore/fonts/mscore' folder,
- *          The most actual version can be found by this persistent URL: @link https://www.dropbox.com/s/srfpt78uy7aazz1/MusescoreIcon.ttf?dl=0
+ *          The current icon-font (MusescoreIcon.ttf) is located in 'framework/ui/data/'
  */
 
 namespace IconCode {
@@ -561,6 +560,29 @@ enum class Code : char16_t {
 
     FADE_HANDLE_IN = 0xF4CD,
     FADE_HANDLE_OUT = 0xF4CE,
+    FADE = 0xF4D0,
+
+    SQUARE = 0xF4D1,
+
+    MINIMAL_UI = 0xF4D2,
+    MINIMAL_UI_CLEF = 0xF4D3,
+    MINIMAL_UI_TIME_SIGNATURE = 0xF4D4,
+    MINIMAL_UI_TEMPO = 0xF4D5,
+    MINIMAL_UI_DYNAMICS = 0xF4D6,
+    MINIMAL_UI_TEXT = 0xF4D7,
+    MINIMAL_UI_KEYBOARD = 0xF4D8,
+    MINIMAL_UI_REPEATS = 0xF4D9,
+    MINIMAL_UI_ORNAMENTS = 0xF4DA,
+    MINIMAL_UI_GRACE_NOTES = 0xF4DB,
+    MINIMAL_UI_BREATHS_PAUSES = 0xF4DC,
+    MINIMAL_UI_NOTEHEADS = 0xF4DD,
+    MINIMAL_UI_ARPEGGIOS = 0xF4DE,
+    MINIMAL_UI_TREMOLOS = 0xF4DF,
+    MINIMAL_UI_HARP = 0xF4E0,
+    MINIMAL_UI_GUITAR = 0xF4E1,
+    MINIMAL_UI_FINGERINGS = 0xF4E2,
+    MINIMAL_UI_ACCORDION = 0xF4E3,
+    MINIMAL_UI_BAGPIPE = 0xF4E4,
 
     NONE = 0xFFFF
 };
