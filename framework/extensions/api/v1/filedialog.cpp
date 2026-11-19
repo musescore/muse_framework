@@ -29,20 +29,37 @@ using namespace muse::extensions::apiv1;
 FileDialog::FileDialog(QObject* parent)
     : QObject(parent), Contextable(muse::iocCtxForQmlObject(this)) {}
 
-QString FileDialog::doOpen(const QString& title, const QString& folder)
+void FileDialog::doOpen()
 {
-    io::path_t path;
-    if (m_type == Load) {
-        path = interactive()->selectOpeningFileSync(title.toStdString(), folder, {});
-        LOGD() << "selectOpeningFile: " << path;
-    } else {
-        path = interactive()->selectSavingFileSync(title.toStdString(), folder, {});
-        LOGD() << "selectSavingFile: " << path;
+    async::Promise<io::path_t> promise = m_type == Load
+                                         ? interactive()->selectOpeningFile(m_title.toStdString(), m_folder, {})
+                                         : interactive()->selectSavingFile(m_title.toStdString(), m_folder, {});
+
+    const int request = m_request;
+
+    promise.onResolve(this, [this, request](const io::path_t& path) {
+        LOGD() << "selected file: " << path;
+        onClosed(request, path.toQString());
+    }).onReject(this, [this, request](int, const std::string&) {
+        onClosed(request, QString());
+    });
+}
+
+void FileDialog::onClosed(int request, const QString& filePath)
+{
+    //! NOTE The dialog was closed or opened again meanwhile
+    if (request != m_request) {
+        return;
     }
 
+    setFilePath(filePath);
     setVisible(false);
 
-    return path.toQString();
+    if (!m_filePath.isEmpty()) {
+        emit accepted();
+    } else {
+        emit rejected();
+    }
 }
 
 QString FileDialog::title() const
@@ -73,12 +90,9 @@ void FileDialog::setVisible(bool newVisible)
     emit visibleChanged();
 
     if (m_visible) {
-        m_filePath = doOpen(m_title, m_folder);
-        if (!m_filePath.isEmpty()) {
-            emit accepted();
-        } else {
-            emit rejected();
-        }
+        doOpen();
+    } else {
+        ++m_request;
     }
 }
 
