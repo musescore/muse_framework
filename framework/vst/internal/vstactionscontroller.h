@@ -54,7 +54,7 @@ public:
     muse::Ret fxEditor(const rcommand::Params& params);
     muse::Ret instEditor(const rcommand::Params& params);
 
-    void editorOperation(const std::string& operation, int instanceId, bool sync);
+    void editorOperation(const std::string& operation, int instanceId);
 
     void setupUsedView();
     void useView(bool isNew);

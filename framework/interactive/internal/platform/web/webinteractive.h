@@ -83,7 +83,6 @@ public:
 
     muse::async::Promise<muse::Ret> close(const muse::UriQuery& uri) override;
     muse::async::Promise<muse::Ret> close(const muse::Uri& uri) override;
-    muse::Ret closeSync(const muse::UriQuery& uri) override;
     muse::async::Promise<muse::Ret> closeAllDialogs() override;
 
     muse::ValCh<muse::Uri> currentUri() const override;

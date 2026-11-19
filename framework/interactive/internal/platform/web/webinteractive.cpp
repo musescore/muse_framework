@@ -382,11 +382,6 @@ async::Promise<Ret> WebInteractive::close(const Uri& uri)
     return m_origin->close(uri);
 }
 
-Ret WebInteractive::closeSync(const UriQuery& uri)
-{
-    return m_origin->closeSync(uri);
-}
-
 async::Promise<Ret> WebInteractive::closeAllDialogs()
 {
     return m_origin->closeAllDialogs();

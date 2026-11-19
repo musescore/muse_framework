@@ -1051,15 +1051,6 @@ Promise<Ret> Interactive::close(const Uri& uri)
     return closeObjects(objs);
 }
 
-Ret Interactive::closeSync(const UriQuery& uri)
-{
-    std::vector<ObjectInfo> objs = collectOpenObjects([&uri](const ObjectInfo& obj) {
-        return obj.query == uri;
-    });
-
-    return closeObjectsSync(objs);
-}
-
 Promise<Ret> Interactive::closeAllDialogs()
 {
     return closeObjects(openDialogs());
