@@ -65,7 +65,7 @@ Item {
     FilePickerModel {
         id: filePickerModel
 
-        onFileSelected: function(path) {
+        onPathSelected: function(path) {
             root.pathEdited(path)
         }
     }
@@ -142,16 +142,11 @@ Item {
                     break
                 }
                 case FilePicker.PickerType.Directory: {
-                    var selectedDirectory = filePickerModel.selectDirectory()
-                    if (Boolean(selectedDirectory)) {
-                        root.pathEdited(selectedDirectory)
-                    }
-
+                    filePickerModel.selectDirectory()
                     break
                 }
                 case FilePicker.PickerType.MultipleDirectories:{
-                    var selectedDirectories = filePickerModel.selectMultipleDirectories(root.path)
-                    root.pathEdited(selectedDirectories)
+                    filePickerModel.selectMultipleDirectories(root.path)
                     break
                 }
                 case FilePicker.PickerType.Any:{

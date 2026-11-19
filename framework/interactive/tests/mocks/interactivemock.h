@@ -69,8 +69,11 @@ public:
                 (override));
     MOCK_METHOD(io::path_t, selectSavingFileSync, (const std::string&, const io::path_t&, const std::vector<std::string>&, bool),
                 (override));
-    MOCK_METHOD(io::path_t, selectDirectory, (const std::string&, const io::path_t&), (override));
-    MOCK_METHOD(io::paths_t, selectMultipleDirectories, (const std::string&, const io::path_t&, const io::paths_t&), (override));
+    MOCK_METHOD(async::Promise<io::path_t>, selectDirectory, (const std::string&, const io::path_t&), (override));
+    MOCK_METHOD(async::Promise<io::paths_t>, selectMultipleDirectories, (const std::string&, const io::path_t&, const io::paths_t&),
+                (override));
+    MOCK_METHOD(io::path_t, selectDirectorySync, (const std::string&, const io::path_t&), (override));
+    MOCK_METHOD(io::paths_t, selectMultipleDirectoriesSync, (const std::string&, const io::path_t&, const io::paths_t&), (override));
 
     MOCK_METHOD(async::Promise<Color>, selectColor, (const Color&, const std::string&, bool), (override));
     MOCK_METHOD(bool, isSelectColorOpened, (), (const, override));

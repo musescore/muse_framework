@@ -74,8 +74,18 @@ void InteractiveTestsModel::selectSavingFile()
 
 void InteractiveTestsModel::selectDirectory()
 {
-    io::path_t path = interactive()->selectDirectory("Sample select file", qApp->applicationDirPath());
-    LOGI() << "path: " << path;
+    interactive()->selectDirectory("Sample select file", qApp->applicationDirPath())
+    .onResolve(this, [](const io::path_t& path) {
+        LOGI() << "path: " << path;
+    });
+}
+
+void InteractiveTestsModel::selectMultipleDirectories()
+{
+    interactive()->selectMultipleDirectories("Sample select directories", qApp->applicationDirPath(), {})
+    .onResolve(this, [](const io::paths_t& paths) {
+        LOGI() << "paths: " << io::pathsToString(paths);
+    });
 }
 
 void InteractiveTestsModel::showProgress()

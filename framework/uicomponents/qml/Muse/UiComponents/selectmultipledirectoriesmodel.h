@@ -26,12 +26,13 @@
 #include <QAbstractListModel>
 #include <QItemSelection>
 
+#include "async/asyncable.h"
 #include "modularity/ioc.h"
 #include "interactive/iinteractive.h"
 
 namespace muse::uicomponents {
 class ItemMultiSelectionModel;
-class SelectMultipleDirectoriesModel : public QAbstractListModel, public muse::Contextable
+class SelectMultipleDirectoriesModel : public QAbstractListModel, public muse::Contextable, public muse::async::Asyncable
 {
     Q_OBJECT
     QML_ELEMENT;

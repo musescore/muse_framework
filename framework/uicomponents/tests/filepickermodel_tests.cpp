@@ -46,9 +46,17 @@ async::Promise<io::path_t> chosenFile(const io::path_t& path)
     });
 }
 
-async::Promise<io::path_t> cancelled()
+async::Promise<io::paths_t> chosenDirectories(const io::paths_t& paths)
 {
-    return async::make_promise<io::path_t>([](auto, auto reject) {
+    return async::make_promise<io::paths_t>([paths](auto resolve, auto) {
+        return resolve(paths);
+    });
+}
+
+template<typename T = io::path_t>
+async::Promise<T> cancelled()
+{
+    return async::make_promise<T>([](auto, auto reject) {
         return reject(int(Ret::Code::Cancel), "");
     });
 }
@@ -67,7 +75,7 @@ protected:
         m_model.setDir(DIR);
         m_model.setFilter(FILTER);
 
-        QObject::connect(&m_model, &FilePickerModel::fileSelected, [this](const QString& path) {
+        QObject::connect(&m_model, &FilePickerModel::pathSelected, [this](const QString& path) {
             m_selectedFiles << path;
         });
     }
@@ -134,4 +142,60 @@ TEST_F(UiComponents_FilePickerModelTests, SelectAny_UserCancels_SelectsNothing)
     //! [THEN] Nothing is selected, and the folder stays the same
     EXPECT_TRUE(m_selectedFiles.isEmpty());
     EXPECT_EQ(m_model.dir(), DIR);
+}
+
+TEST_F(UiComponents_FilePickerModelTests, SelectDirectory_UserChoosesADirectory_SelectsItAndStartsFromIt)
+{
+    //! [GIVEN] The user chooses a directory
+    EXPECT_CALL(*m_interactive, selectDirectory(TITLE.toStdString(), io::path_t(DIR)))
+    .WillOnce(Return(chosenFile("other")));
+
+    //! [WHEN] Selecting a directory
+    m_model.selectDirectory();
+    async::processMessages();
+
+    //! [THEN] The directory is selected, and the next selection starts from it
+    EXPECT_EQ(m_selectedFiles, QStringList { "other" });
+    EXPECT_EQ(m_model.dir(), QString("other"));
+}
+
+TEST_F(UiComponents_FilePickerModelTests, SelectDirectory_UserCancels_SelectsNothing)
+{
+    //! [GIVEN] The user cancels
+    EXPECT_CALL(*m_interactive, selectDirectory(_, _)).WillOnce(Return(cancelled()));
+
+    //! [WHEN] Selecting a directory
+    m_model.selectDirectory();
+    async::processMessages();
+
+    //! [THEN] Nothing is selected, and the folder stays the same
+    EXPECT_TRUE(m_selectedFiles.isEmpty());
+    EXPECT_EQ(m_model.dir(), DIR);
+}
+
+TEST_F(UiComponents_FilePickerModelTests, SelectMultipleDirectories_UserChoosesDirectories_SelectsThem)
+{
+    //! [GIVEN] Some directories are selected already, and the user chooses another set
+    EXPECT_CALL(*m_interactive, selectMultipleDirectories(TITLE.toStdString(), io::path_t(DIR), io::paths_t { "first", "second" }))
+    .WillOnce(Return(chosenDirectories({ "first", "third" })));
+
+    //! [WHEN] Selecting multiple directories
+    m_model.selectMultipleDirectories("first;second");
+    async::processMessages();
+
+    //! [THEN] The chosen directories are selected
+    EXPECT_EQ(m_selectedFiles, QStringList { "first;third" });
+}
+
+TEST_F(UiComponents_FilePickerModelTests, SelectMultipleDirectories_UserCancels_SelectsNothing)
+{
+    //! [GIVEN] The user cancels
+    EXPECT_CALL(*m_interactive, selectMultipleDirectories(_, _, _)).WillOnce(Return(cancelled<io::paths_t>()));
+
+    //! [WHEN] Selecting multiple directories
+    m_model.selectMultipleDirectories("first");
+    async::processMessages();
+
+    //! [THEN] Nothing is selected
+    EXPECT_TRUE(m_selectedFiles.isEmpty());
 }

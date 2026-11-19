@@ -117,8 +117,14 @@ public:
                                     bool confirmOverwrite = true) override;
 
     // dirs
-    io::path_t selectDirectory(const std::string& title, const io::path_t& dir) override;
-    io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir, const io::paths_t& selectedDirectories) override;
+    async::Promise<io::path_t> selectDirectory(const std::string& title, const io::path_t& dir) override;
+    async::Promise<io::paths_t> selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                          const io::paths_t& selectedDirectories) override;
+    [[deprecated("Use selectDirectory() instead")]]
+    io::path_t selectDirectorySync(const std::string& title, const io::path_t& dir) override;
+    [[deprecated("Use selectMultipleDirectories() instead")]]
+    io::paths_t selectMultipleDirectoriesSync(const std::string& title, const io::path_t& dir,
+                                              const io::paths_t& selectedDirectories) override;
 
     // color
     async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {}, bool allowAlpha = false) override;

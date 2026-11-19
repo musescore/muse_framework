@@ -209,23 +209,48 @@ io::path_t TestflowInteractive::selectSavingFileSync(const std::string& title, c
     return m_selectedFilePath;
 }
 
-io::path_t TestflowInteractive::selectDirectory(const std::string& title, const io::path_t& dir)
+async::Promise<io::path_t> TestflowInteractive::selectDirectory(const std::string& title, const io::path_t& dir)
+{
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
+        LOGW() << "[testflow] dialog skipped (select directory): " << title;
+        return async::make_promise<io::path_t>([](auto, auto reject) {
+            Ret ret = muse::make_ret(Ret::Code::Cancel);
+            return reject(ret.code(), ret.text());
+        });
+    }
+    return m_real->selectDirectory(title, dir);
+}
+
+async::Promise<io::paths_t> TestflowInteractive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                                           const io::paths_t& initialDirectories)
+{
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
+        LOGW() << "[testflow] dialog skipped (select directories): " << title;
+        return async::make_promise<io::paths_t>([](auto, auto reject) {
+            Ret ret = muse::make_ret(Ret::Code::Cancel);
+            return reject(ret.code(), ret.text());
+        });
+    }
+    return m_real->selectMultipleDirectories(title, dir, initialDirectories);
+}
+
+io::path_t TestflowInteractive::selectDirectorySync(const std::string& title, const io::path_t& dir)
 {
     if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select directory): " << title;
         return {};
     }
-    return m_real->selectDirectory(title, dir);
+    return m_real->selectDirectorySync(title, dir);
 }
 
-io::paths_t TestflowInteractive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
-                                                           const io::paths_t& initialDirectories)
+io::paths_t TestflowInteractive::selectMultipleDirectoriesSync(const std::string& title, const io::path_t& dir,
+                                                               const io::paths_t& initialDirectories)
 {
     if (m_unattendedDialogs == UnattendedDialogs::Skip) {
         LOGW() << "[testflow] dialog skipped (select directories): " << title;
         return {};
     }
-    return m_real->selectMultipleDirectories(title, dir, initialDirectories);
+    return m_real->selectMultipleDirectoriesSync(title, dir, initialDirectories);
 }
 
 async::Promise<Color> TestflowInteractive::selectColor(const Color& color, const std::string& title, bool allowAlpha)

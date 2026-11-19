@@ -242,9 +242,9 @@ public:
                                             bool confirmOverwrite = true) = 0;
 
     // dirs
-    virtual io::path_t selectDirectory(const std::string& title, const io::path_t& dir) = 0;
-    virtual io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir,
-                                                  const io::paths_t& selectedDirectories) = 0;
+    virtual async::Promise<io::path_t> selectDirectory(const std::string& title, const io::path_t& dir) = 0;
+    virtual async::Promise<io::paths_t> selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                                  const io::paths_t& selectedDirectories) = 0;
 
     // color
     virtual async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {},
@@ -324,6 +324,13 @@ public:
     {
         return errorSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
+
+    [[deprecated("Use selectDirectory() instead")]]
+    virtual io::path_t selectDirectorySync(const std::string& title, const io::path_t& dir) = 0;
+
+    [[deprecated("Use selectMultipleDirectories() instead")]]
+    virtual io::paths_t selectMultipleDirectoriesSync(const std::string& title, const io::path_t& dir,
+                                                      const io::paths_t& selectedDirectories) = 0;
 
     virtual RetVal<Val> openSync(const UriQuery& uri) = 0;
     RetVal<Val> openSync(const std::string& uri) { return openSync(UriQuery(uri)); }

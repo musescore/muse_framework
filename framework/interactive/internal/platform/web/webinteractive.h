@@ -86,8 +86,13 @@ public:
                                           bool confirmOverwrite = true) override;
 
     // dirs
-    muse::io::path_t selectDirectory(const std::string& title, const muse::io::path_t& dir) override;
-    muse::io::paths_t selectMultipleDirectories(const std::string& title, const muse::io::path_t& dir,
+    muse::async::Promise<muse::io::path_t> selectDirectory(const std::string& title, const muse::io::path_t& dir) override;
+    muse::async::Promise<muse::io::paths_t> selectMultipleDirectories(const std::string& title, const muse::io::path_t& dir,
+                                                                      const muse::io::paths_t& selectedDirectories) override;
+    [[deprecated("Use selectDirectory() instead")]]
+    muse::io::path_t selectDirectorySync(const std::string& title, const muse::io::path_t& dir) override;
+    [[deprecated("Use selectMultipleDirectories() instead")]]
+    muse::io::paths_t selectMultipleDirectoriesSync(const std::string& title, const muse::io::path_t& dir,
                                                 const muse::io::paths_t& selectedDirectories) override;
 
     // color

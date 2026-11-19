@@ -276,7 +276,37 @@ io::path_t WebInteractive::selectSavingFileSync(const std::string& title, const 
 #endif
 }
 
-io::path_t WebInteractive::selectDirectory(const std::string& title, const io::path_t& dir)
+async::Promise<io::path_t> WebInteractive::selectDirectory(const std::string& title, const io::path_t& dir)
+{
+#ifdef Q_OS_WASM
+    UNUSED(title);
+    UNUSED(dir);
+    NOT_SUPPORTED;
+    return async::make_promise<io::path_t>([](auto, auto reject) {
+        return reject((int)Ret::Code::NotSupported, "selecting a directory is not supported");
+    });
+#else
+    return m_origin->selectDirectory(title, dir);
+#endif
+}
+
+async::Promise<io::paths_t> WebInteractive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                                      const io::paths_t& selectedDirectories)
+{
+#ifdef Q_OS_WASM
+    UNUSED(title);
+    UNUSED(dir);
+    UNUSED(selectedDirectories);
+    NOT_SUPPORTED;
+    return async::make_promise<io::paths_t>([](auto, auto reject) {
+        return reject((int)Ret::Code::NotSupported, "selecting multiple directories is not supported");
+    });
+#else
+    return m_origin->selectMultipleDirectories(title, dir, selectedDirectories);
+#endif
+}
+
+io::path_t WebInteractive::selectDirectorySync(const std::string& title, const io::path_t& dir)
 {
 #ifdef Q_OS_WASM
     UNUSED(title);
@@ -284,12 +314,12 @@ io::path_t WebInteractive::selectDirectory(const std::string& title, const io::p
     NOT_SUPPORTED;
     return io::path_t();
 #else
-    return m_origin->selectDirectory(title, dir);
+    return m_origin->selectDirectorySync(title, dir);
 #endif
 }
 
-io::paths_t WebInteractive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
-                                                      const io::paths_t& selectedDirectories)
+io::paths_t WebInteractive::selectMultipleDirectoriesSync(const std::string& title, const io::path_t& dir,
+                                                          const io::paths_t& selectedDirectories)
 {
 #ifdef Q_OS_WASM
     UNUSED(title);
@@ -298,7 +328,7 @@ io::paths_t WebInteractive::selectMultipleDirectories(const std::string& title, 
     NOT_SUPPORTED;
     return io::paths_t();
 #else
-    return m_origin->selectMultipleDirectories(title, dir, selectedDirectories);
+    return m_origin->selectMultipleDirectoriesSync(title, dir, selectedDirectories);
 #endif
 }
 

@@ -61,7 +61,7 @@ void FilePickerModel::onFileSelected(const io::path_t& file)
     }
 
     m_dir = io::dirpath(file).toQString();
-    emit fileSelected(file.toQString());
+    emit pathSelected(file.toQString());
 }
 
 void FilePickerModel::selectFile()
@@ -72,28 +72,31 @@ void FilePickerModel::selectFile()
     });
 }
 
-QString FilePickerModel::selectDirectory()
+void FilePickerModel::selectDirectory()
 {
-    io::path_t directory = interactive()->selectDirectory(m_title.toStdString(), m_dir);
+    interactive()->selectDirectory(m_title.toStdString(), m_dir)
+    .onResolve(this, [this](const io::path_t& directory) {
+        if (directory.empty()) {
+            return;
+        }
 
-    if (!directory.empty()) {
         m_dir = directory.toQString();
-    }
-
-    return directory.toQString();
+        emit pathSelected(directory.toQString());
+    });
 }
 
-QString FilePickerModel::selectMultipleDirectories(const QString& selectedDirectoriesStr)
+void FilePickerModel::selectMultipleDirectories(const QString& selectedDirectoriesStr)
 {
     io::paths_t selectedDirectories = io::pathsFromString(selectedDirectoriesStr.toStdString());
-    io::paths_t directories = interactive()->selectMultipleDirectories(m_title.toStdString(), m_dir, selectedDirectories);
+    interactive()->selectMultipleDirectories(m_title.toStdString(), m_dir, selectedDirectories)
+    .onResolve(this, [this](const io::paths_t& directories) {
+        QStringList result;
+        for (const io::path_t& dir: directories) {
+            result << dir.toQString();
+        }
 
-    QStringList result;
-    for (const io::path_t& dir: directories) {
-        result << dir.toQString();
-    }
-
-    return result.join(";");
+        emit pathSelected(result.join(";"));
+    });
 }
 
 void FilePickerModel::selectAny()

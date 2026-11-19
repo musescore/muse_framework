@@ -50,8 +50,8 @@ public:
     QStringList filter() const;
 
     Q_INVOKABLE void selectFile();
-    Q_INVOKABLE QString selectDirectory();
-    Q_INVOKABLE QString selectMultipleDirectories(const QString& selectedDirectoriesStr);
+    Q_INVOKABLE void selectDirectory();
+    Q_INVOKABLE void selectMultipleDirectories(const QString& selectedDirectoriesStr);
     Q_INVOKABLE void selectAny();
 
 public slots:
@@ -64,7 +64,7 @@ signals:
     void dirChanged(const QString& dir);
     void filterChanged(const QStringList& filter);
 
-    void fileSelected(const QString& path);
+    void pathSelected(const QString& path);
 
 private:
     friend class UiComponents_FilePickerModelTests;

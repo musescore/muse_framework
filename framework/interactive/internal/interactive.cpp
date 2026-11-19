@@ -609,7 +609,83 @@ io::path_t Interactive::selectSavingFileSync(const std::string& title, const io:
 #endif
 }
 
-io::path_t Interactive::selectDirectory(const std::string& title, const io::path_t& dir)
+async::Promise<io::path_t> Interactive::selectDirectory(const std::string& title, const io::path_t& dir)
+{
+#ifndef Q_OS_LINUX
+    return async::make_promise<io::path_t>([this, title, dir](auto resolve, auto reject) {
+        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString());
+
+        dlg->setFileMode(QFileDialog::Directory);
+        dlg->setOption(QFileDialog::ShowDirsOnly);
+
+        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
+
+            QStringList dirs = dlg->selectedFiles();
+
+            if (result != QDialog::Accepted || dirs.isEmpty()) {
+                Ret ret = muse::make_ret(Ret::Code::Cancel);
+                (void)reject(ret.code(), ret.text());
+                return;
+            }
+
+            (void)resolve(io::path_t(dirs.first()));
+        });
+
+        //! NOTE Without a parent, the native dialog is blocked by an open modal window
+        dlg->winId();
+        dlg->windowHandle()->setTransientParent(topWindow());
+
+        dlg->open();
+
+        return async::Promise<io::path_t>::Result::unchecked();
+    }, async::PromiseType::AsyncByBody);
+
+#else
+
+    UriQuery q("muse://interactive/selectdir");
+    q.set("title", title);
+    q.set("folder", QUrl::fromLocalFile(dir.toQString()).toLocalFile().toStdString());
+
+    async::Promise<Val> promise = openAsync(q);
+
+    return async::make_promise<io::path_t>([promise, this](auto resolve, auto reject) {
+        async::Promise<Val> mut = promise;
+        mut.onResolve(this, [resolve](const Val& val) {
+            (void)resolve(QUrl::fromUserInput(val.toQString()).toLocalFile());
+        }).onReject(this, [reject](int code, const std::string& err) {
+            (void)reject(code, err);
+        });
+        return async::Promise<io::path_t>::Result::unchecked();
+    }, async::PromiseType::AsyncByBody);
+#endif
+}
+
+async::Promise<io::paths_t> Interactive::selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                                   const io::paths_t& selectedDirectories)
+{
+    UriQuery q("muse://interactive/selectmultipledirectories");
+    q.set("title", title)
+    .set("selectedDirectories", io::pathsToString(selectedDirectories))
+    .set("startDir", dir.toStdString());
+
+    async::Promise<Val> promise = openAsync(q);
+
+    return async::make_promise<io::paths_t>([promise, this](auto resolve, auto reject) {
+        async::Promise<Val> mut = promise;
+        mut.onResolve(this, [resolve](const Val& val) {
+            (void)resolve(io::pathsFromString(val.toString()));
+        }).onReject(this, [reject](int code, const std::string& err) {
+            (void)reject(code, err);
+        });
+        return async::Promise<io::paths_t>::Result::unchecked();
+    }, async::PromiseType::AsyncByBody);
+}
+
+io::path_t Interactive::selectDirectorySync(const std::string& title, const io::path_t& dir)
 {
 #ifndef Q_OS_LINUX
     QString result = QFileDialog::getExistingDirectory(nullptr, QString::fromStdString(title), dir.toQString());
@@ -629,7 +705,8 @@ io::path_t Interactive::selectDirectory(const std::string& title, const io::path
 #endif
 }
 
-io::paths_t Interactive::selectMultipleDirectories(const std::string& title, const io::path_t& dir, const io::paths_t& selectedDirectories)
+io::paths_t Interactive::selectMultipleDirectoriesSync(const std::string& title, const io::path_t& dir,
+                                                       const io::paths_t& selectedDirectories)
 {
     UriQuery q("muse://interactive/selectmultipledirectories");
     q.set("title", title)
