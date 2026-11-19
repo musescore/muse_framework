@@ -138,6 +138,19 @@ async::Promise<io::path_t> TestflowInteractive::selectOpeningFile(const std::str
     return m_real->selectOpeningFile(title, dir, filter);
 }
 
+async::Promise<io::paths_t> TestflowInteractive::selectOpeningFiles(const std::string& title, const io::path_t& dir,
+                                                                    const std::vector<std::string>& filter)
+{
+    if (m_unattendedDialogs == UnattendedDialogs::Skip) {
+        LOGW() << "[testflow] dialog skipped (select files): " << title;
+        return async::make_promise<io::paths_t>([](auto, auto reject) {
+            Ret ret = muse::make_ret(Ret::Code::Cancel);
+            return reject(ret.code(), ret.text());
+        });
+    }
+    return m_real->selectOpeningFiles(title, dir, filter);
+}
+
 io::path_t TestflowInteractive::selectOpeningFileSync(const std::string& title, const io::path_t& dir,
                                                       const std::vector<std::string>& filter, const int options)
 {

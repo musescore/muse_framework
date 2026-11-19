@@ -198,6 +198,22 @@ async::Promise<io::path_t> WebInteractive::selectOpeningFile(const std::string& 
 #endif
 }
 
+async::Promise<io::paths_t> WebInteractive::selectOpeningFiles(const std::string& title, const io::path_t& dir,
+                                                               const std::vector<std::string>& filter)
+{
+#ifdef Q_OS_WASM
+    UNUSED(title);
+    UNUSED(dir);
+    UNUSED(filter);
+    NOT_SUPPORTED;
+    return async::make_promise<io::paths_t>([](auto, auto reject) {
+        return reject((int)Ret::Code::NotSupported, "selecting multiple files is not supported");
+    });
+#else
+    return m_origin->selectOpeningFiles(title, dir, filter);
+#endif
+}
+
 io::path_t WebInteractive::selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
                                                  const int options)
 {
