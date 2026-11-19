@@ -98,13 +98,6 @@ void InteractiveTestsModel::showProgress()
     pd->progress.start();
 }
 
-void InteractiveTestsModel::openSampleDialogSync()
-{
-    LOGI() << "cpp: before open";
-    RetVal<Val> rv = interactive()->openSync("muse://devtools/interactive/sample?color=#474747");
-    LOGI() << "cpp: after open ret: " << rv.ret.toString() << ", val: " << rv.val.toString();
-}
-
 void InteractiveTestsModel::openSampleDialogAsync()
 {
     LOGI() << "cpp: before open ";
@@ -127,13 +120,6 @@ void InteractiveTestsModel::openSampleDialogAsyncWithPromise()
     }).onReject(this, [](int code, const std::string& err) {
         LOGE() << "error or cancel code: " << code << ", err: " << err;
     });
-}
-
-void InteractiveTestsModel::openWidgetDialog()
-{
-    LOGI() << "cpp: before open ";
-    RetVal<Val> rv = interactive()->openSync("muse://devtools/interactive/testdialog?title='And from its properties'");
-    LOGI() << "cpp: after open ret: " << rv.ret.toString() << ", val: " << rv.val.toString();
 }
 
 void InteractiveTestsModel::openWidgetDialogAsync()
@@ -270,12 +256,15 @@ void InteractiveTestsModel::criticalWithDetailedText()
 
 void InteractiveTestsModel::require()
 {
-    RetVal<Val> rv = interactive()->openSync("muse://devtools/interactive/sample?title='Test'");
-    if (rv.ret) {
-        LOGI() << "received: " << rv.val.toString();
-    } else if (check_ret(rv.ret, Ret::Code::Cancel)) {
-        LOGI() << "was cancelled";
-    } else {
-        LOGE() << "some error: " << rv.ret.code();
-    }
+    interactive()->open("muse://devtools/interactive/sample?title='Test'")
+    .onResolve(this, [](const Val& val) {
+        LOGI() << "received: " << val.toString();
+    })
+    .onReject(this, [](int code, const std::string&) {
+        if (code == int(Ret::Code::Cancel)) {
+            LOGI() << "was cancelled";
+        } else {
+            LOGE() << "some error: " << code;
+        }
+    });
 }

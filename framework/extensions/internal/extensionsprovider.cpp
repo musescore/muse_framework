@@ -108,7 +108,8 @@ muse::Ret ExtensionsProvider::perform(const ExtensionUri& uri, const ExtensionAc
         q.addParam("extension", Val(uri.toString()));
         q.addParam("action", Val(actionCode));
         q.addParam("modal", Val(a.modal));
-        return interactive()->openSync(q).ret;
+        interactive()->open(q);
+        return muse::make_ok();
     } break;
     case ExtensionType::Macros:
         return run(a, m);

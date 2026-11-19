@@ -182,11 +182,9 @@ void ExtensionsListModel::editShortcut(const QString& extensionUri)
     params["shortcutCodeKey"] = commandCode;
     preferencesUri.addParam("params", Val::fromQVariant(params));
 
-    RetVal<Val> retVal = interactive()->openSync(preferencesUri);
-
-    if (!retVal.ret) {
-        LOGE() << retVal.ret.toString();
-    }
+    interactive()->open(preferencesUri).onReject(this, [](int code, const std::string& msg) {
+        LOGE() << code << " " << msg;
+    });
 }
 
 void ExtensionsListModel::reloadPlugins()

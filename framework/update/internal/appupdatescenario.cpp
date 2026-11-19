@@ -270,17 +270,36 @@ Promise<Ret> AppUpdateScenario::askToRetryOnNotEnoughDiskSpace(const Ret& error,
 
 Promise<Ret> AppUpdateScenario::downloadRelease(bool confirmRestart)
 {
-    if (!service()->isReleaseReadyToInstall()) {
-        RetVal<Val> rv = interactive()->openSync("muse://update/app?mode=download");
-        if (rv.ret.code() == static_cast<int>(Err::NotEnoughDiskSpace)) {
-            return askToRetryOnNotEnoughDiskSpace(rv.ret, [this, confirmRestart]() { return downloadRelease(confirmRestart); });
-        }
-
-        if (!rv.ret) {
-            return processUpdateError(rv.ret);
-        }
+    if (service()->isReleaseReadyToInstall()) {
+        return completeInstall(confirmRestart);
     }
 
+    const auto retry = [this, confirmRestart]() {
+        return downloadRelease(confirmRestart);
+    };
+
+    const auto onDownloaded = [this, confirmRestart](const Val&, auto resolve, auto) {
+        completeInstall(confirmRestart).onResolve(this, [resolve](const Ret& ret) {
+            (void)resolve(ret);
+        });
+        return Promise<Ret>::dummy_result();
+    };
+
+    const auto onFailed = [this, retry](int code, const std::string& text, auto resolve, auto) {
+        const Ret error = muse::make_ret(code, text);
+        Promise<Ret> handled = code == static_cast<int>(Err::NotEnoughDiskSpace)
+                               ? askToRetryOnNotEnoughDiskSpace(error, retry)
+                               : processUpdateError(error);
+        handled.onResolve(this, [resolve](const Ret& ret) {
+            (void)resolve(ret);
+        });
+    };
+
+    return interactive()->open("muse://update/app?mode=download").then<Ret>(this, onDownloaded, onFailed);
+}
+
+Promise<Ret> AppUpdateScenario::completeInstall(bool confirmRestart)
+{
     if (confirmRestart) {
         return askToCloseAppAndCompleteInstall();
     }
