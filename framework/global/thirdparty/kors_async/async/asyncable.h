@@ -51,7 +51,15 @@ public:
             assert(asyncables.empty());
         }
 
-        virtual void disconnectAsyncable(Asyncable* a, const std::thread::id& connectThId) = 0;
+        virtual void disconnectAsyncable(Asyncable* a, const std::thread::id&)
+        {
+            a->async_disconnect(this);
+        }
+
+        virtual bool async_isConnected(Asyncable* a) const
+        {
+            return asyncables.find(a) != asyncables.end();
+        }
     };
 
     bool async_isConnected() const

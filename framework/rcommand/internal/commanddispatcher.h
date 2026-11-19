@@ -20,6 +20,8 @@
 
 #include "../icommanddispatcher.h"
 
+#include "global/async/asyncable.h"
+
 #include "global/modularity/ioc.h"
 #include "../icommandsregister.h"
 
@@ -52,11 +54,17 @@ private:
         Commandable* client = nullptr;
         CallBack callback = nullptr;
         AsyncCallBack asyncCallback = nullptr;
+
+        Client(Commandable* client, CallBack callback)
+            : client(client), callback(callback) {}
+
+        Client(Commandable* client, AsyncCallBack asyncCallback)
+            : client(client), asyncCallback(asyncCallback) {}
     };
 
-    void reg(Commandable* client, const Command& command, const Client& c);
+    void reg(Commandable* client, const Command& command, std::shared_ptr<Client> c);
 
-    std::map<Command, Client> m_clients;
+    std::map<Command, std::shared_ptr<Client> > m_clients;
     async::Channel<Command, bool* /*allow dispatch*/> m_preDispatch;
     async::Channel<Command> m_postDispatch;
     async::Channel<Command> m_notRegistered;

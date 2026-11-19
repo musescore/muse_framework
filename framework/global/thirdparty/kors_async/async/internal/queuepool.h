@@ -69,6 +69,7 @@ private:
         std::thread::id threadId;
         std::vector<std::shared_ptr<Port> > ports;
         std::recursive_mutex mutex;
+        bool isProcessing = false;
     };
 
     ThreadData* threadData(const std::thread::id& threadId, bool create);
