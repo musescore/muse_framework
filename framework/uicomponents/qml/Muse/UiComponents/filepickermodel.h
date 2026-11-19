@@ -25,11 +25,13 @@
 #include <QObject>
 #include <qqmlintegration.h>
 
+#include "async/asyncable.h"
+
 #include "modularity/ioc.h"
 #include "interactive/iinteractive.h"
 
 namespace muse::uicomponents {
-class FilePickerModel : public QObject, public muse::Contextable
+class FilePickerModel : public QObject, public muse::Contextable, public muse::async::Asyncable
 {
     Q_OBJECT
     QML_ELEMENT;
@@ -47,10 +49,10 @@ public:
     QString dir() const;
     QStringList filter() const;
 
-    Q_INVOKABLE QString selectFile();
+    Q_INVOKABLE void selectFile();
     Q_INVOKABLE QString selectDirectory();
     Q_INVOKABLE QString selectMultipleDirectories(const QString& selectedDirectoriesStr);
-    Q_INVOKABLE QString selectAny();
+    Q_INVOKABLE void selectAny();
 
 public slots:
     void setTitle(const QString& title);
@@ -62,7 +64,14 @@ signals:
     void dirChanged(const QString& dir);
     void filterChanged(const QStringList& filter);
 
+    void fileSelected(const QString& path);
+
 private:
+    friend class UiComponents_FilePickerModelTests;
+
+    std::vector<std::string> filterList() const;
+    void onFileSelected(const io::path_t& file);
+
     QString m_title;
     QString m_dir;
     QStringList m_filter;

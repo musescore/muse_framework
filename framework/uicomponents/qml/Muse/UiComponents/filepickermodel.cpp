@@ -44,20 +44,32 @@ QStringList FilePickerModel::filter() const
     return m_filter;
 }
 
-QString FilePickerModel::selectFile()
+std::vector<std::string> FilePickerModel::filterList() const
 {
     std::vector<std::string> filter;
     for (const QString& nameFilter : m_filter) {
         filter.push_back(nameFilter.toStdString());
     }
 
-    io::path_t file = interactive()->selectOpeningFileSync(m_title.toStdString(), m_dir, filter);
+    return filter;
+}
 
-    if (!file.empty()) {
-        m_dir = io::dirpath(file).toQString();
+void FilePickerModel::onFileSelected(const io::path_t& file)
+{
+    if (file.empty()) {
+        return;
     }
 
-    return file.toQString();
+    m_dir = io::dirpath(file).toQString();
+    emit fileSelected(file.toQString());
+}
+
+void FilePickerModel::selectFile()
+{
+    interactive()->selectOpeningFile(m_title.toStdString(), m_dir, filterList())
+    .onResolve(this, [this](const io::path_t& file) {
+        onFileSelected(file);
+    });
 }
 
 QString FilePickerModel::selectDirectory()
@@ -84,20 +96,12 @@ QString FilePickerModel::selectMultipleDirectories(const QString& selectedDirect
     return result.join(";");
 }
 
-QString FilePickerModel::selectAny()
+void FilePickerModel::selectAny()
 {
-    std::vector<std::string> filter;
-    for (const QString& nameFilter : m_filter) {
-        filter.push_back(nameFilter.toStdString());
-    }
-
-    io::path_t file = interactive()->selectSavingFileSync(m_title.toStdString(), m_dir, filter);
-
-    if (!file.empty()) {
-        m_dir = io::dirpath(file).toQString();
-    }
-
-    return file.toQString();
+    interactive()->selectSavingFile(m_title.toStdString(), m_dir, filterList())
+    .onResolve(this, [this](const io::path_t& file) {
+        onFileSelected(file);
+    });
 }
 
 void FilePickerModel::setTitle(const QString& title)
