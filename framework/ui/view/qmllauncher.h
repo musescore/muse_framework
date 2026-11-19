@@ -38,7 +38,6 @@ public:
     QmlLauncher(QObject* parent, const modularity::ContextPtr& iocCtx);
 
     Q_INVOKABLE bool open(const QString& uri);
-    Q_INVOKABLE bool openSync(const QString& uri);
     Q_INVOKABLE bool openApp(const QString& uri);
     Q_INVOKABLE bool openUrl(const QString& url);
 };

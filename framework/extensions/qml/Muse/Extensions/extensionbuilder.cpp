@@ -159,10 +159,6 @@ void ExtensionBuilder::load(const QString& extension, const QString& action, QOb
         });
 
         //! NOTE For version 1 plugins we need to call run.
-        //! Queued on Qt's event loop rather than async::Async: the viewer is opened
-        //! with openSync from inside a command, that is from inside async message
-        //! processing, and the nested loop of the dialog cannot process async
-        //! messages again, so run would only arrive once the dialog had closed.
         const QPointer<QQuickItem> contentItem = m_contentItem;
         QMetaObject::invokeMethod(this, [this, contentItem, a, uri]() {
             if (!contentItem || contentItem != m_contentItem) {
