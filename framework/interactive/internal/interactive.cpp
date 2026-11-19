@@ -361,7 +361,7 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
                                                           const std::vector<std::string>& filter)
 {
 #ifndef Q_OS_LINUX
-    return async::make_promise<io::path_t>([title, dir, filter](auto resolve, auto reject) {
+    return async::make_promise<io::path_t>([this, title, dir, filter](auto resolve, auto reject) {
         QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
         dlg->setFileMode(QFileDialog::ExistingFile);
@@ -383,6 +383,10 @@ async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& tit
             QString file = files.first();
             (void)resolve(file);
         });
+
+        //! NOTE Without a parent, the native dialog is blocked by an open modal window
+        dlg->winId();
+        dlg->windowHandle()->setTransientParent(topWindow());
 
         dlg->open();
 
@@ -466,7 +470,7 @@ async::Promise<io::path_t> Interactive::selectSavingFile(const std::string& titl
                                                          const std::vector<std::string>& filter, bool confirmOverwrite)
 {
 #ifndef Q_OS_LINUX
-    return async::make_promise<io::path_t>([title, dir, filter, confirmOverwrite](auto resolve, auto reject) {
+    return async::make_promise<io::path_t>([this, title, dir, filter, confirmOverwrite](auto resolve, auto reject) {
         QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
         dlg->setAcceptMode(QFileDialog::AcceptSave);
@@ -490,6 +494,10 @@ async::Promise<io::path_t> Interactive::selectSavingFile(const std::string& titl
             QString file = files.first();
             (void)resolve(file);
         });
+
+        //! NOTE Without a parent, the native dialog is blocked by an open modal window
+        dlg->winId();
+        dlg->windowHandle()->setTransientParent(topWindow());
 
         dlg->open();
 
