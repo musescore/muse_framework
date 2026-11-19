@@ -56,16 +56,20 @@ void InteractiveTestsModel::init()
 
 void InteractiveTestsModel::selectOpeningFile()
 {
-    io::path_t path = interactive()->selectOpeningFileSync("Sample select file", qApp->applicationDirPath(),
-                                                           { "Text files (*.txt)", "Cmake files (*.cmake)" });
-    LOGI() << "path: " << path;
+    interactive()->selectOpeningFile("Sample select file", qApp->applicationDirPath(),
+                                     { "Text files (*.txt)", "Cmake files (*.cmake)" })
+    .onResolve(this, [](const io::path_t& path) {
+        LOGI() << "path: " << path;
+    });
 }
 
 void InteractiveTestsModel::selectSavingFile()
 {
-    io::path_t path = interactive()->selectSavingFileSync("Sample select file", qApp->applicationDirPath(),
-                                                          { "Text files (*.txt)", "Cmake files (*.cmake)" });
-    LOGI() << "path: " << path;
+    interactive()->selectSavingFile("Sample select file", qApp->applicationDirPath(),
+                                    { "Text files (*.txt)", "Cmake files (*.cmake)" })
+    .onResolve(this, [](const io::path_t& path) {
+        LOGI() << "path: " << path;
+    });
 }
 
 void InteractiveTestsModel::selectDirectory()

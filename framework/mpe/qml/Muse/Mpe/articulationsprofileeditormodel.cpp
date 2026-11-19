@@ -43,38 +43,52 @@ void ArticulationsProfileEditorModel::requestToOpenProfile()
 {
     //! Make these strings translatable when we expose this tool to users
     std::vector<std::string> filter = { /*qtrc*/ std::string("MPE articulations profile") + " " + PROFILE_EXTENSION };
-    io::path_t path = interactive()->selectOpeningFileSync(/*trc*/ "Open MPE articulations profile", "", filter);
+    interactive()->selectOpeningFile(/*trc*/ "Open MPE articulations profile", "", filter)
+    .onResolve(this, [this](const io::path_t& path) {
+        if (path.empty()) {
+            return;
+        }
 
-    if (path.empty()) {
-        return;
-    }
+        setCurrentPath(path.toQString());
 
-    setCurrentPath(path.toQString());
-
-    setProfile(profilesRepository()->loadProfile(m_profilePath));
+        setProfile(profilesRepository()->loadProfile(m_profilePath));
+    });
 }
 
-bool ArticulationsProfileEditorModel::requestToCreateProfile()
+void ArticulationsProfileEditorModel::requestToCreateProfile()
 {
-    std::vector<std::string> filter = { /*qtrc*/ std::string("MPE articulations profile") + " " + PROFILE_EXTENSION };
-    io::path_t path = interactive()->selectSavingFileSync(/*trc*/ "Save MPE articulations profile", "", filter);
-
-    if (path.empty()) {
-        return false;
-    }
-
-    setCurrentPath(path.toQString());
-    return true;
+    selectProfileSavingPath().onResolve(this, [this](const io::path_t& path) {
+        if (!path.empty()) {
+            setCurrentPath(path.toQString());
+        }
+    });
 }
 
 void ArticulationsProfileEditorModel::requestToSaveProfile()
 {
-    if (m_profilePath.empty()) {
-        if (!requestToCreateProfile()) {
-            return;
-        }
+    if (!m_profilePath.empty()) {
+        saveProfile();
+        return;
     }
 
+    selectProfileSavingPath().onResolve(this, [this](const io::path_t& path) {
+        if (path.empty()) {
+            return;
+        }
+
+        setCurrentPath(path.toQString());
+        saveProfile();
+    });
+}
+
+async::Promise<io::path_t> ArticulationsProfileEditorModel::selectProfileSavingPath()
+{
+    std::vector<std::string> filter = { /*qtrc*/ std::string("MPE articulations profile") + " " + PROFILE_EXTENSION };
+    return interactive()->selectSavingFile(/*trc*/ "Save MPE articulations profile", "", filter);
+}
+
+void ArticulationsProfileEditorModel::saveProfile()
+{
     for (const auto& item : m_singleNoteItems) {
         if (item->isActive()) {
             m_profile->setPattern(item->type(), item->patternData());

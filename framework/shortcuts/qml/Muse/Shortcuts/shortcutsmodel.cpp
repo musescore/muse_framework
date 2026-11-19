@@ -193,31 +193,33 @@ void ShortcutsModel::setSelection(const QItemSelection& selection)
 
 void ShortcutsModel::importShortcutsFromFile()
 {
-    io::path_t path = interactive()->selectOpeningFileSync(
+    interactive()->selectOpeningFile(
         muse::trc("shortcuts", "Import shortcuts"),
         globalConfiguration()->homePath(),
-        shortcutsFileFilter());
-
-    if (!path.empty()) {
-        shortcutsRegister()->importFromFile(path);
-    }
+        shortcutsFileFilter())
+    .onResolve(this, [this](const io::path_t& path) {
+        if (!path.empty()) {
+            shortcutsRegister()->importFromFile(path);
+        }
+    });
 }
 
 void ShortcutsModel::exportShortcutsToFile()
 {
-    io::path_t path = interactive()->selectSavingFileSync(
+    interactive()->selectSavingFile(
         muse::trc("shortcuts", "Export shortcuts"),
         globalConfiguration()->homePath(),
-        shortcutsFileFilter());
+        shortcutsFileFilter())
+    .onResolve(this, [this](const io::path_t& path) {
+        if (path.empty()) {
+            return;
+        }
 
-    if (path.empty()) {
-        return;
-    }
-
-    Ret ret = shortcutsRegister()->exportToFile(path);
-    if (!ret) {
-        LOGE() << ret.toString();
-    }
+        Ret ret = shortcutsRegister()->exportToFile(path);
+        if (!ret) {
+            LOGE() << ret.toString();
+        }
+    });
 }
 
 void ShortcutsModel::applySequenceToCurrentShortcut(const QString& newSequence, int conflictShortcutIndex)
