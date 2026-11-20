@@ -65,10 +65,12 @@ Column {
         id: filterModel
 
         filters: [
-            FilterValue {
+            FuzzyFilter {
+                id: fuzzyFilter
+
+                enabled: Boolean(fuzzyPattern)
+                fuzzyPattern: root.search
                 roleName: "name"
-                roleValue: root.search
-                compareType: CompareType.Contains
             },
             FilterValue {
                 roleName: "enabled"
@@ -79,6 +81,12 @@ Column {
                 roleName: "category"
                 roleValue: root.selectedCategory
                 compareType: CompareType.Contains
+            }
+        ]
+        sorters: [
+            FuzzyScoreSorter {
+                enabled: fuzzyFilter.enabled
+                fuzzyFilter: fuzzyFilter
             }
         ]
     }
