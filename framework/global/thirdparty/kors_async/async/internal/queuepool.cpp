@@ -174,12 +174,21 @@ void QueuePool::processMessages(const std::thread::id& th)
         return;
     }
 
+    assert(!thdata->isProcessing && "nested processMessages not supported");
+
     std::unique_lock lock(thdata->mutex, std::defer_lock);
     // try lock
     if (!lock.try_lock()) {
         // if we couldn't lock it, we just skip it
         return;
     }
+
+    struct ProcessingGuard {
+        bool& flag;
+        explicit ProcessingGuard(bool& f)
+            : flag(f) { flag = true; }
+        ~ProcessingGuard() { flag = false; }
+    } guard { thdata->isProcessing };
 
     for (size_t i = 0; i < thdata->ports.size(); ++i) {
         std::shared_ptr<Port>& port = thdata->ports.at(i);

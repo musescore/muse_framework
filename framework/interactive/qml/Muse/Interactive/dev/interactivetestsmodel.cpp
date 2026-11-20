@@ -25,6 +25,7 @@
 #include <QAccessible>
 
 #include "async/async.h"
+#include "async/unblock.h"
 
 #include "global/progress.h"
 

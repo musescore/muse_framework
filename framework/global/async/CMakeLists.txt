@@ -10,4 +10,6 @@ target_sources(muse_global PRIVATE
     notifylist.h
     processevents.h
     promise.h
+    unblock.cpp
+    unblock.h
 )

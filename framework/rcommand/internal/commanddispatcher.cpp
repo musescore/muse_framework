@@ -23,6 +23,11 @@
 #include "../commandable.h"
 #include "../commandtypes.h"
 
+#include "muse_framework_config.h"
+#if MUSE_MODULE_RCOMMAND_HANDLER_AUTOUNBLOCK
+#include "async/unblock.h"
+#endif
+
 #include "log.h"
 
 using namespace muse;
@@ -31,7 +36,7 @@ using namespace muse::rcommand;
 CommandDispatcher::~CommandDispatcher()
 {
     for (auto it = m_clients.begin(); it != m_clients.end(); ++it) {
-        Commandable* client = it->second.client;
+        Commandable* client = it->second->client;
         if (client) {
             client->setDispatcher(nullptr);
         }
@@ -69,34 +74,71 @@ async::Promise<Response> CommandDispatcher::dispatch(const Request& request, boo
 
     LOGI() << "try call command: " << request.command << ", params: " << request.params;
 
-    Client client = it->second;
+    std::weak_ptr<Client> weakClient = it->second;
 
-    return async::make_promise<Response>([this, request, client](auto resolve) {
-        if (client.asyncCallback) {
+    return async::make_promise<Response>([this, request, weakClient](auto resolve) {
+        if (weakClient.expired()) {
+            return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+        }
+
+        auto client = weakClient.lock();
+
+        if (client->asyncCallback) {
             bool allowDispatch = true;
             m_preDispatch.send(request.command, &allowDispatch);
             if (!allowDispatch) {
                 return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
             }
 
-            client.asyncCallback(request, [this, request, resolve](const Response& response) {
+#if MUSE_MODULE_RCOMMAND_HANDLER_AUTOUNBLOCK
+            async::Unblock::call(nullptr, [this, request, weakClient, resolve]() {
+                if (weakClient.expired()) {
+                    (void)resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+                    return;
+                }
+
+                auto client = weakClient.lock();
+                client->asyncCallback(request, [this, request, resolve](const Response& response) {
+                    (void)resolve(response);
+                    m_postDispatch.send(request.command);
+                });
+            });
+#else
+
+            client->asyncCallback(request, [this, request, resolve](const Response& response) {
                 (void)resolve(response);
                 m_postDispatch.send(request.command);
             });
+#endif
 
             return async::Promise<Response>::dummy_result();
         }
 
-        if (client.callback) {
+        if (client->callback) {
             bool allowDispatch = true;
             m_preDispatch.send(request.command, &allowDispatch);
             if (!allowDispatch) {
                 return resolve(make_response(request, make_ret(Ret::Code::Cancel)));
             }
 
-            auto res = resolve(client.callback(request));
+            Response responce;
+#if MUSE_MODULE_RCOMMAND_HANDLER_AUTOUNBLOCK
+            async::Unblock::call(nullptr, [this, request, weakClient, resolve]() {
+                if (weakClient.expired()) {
+                    (void)resolve(make_response(request, make_ret(Ret::Code::Cancel)));
+                    return;
+                }
+                auto client = weakClient.lock();
+                auto res = client->callback(request);
+                (void)resolve(res);
+                m_postDispatch.send(request.command);
+            });
+            return async::Promise<Response>::dummy_result();
+#else
+            auto res = resolve(client->callback(request));
             m_postDispatch.send(request.command);
             return res;
+#endif
         }
 
         UNREACHABLE;
@@ -117,7 +159,7 @@ Response CommandDispatcher::dispatch(const Command& command, const Params& param
 
     LOGI() << "try call command: " << command << " with params: " << params;
 
-    CallBack callback = it->second.callback;
+    CallBack callback = it->second->callback;
 
     IF_ASSERT_FAILED(callback) {
         return make_response(request, make_ret(Ret::Code::NotSupported));
@@ -133,15 +175,15 @@ Response CommandDispatcher::dispatch(const CommandQuery& query)
 
 void CommandDispatcher::onRequest(Commandable* client, const Command& command, const CallBack& callback)
 {
-    reg(client, command, { client, callback, nullptr });
+    reg(client, command, std::make_shared<Client>(client, callback));
 }
 
 void CommandDispatcher::onRequest(Commandable* client, const Command& command, const AsyncCallBack& callback)
 {
-    reg(client, command, { client, nullptr, callback });
+    reg(client, command, std::make_shared<Client>(client, callback));
 }
 
-void CommandDispatcher::reg(Commandable* client, const Command& command, const Client& c)
+void CommandDispatcher::reg(Commandable* client, const Command& command, std::shared_ptr<Client> c)
 {
     if (m_clients.find(command) != m_clients.end()) {
         LOGW() << "command already registered: " << command;
@@ -159,7 +201,7 @@ void CommandDispatcher::unreg(Commandable* client)
     }
 
     for (auto it = m_clients.begin(); it != m_clients.end();) {
-        if (it->second.client == client) {
+        if (it->second->client == client) {
             it = m_clients.erase(it);
             continue;
         }

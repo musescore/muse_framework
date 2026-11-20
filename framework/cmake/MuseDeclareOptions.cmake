@@ -108,6 +108,7 @@ declare_muse_module_opt(NETWORK ON)
 option(MUSE_MODULE_NETWORK_WEBSOCKET "Enable websocket support" OFF)
 
 declare_muse_module_opt(RCOMMAND ON)
+option(MUSE_MODULE_RCOMMAND_HANDLER_AUTOUNBLOCK "Use auto unblock for rcommand handler" ON)
 declare_muse_module_opt(RCONTROL ON)
 
 declare_muse_module_opt(SHORTCUTS ON)
