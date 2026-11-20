@@ -355,43 +355,64 @@ static QString filterToString(const std::vector<std::string>& filter)
     return result.join(";;");
 }
 
+static io::path_t firstPath(const QStringList& paths)
+{
+    return paths.first();
+}
+
+static io::paths_t allPaths(const QStringList& paths)
+{
+    io::paths_t result;
+    result.reserve(paths.size());
+    for (const QString& path : paths) {
+        result.emplace_back(path);
+    }
+
+    return result;
+}
+
+template<typename T>
+static async::Promise<T> openFileDialog(QFileDialog* dlg, QWindow* parent, std::function<T(const QStringList&)> toResult)
+{
+    return async::make_promise<T>([dlg, parent, toResult](auto resolve, auto reject) {
+        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject, toResult](int result) {
+            DEFER {
+                //! Must be called AFTER resolve/reject, as they may process posted events
+                dlg->deleteLater();
+            };
+
+            const QStringList paths = dlg->selectedFiles();
+
+            if (result != QDialog::Accepted || paths.isEmpty()) {
+                Ret ret = muse::make_ret(Ret::Code::Cancel);
+                (void)reject(ret.code(), ret.text());
+                return;
+            }
+
+            (void)resolve(toResult(paths));
+        });
+
+        //! NOTE Without a parent, the native dialog is blocked by an open modal window
+        dlg->winId();
+        dlg->windowHandle()->setTransientParent(parent);
+
+        dlg->open();
+
+        return async::Promise<T>::Result::unchecked();
+    }, async::PromiseType::AsyncByBody);
+}
+
 #endif
 
 async::Promise<io::path_t> Interactive::selectOpeningFile(const std::string& title, const io::path_t& dir,
                                                           const std::vector<std::string>& filter)
 {
 #ifndef Q_OS_LINUX
-    return async::make_promise<io::path_t>([this, title, dir, filter](auto resolve, auto reject) {
-        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
+    QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
-        dlg->setFileMode(QFileDialog::ExistingFile);
+    dlg->setFileMode(QFileDialog::ExistingFile);
 
-        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
-            DEFER {
-                //! Must be called AFTER resolve/reject, as they may process posted events
-                dlg->deleteLater();
-            };
-
-            QStringList files = dlg->selectedFiles();
-
-            if (result != QDialog::Accepted || files.isEmpty()) {
-                Ret ret = muse::make_ret(Ret::Code::Cancel);
-                (void)reject(ret.code(), ret.text());
-                return;
-            }
-
-            QString file = files.first();
-            (void)resolve(file);
-        });
-
-        //! NOTE Without a parent, the native dialog is blocked by an open modal window
-        dlg->winId();
-        dlg->windowHandle()->setTransientParent(topWindow());
-
-        dlg->open();
-
-        return async::Promise<io::path_t>::Result::unchecked();
-    }, async::PromiseType::AsyncByBody);
+    return openFileDialog<io::path_t>(dlg, topWindow(), firstPath);
 
 #else
 
@@ -415,42 +436,11 @@ async::Promise<io::paths_t> Interactive::selectOpeningFiles(const std::string& t
                                                             const std::vector<std::string>& filter)
 {
 #ifndef Q_OS_LINUX
-    return async::make_promise<io::paths_t>([this, title, dir, filter](auto resolve, auto reject) {
-        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
+    QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
-        dlg->setFileMode(QFileDialog::ExistingFiles);
+    dlg->setFileMode(QFileDialog::ExistingFiles);
 
-        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
-            DEFER {
-                //! Must be called AFTER resolve/reject, as they may process posted events
-                dlg->deleteLater();
-            };
-
-            const QStringList files = dlg->selectedFiles();
-
-            if (result != QDialog::Accepted || files.isEmpty()) {
-                Ret ret = muse::make_ret(Ret::Code::Cancel);
-                (void)reject(ret.code(), ret.text());
-                return;
-            }
-
-            io::paths_t paths;
-            paths.reserve(files.size());
-            for (const QString& file : files) {
-                paths.emplace_back(file);
-            }
-
-            (void)resolve(paths);
-        });
-
-        //! NOTE Without a parent, the native dialog is blocked by an open modal window
-        dlg->winId();
-        dlg->windowHandle()->setTransientParent(topWindow());
-
-        dlg->open();
-
-        return async::Promise<io::paths_t>::Result::unchecked();
-    }, async::PromiseType::AsyncByBody);
+    return openFileDialog<io::paths_t>(dlg, topWindow(), allPaths);
 
 #else
 
@@ -501,14 +491,7 @@ io::paths_t Interactive::selectOpeningFilesSync(const std::string& title, const 
     const QFileDialog::Options qoptions = QFileDialog::Options::fromInt(options);
     const QStringList result = QFileDialog::getOpenFileNames(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(
                                                                  filter), nullptr, qoptions);
-
-    io::paths_t paths;
-    paths.reserve(result.size());
-    for (const QString& path : result) {
-        paths.emplace_back(path);
-    }
-
-    return paths;
+    return allPaths(result);
 #else
     UriQuery q = makeSelectFileQuery(FileDialogMode::OpenFiles, title, dir, filter, options);
 
@@ -533,39 +516,13 @@ async::Promise<io::path_t> Interactive::selectSavingFile(const std::string& titl
                                                          const std::vector<std::string>& filter, bool confirmOverwrite)
 {
 #ifndef Q_OS_LINUX
-    return async::make_promise<io::path_t>([this, title, dir, filter, confirmOverwrite](auto resolve, auto reject) {
-        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
+    QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString(), filterToString(filter));
 
-        dlg->setAcceptMode(QFileDialog::AcceptSave);
-        dlg->setFileMode(QFileDialog::AnyFile);
-        dlg->setOption(QFileDialog::DontConfirmOverwrite, !confirmOverwrite);
+    dlg->setAcceptMode(QFileDialog::AcceptSave);
+    dlg->setFileMode(QFileDialog::AnyFile);
+    dlg->setOption(QFileDialog::DontConfirmOverwrite, !confirmOverwrite);
 
-        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
-            DEFER {
-                //! Must be called AFTER resolve/reject, as they may process posted events
-                dlg->deleteLater();
-            };
-
-            QStringList files = dlg->selectedFiles();
-
-            if (result != QDialog::Accepted || files.isEmpty()) {
-                Ret ret = muse::make_ret(Ret::Code::Cancel);
-                (void)reject(ret.code(), ret.text());
-                return;
-            }
-
-            QString file = files.first();
-            (void)resolve(file);
-        });
-
-        //! NOTE Without a parent, the native dialog is blocked by an open modal window
-        dlg->winId();
-        dlg->windowHandle()->setTransientParent(topWindow());
-
-        dlg->open();
-
-        return async::Promise<io::path_t>::Result::unchecked();
-    });
+    return openFileDialog<io::path_t>(dlg, topWindow(), firstPath);
 
 #else
 
@@ -612,37 +569,12 @@ io::path_t Interactive::selectSavingFileSync(const std::string& title, const io:
 async::Promise<io::path_t> Interactive::selectDirectory(const std::string& title, const io::path_t& dir)
 {
 #ifndef Q_OS_LINUX
-    return async::make_promise<io::path_t>([this, title, dir](auto resolve, auto reject) {
-        QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString());
+    QFileDialog* dlg = new QFileDialog(nullptr, QString::fromStdString(title), dir.toQString());
 
-        dlg->setFileMode(QFileDialog::Directory);
-        dlg->setOption(QFileDialog::ShowDirsOnly);
+    dlg->setFileMode(QFileDialog::Directory);
+    dlg->setOption(QFileDialog::ShowDirsOnly);
 
-        QObject::connect(dlg, &QFileDialog::finished, [dlg, resolve, reject](int result) {
-            DEFER {
-                //! Must be called AFTER resolve/reject, as they may process posted events
-                dlg->deleteLater();
-            };
-
-            QStringList dirs = dlg->selectedFiles();
-
-            if (result != QDialog::Accepted || dirs.isEmpty()) {
-                Ret ret = muse::make_ret(Ret::Code::Cancel);
-                (void)reject(ret.code(), ret.text());
-                return;
-            }
-
-            (void)resolve(io::path_t(dirs.first()));
-        });
-
-        //! NOTE Without a parent, the native dialog is blocked by an open modal window
-        dlg->winId();
-        dlg->windowHandle()->setTransientParent(topWindow());
-
-        dlg->open();
-
-        return async::Promise<io::path_t>::Result::unchecked();
-    }, async::PromiseType::AsyncByBody);
+    return openFileDialog<io::path_t>(dlg, topWindow(), firstPath);
 
 #else
 
