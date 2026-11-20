@@ -40,3 +40,7 @@ endif()
 if (MUSE_MODULE_UI_API)
     add_subdirectory(api/MuseApi/Controls)
 endif()
+
+if (MUSE_MODULE_UI_TESTS AND MUSE_MODULE_UI_QML)
+    add_subdirectory(tests)
+endif()

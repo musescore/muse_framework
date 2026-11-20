@@ -26,11 +26,12 @@
 #include <QString>
 #include <QUrl>
 
+#include "global/async/asyncable.h"
 #include "global/modularity/ioc.h"
 #include "interactive/iinteractive.h"
 
 namespace muse::extensions::apiv1 {
-class FileDialog : public QObject, public Contextable
+class FileDialog : public QObject, public Contextable, public async::Asyncable
 {
     Q_OBJECT
     Q_PROPERTY(Type type READ type WRITE setType NOTIFY typeChanged FINAL)
@@ -86,13 +87,16 @@ signals:
     void filePathChanged();
 
 private:
+    friend class Extensions_FileDialogTests;
 
-    QString doOpen(const QString& title, const QString& path);
+    void doOpen();
+    void onClosed(int request, const QString& filePath);
 
     QString m_title;
     bool m_visible = false;
     QString m_folder;
     QString m_filePath;
     Type m_type = Type::Load;
+    int m_request = 0;
 };
 }

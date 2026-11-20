@@ -124,23 +124,25 @@ void SelectMultipleDirectoriesModel::removeSelectedDirectories()
 
 void SelectMultipleDirectoriesModel::addDirectory()
 {
-    io::path_t path = interactive()->selectDirectory(muse::trc("ui", "Choose directory"), m_dir.toStdString());
-    if (path.empty()) {
-        return;
-    }
+    interactive()->selectDirectory(muse::trc("ui", "Choose directory"), m_dir.toStdString())
+    .onResolve(this, [this](const io::path_t& path) {
+        if (path.empty()) {
+            return;
+        }
 
-    if (std::find(m_directories.cbegin(), m_directories.cend(), path) != m_directories.end()) {
-        return;
-    }
+        if (std::find(m_directories.cbegin(), m_directories.cend(), path) != m_directories.end()) {
+            return;
+        }
 
-    int row = rowCount();
+        int row = rowCount();
 
-    beginInsertRows(QModelIndex(), row, row);
-    m_directories.push_back(path);
-    endInsertRows();
+        beginInsertRows(QModelIndex(), row, row);
+        m_directories.push_back(path);
+        endInsertRows();
 
-    m_dir = path;
-    emit directoryAdded(row);
+        m_dir = path;
+        emit directoryAdded(row);
+    });
 }
 
 QString SelectMultipleDirectoriesModel::directories() const

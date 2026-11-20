@@ -26,6 +26,7 @@
 #include <QList>
 #include <qqmlintegration.h>
 
+#include "async/asyncable.h"
 #include "modularity/ioc.h"
 #include "interactive/iinteractive.h"
 #include "io/path.h"
@@ -34,7 +35,7 @@
 #include "articulationpatternitem.h"
 
 namespace muse::mpe {
-class ArticulationsProfileEditorModel : public QObject, public Contextable
+class ArticulationsProfileEditorModel : public QObject, public Contextable, public async::Asyncable
 {
     Q_OBJECT
 
@@ -62,7 +63,7 @@ public:
 
     Q_INVOKABLE void init();
     Q_INVOKABLE void requestToOpenProfile();
-    Q_INVOKABLE bool requestToCreateProfile();
+    Q_INVOKABLE void requestToCreateProfile();
     Q_INVOKABLE void requestToSaveProfile();
 
     Q_INVOKABLE void copyPatternDataFromItem(muse::mpe::ArticulationPatternItem* item);
@@ -95,6 +96,9 @@ signals:
 
 private:
     void setProfile(const ArticulationsProfilePtr ptr);
+
+    async::Promise<io::path_t> selectProfileSavingPath();
+    void saveProfile();
 
     void loadItems();
     ArticulationPatternItem* buildItem(const ArticulationType type, const bool isSingleNoteType);

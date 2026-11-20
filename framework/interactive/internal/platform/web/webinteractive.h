@@ -32,37 +32,21 @@ public:
     ButtonData buttonData(Button b) const override;
 
     // question
-    [[deprecated("Use question() instead")]]
-    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                        const Options& options = {}, const std::string& dialogTitle = {}) override;
-
     muse::async::Promise<Result> question(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons,
                                           int defBtn = int(Button::NoButton), const Options& options = {},
                                           const std::string& dialogTitle = {}) override;
 
     // info
-    [[deprecated("Use info() instead")]]
-    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                    const Options& options = {}, const std::string& dialogTitle = {}) override;
-
     muse::async::Promise<Result> info(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                       int defBtn = int(Button::NoButton), const Options& options = {},
                                       const std::string& dialogTitle = {}) override;
 
     // warning
-    [[deprecated("Use warning() instead")]]
-    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                       const Options& options = {}, const std::string& dialogTitle = {}) override;
-
     muse::async::Promise<Result> warning(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                          int defBtn = int(Button::NoButton), const Options& options = {},
                                          const std::string& dialogTitle = {}) override;
 
     // error
-    [[deprecated("Use error() instead")]]
-    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
-                     const Options& options = { WithIcon }, const std::string& dialogTitle = {}) override;
-
     muse::async::Promise<Result> error(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons = {},
                                        int defBtn = int(Button::NoButton), const Options& options = { WithIcon },
                                        const std::string& dialogTitle = {}) override;
@@ -73,20 +57,16 @@ public:
     // files
     muse::async::Promise<muse::io::path_t> selectOpeningFile(const std::string& title, const muse::io::path_t& dir,
                                                              const std::vector<std::string>& filter) override;
-    muse::io::path_t selectOpeningFileSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
-                                           const int options = 0) override;
-    muse::io::paths_t selectOpeningFilesSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
-                                             const int options = 0) override;
+    muse::async::Promise<muse::io::paths_t> selectOpeningFiles(const std::string& title, const muse::io::path_t& dir,
+                                                               const std::vector<std::string>& filter) override;
 
     muse::async::Promise<muse::io::path_t> selectSavingFile(const std::string& title, const muse::io::path_t& path,
                                                             const std::vector<std::string>& filter, bool confirmOverwrite = true) override;
-    muse::io::path_t selectSavingFileSync(const std::string& title, const muse::io::path_t& path, const std::vector<std::string>& filter,
-                                          bool confirmOverwrite = true) override;
 
     // dirs
-    muse::io::path_t selectDirectory(const std::string& title, const muse::io::path_t& dir) override;
-    muse::io::paths_t selectMultipleDirectories(const std::string& title, const muse::io::path_t& dir,
-                                                const muse::io::paths_t& selectedDirectories) override;
+    muse::async::Promise<muse::io::path_t> selectDirectory(const std::string& title, const muse::io::path_t& dir) override;
+    muse::async::Promise<muse::io::paths_t> selectMultipleDirectories(const std::string& title, const muse::io::path_t& dir,
+                                                                      const muse::io::paths_t& selectedDirectories) override;
 
     // color
     muse::async::Promise<muse::Color> selectColor(const muse::Color& color = muse::Color::WHITE, const std::string& title = {},
@@ -94,7 +74,6 @@ public:
     bool isSelectColorOpened() const override;
 
     // custom
-    muse::RetVal<muse::Val> openSync(const muse::UriQuery& uri) override;
     muse::async::Promise<muse::Val> open(const muse::UriQuery& uri) override;
     muse::RetVal<bool> isOpened(const muse::UriQuery& uri) const override;
     muse::RetVal<bool> isOpened(const muse::Uri& uri) const override;
@@ -104,9 +83,7 @@ public:
 
     muse::async::Promise<muse::Ret> close(const muse::UriQuery& uri) override;
     muse::async::Promise<muse::Ret> close(const muse::Uri& uri) override;
-    muse::Ret closeSync(const muse::UriQuery& uri) override;
     muse::async::Promise<muse::Ret> closeAllDialogs() override;
-    muse::Ret closeAllDialogsSync() override;
 
     muse::ValCh<muse::Uri> currentUri() const override;
     muse::RetVal<bool> isCurrentUriDialog() const override;
@@ -115,6 +92,50 @@ public:
 
     QWindow* topWindow() const override;
     bool topWindowIsWidget() const override;
+
+    //! =================================
+    //! NOTE Please don't use this
+    //! =================================
+    [[deprecated("Use question() instead")]]
+    Result questionSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
+                        const Options& options = {}, const std::string& dialogTitle = {}) override;
+
+    [[deprecated("Use info() instead")]]
+    Result infoSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
+                    const Options& options = {}, const std::string& dialogTitle = {}) override;
+
+    [[deprecated("Use warning() instead")]]
+    Result warningSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
+                       const Options& options = {}, const std::string& dialogTitle = {}) override;
+
+    [[deprecated("Use error() instead")]]
+    Result errorSync(const std::string& contentTitle, const Text& text, const ButtonDatas& buttons, int defBtn = int(Button::NoButton),
+                     const Options& options = { WithIcon }, const std::string& dialogTitle = {}) override;
+
+    [[deprecated("Use selectOpeningFile() instead")]]
+    muse::io::path_t selectOpeningFileSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
+                                           const int options = 0) override;
+
+    [[deprecated("Use selectOpeningFiles() instead")]]
+    muse::io::paths_t selectOpeningFilesSync(const std::string& title, const muse::io::path_t& dir, const std::vector<std::string>& filter,
+                                             const int options = 0) override;
+
+    [[deprecated("Use selectSavingFile() instead")]]
+    muse::io::path_t selectSavingFileSync(const std::string& title, const muse::io::path_t& path, const std::vector<std::string>& filter,
+                                          bool confirmOverwrite = true) override;
+
+    [[deprecated("Use selectDirectory() instead")]]
+    muse::io::path_t selectDirectorySync(const std::string& title, const muse::io::path_t& dir) override;
+
+    [[deprecated("Use selectMultipleDirectories() instead")]]
+    muse::io::paths_t selectMultipleDirectoriesSync(const std::string& title, const muse::io::path_t& dir,
+                                                    const muse::io::paths_t& selectedDirectories) override;
+
+    [[deprecated("Use open() instead")]]
+    muse::RetVal<muse::Val> openSync(const muse::UriQuery& uri) override;
+
+    [[deprecated("Use closeAllDialogs() instead")]]
+    muse::Ret closeAllDialogsSync() override;
 
 private:
 

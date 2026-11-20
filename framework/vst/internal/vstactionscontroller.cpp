@@ -87,7 +87,6 @@ muse::Ret VstActionsController::fxEditor(const rcommand::Params& params)
     int trackId = params.at("trackId", Val(-1)).toInt();
     int chainOrder = params.at("chainOrder", Val(0)).toInt();
     std::string operation = params.at("operation", Val("open")).toString();
-    bool sync = params.at("sync", Val(false)).toBool();
 
     auto instance = instancesRegister()->fxPlugin(resourceId, trackId, chainOrder);
 
@@ -101,7 +100,7 @@ muse::Ret VstActionsController::fxEditor(const rcommand::Params& params)
         return make_ret(Ret::Code::BadArgs);
     }
 
-    editorOperation(operation, instance->id(), sync);
+    editorOperation(operation, instance->id());
     return make_ok();
 }
 
@@ -125,7 +124,6 @@ muse::Ret VstActionsController::instEditor(const rcommand::Params& params)
     auto instance = instancesRegister()->instrumentPlugin(resourceId, trackId);
 
     std::string operation = params.at("operation", Val("open")).toString();
-    bool sync = params.at("sync", Val(false)).toBool();
 
     if (operation == "close" && !instance) {
         return make_ret(Ret::Code::BadArgs);
@@ -137,20 +135,16 @@ muse::Ret VstActionsController::instEditor(const rcommand::Params& params)
         return make_ret(Ret::Code::BadArgs);
     }
 
-    editorOperation(operation, instance->id(), sync);
+    editorOperation(operation, instance->id());
     return make_ok();
 }
 
-void VstActionsController::editorOperation(const std::string& operation, int instanceId, bool sync)
+void VstActionsController::editorOperation(const std::string& operation, int instanceId)
 {
     UriQuery editorUri = UriQuery(String(VST_EDITOR_URI).arg(instanceId));
 
     if (operation == "close") {
-        if (sync) {
-            interactive()->closeSync(editorUri);
-        } else {
-            interactive()->close(editorUri);
-        }
+        interactive()->close(editorUri);
         return;
     }
 

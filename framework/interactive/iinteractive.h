@@ -230,19 +230,15 @@ public:
     // files
     virtual async::Promise<io::path_t> selectOpeningFile(const std::string& title, const io::path_t& dir,
                                                          const std::vector<std::string>& filter) = 0;
-    virtual io::path_t selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                             const int options = 0) = 0;
-    virtual io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
-                                               const int options = 0) = 0;
+    virtual async::Promise<io::paths_t> selectOpeningFiles(const std::string& title, const io::path_t& dir,
+                                                           const std::vector<std::string>& filter) = 0;
     virtual async::Promise<io::path_t> selectSavingFile(const std::string& title, const io::path_t& path,
                                                         const std::vector<std::string>& filter, bool confirmOverwrite = true) = 0;
-    virtual io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
-                                            bool confirmOverwrite = true) = 0;
 
     // dirs
-    virtual io::path_t selectDirectory(const std::string& title, const io::path_t& dir) = 0;
-    virtual io::paths_t selectMultipleDirectories(const std::string& title, const io::path_t& dir,
-                                                  const io::paths_t& selectedDirectories) = 0;
+    virtual async::Promise<io::path_t> selectDirectory(const std::string& title, const io::path_t& dir) = 0;
+    virtual async::Promise<io::paths_t> selectMultipleDirectories(const std::string& title, const io::path_t& dir,
+                                                                  const io::paths_t& selectedDirectories) = 0;
 
     // color
     virtual async::Promise<Color> selectColor(const Color& color = Color::WHITE, const std::string& title = {},
@@ -261,9 +257,7 @@ public:
 
     virtual async::Promise<Ret> close(const UriQuery& uri) = 0;
     virtual async::Promise<Ret> close(const Uri& uri) = 0;
-    virtual Ret closeSync(const UriQuery& uri) = 0;
     virtual async::Promise<Ret> closeAllDialogs() = 0;
-    virtual Ret closeAllDialogsSync() = 0;
 
     // state
     virtual ValCh<Uri> currentUri() const = 0;
@@ -323,9 +317,36 @@ public:
         return errorSync(contentTitle, Text(text), buttonDataList(buttons), (int)defBtn, options, dialogTitle);
     }
 
+    [[deprecated("Use selectOpeningFile() instead")]]
+    virtual io::path_t selectOpeningFileSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+                                             const int options = 0) = 0;
+
+    [[deprecated("Use selectOpeningFiles() instead")]]
+    virtual io::paths_t selectOpeningFilesSync(const std::string& title, const io::path_t& dir, const std::vector<std::string>& filter,
+                                               const int options = 0) = 0;
+
+    [[deprecated("Use selectSavingFile() instead")]]
+    virtual io::path_t selectSavingFileSync(const std::string& title, const io::path_t& path, const std::vector<std::string>& filter,
+                                            bool confirmOverwrite = true) = 0;
+
+    [[deprecated("Use selectDirectory() instead")]]
+    virtual io::path_t selectDirectorySync(const std::string& title, const io::path_t& dir) = 0;
+
+    [[deprecated("Use selectMultipleDirectories() instead")]]
+    virtual io::paths_t selectMultipleDirectoriesSync(const std::string& title, const io::path_t& dir,
+                                                      const io::paths_t& selectedDirectories) = 0;
+
+    [[deprecated("Use open() instead")]]
     virtual RetVal<Val> openSync(const UriQuery& uri) = 0;
+
+    [[deprecated("Use open() instead")]]
     RetVal<Val> openSync(const std::string& uri) { return openSync(UriQuery(uri)); }
+
+    [[deprecated("Use open() instead")]]
     RetVal<Val> openSync(const Uri& uri) { return openSync(UriQuery(uri)); }
+
+    [[deprecated("Use closeAllDialogs() instead")]]
+    virtual Ret closeAllDialogsSync() = 0;
     //! ==============================
 };
 DECLARE_OPERATORS_FOR_FLAGS(IInteractive::Options)

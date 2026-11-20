@@ -19,6 +19,7 @@ set(MODULE_TEST muse_extensions_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/extensionsloader_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/filedialog_tests.cpp
 )
 
 set(MODULE_TEST_LINK
