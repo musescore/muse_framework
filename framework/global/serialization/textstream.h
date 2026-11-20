@@ -21,8 +21,10 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #ifndef NO_QT_SUPPORT
@@ -37,6 +39,18 @@ namespace io {
 class IODevice;
 }
 
+template<typename T>
+struct IsNonCharInteger : std::bool_constant<
+        std::is_integral_v<T>
+        && !std::is_same_v<std::remove_cv_t<T>, char>
+        && !std::is_same_v<std::remove_cv_t<T>, signed char>
+        && !std::is_same_v<std::remove_cv_t<T>, unsigned char>
+        && !std::is_same_v<std::remove_cv_t<T>, wchar_t>
+        && !std::is_same_v<std::remove_cv_t<T>, char8_t>
+        && !std::is_same_v<std::remove_cv_t<T>, char16_t>
+        && !std::is_same_v<std::remove_cv_t<T>, char32_t>
+        > {};
+
 class TextStream
 {
 public:
@@ -49,11 +63,29 @@ public:
     void flush();
 
     TextStream& operator<<(char ch);
-    TextStream& operator<<(int32_t);
-    TextStream& operator<<(uint32_t);
+    TextStream& operator<<(signed char ch) { return *this << static_cast<char>(ch); }
+    TextStream& operator<<(unsigned char ch) { return *this << static_cast<char>(ch); }
+
+    template<typename T, std::enable_if_t<IsNonCharInteger<T>::value, int> = 0>
+    TextStream& operator<<(T val)
+    {
+        if constexpr (sizeof(T) <= 4) {
+            if constexpr (std::is_signed_v<T>) {
+                return writeInt<11>(static_cast<int32_t>(val)); // ceil(log_10(2^31)) = 10 (+ sign)
+            } else {
+                return writeInt<10>(static_cast<uint32_t>(val)); // ceil(log_10(2^32)) = 10
+            }
+        } else {
+            if constexpr (std::is_signed_v<T>) {
+                return writeInt<21>(static_cast<int64_t>(val)); // ceil(log_10(2^63)) = 20 (+ sign)
+            } else {
+                return writeInt<20>(static_cast<uint64_t>(val)); // ceil(log_10(2^64)) = 20
+            }
+        }
+    }
+
     TextStream& operator<<(double);
-    TextStream& operator<<(int64_t);
-    TextStream& operator<<(uint64_t);
+
     TextStream& operator<<(const char* s);
     TextStream& operator<<(std::string_view);
     TextStream& operator<<(const ByteArray& b);
@@ -65,6 +97,10 @@ public:
 
 private:
     void write(const char* ch, size_t len);
+
+    template<size_t MaxDigits, typename T>
+    TextStream& writeInt(T val);
+
     io::IODevice* m_device = nullptr;
     std::vector<uint8_t> m_buf;
 };
