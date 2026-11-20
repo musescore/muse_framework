@@ -26,6 +26,8 @@
 #include "popupview.h"
 
 namespace muse::uicomponents {
+class MenuViewTestAccess;
+
 class MenuView : public PopupView
 {
     Q_OBJECT
@@ -84,6 +86,8 @@ signals:
     void cascadeAlignChanged(Qt::AlignmentFlag cascadeAlign);
 
 private:
+    friend class MenuViewTestAccess;
+
     void componentComplete() override;
 
     void updateGeometry() override;
