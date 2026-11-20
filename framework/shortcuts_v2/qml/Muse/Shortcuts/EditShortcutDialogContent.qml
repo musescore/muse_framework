@@ -101,6 +101,7 @@ Item {
                 TextInputField {
                     id: originShortcutField
                     Layout.fillWidth: true
+                    contextMenuEnabled: false
                     enabled: false
                 }
 
@@ -121,6 +122,7 @@ Item {
 
                     hint: qsTrc("shortcuts", "Type to set shortcut")
                     readOnly: true
+                    contextMenuEnabled: false
 
                     onActiveFocusChanged: {
                         if (activeFocus) {
