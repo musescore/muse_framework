@@ -73,6 +73,9 @@ public:
 
     MOCK_METHOD(std::string, defaultFontFamily, (), (const, override));
     MOCK_METHOD(int, defaultFontSize, (), (const, override));
+    MOCK_METHOD(std::string, interfaceScale, (), (const, override));
+    MOCK_METHOD(void, setInterfaceScale, (const std::string&), (override));
+    MOCK_METHOD(double, systemInterfaceScale, (), (const, override));
 
     MOCK_METHOD(void, resetFonts, (), (override));
 
