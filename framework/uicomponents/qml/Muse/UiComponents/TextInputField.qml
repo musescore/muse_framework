@@ -95,6 +95,33 @@ FocusScope {
         }
     }
 
+    // A read-only TextInput passes shortcut overrides on to its parents without its own Keys handler seeing them:
+    // handled here then, keeping only what a read-only field does, leaving the rest to the app's shortcuts
+    Keys.onShortcutOverride: function(event) {
+        if (!root.readOnly) {
+            return
+        }
+
+        // Remove the KeypadModifier before checking for NoModifier, so that the Enter key from the numeric keypad gets accepted, too.
+        const modifiers = event.modifiers & ~Qt.KeypadModifier
+        if (modifiers === Qt.NoModifier
+                && (event.key === Qt.Key_Escape || event.key === Qt.Key_Enter || event.key === Qt.Key_Return)) {
+            event.accepted = true
+            return
+        }
+
+        const keptSequences = [
+            StandardKey.Copy, StandardKey.SelectAll,
+            StandardKey.MoveToNextChar, StandardKey.MoveToPreviousChar,
+            StandardKey.MoveToNextWord, StandardKey.MoveToPreviousWord,
+            StandardKey.MoveToStartOfLine, StandardKey.MoveToEndOfLine,
+            StandardKey.SelectNextChar, StandardKey.SelectPreviousChar,
+            StandardKey.SelectNextWord, StandardKey.SelectPreviousWord,
+            StandardKey.SelectStartOfLine, StandardKey.SelectEndOfLine
+        ]
+        event.accepted = keptSequences.some(sequence => event.matches(sequence))
+    }
+
     implicitHeight: 30
     implicitWidth: parent.width
 
@@ -193,10 +220,6 @@ FocusScope {
             }
 
             Keys.onShortcutOverride: function(event) {
-                if (readOnly) {
-                    return
-                }
-
                 if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return
                         || event.key === Qt.Key_Escape) {
                     event.accepted = true
