@@ -105,7 +105,8 @@ public:
     virtual async::Channel<secs_t> playbackPositionChanged() const = 0;
 
     // Export
-    virtual async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format) = 0;
+    virtual async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format,
+                                               const SoundTrackSaveOptions& options = {}) = 0;
     virtual SaveSoundTrackProgress saveSoundTrackProgressChanged() const = 0;
     virtual void abortSavingAllSoundTracks() = 0;
 };

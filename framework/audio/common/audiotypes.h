@@ -172,6 +172,39 @@ struct SoundTrackFormat {
     }
 };
 
+struct SoundTrackSaveOptions {
+    bool hasTimeRange = false;
+    secs_t startTime = 0.0;
+    secs_t endTime = 0.0;
+    secs_t fadeInDuration = 0.0;
+    secs_t fadeOutDuration = 0.0;
+
+    bool operator==(const SoundTrackSaveOptions& other) const
+    {
+        return hasTimeRange == other.hasTimeRange
+               && startTime == other.startTime
+               && endTime == other.endTime
+               && fadeInDuration == other.fadeInDuration
+               && fadeOutDuration == other.fadeOutDuration;
+    }
+
+    bool isValid() const
+    {
+        if (!std::isfinite(fadeInDuration.raw()) || fadeInDuration < 0.0
+            || !std::isfinite(fadeOutDuration.raw()) || fadeOutDuration < 0.0) {
+            return false;
+        }
+
+        return !hasTimeRange
+               || (std::isfinite(startTime.raw())
+                   && std::isfinite(endTime.raw())
+                   && startTime >= 0.0
+                   && endTime > startTime
+                   && (fadeInDuration + fadeOutDuration).raw()
+                   <= (endTime - startTime).raw() + 1e-9);
+    }
+};
+
 struct AudioEngineConfig {
     bool autoProcessOnlineSoundsInBackground = false;
     bool isLazyProcessingOfOnlineSoundsEnabled = false;

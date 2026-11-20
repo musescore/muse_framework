@@ -126,7 +126,8 @@ public:
     async::Channel<secs_t> playbackPositionChanged() const override;
 
     // Export
-    async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format) override;
+    async::Promise<Ret> saveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format,
+                                       const SoundTrackSaveOptions& options = {}) override;
     SaveSoundTrackProgress saveSoundTrackProgressChanged() const override;
     void abortSavingAllSoundTracks() override;
 
@@ -174,7 +175,7 @@ private:
     void listenInputProcessing(std::function<void(const Ret&)> completed);
     bool hasPendingChunks(const TrackId id) const;
     size_t tracksBeingProcessedCount() const;
-    Ret doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format);
+    Ret doSaveSoundTrack(io::IODevice& dstDevice, const SoundTrackFormat& format, const SoundTrackSaveOptions& options);
 
     AudioCtxId m_ctxId = 0;
     IExecOperation* m_execOperation = nullptr;
