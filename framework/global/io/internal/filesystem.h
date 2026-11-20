@@ -55,7 +55,7 @@ public:
 
     RetVal<ByteArray> readFile(const io::path_t& filePath) const override;
     Ret readFile(const io::path_t& filePath, ByteArray& data) const override;
-    Ret writeFile(const io::path_t& filePath, const ByteArray& data) override;
+    Ret writeFile(const io::path_t& filePath, const ByteArray& data, bool syncToDisk = false) override;
 
     RetVal<StreamId> openStream(const io::path_t& filePath, OpenMode mode) override;
     Ret writeToStream(StreamId fileId, const ByteArray& data, uint64_t offset = STREAM_POS_CURRENT) override;
