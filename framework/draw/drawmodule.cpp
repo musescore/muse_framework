@@ -40,29 +40,43 @@
 using namespace muse::draw;
 using namespace muse::modularity;
 
+static const std::string mname("draw");
+
 std::string DrawModule::moduleName() const
 {
-    return "draw";
+    return mname;
 }
 
 void DrawModule::registerExports()
 {
 #ifndef DRAW_NO_INTERNAL
-
 #ifndef NO_QT_SUPPORT
-    globalIoc()->registerExport<draw::IImageProvider>(moduleName(), std::make_shared<QImageProvider>());
-    globalIoc()->registerExport<draw::IFontProvider>(moduleName(), std::make_shared<QFontProvider>());
-#else
-    m_fontsEngine = std::make_shared<FontsEngine>(globalCtx());
-    globalIoc()->registerExport<draw::IFontProvider>(moduleName(), std::make_shared<FontProvider>(globalCtx()));
-    globalIoc()->registerExport<draw::IFontsEngine>(moduleName(), m_fontsEngine);
+    globalIoc()->registerExport<draw::IImageProvider>(mname, std::make_shared<QImageProvider>());
 #endif
-    globalIoc()->registerExport<draw::IFontsDatabase>(moduleName(), std::make_shared<FontsDatabase>());
-
 #endif // DRAW_NO_INTERNAL
 }
 
-void DrawModule::onInit(const IApplication::RunMode&)
+IContextSetup* DrawModule::newContext(const ContextPtr& ctx) const
+{
+    return new DrawContext(ctx);
+}
+
+void DrawContext::registerExports()
+{
+#ifndef DRAW_NO_INTERNAL
+    ioc()->registerExport<draw::IFontsDatabase>(mname, std::make_shared<FontsDatabase>());
+
+#ifndef NO_QT_SUPPORT
+    ioc()->registerExport<draw::IFontProvider>(mname, std::make_shared<QFontProvider>(iocContext()));
+#else
+    m_fontsEngine = std::make_shared<FontsEngine>(iocContext());
+    ioc()->registerExport<draw::IFontsEngine>(mname, m_fontsEngine);
+    ioc()->registerExport<draw::IFontProvider>(mname, std::make_shared<FontProvider>(iocContext()));
+#endif
+#endif // DRAW_NO_INTERNAL
+}
+
+void DrawContext::onInit(const IApplication::RunMode&)
 {
 #if !defined(DRAW_NO_INTERNAL) && defined(NO_QT_SUPPORT)
     m_fontsEngine->init();

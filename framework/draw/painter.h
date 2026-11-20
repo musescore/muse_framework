@@ -25,6 +25,7 @@
 #include <stack>
 
 #include "global/types/string.h"
+#include "global/modularity/ioc.h"
 
 #include "types/color.h"
 #include "types/geometry.h"
@@ -48,8 +49,8 @@ public:
     Painter(IPaintProviderPtr provider, const std::string& name);
 
 #ifndef NO_QT_SUPPORT
-    Painter(QPaintDevice* dp, const std::string& name);
-    Painter(QPainter* qp, const std::string& name, bool ownsQPainter = false);
+    Painter(QPaintDevice* dp, const std::string& name, const modularity::ContextPtr& iocCtx);
+    Painter(QPainter* qp, const std::string& name, const modularity::ContextPtr& iocCtx, bool ownsQPainter = false);
 #endif
 
     ~Painter();

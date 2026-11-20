@@ -36,7 +36,7 @@ namespace muse::draw {
 class IFontFace;
 class FontsEngine : public IFontsEngine, public Contextable, public async::Asyncable
 {
-    GlobalInject<IFontsDatabase> fontsDatabase;
+    ContextInject<IFontsDatabase> fontsDatabase = { this };
 
 public:
     FontsEngine(const modularity::ContextPtr& iocCtx)

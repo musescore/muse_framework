@@ -27,8 +27,8 @@
 #include "log.h"
 
 namespace muse::draw {
-QImagePainterProvider::QImagePainterProvider(std::shared_ptr<Pixmap> px)
-    : QPainterProvider(new QPainter()), m_px(px)
+QImagePainterProvider::QImagePainterProvider(std::shared_ptr<Pixmap> px, const modularity::ContextPtr& iocCtx)
+    : QPainterProvider(new QPainter(), iocCtx), m_px(px)
 {
     m_image = Pixmap::toQPixmap(*px.get()).toImage();
     m_painter->begin(&m_image);
@@ -46,8 +46,8 @@ bool QImagePainterProvider::endTarget(bool endDraw)
     return true;
 }
 
-IPaintProviderPtr QImagePainterProvider::make(std::shared_ptr<Pixmap> px)
+IPaintProviderPtr QImagePainterProvider::make(std::shared_ptr<Pixmap> px, const modularity::ContextPtr& iocCtx)
 {
-    return std::make_shared<QImagePainterProvider>(px);
+    return std::make_shared<QImagePainterProvider>(px, iocCtx);
 }
 }
