@@ -119,7 +119,7 @@ int AccessibleWindowInterface::childCount() const
         return 0;
     }
 
-    int count = controller->childCount(root->item());
+    int count = controller->childCount(root->item(), m_window);
     MYLOG() << "item: " << root->item()->accessibleName() << ", childCount: " << count;
     return count;
 }
@@ -136,7 +136,7 @@ QAccessibleInterface* AccessibleWindowInterface::child(int index) const
         return nullptr;
     }
 
-    QAccessibleInterface* iface = controller->child(root->item(), index);
+    QAccessibleInterface* iface = controller->child(root->item(), index, m_window);
     MYLOG() << "item: " << root->item()->accessibleName() << ", child: " << index << " " <<
         (iface ? iface->text(QAccessible::Name) : "null");
     return iface;
@@ -154,16 +154,25 @@ int AccessibleWindowInterface::indexOfChild(const QAccessibleInterface* iface) c
         return -1;
     }
 
-    int idx = controller->indexOfChild(root->item(), iface);
+    int idx = controller->indexOfChild(root->item(), iface, m_window);
     MYLOG() << "item: " << root->item()->accessibleName() << ", indexOfChild: " <<
         (iface ? iface->text(QAccessible::Name) : "null") << " = " << idx;
     return idx;
 }
 
-QAccessibleInterface* AccessibleWindowInterface::childAt(int, int) const
+QAccessibleInterface* AccessibleWindowInterface::childAt(int x, int y) const
 {
-    NOT_IMPLEMENTED;
-    return nullptr;
+    AccessibleObject* root = resolveWindowRoot();
+    if (!root) {
+        return nullptr;
+    }
+
+    auto controller = root->controller().lock();
+    if (!controller) {
+        return nullptr;
+    }
+
+    return controller->childAt(root->item(), x, y, m_window);
 }
 
 QAccessibleInterface* AccessibleWindowInterface::focusChild() const
@@ -178,7 +187,7 @@ QAccessibleInterface* AccessibleWindowInterface::focusChild() const
         return nullptr;
     }
 
-    QAccessibleInterface* child = controller->focusedChild(root->item());
+    QAccessibleInterface* child = controller->focusedChild(root->item(), m_window);
     MYLOG() << "item: " << root->item()->accessibleName() << ", focused child: " << (child ? child->text(QAccessible::Name) : "null");
     return child;
 }

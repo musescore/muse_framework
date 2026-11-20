@@ -385,8 +385,19 @@ void AccessibilityController::propertyChanged(IAccessible* item, IAccessible::Pr
     switch (property) {
     case IAccessible::Property::Undefined:
         return;
-    case IAccessible::Property::Parent: etype = QAccessible::ParentChanged;
-        break;
+    case IAccessible::Property::Parent: {
+        //! NOTE: An item that was registered before it was given a parent of its own is a child of
+        //! the root; as soon as it has one it has to stop being one, or it stays in the tree twice
+        if (item->accessibleParent() == this) {
+            if (!m_children.contains(item)) {
+                m_children.append(item);
+            }
+        } else {
+            m_children.removeOne(item);
+        }
+
+        etype = QAccessible::ParentChanged;
+    } break;
     case IAccessible::Property::Name:
     case IAccessible::Property::Description: {
         if (item == m_lastFocused) {
@@ -795,7 +806,39 @@ QAccessibleInterface* AccessibilityController::parentIface(const IAccessible* it
     return it.iface;
 }
 
-int AccessibilityController::childCount(const IAccessible* item) const
+bool AccessibilityController::belongsToWindow(const IAccessible* item, const QWindow* window)
+{
+    if (!window) {
+        return true;
+    }
+
+    //! NOTE: An item whose window is not known yet is shown by every window; that is better than
+    //! hiding it from all of them
+    const QWindow* itemWindow = item->accessibleWindow();
+    return !itemWindow || itemWindow == window;
+}
+
+const IAccessible* AccessibilityController::childInWindow(const IAccessible* item, int index, const QWindow* window)
+{
+    size_t count = item->accessibleChildCount();
+    int shown = 0;
+    for (size_t i = 0; i < count; ++i) {
+        IAccessible* child = item->accessibleChild(i);
+        if (!belongsToWindow(child, window)) {
+            continue;
+        }
+
+        if (shown == index) {
+            return child;
+        }
+
+        ++shown;
+    }
+
+    return nullptr;
+}
+
+int AccessibilityController::childCount(const IAccessible* item, const QWindow* window) const
 {
     IF_ASSERT_FAILED(item) {
         return 0;
@@ -805,16 +848,29 @@ int AccessibilityController::childCount(const IAccessible* item) const
     IF_ASSERT_FAILED(it.isValid()) {
         return 0;
     }
-    return static_cast<int>(it.item->accessibleChildCount());
+
+    size_t count = it.item->accessibleChildCount();
+    if (!window) {
+        return static_cast<int>(count);
+    }
+
+    int shown = 0;
+    for (size_t i = 0; i < count; ++i) {
+        if (belongsToWindow(it.item->accessibleChild(i), window)) {
+            ++shown;
+        }
+    }
+
+    return shown;
 }
 
-QAccessibleInterface* AccessibilityController::child(const IAccessible* item, int i) const
+QAccessibleInterface* AccessibilityController::child(const IAccessible* item, int i, const QWindow* window) const
 {
     IF_ASSERT_FAILED(item) {
         return nullptr;
     }
 
-    const IAccessible* chld = item->accessibleChild(static_cast<size_t>(i));
+    const IAccessible* chld = window ? childInWindow(item, i, window) : item->accessibleChild(static_cast<size_t>(i));
     IF_ASSERT_FAILED(chld) {
         return nullptr;
     }
@@ -827,31 +883,123 @@ QAccessibleInterface* AccessibilityController::child(const IAccessible* item, in
     return chldIt.iface;
 }
 
-int AccessibilityController::indexOfChild(const IAccessible* item, const QAccessibleInterface* iface) const
+//! NOTE: The platform resolves a hit on an element it ignores, one without a role of its own or a
+//! plain container, to the nearest ancestor it does not ignore, which is the window. So such an item
+//! is no answer to a hit test, and must not shadow the control it covers
+static bool isHitTestTarget(QAccessibleInterface* iface)
+{
+    const QAccessible::State state = iface->state();
+    if (state.invisible || state.offscreen || state.invalid) {
+        return false;
+    }
+
+    switch (iface->role()) {
+    case QAccessible::NoRole:
+    case QAccessible::Application:
+    case QAccessible::Border:
+    case QAccessible::Client:
+    case QAccessible::Pane:
+    case QAccessible::PopupMenu:
+    case QAccessible::ToolBar:
+        return false;
+    default:
+        return true;
+    }
+}
+
+QAccessibleInterface* AccessibilityController::childAt(const IAccessible* item, int x, int y, const QWindow* window) const
+{
+    IF_ASSERT_FAILED(item) {
+        return nullptr;
+    }
+
+    const QPoint pos(x, y);
+
+    QAccessibleInterface* found = nullptr;
+    qint64 foundArea = 0;
+
+    //! NOTE: Items that overlap are not necessarily nested: a panel can be a sibling of the controls
+    //! it spans, and a decorative item can cover them. So the most specific item wins, rather than
+    //! the first one that matches
+    auto consider = [&found, &foundArea](QAccessibleInterface* iface, const QRect& rect) {
+        const qint64 area = qint64(rect.width()) * rect.height();
+        if (!found || area < foundArea) {
+            found = iface;
+            foundArea = area;
+        }
+    };
+
+    //! NOTE: Items that come later are drawn on top of the earlier ones, so search from the back;
+    //! that way the one that is on top wins a tie
+    size_t count = item->accessibleChildCount();
+    for (size_t i = count; i > 0; --i) {
+        const IAccessible* child = item->accessibleChild(i - 1);
+        if (!belongsToWindow(child, window)) {
+            continue;
+        }
+
+        const Item& chIt = findItem(child);
+        if (!chIt.isValid() || !chIt.iface) {
+            continue;
+        }
+
+        const QRect rect = child->accessibleRect();
+
+        //! NOTE: An item that has no geometry of its own does not hide its children from the hit test
+        if (!rect.isEmpty() && !rect.contains(pos)) {
+            continue;
+        }
+
+        //! NOTE: An item counts only if none of its descendants contains the point: the platform needs
+        //! the innermost control there
+        //! An item that is accessibleIgnored() is still a target: that flag only keeps it from being
+        //! announced, while the platform still exposes it (e.g. the buttons of a StandardDialog)
+        if (QAccessibleInterface* iface = childAt(child, x, y, window)) {
+            consider(iface, iface->rect());
+        } else if (!rect.isEmpty() && isHitTestTarget(chIt.iface)) {
+            consider(chIt.iface, rect);
+        }
+    }
+
+    return found;
+}
+
+int AccessibilityController::indexOfChild(const IAccessible* item, const QAccessibleInterface* iface, const QWindow* window) const
 {
     TRACEFUNC;
     size_t count = item->accessibleChildCount();
+    int index = 0;
     for (size_t i = 0; i < count; ++i) {
         const IAccessible* ch = item->accessibleChild(i);
+        if (!belongsToWindow(ch, window)) {
+            continue;
+        }
+
         const Item& chIt = findItem(ch);
         if (!chIt.isValid()) {
             continue;
         }
 
         if (chIt.iface == iface) {
-            return static_cast<int>(i);
+            return index;
         }
+
+        ++index;
     }
 
     return -1;
 }
 
-QAccessibleInterface* AccessibilityController::focusedChild(const IAccessible* item) const
+QAccessibleInterface* AccessibilityController::focusedChild(const IAccessible* item, const QWindow* window) const
 {
     TRACEFUNC;
     size_t count = item->accessibleChildCount();
     for (size_t i = 0; i < count; ++i) {
         const IAccessible* ch = item->accessibleChild(i);
+        if (!belongsToWindow(ch, window)) {
+            continue;
+        }
+
         const Item& chIt = findItem(ch);
         if (!chIt.isValid() || !chIt.iface || chIt.item->accessibleIgnored()) {
             continue;
@@ -862,7 +1010,7 @@ QAccessibleInterface* AccessibilityController::focusedChild(const IAccessible* i
         }
 
         if (chIt.item->accessibleChildCount() > 0) {
-            QAccessibleInterface* subItem = focusedChild(chIt.item);
+            QAccessibleInterface* subItem = focusedChild(chIt.item, window);
             if (subItem) {
                 return subItem;
             }

@@ -75,7 +75,10 @@ static QAccessibleInterface* accessibleFactory(const QString& classname, QObject
 {
     auto accr = globalIoc()->resolve<IQAccessibleInterfaceRegister>("accessibility");
     if (accr) {
-        auto interfaceGetter = accr->interfaceGetter(classname);
+        //! NOTE: Qt asks for the most derived class first, and Qt's own factories claim some subclasses
+        //! of QQuickWindow (e.g. QQuickApplicationWindow), so match every QQuickWindow by its type
+        const QString name = object->inherits("QQuickWindow") ? QStringLiteral("QQuickWindow") : classname;
+        auto interfaceGetter = accr->interfaceGetter(name);
         if (interfaceGetter) {
             return interfaceGetter(object);
         }
