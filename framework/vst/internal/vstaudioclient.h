@@ -99,6 +99,7 @@ private:
 
     bool m_needUnprepareProcessData = false;
     bool m_needUpdateState = false;
+    bool m_isProcessingSetUp = false;
 
     PluginType m_type = PluginType::Undefined;
     audio::OutputSpec m_outputSpec;
