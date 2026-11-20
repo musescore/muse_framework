@@ -34,6 +34,7 @@ using namespace muse;
 using namespace muse::languages;
 
 static const Settings::Key LANGUAGE_KEY("languages", "language");
+static const Settings::Key NUMBER_FORMAT_SOURCE_KEY("languages", "numberFormatSource");
 
 void LanguagesConfiguration::init()
 {
@@ -42,6 +43,11 @@ void LanguagesConfiguration::init()
     settings()->setDefaultValue(LANGUAGE_KEY, Val(SYSTEM_LANGUAGE_CODE.toStdString()));
     settings()->valueChanged(LANGUAGE_KEY).onReceive(nullptr, [this](const Val& val) {
         m_currentLanguageCodeChanged.send(val.toQString());
+    });
+
+    settings()->setDefaultValue(NUMBER_FORMAT_SOURCE_KEY, Val(SYSTEM_NUMBER_FORMAT_SOURCE.toStdString()));
+    settings()->valueChanged(NUMBER_FORMAT_SOURCE_KEY).onReceive(nullptr, [this](const Val& val) {
+        m_numberFormatSourceChanged.send(val.toQString());
     });
 }
 
@@ -58,6 +64,20 @@ void LanguagesConfiguration::setCurrentLanguageCode(const QString& languageCode)
 {
     Val value(languageCode.toStdString());
     settings()->setSharedValue(LANGUAGE_KEY, value);
+}
+
+ValCh<QString> LanguagesConfiguration::numberFormatSource() const
+{
+    ValCh<QString> result;
+    result.ch = m_numberFormatSourceChanged;
+    result.val = settings()->value(NUMBER_FORMAT_SOURCE_KEY).toQString();
+
+    return result;
+}
+
+void LanguagesConfiguration::setNumberFormatSource(const QString& source) const
+{
+    settings()->setSharedValue(NUMBER_FORMAT_SOURCE_KEY, Val(source.toStdString()));
 }
 
 QUrl LanguagesConfiguration::languagesUpdateUrl() const
