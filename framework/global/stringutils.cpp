@@ -152,18 +152,16 @@ std::string muse::strings::join(const std::vector<std::string>& strs, const std:
     }
 }
 
+static constexpr const char* TRIM_CHARS = " \t\n\v\f\r";
+
 void muse::strings::ltrim(std::string& s)
 {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }));
+    s.erase(0, s.find_first_not_of(TRIM_CHARS));
 }
 
 void muse::strings::rtrim(std::string& s)
 {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
+    s.erase(s.find_last_not_of(TRIM_CHARS) + 1);
 }
 
 void muse::strings::trim(std::string& s)
