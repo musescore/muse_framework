@@ -29,9 +29,15 @@
 
 #include "../../abstracteventsequencer.h"
 #include "soundmapping.h"
+#include "playbacktreatmentdata.h"
 
 namespace muse::audio::synth {
-class FluidSequencer : public engine::AbstractEventSequencer<midi::Event>
+struct FluidEvent {
+    midi::Event event;
+    NoteTreatmentId treatmentId = NoteTreatmentId::None;
+};
+
+class FluidSequencer : public engine::AbstractEventSequencer<FluidEvent>
 {
 public:
     void init(const mpe::PlaybackSetupData& setupData, const std::optional<midi::Program>& programOverride, bool useDynamicEvents,
@@ -71,7 +77,6 @@ private:
                       const uint32_t value);
     void addSostenutoEvents(EventSequenceMap& destination, const SostenutoTimeAndDurations& sostenutoTimeAndDurations);
 
-    midi::channel_t resolveChannel(const mpe::NoteEvent& noteEvent) const;
     midi::note_idx_t noteIndex(const mpe::pitch_level_t pitchLevel) const;
     midi::tuning_t noteTuning(const mpe::NoteEvent& noteEvent, const int noteIdx) const;
     midi::velocity_t noteVelocity(const mpe::NoteEvent& noteEvent) const;
@@ -79,6 +84,7 @@ private:
     int pitchBendLevel(const mpe::pitch_level_t pitchLevel) const;
 
     mutable ChannelMap m_channels;
+    mpe::PlaybackSetupData m_setupData;
     bool m_useDynamicEvents = false;
     int m_lastStaff = -1;
 };
