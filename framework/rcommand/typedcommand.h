@@ -22,6 +22,7 @@
 #include <concepts>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "global/stringutils.h"
 
@@ -107,6 +108,78 @@ concept HasRedirect = TypedCommand<C>
 
 // *INDENT-ON*
 
+// required fields --------
+namespace internal {
+struct Construct;
+}
+
+//! A field every sender has to set.
+//! The command stays an aggregate, so senders keep writing `C { .url = "…" }`,
+//! but `C {}` or `C { .other = … }` no longer compile: the only public constructor takes a value.
+//! Adding a Required<T> field to a command therefore breaks every sender that does not name it.
+//! On the wire and in the schema it is a plain T.
+template<typename T>
+class Required
+{
+public:
+    // *INDENT-OFF*
+    template<typename U>
+    requires (!std::is_same_v<std::remove_cvref_t<U>, Required> && std::is_constructible_v<T, U&&>)
+    constexpr Required(U&& value)
+        : m_value(std::forward<U>(value)) {}
+    // *INDENT-ON*
+
+    constexpr Required& operator=(const T& value)
+    {
+        m_value = value;
+        return *this;
+    }
+
+    constexpr operator const T&() const
+    {
+        return m_value;
+    }
+
+    constexpr const T& value() const
+    {
+        return m_value;
+    }
+
+    friend constexpr bool operator==(const Required& lhs, const Required& rhs) { return lhs.m_value == rhs.m_value; }
+
+    // *INDENT-OFF*
+    //! A template, so that comparing with a value needing a conversion (a string literal) is not ambiguous
+    //! with the reversed candidate C++20 synthesizes
+    template<typename U>
+    requires (!std::is_same_v<U, Required>)
+    friend constexpr bool operator==(const Required& lhs, const U& rhs) { return lhs.m_value == rhs; }
+    // *INDENT-ON*
+
+private:
+    //! Only the handler side builds a command before filling it from the request params
+    constexpr Required() = default;
+    friend struct internal::Construct;
+
+    T m_value {};
+};
+
+//! The type a field carries on the wire: T for both `T` and `Required<T>` members
+template<typename T>
+struct FieldValue {
+    using type = T;
+};
+
+template<typename T>
+struct FieldValue<Required<T> > {
+    using type = T;
+};
+
+template<typename T>
+using field_value_t = typename FieldValue<T>::type;
+
+template<typename T>
+constexpr bool is_required_v = !std::is_same_v<T, field_value_t<T> >;
+
 // data fields --------
 enum class ConvertParamsPolicy {
     StrictCompliance,
@@ -172,8 +245,8 @@ struct Field {
     T S::* member = nullptr;
     TranslatableString label;
     TranslatableString description;
-    std::optional<T> min;
-    std::optional<T> max;
+    std::optional<field_value_t<T> > min;
+    std::optional<field_value_t<T> > max;
     Presence presence = Presence::Required;
 
     Field(std::string_view key, T S::* member, std::string_view description
@@ -182,7 +255,7 @@ struct Field {
         presence(presence) {}
 
     Field(std::string_view key, T S::* member, std::string_view description,
-          const T& min, const T& max, Presence presence = Presence::Required)
+          const field_value_t<T>& min, const field_value_t<T>& max, Presence presence = Presence::Required)
         : key(key), member(member), description(TranslatableString::untranslatable(String::fromUtf8(description))),
         min(min), max(max), presence(presence) {}
 
@@ -191,8 +264,11 @@ struct Field {
         : key(key), member(member), label(label), description(description), presence(presence) {}
 
     Field(std::string_view key, T S::* member, const TranslatableString& label, const TranslatableString& description,
-          const T& min, const T& max, Presence presence = Presence::Required)
+          const field_value_t<T>& min, const field_value_t<T>& max, Presence presence = Presence::Required)
         : key(key), member(member), label(label), description(description), min(min), max(max), presence(presence) {}
+
+    //! A Required<T> member is required whatever `presence` says
+    bool isRequired() const { return is_required_v<T> || presence == Presence::Required; }
 };
 
 template<typename S, typename ... T>
@@ -202,6 +278,54 @@ template<typename E>
 struct EnumContract;
 
 namespace internal {
+//! Builds a command on the handler side, before its fields are filled from the request params.
+//! This is the only place allowed to leave a Required<T> field at its default value.
+struct Construct {
+    template<typename C>
+    static C make()
+    {
+        return C {};
+    }
+};
+
+// *INDENT-OFF* // Uncrustify doesn't understand `requires`
+//! Number of non-static data members of an aggregate: the largest N for which `C { a1, …, aN }` is well-formed.
+//! Counted downwards, because leaving a Required<T> member out of a partial initialization is ill-formed.
+struct AnyValue {
+    template<typename T>
+    operator T() const;
+};
+
+template<typename C, std::size_t... I>
+constexpr bool isAggregateInitializableWith(std::index_sequence<I...>)
+{
+    return requires { C { (static_cast<void>(I), AnyValue {})... }; };
+}
+
+template<typename C, std::size_t N = 32>
+constexpr std::size_t memberCount()
+{
+    static_assert(std::is_aggregate_v<C>, "Only the members of an aggregate can be counted");
+    if constexpr (N == 0) {
+        return 0;
+    } else if constexpr (isAggregateInitializableWith<C>(std::make_index_sequence<N> {})) {
+        return N;
+    } else {
+        return memberCount<C, N - 1>();
+    }
+}
+// *INDENT-ON*
+
+template<typename T>
+const field_value_t<T>& valueOf(const T& v)
+{
+    if constexpr (is_required_v<T>) {
+        return v.value();
+    } else {
+        return v;
+    }
+}
+
 template<typename T>
 DataType dataType()
 {
@@ -236,7 +360,9 @@ DataType dataType()
 template<typename T>
 Val toVal(const T& val)
 {
-    if constexpr (std::is_enum<T>::value) {
+    if constexpr (is_required_v<T>) {
+        return toVal(val.value());
+    } else if constexpr (std::is_enum<T>::value) {
         return Val(EnumContract<T>::str_val(val));
     } else if constexpr (std::is_same<T, unsigned int>::value) {
         return Val(static_cast<int>(val));
@@ -286,7 +412,7 @@ std::optional<T> fromVal(const Val& v)
 template<typename S, typename T>
 bool fromVal(S& o, T S::* member, const Val& v)
 {
-    std::optional<T> value = fromVal<T>(v);
+    std::optional<field_value_t<T> > value = fromVal<field_value_t<T> >(v);
     if (value) {
         o.*member = *value;
         return true;
@@ -321,7 +447,7 @@ template<typename S, typename T>
 void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResult& res)
 {
     if (params.find(f.key) == params.end()) {
-        if (f.presence == Presence::Required) {
+        if (f.isRequired()) {
             res.missingParams.push_back(std::string(f.key));
         }
         return;
@@ -330,7 +456,7 @@ void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResu
     const Val& v = params.at(f.key);
 
     if (v.isNull()) {
-        if (f.presence == Presence::Required) {
+        if (f.isRequired()) {
             res.invalidParams.push_back(std::string(f.key));
         }
         return;
@@ -342,7 +468,7 @@ void convert(S& o, const Field<S, T>& f, const Params& params, ConvertParamsResu
         return;
     }
 
-    if (!isWithinBounds(o.*f.member, f.min, f.max)) {
+    if (!isWithinBounds(valueOf(o.*f.member), f.min, f.max)) {
         res.invalidParams.push_back(std::string(f.key));
     }
 }
@@ -374,11 +500,12 @@ std::vector<std::string> unknownKeys(const Params& params, const F& fields)
 template<typename S, typename T>
 Arg makeArg(const Field<S, T>& f, int order)
 {
-    Arg arg(dataType<T>(), f.label, f.description, f.presence);
+    using V = field_value_t<T>;
+    Arg arg(dataType<V>(), f.label, f.description, f.isRequired() ? Presence::Required : Presence::Optional);
     arg.uiHints = UiHints { order };
 
-    if constexpr (std::is_enum<T>::value) {
-        arg.allowedValues = toValList(EnumContract<T>::str_vals());
+    if constexpr (std::is_enum<V>::value) {
+        arg.allowedValues = toValList(EnumContract<V>::str_vals());
     }
 
     if (f.min) {
@@ -446,9 +573,23 @@ ConvertParamsResult fromOutputParams(const Params& params, typename C::Output& o
 
 // command info --------
 
+//! A member left out of `input` (or `output`) would silently never be sent.
+//! Only an aggregate can be checked: the members of a command with constructors cannot be counted.
+template<typename S, typename F>
+constexpr bool fieldsCoverAllMembers()
+{
+    if constexpr (std::is_aggregate_v<S>) {
+        return std::tuple_size_v<std::remove_cv_t<F> > == internal::memberCount<S>();
+    } else {
+        return true;
+    }
+}
+
 template<HasInput C>
 InputSchema inputSchema()
 {
+    static_assert(fieldsCoverAllMembers<C, decltype(C::input)>(), "Every data member of the command must be declared in `input`");
+
     InputSchema schema;
     int order = 0;
     std::apply([&](const auto&... f) {
@@ -460,6 +601,9 @@ InputSchema inputSchema()
 template<HasOutput C>
 OutputSchema outputSchema()
 {
+    static_assert(fieldsCoverAllMembers<typename C::Output, decltype(C::output)>(),
+                  "Every data member of the command's Output must be declared in `output`");
+
     OutputSchema schema;
     int order = 0;
     std::apply([&](const auto&... f) {
