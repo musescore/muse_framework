@@ -75,6 +75,37 @@ Rectangle {
         }
     }
 
+    Item {
+        anchors.fill: parent
+        // keep the border visible:
+        anchors.margins: root.border.width
+        visible: root.allowAlpha && root.color.a < 1
+
+        Canvas {
+            anchors.fill: parent
+
+            property int squareSize: 5
+
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+
+            onPaint: {
+                var ctx = getContext("2d")
+
+                ctx.fillStyle = "#ffffff"
+                ctx.fillRect(0, 0, width, height)
+                ctx.fillStyle = "#cccccc"
+
+                for (var y = 0; y < height; y += squareSize)
+                    for (var x = ((y / squareSize) % 2) * squareSize; x < width; x += 2 * squareSize)
+                        ctx.fillRect(x, y, squareSize, squareSize)
+            }
+        }
+
+        // the color on top of the checkerboard
+        Rectangle { anchors.fill: parent; color: root.color }
+    }
+
     StyledIconLabel {
         anchors.fill: parent
         iconCode: IconCode.QUESTION_MARK
