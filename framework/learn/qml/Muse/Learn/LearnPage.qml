@@ -200,6 +200,7 @@ FocusScope {
 
         Playlist {
             id: getStartedComp
+            isSearching: Boolean(searchField.searchText)
 
             playlist: SortFilterProxyModel {
                 sourceModel: pageModel.startedPlaylist
