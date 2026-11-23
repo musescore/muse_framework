@@ -77,6 +77,7 @@ public:
                 flushOffstream();
             }
 
+            rebaseOffStreamEvents();
             updateOffStreamEvents(events);
         });
 
@@ -253,6 +254,26 @@ protected:
     {
         m_currentOffSequenceIt = m_offStreamEvents.cbegin();
         m_offstreamPosition = 0;
+    }
+
+    //! NOTE The timestamps of a new off-stream batch start from 0, and adding it resets the off-stream position.
+    //! The pending events are shifted by the elapsed time, so that they keep their deadlines
+    void rebaseOffStreamEvents()
+    {
+        if (m_offstreamPosition == msecs_t(0) || m_offStreamEvents.empty()) {
+            return;
+        }
+
+        EventSequenceMap rebased;
+        for (auto& pair : m_offStreamEvents) {
+            const msecs_t timestamp = pair.first > m_offstreamPosition ? msecs_t(pair.first - m_offstreamPosition) : msecs_t(0);
+            EventSequence& sequence = rebased[timestamp];
+            sequence.insert(sequence.end(), std::make_move_iterator(pair.second.begin()),
+                            std::make_move_iterator(pair.second.end()));
+        }
+
+        m_offStreamEvents = std::move(rebased);
+        updateOffSequenceIterator();
     }
 
     void handleMainStream(EventSequenceMap& result)
