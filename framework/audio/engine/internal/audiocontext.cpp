@@ -185,16 +185,7 @@ RetVal2<TrackId, TrackParams> AudioContext::addTrack(const std::string& trackNam
     TrackId trackId = newTrackId();
 
     auto onOffStreamReceived = [this, trackId]() {
-        std::unordered_set<TrackId> tracksToProcess = m_tracksToProcessWhenIdle;
-
-        if (m_prevActiveTrackId == INVALID_TRACK_ID) {
-            tracksToProcess.insert(trackId);
-        } else {
-            tracksToProcess.insert({ m_prevActiveTrackId, trackId });
-        }
-
-        m_mixer->setTracksToProcessWhenIdle(tracksToProcess);
-        m_prevActiveTrackId = trackId;
+        this->onOffStreamReceived(trackId);
     };
 
     // Make source
@@ -401,9 +392,8 @@ void AudioContext::removeTrack(const TrackId trackId)
     m_tracks.erase(it);
     muse::remove(m_tracksToProcessWhenIdle, trackId);
 
-    if (m_prevActiveTrackId == trackId) {
-        m_prevActiveTrackId = INVALID_TRACK_ID;
-    }
+    muse::remove(m_offStreamTracks, trackId);
+    muse::remove(m_prevOffStreamTracks, trackId);
 
     m_trackRemoved.send(trackId);
 }
@@ -506,6 +496,29 @@ std::vector<AudioSourceNodePtr> AudioContext::allTracksSources() const
         }
     }
     return result;
+}
+
+void AudioContext::onOffStreamReceived(const TrackId trackId)
+{
+    ONLY_AUDIO_ENGINE_THREAD;
+
+    //! NOTE The events sent together (e.g. a chord across several instruments) arrive within a short interval
+    static constexpr std::chrono::milliseconds BATCH_INTERVAL(20);
+
+    const auto now = std::chrono::steady_clock::now();
+    if (now - m_lastOffStreamTime > BATCH_INTERVAL) {
+        m_prevOffStreamTracks = std::move(m_offStreamTracks);
+        m_offStreamTracks.clear();
+    }
+
+    m_lastOffStreamTime = now;
+    m_offStreamTracks.insert(trackId);
+
+    std::unordered_set<TrackId> tracksToProcess = m_tracksToProcessWhenIdle;
+    tracksToProcess.insert(m_prevOffStreamTracks.cbegin(), m_prevOffStreamTracks.cend());
+    tracksToProcess.insert(m_offStreamTracks.cbegin(), m_offStreamTracks.cend());
+
+    m_mixer->setTracksToProcessWhenIdle(tracksToProcess);
 }
 
 void AudioContext::onShouldProcessDuringSilenceChanged(const TrackId trackId, bool shouldProcess)

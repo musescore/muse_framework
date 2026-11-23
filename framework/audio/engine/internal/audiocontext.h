@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <chrono>
+
 #include "iaudiocontext.h"
 #include "nodes/audionode.h"
 
@@ -195,7 +197,13 @@ private:
 
     // -----
     void onShouldProcessDuringSilenceChanged(const TrackId trackId, bool shouldProcess);
-    TrackId m_prevActiveTrackId = INVALID_TRACK_ID;
+    void onOffStreamReceived(const TrackId trackId);
+
+    //! NOTE The tracks that received off-stream events together (e.g. all the notes of a chord across the instruments),
+    //! and the ones that received them just before (which may still be ringing out)
+    std::unordered_set<TrackId> m_offStreamTracks;
+    std::unordered_set<TrackId> m_prevOffStreamTracks;
+    std::chrono::steady_clock::time_point m_lastOffStreamTime;
     std::unordered_set<TrackId> m_tracksToProcessWhenIdle;
     // -----
 
