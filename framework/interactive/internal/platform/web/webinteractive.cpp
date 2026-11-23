@@ -244,20 +244,32 @@ muse::io::paths_t WebInteractive::selectOpeningFilesSync(const std::string& titl
 #endif
 }
 
-async::Promise<io::path_t> WebInteractive::selectSavingFile(const std::string& title, const io::path_t& dir,
+async::Promise<io::path_t> WebInteractive::selectSavingFile(const std::string& title, const io::path_t& path,
                                                             const std::vector<std::string>& filter, bool confirmOverwrite)
 {
 #ifdef Q_OS_WASM
     UNUSED(title);
-    UNUSED(dir);
     UNUSED(filter);
     UNUSED(confirmOverwrite);
-    NOT_SUPPORTED;
-    return async::make_promise<io::path_t>([](auto, auto reject) {
-        return reject((int)Ret::Code::NotSupported, "selecting a file to save is not supported");
+
+    //! NOTE There is no file dialog: the file is written to the memory FS (the same directory as for the opened files),
+    //! the page gets it from there, and the browser decides where to save it.
+    //! The memory FS has no directories, so there is nothing to create
+    const io::path_t fileName = io::filename(path);
+    if (fileName.empty()) {
+        LOGW() << "the path has no file name: " << path;
+        return async::make_promise<io::path_t>([](auto, auto reject) {
+            return reject(static_cast<int>(Ret::Code::BadArgs), "the path to save has no file name");
+        });
+    }
+
+    const io::path_t filePath = io::path_t("/interactive").appendingComponent(fileName);
+
+    return async::make_promise<io::path_t>([filePath](auto resolve, auto) {
+        return resolve(filePath);
     });
 #else
-    return m_origin->selectSavingFile(title, dir, filter, confirmOverwrite);
+    return m_origin->selectSavingFile(title, path, filter, confirmOverwrite);
 #endif
 }
 
