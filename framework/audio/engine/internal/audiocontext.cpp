@@ -114,7 +114,7 @@ void AudioContext::onModeChanged(const ProcessMode mode)
 {
     ONLY_AUDIO_ENGINE_THREAD;
     if (mode == ProcessMode::Idle) {
-        m_mixer->setTracksToProcessWhenIdle(m_tracksToProcessWhenIdle);
+        updateTracksToProcessWhenIdle();
     }
 
     //! NOTE will be set on all nodes in the chain
@@ -514,6 +514,11 @@ void AudioContext::onOffStreamReceived(const TrackId trackId)
     m_lastOffStreamTime = now;
     m_offStreamTracks.insert(trackId);
 
+    updateTracksToProcessWhenIdle();
+}
+
+void AudioContext::updateTracksToProcessWhenIdle()
+{
     std::unordered_set<TrackId> tracksToProcess = m_tracksToProcessWhenIdle;
     tracksToProcess.insert(m_prevOffStreamTracks.cbegin(), m_prevOffStreamTracks.cend());
     tracksToProcess.insert(m_offStreamTracks.cbegin(), m_offStreamTracks.cend());
@@ -530,7 +535,7 @@ void AudioContext::onShouldProcessDuringSilenceChanged(const TrackId trackId, bo
         muse::remove(m_tracksToProcessWhenIdle, trackId);
     }
 
-    m_mixer->setTracksToProcessWhenIdle(m_tracksToProcessWhenIdle);
+    updateTracksToProcessWhenIdle();
 }
 
 // Sources

@@ -198,6 +198,7 @@ private:
     // -----
     void onShouldProcessDuringSilenceChanged(const TrackId trackId, bool shouldProcess);
     void onOffStreamReceived(const TrackId trackId);
+    void updateTracksToProcessWhenIdle();
 
     //! NOTE The tracks that received off-stream events together (e.g. all the notes of a chord across the instruments),
     //! and the ones that received them just before (which may still be ringing out)
