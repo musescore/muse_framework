@@ -34,12 +34,8 @@
 namespace muse::audio::encode {
 namespace {
 template<typename T>
-void writeTagData(io::IODevice& outDev, const T value, size_t offset = 0)
+void writeTagData(io::IODevice& outDev, const T value)
 {
-    if (offset != 0) {
-        outDev.seek(offset);
-    }
-
     // little endian
     outDev.write(reinterpret_cast<const std::uint8_t*>(&value), sizeof(T));
 }
@@ -93,14 +89,14 @@ WavEncoder::WavEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice)
     DO_ASSERT(m_dstDevice);
 }
 
-bool WavEncoder::begin(const samples_t)
+bool WavEncoder::begin(const samples_t totalSamplesNumber)
 {
     m_headerWritten = false;
-    m_pcmStartPos = 0;
+    m_totalSamples = totalSamplesNumber;
     return true;
 }
 
-bool WavEncoder::writePlaceholderHeader()
+bool WavEncoder::writeHeader()
 {
     WavHeader header;
     header.chunkSize = 18; // 18 is 2 bytes more to include cbsize field / extension size
@@ -125,41 +121,25 @@ bool WavEncoder::writePlaceholderHeader()
 
     header.audioChannelsNumber = m_format.outputSpec.audioChannelCount;
     header.sampleRate = m_format.outputSpec.sampleRate;
-    header.samplesPerChannel = 0;
+    header.samplesPerChannel = m_totalSamples;
+
+    //! NOTE The sizes in the header are 32-bit, they are known in advance, so the header is written once, without seeking back
+    const uint64_t dataBytes = static_cast<uint64_t>(m_totalSamples) * header.audioChannelsNumber * (header.bitsPerSample / 8);
+    if (dataBytes + 64 > std::numeric_limits<uint32_t>::max()) {
+        LOGE() << "WAV export: file size exceeds 32-bit chunk limits";
+        return false;
+    }
 
     header.write(*m_dstDevice);
     return true;
 }
 
-void WavEncoder::patchHeaderSizes()
-{
-    const size_t endPos = m_dstDevice->pos();
-    if (endPos < m_pcmStartPos || endPos < 8) {
-        return;
-    }
-
-    const uint64_t dataBytes = endPos - m_pcmStartPos;
-    if (dataBytes > std::numeric_limits<uint32_t>::max()) {
-        LOGE() << "WAV export: file size exceeds 32-bit chunk limits";
-        return;
-    }
-
-    const uint32_t dataSize = static_cast<uint32_t>(dataBytes);
-    const uint32_t riffChunkSize = static_cast<uint32_t>(endPos - 8);
-
-    writeTagData<uint32_t>(*m_dstDevice, riffChunkSize, 4); // RIFF chunk size at offset 4
-    writeTagData<uint32_t>(*m_dstDevice, dataSize, 42); // data chunk size at offset 42 (with 18-byte fmt + cbSize)
-
-    m_dstDevice->seek(endPos);
-}
-
 size_t WavEncoder::encode(const samples_t samplesPerChannel, const float* input)
 {
     if (!m_headerWritten) {
-        if (!writePlaceholderHeader()) {
+        if (!writeHeader()) {
             return 0;
         }
-        m_pcmStartPos = m_dstDevice->pos();
         m_headerWritten = true;
     }
 
@@ -205,10 +185,6 @@ size_t WavEncoder::encode(const samples_t samplesPerChannel, const float* input)
 
 size_t WavEncoder::end()
 {
-    if (m_headerWritten) {
-        patchHeaderSizes();
-    }
-
     return 0;
 }
 }
