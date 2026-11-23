@@ -21,6 +21,8 @@
  */
 #include "playback.h"
 
+#include "global/io/ioretcodes.h"
+
 #include "audio/common/rpc/rpcpacker.h"
 #include "audio/common/audiosanitizer.h"
 #include "audio/common/audioerrors.h"
@@ -121,6 +123,31 @@ async::Promise<Ret> Playback::init()
         }
     });
 
+    channel()->onNotification(ctxId(), MsgCode::SaveSoundTrackData, [this](const Msg& msg) {
+        ONLY_AUDIO_MAIN_THREAD;
+        CallId requestId = 0;
+        ByteArray bytes;
+        IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, requestId, bytes)) {
+            return;
+        }
+
+        auto it = m_savingSoundTracks.find(requestId);
+        if (it == m_savingSoundTracks.end()) {
+            return;
+        }
+
+        SavingSoundTrack& saving = it->second;
+        if (!saving.writeRet) {
+            // The file is already broken, the saving is rejected in the end
+            return;
+        }
+
+        if (saving.dstDevice->write(bytes) != bytes.size()) {
+            LOGE() << "failed write the sound track data";
+            saving.writeRet = io::make_ret(io::Err::FSWriteError);
+        }
+    });
+
     return async::make_promise<Ret>([this](auto resolve, auto /*reject*/) {
         ONLY_AUDIO_MAIN_THREAD;
 
@@ -163,6 +190,7 @@ void Playback::deinit()
 {
     ONLY_AUDIO_MAIN_THREAD;
 
+    channel()->onNotification(ctxId(), MsgCode::SaveSoundTrackData, nullptr);
     channel()->onNotification(ctxId(), MsgCode::TrackAdded, nullptr);
     channel()->onNotification(ctxId(), MsgCode::TrackRemoved, nullptr);
     channel()->onNotification(ctxId(), MsgCode::SourceParamsChanged, nullptr);
@@ -705,19 +733,34 @@ async::Promise<bool> Playback::saveSoundTrack(const SoundTrackFormat& format, io
     ONLY_AUDIO_MAIN_THREAD;
     return async::make_promise<bool>([this, format, &dstDevice](auto resolve, auto reject) {
         ONLY_AUDIO_MAIN_THREAD;
-        Msg msg = rpc::make_request(ctxId(), MsgCode::SaveSoundTrack, RpcPacker::pack(format, reinterpret_cast<uintptr_t>(&dstDevice)));
-        channel()->send(msg, [resolve, reject](const Msg& res) {
+        Msg msg = rpc::make_request(ctxId(), MsgCode::SaveSoundTrack, RpcPacker::pack(format));
+
+        //! NOTE The engine sends the encoded bytes by chunks (SaveSoundTrackData) before the response
+        const CallId requestId = msg.callId;
+        m_savingSoundTracks[requestId] = { &dstDevice, muse::make_ok() };
+
+        channel()->send(msg, [this, resolve, reject, requestId](const Msg& res) {
             ONLY_AUDIO_MAIN_THREAD;
+            Ret writeRet = muse::make_ok();
+            auto it = m_savingSoundTracks.find(requestId);
+            if (it != m_savingSoundTracks.end()) {
+                writeRet = it->second.writeRet;
+                m_savingSoundTracks.erase(it);
+            }
+
             Ret ret;
             IF_ASSERT_FAILED(RpcPacker::unpack(res.data, ret)) {
                 doReject(MsgCode::SaveSoundTrack, reject, audio::make_ret(Err::InvalidRpcData));
                 return;
             }
 
-            if (ret) {
-                (void)resolve(true);
-            } else {
+            if (!ret) {
                 doReject(MsgCode::SaveSoundTrack, reject, ret);
+            } else if (!writeRet) {
+                //! NOTE The engine encoded everything, but not all of it reached the destination
+                doReject(MsgCode::SaveSoundTrack, reject, writeRet);
+            } else {
+                (void)resolve(true);
             }
         });
         return Promise<bool>::dummy_result();

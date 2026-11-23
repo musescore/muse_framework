@@ -149,5 +149,12 @@ private:
 
     //! NOTE The receive streams are removed on the track removal, on the deinit all streams of the context are removed by the channel
     mutable std::map<TrackId, std::vector<rpc::StreamId> > m_trackStreams;
+
+    //! NOTE The sound tracks being saved, by the request id
+    struct SavingSoundTrack {
+        io::IODevice* dstDevice = nullptr;
+        Ret writeRet; // the first failure of writing to the destination
+    };
+    std::map<rpc::CallId, SavingSoundTrack> m_savingSoundTracks;
 };
 }
