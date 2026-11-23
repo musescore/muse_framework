@@ -139,6 +139,10 @@ public:
         ONLY_AUDIO_ENGINE_THREAD;
 
         m_playbackPosition = newPlaybackPosition;
+
+        //! NOTE The off-stream events have their own clock, which does not depend on the main stream:
+        //! the pending ones keep their deadlines
+        rebaseOffStreamEvents();
         resetAllIterators();
     }
 
