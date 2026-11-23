@@ -185,6 +185,16 @@ public:
 
         // Empty sequence means to continue the previous sequence
         result.emplace(m_playbackPosition, EventSequence());
+
+        //! NOTE The events sent while playing (e.g. the notes played on a MIDI keyboard during a recording)
+        //! are played at the beginning of the current block
+        EventSequence offStreamSequence = moveOffStreamForwardWhilePlaying(nextMsecs);
+        if (!offStreamSequence.empty()) {
+            EventSequence& sequence = result[m_playbackPosition];
+            sequence.insert(sequence.end(), std::make_move_iterator(offStreamSequence.begin()),
+                            std::make_move_iterator(offStreamSequence.end()));
+        }
+
         m_playbackPosition += nextMsecs;
 
         if (m_currentMainSequenceIt == m_mainStreamEvents.cend()) {
@@ -192,6 +202,34 @@ public:
         }
 
         handleMainStream(result);
+
+        return result;
+    }
+
+    //! Returns the off-stream events due within the next block, while the main stream is playing.
+    //! For synthesizers that do not handle the main stream through movePlaybackForward when active
+    EventSequence moveOffStreamForwardWhilePlaying(const msecs_t nextMsecs)
+    {
+        ONLY_AUDIO_ENGINE_THREAD;
+
+        EventSequence result;
+
+        if (m_offStreamEvents.empty() || m_currentOffSequenceIt == m_offStreamEvents.cend()) {
+            return result;
+        }
+
+        m_offstreamPosition += nextMsecs;
+
+        while (m_currentOffSequenceIt != m_offStreamEvents.end()
+               && m_currentOffSequenceIt->first <= m_offstreamPosition) {
+            result.insert(result.end(), std::make_move_iterator(m_currentOffSequenceIt->second.begin()),
+                          std::make_move_iterator(m_currentOffSequenceIt->second.end()));
+            m_currentOffSequenceIt = m_offStreamEvents.erase(m_currentOffSequenceIt);
+        }
+
+        if (m_currentOffSequenceIt == m_offStreamEvents.end()) {
+            m_offstreamPosition = 0;
+        }
 
         return result;
     }
