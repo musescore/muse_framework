@@ -34,6 +34,7 @@
 
 #include "muse_framework_config.h"
 
+#include "containers.h"
 #include "log.h"
 
 using namespace muse;
@@ -116,6 +117,13 @@ void Settings::load()
 
 void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool notifyOtherInstances)
 {
+    std::map<Key, Val> stickyValues;
+    for (const auto& [key, item] : m_items) {
+        if (item.sticky && !(item.value == item.defaultValue)) {
+            stickyValues[key] = item.value;
+        }
+    }
+
     qsettings()->clear();
 
     m_isTransactionStarted = false;
@@ -138,16 +146,21 @@ void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool not
         QDir().mkpath(dataPath().toQString());
     }
 
+    for (const auto& [key, value] : stickyValues) {
+        writeValue(key, value);
+    }
+
     if (!notifyAboutChanges) {
         return;
     }
 
     for (auto it = m_items.begin(); it != m_items.end(); ++it) {
-        if (it->second.value == it->second.defaultValue) {
+        const Val value = muse::value(stickyValues, it->first, it->second.defaultValue);
+        if (it->second.value == value) {
             continue;
         }
 
-        it->second.value = it->second.defaultValue;
+        it->second.value = value;
 
         Channel<Val>& channel = findChannel(it->first);
         channel.send(it->second.value);
@@ -307,6 +320,21 @@ void Settings::setCanBeManuallyEdited(const Settings::Key& key, bool canBeManual
         item.minValue = minValue;
         item.maxValue = maxValue;
     }
+}
+
+void Settings::setSticky(const Key& key)
+{
+    Item& item = findItem(key);
+    IF_ASSERT_FAILED(!item.isNull()) {
+        return;
+    }
+
+    item.sticky = true;
+}
+
+bool Settings::isSticky(const Key& key) const
+{
+    return findItem(key).sticky;
 }
 
 void Settings::insertNewItem(const Settings::Key& key, const Val& value)
