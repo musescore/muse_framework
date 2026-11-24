@@ -693,6 +693,8 @@ TEST_F(Audio_RpcPackerTests, MPE_ExpressionContext)
 // void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::SyllableEvent& value);
 // void pack_custom(muse::msgpack::Packer& p, const muse::mpe::ControllerChangeEvent& value);
 // void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::ControllerChangeEvent& value);
+// void pack_custom(muse::msgpack::Packer& p, const muse::mpe::MeasureEvent& value);
+// void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::MeasureEvent& value);
 // void pack_custom(muse::msgpack::Packer& p, const muse::mpe::PlaybackEvent& value);
 // void unpack_custom(muse::msgpack::UnPacker& p, muse::mpe::PlaybackEvent& value);
 
@@ -811,13 +813,38 @@ TEST_F(Audio_RpcPackerTests, MPE_PlaybackEvent)
         EXPECT_TRUE(origin == unpacked);
     }
 
+    // MeasureEvent
+    {
+        mpe::MeasureEvent event;
+        event.timeSignature.numerator = 6;
+        event.timeSignature.denominator = 8;
+
+        KNOWN_FIELDS(event.timeSignature,
+                     event.timeSignature.numerator,
+                     event.timeSignature.denominator);
+
+        KNOWN_FIELDS(event,
+                     event.timeSignature);
+
+        mpe::PlaybackEvent origin = event;
+
+        ByteArray data = rpc::RpcPacker::pack(origin);
+
+        mpe::PlaybackEvent unpacked;
+        bool ok = rpc::RpcPacker::unpack(data, unpacked);
+
+        EXPECT_TRUE(ok);
+        EXPECT_TRUE(origin == unpacked);
+    }
+
     {
         using KnownPlaybackEvent = std::variant<std::monostate,
                                                 mpe::NoteEvent,
                                                 mpe::TextArticulationEvent,
                                                 mpe::SoundPresetChangeEvent,
                                                 mpe::SyllableEvent,
-                                                mpe::ControllerChangeEvent>;
+                                                mpe::ControllerChangeEvent,
+                                                mpe::MeasureEvent>;
 
         static_assert(std::is_same<mpe::PlaybackEvent, KnownPlaybackEvent>::value);
     }

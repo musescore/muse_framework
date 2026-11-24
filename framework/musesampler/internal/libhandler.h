@@ -195,6 +195,8 @@ public:
         getNextRenderProgressInfo = (ms_RenderProgressInfo2_get_next)libFunc("ms_RenderProgressInfo2_get_next");
         setLazyRender = (ms_MuseSampler_set_lazy_render)libFunc("ms_MuseSampler_set_lazy_render");
 
+        addMeasureEvent = (ms_MuseSampler_add_track_measure_event)libFunc("ms_MuseSampler_add_track_measure_event");
+
         if (!isValid()) {
             printApiStatus();
             return false;
@@ -377,7 +379,8 @@ public:
                << "\n ms_MuseSampler_clear_online_cache - " << reinterpret_cast<uint64_t>(clearOnlineCache)
                << "\n ms_RenderProgressInfo2_get_next - " << reinterpret_cast<uint64_t>(getNextRenderProgressInfo)
                << "\n ms_MuseSampler_set_auto_render_interval - " << reinterpret_cast<uint64_t>(setAutoRenderInterval)
-               << "\n ms_MuseSampler_set_lazy_render - " << reinterpret_cast<uint64_t>(setLazyRender);
+               << "\n ms_MuseSampler_set_lazy_render - " << reinterpret_cast<uint64_t>(setLazyRender)
+               << "\n ms_MuseSampler_add_track_measure_event - " << reinterpret_cast<uint64_t>(addMeasureEvent);
     }
 
     ms_get_instrument_list getInstrumentList = nullptr;
@@ -450,6 +453,8 @@ public:
     ms_MuseSampler_trigger_render triggerRender = nullptr;
     ms_MuseSampler_clear_online_cache clearOnlineCache = nullptr;
     ms_MuseSampler_set_lazy_render setLazyRender = nullptr;
+
+    ms_MuseSampler_add_track_measure_event addMeasureEvent = nullptr; // optional, v0.107
 
 private:
     void* libFunc(const char* funcName)

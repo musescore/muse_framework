@@ -153,6 +153,7 @@ void MuseSamplerSequencer::updateMainStreamEvents(const PlaybackEventsMap& event
 
     loadEvents(events);
     loadDynamicEvents(dynamics);
+    loadMeasureEvents(); // after loadEvents(): tracks are created lazily by note events
 
     finalizeAllTracks();
 }
@@ -265,6 +266,8 @@ const TrackList& MuseSamplerSequencer::allTracks() const
 
 void MuseSamplerSequencer::loadEvents(const PlaybackEventsMap& changes)
 {
+    m_measures.clear();
+
     for (const auto& pair : changes) {
         for (const auto& event : pair.second) {
             if (std::holds_alternative<mpe::NoteEvent>(event)) {
@@ -275,9 +278,30 @@ void MuseSamplerSequencer::loadEvents(const PlaybackEventsMap& changes)
                 addSoundPresetEvent(std::get<mpe::SoundPresetChangeEvent>(event), pair.first);
             } else if (std::holds_alternative<mpe::SyllableEvent>(event)) {
                 addSyllableEvent(std::get<mpe::SyllableEvent>(event), pair.first);
+            } else if (std::holds_alternative<mpe::MeasureEvent>(event) && m_samplerLib->addMeasureEvent) {
+                const mpe::TimeSignature& sig = std::get<mpe::MeasureEvent>(event).timeSignature;
+                m_measures.push_back(MeasureEvent { pair.first, sig.numerator, sig.denominator }); // map is time-sorted
             }
         }
     }
+}
+
+void MuseSamplerSequencer::loadMeasureEvents()
+{
+    if (m_measures.empty()) {
+        return;
+    }
+
+    for (ms_Track track : allTracks()) {
+        for (const MeasureEvent& event : m_measures) {
+            if (m_samplerLib->addMeasureEvent(m_sampler, track, event) != ms_Result_OK) {
+                LOGE() << "Unable to add measure event, location (us): " << event._location_us
+                       << ", time signature: " << event._numerator << "/" << event._denominator;
+            }
+        }
+    }
+
+    m_measures.clear();
 }
 
 void MuseSamplerSequencer::loadDynamicEvents(const DynamicAutomationLayers& changes)

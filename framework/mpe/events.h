@@ -332,12 +332,25 @@ struct SyllableEvent {
 
 using SyllableEventList = std::vector<SyllableEvent>;
 
+//! Start of a played measure (barline). The measure ends where the next one starts
+struct MeasureEvent {
+    TimeSignature timeSignature;
+
+    bool operator==(const MeasureEvent& e) const
+    {
+        return timeSignature == e.timeSignature;
+    }
+};
+
+using MeasureEventList = std::vector<MeasureEvent>;
+
 using PlaybackEvent = std::variant<std::monostate,
                                    NoteEvent,
                                    TextArticulationEvent,
                                    SoundPresetChangeEvent,
                                    SyllableEvent,
-                                   ControllerChangeEvent>;
+                                   ControllerChangeEvent,
+                                   MeasureEvent>;
 
 using PlaybackEventList = std::vector<PlaybackEvent>;
 using PlaybackEventsMap = SharedMap<timestamp_t, PlaybackEventList>;

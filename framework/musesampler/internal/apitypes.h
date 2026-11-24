@@ -409,6 +409,17 @@ typedef ms_Result (* ms_MuseSampler_add_track_note_event_6)(ms_MuseSampler ms, m
 typedef ms_Result (* ms_MuseSampler_start_audition_note_5)(ms_MuseSampler ms, ms_Track track, ms_AuditionStartNoteEvent_5 evt);
 // ------------------------------------------------------------
 
+// Added in v0.107
+typedef struct ms_MeasureEvent
+{
+    long long _location_us; // measure start (barline), same timeline as note events
+    int _numerator;         // time signature in effect, e.g. 6
+    int _denominator;       // e.g. 8
+} ms_MeasureEvent;
+
+// Added in v0.107
+typedef ms_Result (* ms_MuseSampler_add_track_measure_event)(ms_MuseSampler ms, ms_Track track, ms_MeasureEvent evt);
+
 // Added in 0.103
 typedef void (* ms_rendering_state_changed_callback)(void* user_data, ms_RenderingRangeList list, int num_ranges);
 
@@ -458,5 +469,6 @@ using DynamicEvent = ms_DynamicsEvent_2;
 using PedalEvent = ms_PedalEvent_2;
 using NoteEvent = ms_NoteEvent_5;
 using SyllableEvent = ms_SyllableEvent2;
+using MeasureEvent = ms_MeasureEvent;
 using RenderRangeInfo = ms_RenderRangeInfo2;
 }

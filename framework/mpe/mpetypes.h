@@ -67,6 +67,16 @@ using voice_layer_idx_t = uint_fast8_t;
 using staff_layer_idx_t = uint_fast16_t;
 using layer_idx_t = uint_fast32_t;
 
+struct TimeSignature {
+    uint16_t numerator = 4;
+    uint16_t denominator = 4;
+
+    bool operator==(const TimeSignature& other) const
+    {
+        return numerator == other.numerator && denominator == other.denominator;
+    }
+};
+
 static constexpr duration_t INFINITE_DURATION = std::numeric_limits<duration_t>::max();
 
 struct TimestampAndDuration {

@@ -48,6 +48,7 @@ private:
 
     void loadEvents(const mpe::PlaybackEventsMap& changes);
     void loadDynamicEvents(const mpe::DynamicAutomationLayers& changes);
+    void loadMeasureEvents();
 
     void addNoteEvent(const mpe::NoteEvent& noteEvent);
     void addPedalEvent(const mpe::ArticulationMeta& meta, ms_Track track);
@@ -89,6 +90,7 @@ private:
 
     std::unordered_map<mpe::layer_idx_t, track_idx_t> m_layerIdxToTrackIdx;
     std::unordered_map<ms_Track, std::map<long long /*startUs*/, ms_PresetChange> > m_presetChangesByTrack;
+    std::vector<MeasureEvent> m_measures; // collected in loadEvents(), sent in loadMeasureEvents()
 
     std::string m_defaultPresetCode;
     AuditionParams m_auditionParamsCache;
