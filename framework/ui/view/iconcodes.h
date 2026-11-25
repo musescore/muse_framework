@@ -586,6 +586,10 @@ enum class Code : char16_t {
 
     SQUARE = 0xF4E5,
 
+    STAVE_SHARING_RESET = 0xF4E6,
+    STAVE_SHARING_SETTINGS = 0xF4E7,
+    STAVE_SHARING_ERROR = 0xF4E8,
+
     NONE = 0xFFFF
 };
 
