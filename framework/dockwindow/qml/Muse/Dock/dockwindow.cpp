@@ -22,6 +22,8 @@
 
 #include "dockwindow.h"
 
+#include <QQuickWindow>
+
 #include "kddockwidgets/src/LayoutSaver.h"
 #include "kddockwidgets/src/core/DockRegistry.h"
 #include "kddockwidgets/src/core/Layout.h"
@@ -41,6 +43,8 @@
 #include "docktoolbarview.h"
 #include "dockingholderview.h"
 #include "dockwindow.h"
+
+#include <QQuickWindow>
 #include "topleveltoolbarslayout.h"
 
 #include "muse_framework_config.h"
@@ -160,6 +164,18 @@ void DockWindow::onQuit()
     clearRegistry(iocContext()->id);
 
     saveWindowGeometry();
+
+    //! NOTE: Cleaning the registry cleans up dock objects.
+    //!       To avoid showing an empty window to the user, we hide the window.
+    //!       It must be done only after the layout has been saved: hidden docks/windows
+    //!       would be saved as hidden and the layout would not be restored properly.
+    if (QQuickWindow* w = window()) {
+        for (QWindow* child : w->findChildren<QWindow*>()) {
+            child->setVisible(false);
+        }
+
+        w->setVisible(false);
+    }
 }
 
 QString DockWindow::currentPageUri() const
