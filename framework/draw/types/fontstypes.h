@@ -83,6 +83,7 @@ inline FontDataKey dataKeyForFont(const Font& f)
 struct FontData {
     FontDataKey key;
     muse::ByteArray data;
+    int faceIndex = 0;
 
     inline bool valid() const { return key.valid() && !data.empty(); }
 };
