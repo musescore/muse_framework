@@ -99,6 +99,11 @@ public:
 
     Q_INVOKABLE void cancelEdit();
 
+    Q_INVOKABLE bool hasSelectedPoints() const;
+    Q_INVOKABLE QVector<int> selectedPointsIndices() const; //! NOTE: sorted
+    Q_INVOKABLE void setSelectedPointsIndices(const QVector<int>& indices);
+    Q_INVOKABLE void clearSelectedPoints();
+
     PolylinePointStyle* standardPointStyle();
     PolylinePointStyle* ghostPointStyle();
     PolylinePointStyle* selectedPointStyle();
@@ -179,6 +184,7 @@ public:
 signals:
     void ghostPointsEnabledChanged();
     void selectedPointsEnabledChanged();
+    void selectedPointsChanged();
 
     void lineColorChanged();
     void lineWidthChanged();
@@ -229,6 +235,7 @@ private:
 
     void updateCursor();
     void resetGestureState();
+    void updateSelectedPointsIndices(std::unordered_set<int> indices);
 
     qreal clamp01(qreal v) const;
     QPointF clamp01(const QPointF& p) const;
