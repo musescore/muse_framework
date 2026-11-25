@@ -628,8 +628,15 @@ bool DockWindow::restoreLayout(const QByteArray& layout, bool restoreRelativeToM
 
     TRACEFUNC;
 
-    auto options = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_RelativeToMainWindow)
-                   : KDDockWidgets::RestoreOptions(KDDockWidgets::RestoreOption_SkipMainWindowVisibility);
+    KDDockWidgets::RestoreOptions options = KDDockWidgets::RestoreOption_SkipMainWindowVisibility;
+    if (restoreRelativeToMainWindow) {
+        options = KDDockWidgets::RestoreOption_RelativeToMainWindow;
+
+        const QQuickWindow* w = window();
+        if (!w || !w->isVisible()) {
+            options |= KDDockWidgets::RestoreOption_AbsoluteFloatingDockWindows;
+        }
+    }
 
     KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, options);
     return layoutSaver.restoreLayout(layout);
