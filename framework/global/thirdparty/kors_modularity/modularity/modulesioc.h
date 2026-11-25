@@ -30,6 +30,7 @@ SOFTWARE.
 #include <cassert>
 #include <iostream>
 #include <functional>
+#include <atomic>
 #include <mutex>
 
 #include "imoduleinterface.h"
@@ -128,11 +129,7 @@ public:
     template<class I>
     void subscribe(Subscriber<I>* s)
     {
-        int key = doSubscribe(I::modularity_interfaceInfo(), [s](const std::shared_ptr<IModuleInterface>& p) {
-            s->changed(pointer_cast<I>(p));
-        });
-
-        s->onUnSubscribe = makeUnSubscribeFn<I>(key);
+        subscribeImpl<I>(s);
     }
 
 #endif
@@ -142,8 +139,7 @@ public:
         std::map<std::string_view, Service > copy;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            copy = m_map;
-            m_map.clear();
+            copy.swap(m_map);
         }
 
         for (auto& s : copy) {
@@ -230,7 +226,20 @@ protected:
         return it->second.p;
     }
 
-    using OnChangedInternal = std::function<void (const std::shared_ptr<IModuleInterface>&)>;
+    struct OnChangedInternal {
+        using Callback = std::function<void (const std::shared_ptr<IModuleInterface>&)>;
+
+        Callback callback;
+        std::shared_ptr<std::atomic<bool> > active;
+
+        void operator()(const std::shared_ptr<IModuleInterface>& p) const
+        {
+            if (active->load()) {
+                callback(p);
+            }
+        }
+    };
+
     int doSubscribe(const InterfaceInfo& info, const OnChangedInternal& onChanged)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -276,10 +285,19 @@ protected:
     };
 
     template<class I>
-    std::function<void()> makeUnSubscribeFn(int key)
+    void subscribeImpl(Subscriber<I>* s)
     {
+        OnChangedInternal onChanged;
+        onChanged.active = std::make_shared<std::atomic<bool> >(true);
+        onChanged.callback = [s](const std::shared_ptr<IModuleInterface>& p) {
+            s->changed(pointer_cast<I>(p));
+        };
+
+        int key = doSubscribe(I::modularity_interfaceInfo(), onChanged);
+
         std::weak_ptr<bool> alive = m_alive;
-        return [this, key, alive]() {
+        s->onUnSubscribe = [this, key, active = onChanged.active, alive]() {
+            active->store(false);
             if (!alive.expired()) {
                 doUnsubscribe(I::modularity_interfaceInfo(), key);
             }
@@ -347,11 +365,7 @@ public:
     void subscribe(Subscriber<I>* s)
     {
         static_assert(I::modularity_isGlobalInterface(), "The interface must be global.");
-        int key = doSubscribe(I::modularity_interfaceInfo(), [s](const std::shared_ptr<IModuleInterface>& p) {
-            s->changed(pointer_cast<I>(p));
-        });
-
-        s->onUnSubscribe = makeUnSubscribeFn<I>(key);
+        subscribeImpl<I>(s);
     }
 };
 
@@ -411,11 +425,7 @@ public:
     void subscribe(Subscriber<I>* s)
     {
         static_assert(!I::modularity_isGlobalInterface(), "The interface must be contextual.");
-        int key = doSubscribe(I::modularity_interfaceInfo(), [s](const std::shared_ptr<IModuleInterface>& p) {
-            s->changed(pointer_cast<I>(p));
-        });
-
-        s->onUnSubscribe = makeUnSubscribeFn<I>(key);
+        subscribeImpl<I>(s);
     }
 };
 }
