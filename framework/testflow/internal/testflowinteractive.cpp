@@ -202,7 +202,7 @@ io::path_t TestflowInteractive::selectSavingFileSync(const std::string& title, c
     LOGD() << title << " dir:" << dir << ", filter: " << filterList << ", confirmOverwrite: " << confirmOverwrite;
 
     if (m_unattendedDialogs == UnattendedDialogs::Show) {
-        m_real->openSync("muse://testflow/selectfile?filePath=" + dir.toStdString());
+        m_real->openSync(UriQuery("muse://testflow/selectfile?filePath=" + dir.toStdString()));
     }
 
     m_selectedFilePath = dir;
