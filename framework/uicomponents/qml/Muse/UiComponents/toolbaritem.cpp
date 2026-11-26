@@ -25,6 +25,7 @@
 
 #include "global/containers.h"
 #include "global/stringutils.h"
+#include "types/qtinputconvert.h"
 #include "types/translatablestring.h"
 
 #include "muse_framework_config.h"
@@ -75,8 +76,9 @@ void ToolBarItem::setEnabled(bool enabled)
 
 void ToolBarItem::activate()
 {
-    static constexpr Qt::KeyboardModifiers relevantModifiers = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-    const Qt::KeyboardModifiers modifiers = application()->keyboardModifiers() & relevantModifiers;
+    static constexpr KeyboardModifiers relevantModifiers = KeyboardModifier::ShiftModifier | KeyboardModifier::ControlModifier
+                                                           | KeyboardModifier::AltModifier | KeyboardModifier::MetaModifier;
+    const Qt::KeyboardModifiers modifiers = toQtModifiers(inputState()->keyboardModifiers() & relevantModifiers);
     const std::string intent = muse::value(m_intents, modifiers, this->intent());
 
     if (strings::startsWith(intent, "command://")) {

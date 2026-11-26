@@ -34,6 +34,7 @@ target_sources(muse_global PRIVATE
     iapplication.h
     iapplicationeventcontroller.h
     iglobalconfiguration.h
+    iinputstate.h
     log.h
     logstream.h
     logger.h
