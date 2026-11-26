@@ -72,6 +72,7 @@ set(MODULE_TEST_SRC
 
 if (MUSE_QT_SUPPORT)
     list(APPEND MODULE_TEST_SRC
+        ${CMAKE_CURRENT_LIST_DIR}/qtinputconvert_tests.cpp
         ${CMAKE_CURRENT_LIST_DIR}/qtmimedataconvert_tests.cpp
     )
 endif()
