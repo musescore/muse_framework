@@ -723,6 +723,16 @@ int UiConfiguration::tooltipDelay() const
     return TOOLTIP_DELAY;
 }
 
+int UiConfiguration::doubleClickIntervalMs() const
+{
+    return QApplication::doubleClickInterval();
+}
+
+int UiConfiguration::cursorFlashTimeMs() const
+{
+    return QApplication::cursorFlashTime();
+}
+
 std::vector<QColor> UiConfiguration::colorDialogCustomColors() const
 {
     const ValList colorVals = settings()->value(UI_CUSTOM_COLORS_KEY).toList();

@@ -105,6 +105,9 @@ public:
 
     int tooltipDelay() const override;
 
+    int doubleClickIntervalMs() const override;
+    int cursorFlashTimeMs() const override;
+
     std::vector<QColor> colorDialogCustomColors() const override;
     void setColorDialogCustomColors(const std::vector<QColor>&) override;
 

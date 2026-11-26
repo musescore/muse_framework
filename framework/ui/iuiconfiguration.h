@@ -105,6 +105,10 @@ public:
 
     virtual int tooltipDelay() const = 0;
 
+    virtual int doubleClickIntervalMs() const = 0;
+
+    virtual int cursorFlashTimeMs() const = 0;
+
     virtual std::vector<QColor> colorDialogCustomColors() const = 0;
     virtual void setColorDialogCustomColors(const std::vector<QColor>&) = 0;
 };
