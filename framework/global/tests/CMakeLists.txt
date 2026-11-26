@@ -64,6 +64,7 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/sharedhashmap_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/stringsearch_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modulesioc_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/async_tasks_tests.cpp
 )
 
 include(SetupGTest)
