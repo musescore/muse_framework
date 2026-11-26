@@ -91,7 +91,12 @@ target_sources(muse_global PRIVATE
     types/string.h
     types/datetime.cpp
     types/datetime.h
+    types/dragevent.h
     types/flags.h
+    types/inputevents.h
+    types/mimedata.h
+    types/inputtypes.h
+    types/qtinputconvert.h
     types/id.cpp
     types/id.h
     types/val.cpp
