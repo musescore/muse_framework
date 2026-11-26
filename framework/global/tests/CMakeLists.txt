@@ -22,6 +22,7 @@ set(MODULE_TEST muse_global_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/applicationmock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/clipboardmock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/filesystemmock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/inputstatemock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/processmock.h

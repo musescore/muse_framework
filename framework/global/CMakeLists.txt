@@ -34,6 +34,7 @@ target_sources(muse_global PRIVATE
     iapplication.h
     iapplicationeventcontroller.h
     iglobalconfiguration.h
+    iclipboard.h
     iinputstate.h
     log.h
     logstream.h
@@ -92,13 +93,13 @@ target_sources(muse_global PRIVATE
     types/string.h
     types/datetime.cpp
     types/datetime.h
+    types/mimedata.h
+    types/qtmimedata.h
     types/dragevent.h
     types/flags.h
     types/inputevents.h
-    types/mimedata.h
     types/inputtypes.h
     types/qtinputconvert.h
-    types/qtmimedata.h
     types/id.cpp
     types/id.h
     types/val.cpp
