@@ -23,7 +23,7 @@
 
 #include <QGuiApplication>
 
-#include "global/types/qtinputconvert.h"
+#include "global/qt/qtinputconvert.h"
 
 using namespace muse;
 using namespace muse::ui;

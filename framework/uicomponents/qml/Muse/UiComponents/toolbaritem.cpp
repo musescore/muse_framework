@@ -25,7 +25,7 @@
 
 #include "global/containers.h"
 #include "global/stringutils.h"
-#include "types/qtinputconvert.h"
+#include "global/qt/qtinputconvert.h"
 #include "types/translatablestring.h"
 
 #include "muse_framework_config.h"

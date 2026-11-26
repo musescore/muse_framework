@@ -24,7 +24,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 
-#include "global/types/qtmimedata.h"
+#include "global/qt/qtmimedataconvert.h"
 
 using namespace muse;
 using namespace muse::ui;

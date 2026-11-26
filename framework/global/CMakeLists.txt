@@ -94,12 +94,10 @@ target_sources(muse_global PRIVATE
     types/datetime.cpp
     types/datetime.h
     types/mimedata.h
-    types/qtmimedata.h
     types/dragevent.h
     types/flags.h
     types/inputevents.h
     types/inputtypes.h
-    types/qtinputconvert.h
     types/id.cpp
     types/id.h
     types/val.cpp
@@ -268,6 +266,12 @@ if (MUSE_QT_SUPPORT)
     target_link_libraries(muse_global PUBLIC Qt::Core Qt::Gui Qt::Qml)
 
     target_link_libraries(muse_global PRIVATE Qt::Quick Qt::Widgets)
+
+    # The conversion of the Qt types
+    target_sources(muse_global PRIVATE
+        qt/qtinputconvert.h
+        qt/qtmimedataconvert.h
+    )
 endif()
 
 target_link_libraries(muse_global PRIVATE ${CMAKE_DL_LIBS})

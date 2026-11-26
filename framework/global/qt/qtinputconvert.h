@@ -37,7 +37,7 @@
 
 #include "types/dragevent.h"
 #include "types/inputevents.h"
-#include "types/qtmimedata.h"
+#include "qt/qtmimedataconvert.h"
 
 //! NOTE Conversion of the Qt input types and events to the toolkit-independent ones and back
 namespace muse {
