@@ -32,6 +32,7 @@
 
 #include <QScreen>
 #include <QQuickWindow>
+#include <QTimer>
 
 #include "log.h"
 
@@ -61,7 +62,57 @@ void WinWindowsController::finishRegWindow(WId winId)
     const MARGINS shadow_on = { 1, 1, 1, 1 };
     DwmExtendFrameIntoClientArea(hWnd, &shadow_on);
 
+    cloakMainWindowUntilFirstFrame(hWnd);
+
     updateMainWindowPosition();
+}
+
+void WinWindowsController::cloakMainWindowUntilFirstFrame(HWND hWnd)
+{
+    QQuickWindow* window = qobject_cast<QQuickWindow*>(mainWindow()->qWindow());
+    if (!window) {
+        return;
+    }
+
+    //! NOTE Otherwise, the window is shown with the system fade-in animation
+    //! and is briefly visible half-transparent before its first frame is rendered
+    BOOL on = TRUE;
+    DwmSetWindowAttribute(hWnd, DWMWA_TRANSITIONS_FORCEDISABLED, &on, sizeof(on));
+    DwmSetWindowAttribute(hWnd, DWMWA_CLOAK, &on, sizeof(on));
+
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    auto uncloak = [hWnd, conn]() {
+        if (!*conn) {
+            return;
+        }
+
+        QObject::disconnect(*conn);
+        *conn = QMetaObject::Connection();
+
+        BOOL off = FALSE;
+        DwmSetWindowAttribute(hWnd, DWMWA_CLOAK, &off, sizeof(off));
+        DwmSetWindowAttribute(hWnd, DWMWA_TRANSITIONS_FORCEDISABLED, &off, sizeof(off));
+    };
+
+    *conn = QObject::connect(window, &QQuickWindow::frameSwapped, this, uncloak, Qt::QueuedConnection);
+
+    //! NOTE Safety net for the case when the shown window never renders a frame
+    auto visibleConn = std::make_shared<QMetaObject::Connection>();
+    *visibleConn = QObject::connect(window, &QWindow::visibleChanged, this, [this, uncloak, conn, visibleConn](bool visible) {
+        if (!visible) {
+            return;
+        }
+
+        QObject::disconnect(*visibleConn);
+
+        static constexpr int UNCLOAK_TIMEOUT_MS = 10000;
+        QTimer::singleShot(UNCLOAK_TIMEOUT_MS, this, [uncloak, conn]() {
+            if (*conn) {
+                LOGW() << "the main window has not rendered any frame, uncloaking it forcibly";
+                uncloak();
+            }
+        });
+    });
 }
 
 bool WinWindowsController::eventFilter(QObject* watched, QEvent* event)

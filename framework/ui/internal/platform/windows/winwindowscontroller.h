@@ -48,6 +48,7 @@ public:
 
 private:
     void finishRegWindow(WId winId) override;
+    void cloakMainWindowUntilFirstFrame(HWND hWnd);
 
     bool eventFilter(QObject* watched, QEvent* event) override;
 
