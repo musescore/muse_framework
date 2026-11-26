@@ -458,6 +458,7 @@ QVariant ShortcutsModel::shortcutToObject(const Item& item) const
     obj["sequence"] = QString::fromStdString(item.shortcut.sequencesAsString());
     obj["scope"] = QString::fromStdString(item.shortcut.scope);
     obj["autoRepeat"] = item.shortcut.autoRepeat;
+    obj["modifiersOnly"] = item.shortcut.modifiersOnly;
 
     return obj;
 }
