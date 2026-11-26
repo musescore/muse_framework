@@ -97,6 +97,7 @@ target_sources(muse_global PRIVATE
     types/mimedata.h
     types/inputtypes.h
     types/qtinputconvert.h
+    types/qtmimedata.h
     types/id.cpp
     types/id.h
     types/val.cpp
