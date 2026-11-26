@@ -69,4 +69,10 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/async_tasks_tests.cpp
 )
 
+if (MUSE_QT_SUPPORT)
+    list(APPEND MODULE_TEST_SRC
+        ${CMAKE_CURRENT_LIST_DIR}/qtmimedataconvert_tests.cpp
+    )
+endif()
+
 include(SetupGTest)
