@@ -318,6 +318,31 @@ TEST_F(Audio_RpcPackerTests, SoundTrackFormat)
     EXPECT_TRUE(origin == unpacked);
 }
 
+TEST_F(Audio_RpcPackerTests, SoundTrackSaveOptions)
+{
+    SoundTrackSaveOptions origin;
+    origin.hasTimeRange = true;
+    origin.startTime = 12.5;
+    origin.endTime = 18.75;
+    origin.fadeInDuration = 1.5;
+    origin.fadeOutDuration = 2.25;
+
+    KNOWN_FIELDS(origin,
+                 origin.hasTimeRange,
+                 origin.startTime,
+                 origin.endTime,
+                 origin.fadeInDuration,
+                 origin.fadeOutDuration);
+
+    ByteArray data = rpc::RpcPacker::pack(origin);
+
+    SoundTrackSaveOptions unpacked;
+    bool ok = rpc::RpcPacker::unpack(data, unpacked);
+
+    EXPECT_TRUE(ok);
+    EXPECT_TRUE(origin == unpacked);
+}
+
 TEST_F(Audio_RpcPackerTests, AudioSourceParams)
 {
     AudioSourceParams origin;

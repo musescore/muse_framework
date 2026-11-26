@@ -70,6 +70,8 @@ void pack_custom(muse::msgpack::Packer& p, const muse::audio::AudioSampleFormat&
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::AudioSampleFormat& value);
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::SoundTrackFormat& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::SoundTrackFormat& value);
+void pack_custom(muse::msgpack::Packer& p, const muse::audio::SoundTrackSaveOptions& value);
+void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::SoundTrackSaveOptions& value);
 
 void pack_custom(muse::msgpack::Packer& p, const muse::audio::SaveSoundTrackStage& value);
 void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::SaveSoundTrackStage& value);
@@ -338,6 +340,16 @@ inline void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::SoundTrackFor
 {
     p.process(value.type, value.outputSpec, value.sampleFormat, value.bitRate,
               value.leadingSilenceDuration, value.trailingSilenceDuration);
+}
+
+inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::SoundTrackSaveOptions& value)
+{
+    p.process(value.hasTimeRange, value.startTime, value.endTime, value.fadeInDuration, value.fadeOutDuration);
+}
+
+inline void unpack_custom(muse::msgpack::UnPacker& p, muse::audio::SoundTrackSaveOptions& value)
+{
+    p.process(value.hasTimeRange, value.startTime, value.endTime, value.fadeInDuration, value.fadeOutDuration);
 }
 
 inline void pack_custom(muse::msgpack::Packer& p, const muse::audio::SaveSoundTrackStage& value)
