@@ -53,21 +53,6 @@ protected:
         return FLAC__STREAM_ENCODER_WRITE_STATUS_OK;
     }
 
-    FLAC__StreamEncoderSeekStatus seek_callback(const FLAC__uint64 absolute_byte_offset) override
-    {
-        if (!m_outDev->seek(absolute_byte_offset)) {
-            return FLAC__STREAM_ENCODER_SEEK_STATUS_ERROR;
-        }
-
-        return FLAC__STREAM_ENCODER_SEEK_STATUS_OK;
-    }
-
-    FLAC__StreamEncoderTellStatus tell_callback(FLAC__uint64* absolute_byte_offset) override
-    {
-        *absolute_byte_offset = m_outDev->pos();
-        return FLAC__STREAM_ENCODER_TELL_STATUS_OK;
-    }
-
 private:
     io::IODevice* m_outDev;
 };

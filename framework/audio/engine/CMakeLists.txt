@@ -224,7 +224,7 @@ if (MUSE_MODULE_AUDIO_EXPORT)
 
     target_link_libraries(muse_audio_engine PRIVATE opusenc::opusenc Opus::opus)
 
-    target_link_libraries(muse_audio_engine PRIVATE FLAC::FLAC FLAC::FLAC++)
+    target_link_libraries(muse_audio_engine PRIVATE FLAC::FLAC FLAC::FLAC++ Ogg::ogg)
 
     target_link_libraries(muse_audio_engine PRIVATE fdk-aac::fdk-aac)
 endif() # MUSE_MODULE_AUDIO_EXPORT

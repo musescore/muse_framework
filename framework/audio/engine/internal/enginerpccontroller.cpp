@@ -25,6 +25,8 @@
 #include "audio/common/rpc/rpcpacker.h"
 #include "audio/common/audioerrors.h"
 
+#include "global/io/iodevice.h"
+
 #include "log.h"
 
 //#define CHECK_METHODS_DURATION
@@ -44,6 +46,67 @@
 
 using namespace muse::audio::engine;
 using namespace muse::audio::rpc;
+
+namespace {
+//! NOTE The destination of a saved sound track: the main may be in another memory (e.g. on the web),
+//! so the written bytes are sent to it by chunks. The encoders write sequentially (no seeking back).
+class RpcSoundTrackDevice : public muse::io::IODevice
+{
+public:
+    RpcSoundTrackDevice(IRpcChannel* channel, CtxId ctxId, CallId requestId)
+        : m_channel(channel), m_ctxId(ctxId), m_requestId(requestId) {}
+
+protected:
+    bool doOpen(OpenMode) override
+    {
+        return true;
+    }
+
+    void doClose() override
+    {
+        flush();
+    }
+
+    size_t dataSize() const override { return m_size; }
+    const uint8_t* rawData() const override { return nullptr; }
+
+    bool resizeData(size_t size) override
+    {
+        m_size = size;
+        return true;
+    }
+
+    size_t writeData(const uint8_t* data, size_t len) override
+    {
+        m_chunk.insert(m_chunk.end(), data, data + len);
+        if (m_chunk.size() >= CHUNK_SIZE) {
+            flush();
+        }
+
+        return len;
+    }
+
+private:
+    static constexpr size_t CHUNK_SIZE = 64 * 1024;
+
+    void flush()
+    {
+        if (m_chunk.empty()) {
+            return;
+        }
+
+        muse::ByteArray bytes(m_chunk.data(), m_chunk.size());
+        m_channel->send(make_notification(m_ctxId, MsgCode::SaveSoundTrackData, RpcPacker::pack(m_requestId, bytes)));
+        m_chunk.clear();
+    }
+
+    IRpcChannel* m_channel = nullptr;
+    CtxId m_ctxId = 0;
+    CallId m_requestId = 0;
+    size_t m_size = 0;
+    std::vector<uint8_t> m_chunk;
+};
+}
 
 EngineRpcController::EngineRpcController(IExecOperation* execOperation)
     : m_execOperation(execOperation)
@@ -756,13 +819,15 @@ void EngineRpcController::init()
         onLongRequest(ctxId, MsgCode::SaveSoundTrack, [this](const Msg& msg) {
             ONLY_AUDIO_RPC_THREAD;
             SoundTrackFormat format;
-            uintptr_t dstDevicePtr = 0;
-            IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, format, dstDevicePtr)) {
+            IF_ASSERT_FAILED(RpcPacker::unpack(msg.data, format)) {
                 return make_response_ret(msg, make_ret(Err::InvalidRpcData));
             }
-            io::IODevice& dstDevice = *reinterpret_cast<io::IODevice*>(dstDevicePtr);
             if (auto actx = audioContext(msg.ctxId)) {
-                actx->saveSoundTrack(dstDevice, format).onResolve(this, [this, msg](const Ret& ret) {
+                //! NOTE The chunks are sent before the response, the order of the messages is kept
+                auto device = std::make_shared<RpcSoundTrackDevice>(channel().get(), msg.ctxId, msg.callId);
+                device->open(io::IODevice::WriteOnly);
+                actx->saveSoundTrack(*device, format).onResolve(this, [this, msg, device](const Ret& ret) {
+                    device->close();
                     channel()->send(make_response_ret(msg, ret));
                 });
                 return make_response_delayed(msg);

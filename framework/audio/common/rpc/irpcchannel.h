@@ -126,6 +126,7 @@ enum class MsgCode {
     SaveSoundTrack,
     AbortSavingAllSoundTracks,
     GetSaveSoundTrackProgress,
+    SaveSoundTrackData,
 
     // SoundFont
     LoadSoundFonts,
@@ -224,6 +225,7 @@ inline std::string to_string(MsgCode m)
 
     case MsgCode::SaveSoundTrack: return "SaveSoundTrack";
     case MsgCode::AbortSavingAllSoundTracks: return "AbortSavingAllSoundTracks";
+    case MsgCode::SaveSoundTrackData: return "SaveSoundTrackData";
     case MsgCode::GetSaveSoundTrackProgress: return "GetSaveSoundTrackProgress";
 
     // SoundFont
