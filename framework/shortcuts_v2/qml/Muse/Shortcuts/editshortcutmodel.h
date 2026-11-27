@@ -43,6 +43,7 @@ class EditShortcutModel : public QObject, public Contextable, public async::Asyn
     Q_PROPERTY(QString conflictWarning READ conflictWarning NOTIFY newSequenceChanged)
 
     Q_PROPERTY(bool cleared READ cleared NOTIFY clearedChanged)
+    Q_PROPERTY(bool modifiersOnly READ modifiersOnly NOTIFY originSequenceChanged)
 
     QML_ELEMENT
 
@@ -55,6 +56,8 @@ public:
     QString newSequenceInNativeFormat() const;
     QString conflictWarning() const;
     bool cleared() const { return m_cleared; }
+    //! The shortcut is held rather than pressed: only modifier keys can be entered
+    bool modifiersOnly() const { return m_modifiersOnly; }
     bool isShiftAllowed(Qt::Key key);
 
     Q_INVOKABLE void load(const QVariant& shortcut, const QVariantList& allShortcuts);
@@ -84,6 +87,8 @@ private:
     QVariantMap m_conflictShortcut;
 
     QKeySequence m_newSequence;
+    Qt::KeyboardModifiers m_newModifiers; // instead of m_newSequence, for a modifiers-only shortcut
+    bool m_modifiersOnly = false;
 
     bool m_cleared = false;
 };

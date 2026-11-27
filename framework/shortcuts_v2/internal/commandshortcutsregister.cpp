@@ -239,10 +239,11 @@ void CommandShortcutsRegister::mergeShortcuts(ShortcutList& shortcuts, const Sho
         bool found = false;
 
         for (Shortcut& sc : shortcuts) {
-            //! NOTE If a user shortcut is found, set scope & auto repeat (always use default values)
+            //! NOTE If a user shortcut is found, set scope, auto repeat & modifiers only (always use default values)
             if (sc.command == defSc.command) {
                 sc.scope = defSc.scope;
                 sc.autoRepeat = defSc.autoRepeat;
+                sc.modifiersOnly = defSc.modifiersOnly;
                 found = true;
             } else if (sc.scope == defSc.scope && defSc.command != rcommand::NONE_COMMAND) {
                 for (const std::string& seq : sc.sequences) {
@@ -370,6 +371,7 @@ bool CommandShortcutsRegister::readFromFile(ShortcutList& shortcuts, const io::p
             shortcut.scope = scope;
             shortcut.command = rcommand::Command(shortcutObj.value("command").toStdString());
             shortcut.autoRepeat = shortcutObj.value("autorepeat", JsonValue(true)).toBool();
+            shortcut.modifiersOnly = shortcutObj.value("modifiersOnly", JsonValue(false)).toBool();
             JsonArray sequencesArr = shortcutObj.value("sequences").toArray();
             for (size_t k = 0; k < sequencesArr.size(); ++k) {
                 shortcut.sequences.push_back(sequencesArr.at(k).toStdString());

@@ -374,6 +374,11 @@ void MacOSShortcutsInstanceModel::doLoadShortcuts()
     ShortcutList shortcuts = commandShortcutsRegister()->shortcuts();
 
     for (const Shortcut& sc : shortcuts) {
+        // Held rather than pressed: whoever uses it watches the keys itself
+        if (sc.modifiersOnly) {
+            continue;
+        }
+
         for (const std::string& seq : sc.sequences) {
             QString untranslatedSequenceStr = QString::fromStdString(seq);
 

@@ -249,7 +249,7 @@ void ShortcutsModel::applySequenceToCurrentShortcut(const QString& newSequence, 
         Item& conflictItem = m_items[conflictShortcutIndex];
 
         muse::remove_if(conflictItem.shortcut.sequences, [&newSequences](const std::string& sequence) {
-            return muse::contains(newSequences, sequence);
+            return containsSequence(newSequences, sequence);
         });
 
         Shortcut& conflictShortcut = conflictItem.shortcut;
@@ -309,7 +309,7 @@ void ShortcutsModel::resetToDefaultSelectedShortcuts()
             }
 
             bool removed = muse::remove_if(sc.sequences, [&shortcut](const std::string& sequence) {
-                return muse::contains(shortcut.sequences, sequence);
+                return containsSequence(shortcut.sequences, sequence);
             });
 
             if (removed) {
@@ -458,6 +458,7 @@ QVariant ShortcutsModel::shortcutToObject(const Item& item) const
     obj["sequence"] = QString::fromStdString(item.shortcut.sequencesAsString());
     obj["scope"] = QString::fromStdString(item.shortcut.scope);
     obj["autoRepeat"] = item.shortcut.autoRepeat;
+    obj["modifiersOnly"] = item.shortcut.modifiersOnly;
 
     return obj;
 }

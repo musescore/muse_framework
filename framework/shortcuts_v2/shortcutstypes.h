@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@ struct Shortcut
     std::vector<std::string> sequences;
     QKeySequence::StandardKey standardKey = QKeySequence::UnknownKey;
     bool autoRepeat = true;
+    bool modifiersOnly = false; // held rather than pressed: its sequences are modifier keys alone, e.g. "Ctrl+Alt+Shift"
 
     Shortcut() = default;
 
@@ -57,7 +59,8 @@ struct Shortcut
                && scope == sc.scope
                && sequences == sc.sequences
                && standardKey == sc.standardKey
-               && autoRepeat == sc.autoRepeat;
+               && autoRepeat == sc.autoRepeat
+               && modifiersOnly == sc.modifiersOnly;
     }
 
     std::string sequencesAsString() const { return sequencesToString(sequences); }
@@ -112,11 +115,119 @@ inline std::pair<Qt::Key, Qt::KeyboardModifiers> correctKeyInput(Qt::Key key, Qt
     return { key, modifiers };
 }
 
+//! The modifier a key is (Meta for the Super/Windows keys), or NoModifier if it isn't one
+inline Qt::KeyboardModifier modifierOfKey(int key)
+{
+    switch (key) {
+    case Qt::Key_Control: return Qt::ControlModifier;
+    case Qt::Key_Alt: return Qt::AltModifier;
+    case Qt::Key_Shift: return Qt::ShiftModifier;
+    case Qt::Key_Meta:
+    case Qt::Key_Super_L:
+    case Qt::Key_Super_R: return Qt::MetaModifier;
+    default: return Qt::NoModifier;
+    }
+}
+
+//! The modifiers a modifiers-only shortcut can use, in the order its sequence lists them
+inline const std::vector<std::pair<Qt::KeyboardModifier, std::string> >& shortcutModifierNames()
+{
+    static const std::vector<std::pair<Qt::KeyboardModifier, std::string> > names {
+        { Qt::ControlModifier, "Ctrl" },
+        { Qt::AltModifier, "Alt" },
+        { Qt::ShiftModifier, "Shift" },
+        { Qt::MetaModifier, "Meta" },
+    };
+
+    return names;
+}
+
+//! A modifiers-only sequence, e.g. "Ctrl+Alt+Shift"; empty for no modifiers
+inline std::string modifiersToSequence(Qt::KeyboardModifiers modifiers)
+{
+    std::vector<std::string> parts;
+
+    for (const auto& [modifier, name] : shortcutModifierNames()) {
+        if (modifiers.testFlag(modifier)) {
+            parts.push_back(name);
+        }
+    }
+
+    return muse::strings::join(parts, "+");
+}
+
+//! The modifiers of a modifiers-only sequence; NoModifier if any part of it isn't a modifier
+inline Qt::KeyboardModifiers modifiersFromSequence(const std::string& sequence)
+{
+    std::vector<std::string> parts;
+    muse::strings::split(sequence, parts, "+");
+
+    Qt::KeyboardModifiers modifiers;
+
+    for (const std::string& part : parts) {
+        const auto& names = shortcutModifierNames();
+        const auto it = std::find_if(names.begin(), names.end(), [&part](const auto& entry) {
+            return entry.second == part;
+        });
+
+        if (it == names.end()) {
+            return Qt::NoModifier;
+        }
+
+        modifiers |= it->first;
+    }
+
+    return modifiers;
+}
+
+//! Whether two sequences are the same shortcut: modifiers-only ones match in any order ("Shift+Ctrl" is "Ctrl+Shift")
+inline bool isSameSequence(const std::string& sequence1, const std::string& sequence2)
+{
+    if (sequence1 == sequence2) {
+        return true;
+    }
+
+    const Qt::KeyboardModifiers modifiers1 = modifiersFromSequence(sequence1);
+
+    return (modifiers1 != Qt::NoModifier)
+           && (modifiers1 == modifiersFromSequence(sequence2));
+}
+
+inline bool containsSequence(const std::vector<std::string>& sequences, const std::string& sequence)
+{
+    return std::any_of(sequences.begin(), sequences.end(), [&sequence](const std::string& seq) {
+        return isSameSequence(seq, sequence);
+    });
+}
+
+//! How the platform writes the modifiers, e.g. "Ctrl+Alt+Shift", or "⌥⇧⌘" on macOS
+inline QString modifiersToNativeText(Qt::KeyboardModifiers modifiers)
+{
+    if (modifiers == Qt::NoModifier) {
+        return QString();
+    }
+
+    // Qt only writes modifiers before a key: write them before "A", then take it off
+    QString text = QKeySequence(QKeyCombination(modifiers, Qt::Key_A)).toString(QKeySequence::NativeText);
+    text.chop(1);
+
+    if (text.endsWith(u'+')) {
+        text.chop(1);
+    }
+
+    return text;
+}
+
 inline QString sequencesToNativeText(const std::vector<std::string>& sequences)
 {
     std::vector<std::string> seqs;
 
     for (const std::string& sequence : sequences) {
+        if (const Qt::KeyboardModifiers modifiers = modifiersFromSequence(sequence); modifiers != Qt::NoModifier) {
+            seqs.push_back(modifiersToNativeText(modifiers).toStdString());
+            continue;
+        }
+
         seqs.push_back(QKeySequence(QString::fromStdString(sequence)).toString(QKeySequence::NativeText).toStdString());
     }
 

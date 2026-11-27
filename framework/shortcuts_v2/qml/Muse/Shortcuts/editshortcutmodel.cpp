@@ -62,6 +62,7 @@ void EditShortcutModel::load(const QVariant& originShortcut, const QVariantList&
 
     m_originSequence = originShortcutMap.value("sequence").toString();
     m_originShortcutTitle = originShortcutMap.value("title").toString();
+    m_modifiersOnly = originShortcutMap.value("modifiersOnly").toBool();
 
     m_cleared = false;
 
@@ -71,11 +72,12 @@ void EditShortcutModel::load(const QVariant& originShortcut, const QVariantList&
 
 void EditShortcutModel::clearNewSequence()
 {
-    if (m_newSequence.isEmpty() && m_conflictShortcut.isEmpty()) {
+    if (m_newSequence.isEmpty() && m_newModifiers == Qt::NoModifier && m_conflictShortcut.isEmpty()) {
         return;
     }
 
     m_newSequence = QKeySequence();
+    m_newModifiers = Qt::NoModifier;
     m_conflictShortcut.clear();
 
     emit newSequenceChanged();
@@ -83,6 +85,29 @@ void EditShortcutModel::clearNewSequence()
 
 void EditShortcutModel::inputKey(Qt::Key key, Qt::KeyboardModifiers modifiers)
 {
+    if (m_modifiersOnly) {
+        const Qt::KeyboardModifier modifier = modifierOfKey(key);
+
+        // Any other key is ignored: the shortcut is the modifiers held together, e.g. Ctrl+Alt+Shift
+        if (modifier == Qt::NoModifier) {
+            return;
+        }
+
+        // The event's modifiers may not include the key just pressed yet
+        const Qt::KeyboardModifiers newModifiers = (modifiers | modifier)
+                                                   & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier | Qt::MetaModifier);
+
+        if (newModifiers == m_newModifiers) {
+            return;
+        }
+
+        m_newModifiers = newModifiers;
+        checkNewSequenceForConflicts();
+
+        emit newSequenceChanged();
+        return;
+    }
+
     if (needIgnoreKey(key)) {
         return;
     }
@@ -191,7 +216,7 @@ void EditShortcutModel::checkNewSequenceForConflicts()
         std::vector<std::string> toCheckSequences = Shortcut::sequencesFromString(map.value("sequence").toString().toStdString());
 
         for (const std::string& toCheckSequence : toCheckSequences) {
-            if (input == toCheckSequence) {
+            if (isSameSequence(input, toCheckSequence)) {
                 m_conflictShortcut = map;
                 return;
             }
@@ -208,6 +233,10 @@ QString EditShortcutModel::originSequenceInNativeFormat() const
 
 QString EditShortcutModel::newSequenceInNativeFormat() const
 {
+    if (m_modifiersOnly) {
+        return modifiersToNativeText(m_newModifiers);
+    }
+
     return m_newSequence.toString(QKeySequence::NativeText);
 }
 
@@ -225,7 +254,7 @@ bool EditShortcutModel::trySave()
 {
     const QString newSequence = this->newSequence();
     const bool alreadyEmpty = originSequenceInNativeFormat().isEmpty() && m_cleared;
-    if (alreadyEmpty || m_originSequence == newSequence) {
+    if (alreadyEmpty || isSameSequence(m_originSequence.toStdString(), newSequence.toStdString())) {
         return false;
     }
 
@@ -260,5 +289,9 @@ bool EditShortcutModel::trySave()
 
 QString EditShortcutModel::newSequence() const
 {
+    if (m_modifiersOnly) {
+        return QString::fromStdString(modifiersToSequence(m_newModifiers));
+    }
+
     return m_newSequence.toString();
 }

@@ -31,7 +31,7 @@ StyledDialogView {
     title: qsTrc("shortcuts", "Enter shortcut sequence")
 
     contentWidth: 538
-    contentHeight: 200
+    contentHeight: editShortcutModel.modifiersOnly ? 224 : 200 // room for the two-line note
 
     margins: 20
 
@@ -65,7 +65,15 @@ StyledDialogView {
         //! NOTE: There's no need to actually clear the origin shortcut, we can simply hide it for aesthetic purposes...
         originShortcutText: !editShortcutModel.cleared ? editShortcutModel.originSequence : ""
         newShortcutText: editShortcutModel.newSequence
-        informationText: editShortcutModel.conflictWarning
+        informationText: {
+            if (editShortcutModel.conflictWarning) {
+                return editShortcutModel.conflictWarning
+            }
+
+            return editShortcutModel.modifiersOnly
+                    ? qsTrc("shortcuts", "This shortcut is held down rather than pressed.\nPress the modifier keys you want together: Ctrl, Alt, Shift or Meta.")
+                    : ""
+        }
 
         onSaveRequested: {
             if (!editShortcutModel.trySave()) {
