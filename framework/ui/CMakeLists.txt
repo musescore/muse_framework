@@ -25,6 +25,7 @@ target_sources(muse_ui PRIVATE
     uimodule.h
     iuiengine.h
     iuiconfiguration.h
+    interfacescale.h
     iuicontextconfiguration.h
     uierrors.h
     uitypes.h
