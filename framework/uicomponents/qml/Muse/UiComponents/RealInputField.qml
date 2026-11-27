@@ -34,7 +34,7 @@ TextInputField {
     property real min: -10000.0
     property int decimals: 2
 
-    currentText: ui.df.formatReal(root.currentValue, root.decimals)
+    currentText: ui.df.formatRealForEdit(root.currentValue, root.decimals)
 
     validator: DoubleInputValidator {
         top: root.max
@@ -43,6 +43,9 @@ TextInputField {
     }
 
     onTextEdited: function(newTextValue) {
-        root.currentValue = parseFloat(newTextValue)
+        var newVal = ui.df.parseReal(newTextValue, root.decimals)
+        if (newVal !== undefined) {
+            root.currentValue = newVal
+        }
     }
 }

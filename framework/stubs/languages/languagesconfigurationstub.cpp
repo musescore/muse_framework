@@ -33,6 +33,15 @@ void LanguagesConfigurationStub::setCurrentLanguageCode(const QString&) const
 {
 }
 
+ValCh<QString> LanguagesConfigurationStub::numberFormatSource() const
+{
+    return ValCh<QString>();
+}
+
+void LanguagesConfigurationStub::setNumberFormatSource(const QString&) const
+{
+}
+
 QUrl LanguagesConfigurationStub::languagesUpdateUrl() const
 {
     return QUrl();
