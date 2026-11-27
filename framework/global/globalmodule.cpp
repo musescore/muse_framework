@@ -38,6 +38,9 @@
 
 #ifndef NO_QT_SUPPORT
 #include "internal/applicationeventcontroller.h"
+#else
+#include "internal/inmemoryclipboard.h"
+#include "internal/emptyinputstate.h"
 #endif
 
 #include "runtime.h"
@@ -102,6 +105,9 @@ void GlobalModule::registerExports()
 #ifndef NO_QT_SUPPORT
     m_eventController = std::make_shared<ApplicationEventController>();
     globalIoc()->registerExport<IApplicationEventController>(moduleName(), m_eventController);
+#else
+    globalIoc()->registerExport<IClipboard>(moduleName(), new InMemoryClipboard());
+    globalIoc()->registerExport<IInputState>(moduleName(), new EmptyInputState());
 #endif
 
 #ifdef Q_OS_WASM

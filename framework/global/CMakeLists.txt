@@ -215,6 +215,9 @@ else()
         internal/consoleapplication.cpp
         internal/consoleapplication.h
         internal/globalconfiguration.cpp
+        internal/inmemoryclipboard.cpp
+        internal/inmemoryclipboard.h
+        internal/emptyinputstate.h
         internal/globalconfiguration.h
         internal/cryptographichash.cpp
         internal/cryptographichash.h
