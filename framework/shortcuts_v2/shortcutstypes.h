@@ -180,6 +180,26 @@ inline Qt::KeyboardModifiers modifiersFromSequence(const std::string& sequence)
     return modifiers;
 }
 
+//! Whether two sequences are the same shortcut: modifiers-only ones match in any order ("Shift+Ctrl" is "Ctrl+Shift")
+inline bool isSameSequence(const std::string& sequence1, const std::string& sequence2)
+{
+    if (sequence1 == sequence2) {
+        return true;
+    }
+
+    const Qt::KeyboardModifiers modifiers1 = modifiersFromSequence(sequence1);
+
+    return (modifiers1 != Qt::NoModifier)
+           && (modifiers1 == modifiersFromSequence(sequence2));
+}
+
+inline bool containsSequence(const std::vector<std::string>& sequences, const std::string& sequence)
+{
+    return std::any_of(sequences.begin(), sequences.end(), [&sequence](const std::string& seq) {
+        return isSameSequence(seq, sequence);
+    });
+}
+
 //! How the platform writes the modifiers, e.g. "Ctrl+Alt+Shift", or "⌥⇧⌘" on macOS
 inline QString modifiersToNativeText(Qt::KeyboardModifiers modifiers)
 {

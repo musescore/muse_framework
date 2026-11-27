@@ -216,7 +216,7 @@ void EditShortcutModel::checkNewSequenceForConflicts()
         std::vector<std::string> toCheckSequences = Shortcut::sequencesFromString(map.value("sequence").toString().toStdString());
 
         for (const std::string& toCheckSequence : toCheckSequences) {
-            if (input == toCheckSequence) {
+            if (isSameSequence(input, toCheckSequence)) {
                 m_conflictShortcut = map;
                 return;
             }
@@ -254,7 +254,7 @@ bool EditShortcutModel::trySave()
 {
     const QString newSequence = this->newSequence();
     const bool alreadyEmpty = originSequenceInNativeFormat().isEmpty() && m_cleared;
-    if (alreadyEmpty || m_originSequence == newSequence) {
+    if (alreadyEmpty || isSameSequence(m_originSequence.toStdString(), newSequence.toStdString())) {
         return false;
     }
 
