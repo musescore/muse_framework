@@ -217,6 +217,64 @@ void PolylinePlot::setSelectedPointsEnabled(bool v)
     update();
 }
 
+bool PolylinePlot::hasSelectedPoints() const
+{
+    return m_selectedPointsEnabled && !m_selectedPointsIndices.empty();
+}
+
+QVector<int> PolylinePlot::selectedPointsIndices() const
+{
+    QVector<int> indices;
+    if (!m_selectedPointsEnabled) {
+        return indices;
+    }
+
+    indices.reserve(static_cast<int>(m_selectedPointsIndices.size()));
+    for (const int idx : m_selectedPointsIndices) {
+        if (idx >= 0 && idx < m_points.size()) {
+            indices.push_back(idx);
+        }
+    }
+    std::sort(indices.begin(), indices.end());
+
+    return indices;
+}
+
+void PolylinePlot::setSelectedPointsIndices(const QVector<int>& indices)
+{
+    IF_ASSERT_FAILED(m_selectedPointsEnabled) {
+        return;
+    }
+
+    std::unordered_set<int> validIndices;
+    if (m_selectedPointsEnabled) {
+        for (const int idx : indices) {
+            if (idx >= 0 && idx < m_points.size()) {
+                validIndices.insert(idx);
+            }
+        }
+    }
+
+    updateSelectedPointsIndices(std::move(validIndices));
+}
+
+void PolylinePlot::clearSelectedPoints()
+{
+    updateSelectedPointsIndices({});
+}
+
+void PolylinePlot::updateSelectedPointsIndices(std::unordered_set<int> indices)
+{
+    if (m_selectedPointsIndices == indices) {
+        return;
+    }
+
+    m_selectedPointsIndices = std::move(indices);
+    emit selectedPointsChanged();
+
+    update();
+}
+
 QColor PolylinePlot::lineColor() const
 {
     return m_lineColor;
@@ -770,10 +828,7 @@ void PolylinePlot::updateActivePoint()
     // m_pressedPointIndex must stay at the original model index (so consumed neighbors can be restored), but selection indices
     // need to shift when other indices are deleted...
     if (m_selectedPointsEnabled && draggedDisplayDomainIdx >= 0) {
-        if (m_selectedPointsIndices.size() != 1 || !muse::contains(m_selectedPointsIndices, draggedDisplayDomainIdx)) {
-            m_selectedPointsIndices.clear();
-            m_selectedPointsIndices.insert(draggedDisplayDomainIdx);
-        }
+        updateSelectedPointsIndices({ draggedDisplayDomainIdx });
     }
 
     const int activeDomainIdx = (draggedDisplayDomainIdx >= 0)
@@ -1374,13 +1429,15 @@ void PolylinePlot::mousePressEvent(QMouseEvent* e)
         return;
     }
 
-    if (!m_selectedPointsIndices.empty()) {
-        m_selectedPointsIndices.clear();
-    }
-
     const int pointIndex = pointIndexAtPx(e->position());
     const bool onPoint = pointIndex >= 0;
     const bool onLine  = isNearLinePx(e->position());
+
+    if (onPoint && m_selectedPointsEnabled && pointIndex < m_points.size()) {
+        updateSelectedPointsIndices({ pointIndex });
+    } else {
+        clearSelectedPoints();
+    }
 
     // NOTE: allow clicks on the points and lines only
     if (!onPoint && !onLine) {
@@ -1400,9 +1457,6 @@ void PolylinePlot::mousePressEvent(QMouseEvent* e)
         m_pressedOnPoint = true;
         m_pressedPointIndex = pointIndex;
         if (m_pressedPointIndex >= 0 && m_pressedPointIndex < m_points.size()) {
-            if (m_selectedPointsEnabled) {
-                m_selectedPointsIndices.insert(m_pressedPointIndex);
-            }
             m_draggedPointDomain = m_points[m_pressedPointIndex];
             m_hasDraggedPointDomain = true;
         }
