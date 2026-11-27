@@ -32,6 +32,8 @@ set(MODULE_TEST_INCLUDE
     ${CMAKE_CURRENT_LIST_DIR}/../qml/Muse/Dock
     ${kddockwidgets_src_dir}
     ${kddockwidgets_src_dir}/kddockwidgets/src
+    ${kddockwidgets_src_dir}/kddockwidgets/src/3rdparty
+    ${kddockwidgets_src_dir}/kddockwidgets/src/3rdparty/nlohmann
     )
 
 set(MODULE_TEST_LINK

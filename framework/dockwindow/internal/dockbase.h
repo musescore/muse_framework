@@ -210,6 +210,7 @@ private slots:
 private:
     void setUpFrameConnections();
     void fitSizeIntoMaximum();
+    void syncFloatingLayoutSize();
 
     void writeProperties();
 

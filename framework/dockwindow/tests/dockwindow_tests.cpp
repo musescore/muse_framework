@@ -28,7 +28,24 @@
 
 #include "kddockwidgets/src/Config.h"
 #include "kddockwidgets/src/ContextData.h"
+#include "kddockwidgets/src/core/DockRegistry.h"
+#include "kddockwidgets/src/core/DockWidget.h"
+#include "kddockwidgets/src/core/FloatingWindow.h"
+#include "kddockwidgets/src/core/Layout.h"
+#include "kddockwidgets/src/core/View.h"
 #include "kddockwidgets/src/qtquick/Platform.h"
+#include "kddockwidgets/src/qtquick/views/View.h"
+
+// This include pulls in kdbindings/signal.h which is incompatible with
+// Qt's `emit` macro being defined. Temporarily undefine it, then restore it.
+#ifdef emit
+#undef emit
+#include "kddockwidgets/src/core/layouting/Item_p.h"
+#define emit
+#else
+#include "kddockwidgets/src/core/layouting/Item_p.h"
+#endif
+
 #include "kddockwidgets/src/qtquick/QmlConfig.h"
 #include "kddockwidgets/src/qtquick/ViewFactory.h"
 
@@ -79,6 +96,8 @@ static constexpr int WIDE_PANEL_WIDTH = 120;
 
 static constexpr int TOOLBAR_WIDTH = 100;
 static constexpr int TOOLBAR_HEIGHT = 20;
+
+static constexpr int LAYOUT_SIZE_DELTA = 50;
 
 //! NOTE: See Group.qml of KDDockWidgets
 static constexpr int GROUP_CONTENTS_MARGIN = 1;
@@ -284,6 +303,11 @@ public:
         return content->width() + 2 * GROUP_CONTENTS_MARGIN;
     }
 
+    KDDockWidgets::Core::DockWidget* panelDockWidget() const
+    {
+        return KDDockWidgets::DockRegistry::self(iocCtx->id)->dockByName(m_panel->objectName());
+    }
+
     int panelWidthInLayout() const
     {
         return widthInLayout(m_panelContent);
@@ -346,4 +370,32 @@ TEST_F(Dock_DockWindowTests, TopToolBarShrinksWhenItsMaximumWidthDecreases)
     //! [THEN] The right toolbar takes the new width, and the left one takes the free space
     EXPECT_EQ(widthInLayout(m_rightToolBarContent), newWidth);
     EXPECT_EQ(widthInLayout(m_leftToolBarContent), leftToolBarWidth + TOOLBAR_WIDTH - newWidth);
+}
+
+TEST_F(Dock_DockWindowTests, FloatingWindowLayoutFollowsWindowSizeOnInit)
+{
+    //! [GIVEN] A panel in a floating window
+    openWindow(WIDE_WINDOW_WIDTH);
+
+    m_panel->setFloating(true);
+    processLayout();
+
+    KDDockWidgets::Core::FloatingWindow* floatingWindow = panelDockWidget()->floatingWindow();
+    ASSERT_TRUE(floatingWindow);
+
+    KDDockWidgets::Core::Layout* layout = floatingWindow->layout();
+    ASSERT_TRUE(layout);
+    ASSERT_TRUE(layout->view());
+
+    //! [GIVEN] The layout has not followed the window size, as it happens when the layout is restored
+    const KDDockWidgets::Size windowSize = layout->view()->size();
+    layout->rootItem()->setSize_recursive(KDDockWidgets::Size(windowSize.width() + LAYOUT_SIZE_DELTA,
+                                                              windowSize.height() + LAYOUT_SIZE_DELTA));
+    ASSERT_NE(layout->layoutSize(), layout->view()->size());
+
+    //! [WHEN] The panel is initialized
+    m_panel->init();
+
+    //! [THEN] The layout takes the size of the window
+    EXPECT_EQ(layout->layoutSize(), layout->view()->size());
 }

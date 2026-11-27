@@ -30,6 +30,8 @@
 #include "kddockwidgets/src/core/DockWidget.h"
 #include "kddockwidgets/src/core/FloatingWindow.h"
 #include "kddockwidgets/src/core/Group.h"
+#include "kddockwidgets/src/core/Layout.h"
+#include "kddockwidgets/src/core/View.h"
 #include "kddockwidgets/src/qtquick/views/DockWidget.h"
 #include "kddockwidgets/src/qtquick/views/Group.h"
 #include "kddockwidgets/src/qtquick/views/View.h"
@@ -443,6 +445,25 @@ void DockBase::init()
 
     applySizeConstraints();
     updateFloatingStatus();
+    syncFloatingLayoutSize();
+}
+
+void DockBase::syncFloatingLayoutSize()
+{
+    if (!m_dockWidget) {
+        return;
+    }
+
+    //! NOTE: The layout doesn't follow the window resizes while the layout is being restored,
+    //!       so the docks of a restored floating window keep the size from the saved layout
+    //!       and the content is clipped until the user resizes the window.
+    //!       So sync the layout size with the window
+    KDDockWidgets::Core::FloatingWindow* window = m_dockWidget->floatingWindow();
+    KDDockWidgets::Core::Layout* layout = window ? window->layout() : nullptr;
+    KDDockWidgets::Core::View* layoutView = layout ? layout->view() : nullptr;
+    if (layoutView) {
+        layout->setLayoutSize(layoutView->size());
+    }
 }
 
 void DockBase::deinit()

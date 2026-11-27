@@ -22,6 +22,8 @@
 
 #include "dockwindow.h"
 
+#include <QQuickWindow>
+
 #include "kddockwidgets/src/LayoutSaver.h"
 #include "kddockwidgets/src/core/DockRegistry.h"
 #include "kddockwidgets/src/core/Layout.h"
@@ -41,6 +43,8 @@
 #include "docktoolbarview.h"
 #include "dockingholderview.h"
 #include "dockwindow.h"
+
+#include <QQuickWindow>
 #include "topleveltoolbarslayout.h"
 
 #include "muse_framework_config.h"
@@ -160,6 +164,18 @@ void DockWindow::onQuit()
     clearRegistry(iocContext()->id);
 
     saveWindowGeometry();
+
+    //! NOTE: Cleaning the registry cleans up dock objects.
+    //!       To avoid showing an empty window to the user, we hide the window.
+    //!       It must be done only after the layout has been saved: hidden docks/windows
+    //!       would be saved as hidden and the layout would not be restored properly.
+    if (QQuickWindow* w = window()) {
+        for (QWindow* child : w->findChildren<QWindow*>()) {
+            child->setVisible(false);
+        }
+
+        w->setVisible(false);
+    }
 }
 
 QString DockWindow::currentPageUri() const
@@ -244,7 +260,7 @@ void DockWindow::loadPage(const QString& uri, const QVariantMap& params)
                 || (m_mainWindow->window()->isFullScreen())) {
                 //! NOTE: show window as maximized if no geometry has been restored
                 //! or if the user had closed app in FullScreen mode
-                // m_mainWindow->window()->->showMaximized(); // todo kddock
+                m_mainWindow->window()->setWindowState(KDDockWidgets::WindowState::Maximized);
             }
 
             notifyAboutPageLoaded();
@@ -300,6 +316,11 @@ void DockWindow::toggleDockFloating(const QString& dockName)
 DockPageView* DockWindow::currentPage() const
 {
     return m_currentPage;
+}
+
+Notification DockWindow::currentPageChanged() const
+{
+    return m_currentPageChanged;
 }
 
 QQuickItem& DockWindow::asItem() const
@@ -518,6 +539,8 @@ bool DockWindow::doLoadPage(const QString& uri, const QVariantMap& params)
 
     m_currentPage = newPage;
 
+    m_currentPageChanged.notify();
+
     connect(m_currentPage, &DockPageView::layoutRequested,
             this, &DockWindow::forceLayout, Qt::UniqueConnection);
 
@@ -605,10 +628,17 @@ bool DockWindow::restoreLayout(const QByteArray& layout, bool restoreRelativeToM
 
     TRACEFUNC;
 
-    auto option = restoreRelativeToMainWindow ? KDDockWidgets::RestoreOption_RelativeToMainWindow
-                  : KDDockWidgets::RestoreOption_None;
+    KDDockWidgets::RestoreOptions options = KDDockWidgets::RestoreOption_SkipMainWindowVisibility;
+    if (restoreRelativeToMainWindow) {
+        options = KDDockWidgets::RestoreOption_RelativeToMainWindow;
 
-    KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, option);
+        const QQuickWindow* w = window();
+        if (!w || !w->isVisible()) {
+            options |= KDDockWidgets::RestoreOption_AbsoluteFloatingDockWindows;
+        }
+    }
+
+    KDDockWidgets::LayoutSaver layoutSaver(iocContext()->id, options);
     return layoutSaver.restoreLayout(layout);
 }
 
