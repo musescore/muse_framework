@@ -846,6 +846,158 @@ TEST_F(Ui_NavigationControllerTests, UpWrapsToLastOnVerticalPanel)
     delete sect;
 }
 
+TEST_F(Ui_NavigationControllerTests, UpWrapsToLastOnSingleRowHorizontalPanel)
+{
+    //! CASE A row of dialog buttons: pressing Up at the first one wraps to the last
+
+    //! [GIVEN] A horizontal panel with 3 controls in one row, laid out like ButtonBox
+    Section* sect = make_directed_section(1, 3, NavigationPanel::Horizontal);
+    for (Control* c : sect->panels[0]->controls) {
+        c->control->setRow(-1);
+    }
+    m_controller->reg(sect->section);
+
+    //! [GIVEN] First control is active
+    sect->panels[0]->controls[0]->control->requestActive();
+
+    //! [WHEN] Navigate up
+    m_dispatcher->dispatch(UP_COMMAND);
+
+    //! [THEN] Last control becomes active
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[2]->control);
+
+    delete sect;
+}
+
+TEST_F(Ui_NavigationControllerTests, DownWrapsToFirstOnSingleRowHorizontalPanel)
+{
+    //! CASE A row of controls in row 0: pressing Down at the last one wraps to the first
+
+    //! [GIVEN] A horizontal panel with 3 controls in row 0
+    Section* sect = make_directed_section(1, 3, NavigationPanel::Horizontal);
+    for (Control* c : sect->panels[0]->controls) {
+        c->control->setRow(0);
+    }
+    m_controller->reg(sect->section);
+
+    //! [GIVEN] Last control is active
+    sect->panels[0]->controls[2]->control->requestActive();
+
+    //! [WHEN] Navigate down
+    m_dispatcher->dispatch(DOWN_COMMAND);
+
+    //! [THEN] First control becomes active
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[0]->control);
+
+    delete sect;
+}
+
+TEST_F(Ui_NavigationControllerTests, LeftWrapsToLastOnSingleColumnVerticalPanel)
+{
+    //! CASE A column of controls without a column index: pressing Left at the first one wraps to the last
+
+    //! [GIVEN] A vertical panel with 3 controls in one column
+    Section* sect = make_directed_section(1, 3, NavigationPanel::Vertical);
+    for (Control* c : sect->panels[0]->controls) {
+        c->control->setColumn(-1);
+    }
+    m_controller->reg(sect->section);
+
+    //! [GIVEN] First control is active
+    sect->panels[0]->controls[0]->control->requestActive();
+
+    //! [WHEN] Navigate left
+    m_dispatcher->dispatch(LEFT_COMMAND);
+
+    //! [THEN] Last control becomes active
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[2]->control);
+
+    delete sect;
+}
+
+TEST_F(Ui_NavigationControllerTests, RightWrapsToFirstOnSingleColumnVerticalPanel)
+{
+    //! CASE A column of controls in column 0: pressing Right at the last one wraps to the first
+
+    //! [GIVEN] A vertical panel with 3 controls in column 0
+    Section* sect = make_directed_section(1, 3, NavigationPanel::Vertical);
+    for (Control* c : sect->panels[0]->controls) {
+        c->control->setColumn(0);
+    }
+    m_controller->reg(sect->section);
+
+    //! [GIVEN] Last control is active
+    sect->panels[0]->controls[2]->control->requestActive();
+
+    //! [WHEN] Navigate right
+    m_dispatcher->dispatch(RIGHT_COMMAND);
+
+    //! [THEN] First control becomes active
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[0]->control);
+
+    delete sect;
+}
+
+TEST_F(Ui_NavigationControllerTests, NextPanelCyclesControlsInSinglePanelExclusiveSection)
+{
+    //! CASE A message dialog has a single row of buttons: Tab moves between them
+
+    //! [GIVEN] An exclusive section with one horizontal panel of 3 controls, laid out like ButtonBox
+    Section* sect = make_directed_section(1, 3, NavigationPanel::Horizontal);
+    for (Control* c : sect->panels[0]->controls) {
+        c->control->setRow(-1);
+    }
+    sect->section->setType(NavigationSection::QmlType::Exclusive);
+    m_controller->reg(sect->section);
+
+    //! [GIVEN] Second control is active
+    sect->panels[0]->controls[1]->control->requestActive();
+
+    //! [WHEN] Send action `nav-next-panel` (usually Tab)
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    //! [THEN] Third control becomes active
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[2]->control);
+
+    //! [WHEN] Tab again
+    m_dispatcher->dispatch(NEXT_PANEL_COMMAND);
+
+    //! [THEN] Wraps to the first control
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[0]->control);
+
+    delete sect;
+}
+
+TEST_F(Ui_NavigationControllerTests, PrevPanelCyclesControlsInSinglePanelExclusiveSection)
+{
+    //! CASE A message dialog has a single row of buttons: Shift+Tab moves between them backwards
+
+    //! [GIVEN] An exclusive section with one horizontal panel of 3 controls, laid out like ButtonBox
+    Section* sect = make_directed_section(1, 3, NavigationPanel::Horizontal);
+    for (Control* c : sect->panels[0]->controls) {
+        c->control->setRow(-1);
+    }
+    sect->section->setType(NavigationSection::QmlType::Exclusive);
+    m_controller->reg(sect->section);
+
+    //! [GIVEN] Second control is active
+    sect->panels[0]->controls[1]->control->requestActive();
+
+    //! [WHEN] Send action `nav-prev-panel` (usually Shift+Tab)
+    m_dispatcher->dispatch(PREV_PANEL_COMMAND);
+
+    //! [THEN] First control becomes active
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[0]->control);
+
+    //! [WHEN] Shift+Tab again
+    m_dispatcher->dispatch(PREV_PANEL_COMMAND);
+
+    //! [THEN] Wraps to the last control
+    EXPECT_EQ(m_controller->activeControl(), sect->panels[0]->controls[2]->control);
+
+    delete sect;
+}
+
 TEST_F(Ui_NavigationControllerTests, NextSectionGoesToPrioritySection)
 {
     //! CASE A priority section is activated by the next F6, wherever the navigation is
