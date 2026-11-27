@@ -42,6 +42,7 @@ FocusScope {
     property alias verticalScrollBarPolicy: verticalScrollBar.policy
 
     property real textSidePadding: 12
+    property bool contextMenuEnabled: true
 
     readonly property alias inputField: valueInput
     readonly property alias background: background
@@ -168,6 +169,9 @@ FocusScope {
                 font: ui.theme.bodyFont
 
                 background: Item {}
+
+                // Use TextInputContextMenu instead of Qt's default
+                ContextMenu.menu: null
 
                 focus: false
                 activeFocusOnPress: false
@@ -309,11 +313,37 @@ FocusScope {
         propagateComposedEvents: true
         hoverEnabled: true
         cursorShape: Qt.IBeamCursor
+        acceptedButtons: root.contextMenuEnabled ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
 
         onPressed: function(mouse) {
+            // Before focusing, as it selects all and may scroll the text
+            let wasFocused = valueInput.activeFocus
+            let posOnInput = clickableArea.mapToItem(valueInput, mouse.x, mouse.y)
+            let clickedPos = valueInput.positionAt(posOnInput.x, posOnInput.y)
+
             root.ensureActiveFocus()
             navCtrl.requestActiveByInteraction()
+
+            if (mouse.button === Qt.RightButton) {
+                editMenuLoader.active = true
+                editMenuLoader.item.moveCursor(posOnInput, clickedPos, wasFocused)
+                editMenuLoader.item.open(Qt.point(mouse.x, mouse.y))
+                return
+            }
+
             mouse.accepted = false
+        }
+
+        Loader {
+            id: editMenuLoader
+
+            active: false
+            // Absolute, as this file is also copied to MuseApi.Controls without internal/
+            source: "qrc:/qt/qml/Muse/UiComponents/internal/TextInputContextMenu.qml"
+
+            onLoaded: {
+                editMenuLoader.item.textInput = valueInput
+            }
         }
     }
 }
