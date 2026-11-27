@@ -22,6 +22,9 @@
 
 #include "qmlaccessible.h"
 
+#include "navigationcontrol.h"
+
+#include <QMetaMethod>
 #include <QQuickWindow>
 #include <QTextBoundaryFinder>
 
@@ -84,6 +87,50 @@ QString AccessibleItem::accessibleDescription() const
 bool AccessibleItem::accessibleState(State st) const
 {
     return m_state.value(st, false);
+}
+
+bool AccessibleItem::accessibleSupportsAction(Action action) const
+{
+    if (!navigationControl()) {
+        return false;
+    }
+
+    switch (action) {
+    case Action::Press:
+    case Action::SetFocus:
+        return accessibleState(State::Enabled);
+    case Action::Undefined:
+        break;
+    }
+
+    return false;
+}
+
+void AccessibleItem::accessibleDoAction(Action action)
+{
+    NavigationControl* control = navigationControl();
+    if (!control || !accessibleSupportsAction(action)) {
+        return;
+    }
+
+    switch (action) {
+    case Action::Press:
+        //! NOTE: Activate first, so that the control is the active one while it handles the trigger,
+        //! like it would be when the user reaches it with the keyboard
+        control->requestActive();
+        control->trigger();
+        break;
+    case Action::SetFocus:
+        control->requestActive();
+        break;
+    case Action::Undefined:
+        break;
+    }
+}
+
+NavigationControl* AccessibleItem::navigationControl() const
+{
+    return qobject_cast<NavigationControl*>(parent());
 }
 
 size_t AccessibleItem::accessibleChildCount() const
@@ -166,6 +213,21 @@ void AccessibleItem::accessibleSelection(int selectionIndex, int* startOffset, i
 int AccessibleItem::accessibleSelectionCount() const
 {
     return m_selectedText.size();
+}
+
+bool AccessibleItem::accessibleTextEditable() const
+{
+    static const QMetaMethod textEditRequestedSignal = QMetaMethod::fromSignal(&AccessibleItem::textEditRequested);
+    return accessibleState(State::Enabled) && isSignalConnected(textEditRequestedSignal);
+}
+
+void AccessibleItem::accessibleSetText(const QString& text)
+{
+    if (!accessibleTextEditable()) {
+        return;
+    }
+
+    emit textEditRequested(text);
 }
 
 int AccessibleItem::accessibleCursorPosition() const
@@ -504,8 +566,11 @@ void AccessibleItem::setAccessibleParent(AccessibleItem* p)
 
     if (m_accessibleParent) {
         m_accessibleParent->addChild(this);
-        m_accessiblePropertyChanged.send(IAccessible::Property::Parent, Val());
     }
+
+    //! NOTE: Also when the item is left without a parent of its own, because it becomes a child
+    //! of the root again, which the controller has to know about too
+    m_accessiblePropertyChanged.send(IAccessible::Property::Parent, Val());
 
     emit accessiblePrnChanged();
 }

@@ -129,6 +129,44 @@ FocusScope {
         onTriggered: root.ensureActiveFocus()
     }
 
+    Connections {
+        id: accessibleTextEdits
+
+        // Without a receiver, the field is not presented as editable
+        target: valueInput.readOnly ? null : navCtrl.accessible
+
+        property bool isApplying: false
+
+        // Applied like an edit by the user, so that it is handled the same way and keeps the binding of the text
+        function onTextEditRequested(text) {
+            if (valueInput.readOnly || text === valueInput.text) {
+                return
+            }
+
+            const replaceText = function(newText) {
+                valueInput.remove(0, valueInput.length)
+                valueInput.insert(0, newText)
+            }
+
+            const previousText = valueInput.text
+
+            isApplying = true
+            replaceText(text)
+            if (valueInput.text !== text) {
+                // Rejected, e.g. by the validator
+                replaceText(previousText)
+            }
+            isApplying = false
+
+            if (valueInput.text === previousText || !valueInput.acceptableInput) {
+                return
+            }
+
+            root.textChanged(valueInput.text)
+            root.textEdited(valueInput.text)
+        }
+    }
+
     Rectangle {
         id: background
         anchors.fill: parent
@@ -245,7 +283,7 @@ FocusScope {
             }
 
             onTextChanged: {
-                if (!acceptableInput) {
+                if (!acceptableInput || accessibleTextEdits.isApplying) {
                     return
                 }
 
@@ -253,7 +291,7 @@ FocusScope {
             }
 
             onTextEdited: {
-                if (!acceptableInput) {
+                if (!acceptableInput || accessibleTextEdits.isApplying) {
                     return
                 }
 

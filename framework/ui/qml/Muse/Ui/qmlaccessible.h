@@ -74,6 +74,8 @@ enum Role {
 Q_ENUM_NS(Role)
 }
 
+class NavigationControl;
+
 class AccessibleItem : public QObject, public QQmlParserStatus, public accessibility::IAccessible, public Contextable
 {
     Q_OBJECT
@@ -128,6 +130,8 @@ public:
     QString accessibleName() const override;
     QString accessibleDescription() const override;
     bool accessibleState(State st) const override;
+    bool accessibleSupportsAction(Action action) const override;
+    void accessibleDoAction(Action action) override;
     QRect accessibleRect() const override;
     bool accessibleIgnored() const override;
 
@@ -141,6 +145,8 @@ public:
     void accessibleSelection(int selectionIndex, int* startOffset, int* endOffset) const override;
     int accessibleSelectionCount() const override;
 
+    bool accessibleTextEditable() const override;
+    void accessibleSetText(const QString& text) override;
     int accessibleCursorPosition() const override;
 
     QString accessibleText(int startOffset, int endOffset) const override;
@@ -224,6 +230,10 @@ signals:
     void stateChanged();
     void windowChanged();
 
+    //! Emitted when an accessibility client sets the text of the item; the item is
+    //! editable through accessibility only if this signal is connected
+    void textEditRequested(const QString& text);
+
 private:
     const IAccessible* accessibleRoot() const;
 
@@ -231,6 +241,7 @@ private:
     void removeChild(AccessibleItem* item);
 
     QQuickItem* resolveVisualItem() const;
+    NavigationControl* navigationControl() const;
 
     AccessibleItem* m_accessibleParent = nullptr;
     QList<AccessibleItem*> m_children;

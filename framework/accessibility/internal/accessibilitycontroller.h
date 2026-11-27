@@ -145,11 +145,14 @@ public:
     void setState(State state, bool arg) override;
     // -----
 
+    //! The window argument restricts the direct children of the item to the ones shown by that
+    //! window; it is meant for the interface of a window, whose children are those of a root
     QAccessibleInterface* parentIface(const IAccessible* item) const;
-    int childCount(const IAccessible* item) const;
-    QAccessibleInterface* child(const IAccessible* item, int i) const;
-    int indexOfChild(const IAccessible* item, const QAccessibleInterface* iface) const;
-    QAccessibleInterface* focusedChild(const IAccessible* item) const;
+    int childCount(const IAccessible* item, const QWindow* window = nullptr) const;
+    QAccessibleInterface* child(const IAccessible* item, int i, const QWindow* window = nullptr) const;
+    QAccessibleInterface* childAt(const IAccessible* item, int x, int y, const QWindow* window = nullptr) const;
+    int indexOfChild(const IAccessible* item, const QAccessibleInterface* iface, const QWindow* window = nullptr) const;
+    QAccessibleInterface* focusedChild(const IAccessible* item, const QWindow* window = nullptr) const;
 
     IAccessible* pretendFocus() const;
     async::Channel<QAccessibleEvent*> eventSent() const;
@@ -171,6 +174,8 @@ private:
     void init();
 
     const Item& findItem(const IAccessible* aitem) const;
+    static bool belongsToWindow(const IAccessible* item, const QWindow* window);
+    static const IAccessible* childInWindow(const IAccessible* item, int index, const QWindow* window);
 
     void propertyChanged(IAccessible* item, IAccessible::Property property, const Val& value);
     void stateChanged(IAccessible* item, IAccessible::State state, bool arg);
