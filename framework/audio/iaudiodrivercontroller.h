@@ -48,6 +48,9 @@ public:
     virtual void close() = 0;
     virtual bool isOpened() const = 0;
 
+    //! NOTE See IAudioDriver::setLivePlaybackOngoing
+    virtual void setLivePlaybackOngoing(bool ongoing) = 0;
+
     virtual const IAudioDriver::Spec& activeSpec() const = 0;
     virtual async::Channel<IAudioDriver::Spec> activeSpecChanged() const = 0;
 

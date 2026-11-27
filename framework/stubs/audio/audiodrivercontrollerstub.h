@@ -43,6 +43,8 @@ public:
     void close()  override;
     bool isOpened() const override;
 
+    void setLivePlaybackOngoing(bool ongoing) override;
+
     const IAudioDriver::Spec& activeSpec() const override;
     async::Channel<IAudioDriver::Spec> activeSpecChanged() const override;
 
