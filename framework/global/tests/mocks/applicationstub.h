@@ -55,8 +55,6 @@ public:
 #ifndef NO_QT_SUPPORT
     QWindow* focusWindow() const override { return nullptr; }
     bool notify(QObject*, QEvent*) override { return true; }
-
-    Qt::KeyboardModifiers keyboardModifiers() const override { return Qt::KeyboardModifiers(); }
 #endif
 };
 }

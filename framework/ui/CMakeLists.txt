@@ -69,6 +69,10 @@ target_sources(muse_ui PRIVATE
     internal/navigationcontroller.h
     internal/uiarrangement.cpp
     internal/uiarrangement.h
+    internal/qtclipboard.cpp
+    internal/qtclipboard.h
+    internal/inputstate.cpp
+    internal/inputstate.h
     internal/dragcontroller.cpp
     internal/dragcontroller.h
     internal/windowscontroller.cpp

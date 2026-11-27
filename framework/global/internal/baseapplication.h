@@ -80,8 +80,6 @@ public:
 #ifndef NO_QT_SUPPORT
     QWindow* focusWindow() const override;
     bool notify(QObject* object, QEvent* event) override;
-
-    Qt::KeyboardModifiers keyboardModifiers() const override;
 #endif
 
 protected:

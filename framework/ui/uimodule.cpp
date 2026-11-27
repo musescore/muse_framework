@@ -38,6 +38,8 @@
 #include "internal/uistate.h"
 #include "internal/navigationcontroller.h"
 #include "internal/dragcontroller.h"
+#include "internal/inputstate.h"
+#include "internal/qtclipboard.h"
 #include "view/iconcodes.h"
 #include "view/widgetstyle.h"
 
@@ -96,6 +98,8 @@ void UiModule::registerExports()
 
     globalIoc()->registerExport<IUiConfiguration>(moduleName(), m_configuration);
     globalIoc()->registerExport<IPlatformTheme>(moduleName(), m_platformTheme);
+    globalIoc()->registerExport<IClipboard>(moduleName(), new QtClipboard());
+    globalIoc()->registerExport<IInputState>(moduleName(), new InputState());
 }
 
 void UiModule::resolveImports()

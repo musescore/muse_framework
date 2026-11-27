@@ -36,7 +36,7 @@
 
 #include "modularity/ioc.h"
 
-#include "global/iapplication.h"
+#include "global/iinputstate.h"
 
 #include "rcommand/commandtypes.h"
 #include "rcommand/icommanddispatcher.h"
@@ -81,7 +81,7 @@ class ToolBarItem : public QObject, public Contextable, public async::Asyncable
     Q_PROPERTY(QList<MenuItem*> menuItems READ menuItems NOTIFY menuItemsChanged)
     Q_PROPERTY(bool isMenuSecondary READ isMenuSecondary NOTIFY isMenuSecondaryChanged)
 
-    GlobalInject<IApplication> application;
+    GlobalInject<IInputState> inputState;
 
     ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
 #ifdef MUSE_MODULE_ACTIONS_SUPPORT

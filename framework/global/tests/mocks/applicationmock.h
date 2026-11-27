@@ -46,8 +46,6 @@ public:
 #ifndef NO_QT_SUPPORT
     MOCK_METHOD(QWindow*, focusWindow, (), (const, override));
     MOCK_METHOD(bool, notify, (QObject*, QEvent*), (override));
-
-    MOCK_METHOD(Qt::KeyboardModifiers, keyboardModifiers, (), (const, override));
 #endif
 
     MOCK_METHOD(void, setup, (), (override));

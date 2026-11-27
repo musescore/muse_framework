@@ -34,6 +34,8 @@ target_sources(muse_global PRIVATE
     iapplication.h
     iapplicationeventcontroller.h
     iglobalconfiguration.h
+    iclipboard.h
+    iinputstate.h
     log.h
     logstream.h
     logger.h
@@ -91,7 +93,11 @@ target_sources(muse_global PRIVATE
     types/string.h
     types/datetime.cpp
     types/datetime.h
+    types/mimedata.h
+    types/dragevent.h
     types/flags.h
+    types/inputevents.h
+    types/inputtypes.h
     types/id.cpp
     types/id.h
     types/val.cpp
@@ -209,6 +215,9 @@ else()
         internal/consoleapplication.cpp
         internal/consoleapplication.h
         internal/globalconfiguration.cpp
+        internal/inmemoryclipboard.cpp
+        internal/inmemoryclipboard.h
+        internal/emptyinputstate.h
         internal/globalconfiguration.h
         internal/cryptographichash.cpp
         internal/cryptographichash.h
@@ -260,6 +269,12 @@ if (MUSE_QT_SUPPORT)
     target_link_libraries(muse_global PUBLIC Qt::Core Qt::Gui Qt::Qml)
 
     target_link_libraries(muse_global PRIVATE Qt::Quick Qt::Widgets)
+
+    # The conversion of the Qt types
+    target_sources(muse_global PRIVATE
+        qt/qtinputconvert.h
+        qt/qtmimedataconvert.h
+    )
 endif()
 
 target_link_libraries(muse_global PRIVATE ${CMAKE_DL_LIBS})

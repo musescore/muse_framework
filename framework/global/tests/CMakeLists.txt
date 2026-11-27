@@ -22,7 +22,9 @@ set(MODULE_TEST muse_global_tests)
 
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/mocks/applicationmock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/clipboardmock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/filesystemmock.h
+    ${CMAKE_CURRENT_LIST_DIR}/mocks/inputstatemock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/processmock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/globalconfigurationmock.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/systeminfomock.h
@@ -34,6 +36,8 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/val_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/logremover_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/bytearray_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/inmemoryclipboard_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/dragevent_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/buffer_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/file_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/filestream_tests.cpp
@@ -66,5 +70,12 @@ set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/modulesioc_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/async_tasks_tests.cpp
 )
+
+if (MUSE_QT_SUPPORT)
+    list(APPEND MODULE_TEST_SRC
+        ${CMAKE_CURRENT_LIST_DIR}/qtinputconvert_tests.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/qtmimedataconvert_tests.cpp
+    )
+endif()
 
 include(SetupGTest)
