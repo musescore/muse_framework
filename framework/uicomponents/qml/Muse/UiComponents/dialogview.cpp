@@ -22,12 +22,21 @@
 
 #include "dialogview.h"
 
+#include <functional>
+
+#include <QGuiApplication>
+#include <QKeyEvent>
+#include <QPointer>
+#include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
+#include <QTimer>
 
 #ifdef Q_OS_MAC
 #include "internal/platform/macos/macoswindowlevelcontroller.h"
 #endif
+
+#include "ui/inavigation.h"
 
 #include "log.h"
 
@@ -41,6 +50,24 @@ DialogView::DialogView(QQuickItem* parent)
     setObjectName("DialogView");
     setRetCode(Ret::Code::Ok);
 }
+
+//! NOTE A separate application-wide filter is used (rather than DialogView::eventFilter,
+//! which WindowView already installs on the view) so that WindowView's own handling
+//! of the view's events is not invoked twice.
+class DialogView::EnterKeyFilter : public QObject
+{
+public:
+    explicit EnterKeyFilter(DialogView* dialog)
+        : QObject(dialog), m_dialog(dialog) {}
+
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        return m_dialog->handleShortcutOverride(event);
+    }
+
+private:
+    DialogView* m_dialog = nullptr;
+};
 
 void DialogView::initView()
 {
@@ -93,13 +120,121 @@ void DialogView::beforeOpen()
     setRetCode(Ret::Code::Cancel);
 
     windowsController()->regWindow(m_view->winId());
+
+    if (!m_enterKeyFilter) {
+        m_enterKeyFilter = new EnterKeyFilter(this);
+    }
+    qApp->installEventFilter(m_enterKeyFilter);
 }
 
 void DialogView::onHidden()
 {
     WindowView::onHidden();
 
+    if (m_enterKeyFilter) {
+        qApp->removeEventFilter(m_enterKeyFilter);
+    }
+
     windowsController()->unregWindow(m_view->winId());
+}
+
+bool DialogView::handleShortcutOverride(QEvent* event)
+{
+    if (event->type() != QEvent::ShortcutOverride) {
+        return false;
+    }
+
+    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+    if (keyEvent->key() != Qt::Key_Return && keyEvent->key() != Qt::Key_Enter) {
+        return false;
+    }
+
+    if (!shortcutOverrideIsAllowed()) {
+        return false;
+    }
+
+    //! NOTE Rule: Enter/Return triggers the dialog's accent button, unless the currently
+    //! highlighted control is itself a button, in which case that button is triggered.
+    QObject* target = findEnterTarget();
+    if (!target) {
+        return false;
+    }
+
+    //! NOTE Both spontaneous and synthetic events are received; trigger only once
+    if (event->spontaneous()) {
+        QPointer<QObject> guard(target);
+        QTimer::singleShot(0, target, [guard]() {
+            if (guard) {
+                QMetaObject::invokeMethod(guard, "triggered");
+            }
+        });
+    }
+
+    event->accept();
+    return true;
+}
+
+bool DialogView::shortcutOverrideIsAllowed() const
+{
+    //! NOTE Only the dialog that owns the active navigation section may react
+    //! (some windows, e.g. dropdowns, don't take window focus).
+    if (!m_view) {
+        return false;
+    }
+
+    const ui::INavigationSection* section = navigationController()->activeSection();
+    return section && section->window() == m_view;
+}
+
+QObject* DialogView::findEnterTarget() const
+{
+    //! NOTE The dialog content lives in its own item tree (not among QObject children of this view),
+    //! so walk the visual hierarchy, which also covers Loader/Repeater-created items.
+    QQuickItem* root = contentItem();
+    if (!root) {
+        return nullptr;
+    }
+
+    QObject* accentNavigation = nullptr;
+    QObject* highlightedNavigation = nullptr;
+
+    std::function<void(QQuickItem*)> visit = [&](QQuickItem* item) {
+        if (highlightedNavigation || !item->isVisible()) {
+            return;
+        }
+
+        const QString className = QString::fromLatin1(item->metaObject()->className());
+
+        if (className.contains(u"FlatButton"_s)) {
+            QObject* navigation = item->property("navigation").value<QObject*>();
+            if (navigation) {
+                if (navigation->property("highlight").toBool()) {
+                    highlightedNavigation = navigation;
+                    return;
+                }
+
+                if (!accentNavigation && item->property("accentButton").toBool() && item->isEnabled()) {
+                    accentNavigation = navigation;
+                }
+            }
+        }
+
+        //! NOTE Embedded windows (WindowContainer) keep their content in a separate window
+        if (className.contains(u"WindowContainer"_s)) {
+            QQuickWindow* embedded = item->property("window").value<QQuickWindow*>();
+            if (embedded && embedded->contentItem()) {
+                visit(embedded->contentItem());
+            }
+        }
+
+        for (QQuickItem* child : item->childItems()) {
+            visit(child);
+        }
+    };
+
+    visit(root);
+
+    return highlightedNavigation ? highlightedNavigation : accentNavigation;
 }
 
 void DialogView::afterShow()
