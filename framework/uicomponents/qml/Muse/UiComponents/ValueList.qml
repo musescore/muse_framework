@@ -393,6 +393,8 @@ Item {
                     drawZebra: root.drawZebra
                     zebraIndex: prv.sectionsEnabled ? model.indexInSection : rowLoader.rowIndex
                     keyColumnWidth: root.keyColumnWidth
+                    keyTitle: root.keyTitle
+                    valueTitle: root.valueTitle
                     keysEditable: root.isKeyEditable
                     startEditByDoubleClick: root.startEditByDoubleClick
 
