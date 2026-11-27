@@ -170,6 +170,15 @@ samples_t MuseSamplerWrapper::process(float* buffer, samples_t samplesPerChannel
                 handleAuditionEvents(event);
             }
         }
+    } else {
+        //! NOTE The main stream is rendered by the sampler itself; here only the events sent
+        //! while playing (e.g. the notes played on a MIDI keyboard during a recording)
+        msecs_t nextMicros = samplesToMsecs(samplesPerChannel, m_outputSpec.sampleRate);
+        const MuseSamplerSequencer::EventSequence events = m_sequencer.moveOffStreamForwardWhilePlaying(nextMicros);
+
+        for (const MuseSamplerSequencer::EventType& event : events) {
+            handleAuditionEvents(event);
+        }
     }
 
     if (m_mode == ProcessMode::PlayingOffline) {
