@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "modularity/imodulesetup.h"
+#include "modularity/ioc.h"
 
 namespace muse {
 class GlobalModule;
@@ -47,6 +48,7 @@ public:
     static void setPreInit(const PreInit& preInit);
     static void setPostInit(const PostInit& postInit);
     static void setDeInit(const DeInit& deInit);
+    static void setContext(const modularity::ContextPtr& ctx);
 
     static void setup();
     static void deinit();
@@ -56,7 +58,12 @@ private:
     static PreInit m_preInit;
     static PostInit m_postInit;
     static DeInit m_deInit;
+    static modularity::ContextPtr m_context;
+    static std::vector<modularity::IContextSetup*> m_contextSetups;
     static muse::GlobalModule* m_globalModule;
+
+    static void setupContext(const IApplication::RunMode& runMode);
+    static void destroyContext();
 };
 
 class SuiteEnvironment
@@ -97,6 +104,12 @@ public:
     SuiteEnvironment& setDeInit(const Environment::DeInit& deInit)
     {
         Environment::setDeInit(deInit);
+        return *this;
+    }
+
+    SuiteEnvironment& setContext(const modularity::ContextPtr& ctx)
+    {
+        Environment::setContext(ctx);
         return *this;
     }
 };

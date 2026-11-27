@@ -33,6 +33,8 @@ Environment::Modules Environment::m_dependencyModules;
 Environment::PreInit Environment::m_preInit;
 Environment::PostInit Environment::m_postInit;
 Environment::PostInit Environment::m_deInit;
+muse::modularity::ContextPtr Environment::m_context;
+std::vector<muse::modularity::IContextSetup*> Environment::m_contextSetups;
 muse::GlobalModule* Environment::m_globalModule = nullptr;
 
 void Environment::setDependency(const Modules& modules)
@@ -53,6 +55,11 @@ void Environment::setPostInit(const PostInit& postInit)
 void Environment::setDeInit(const DeInit& deInit)
 {
     m_deInit = deInit;
+}
+
+void Environment::setContext(const modularity::ContextPtr& ctx)
+{
+    m_context = ctx;
 }
 
 void Environment::setup()
@@ -103,15 +110,70 @@ void Environment::setup()
         m->onStartApp();
     }
 
+    if (m_context) {
+        setupContext(runMode);
+    }
+
     if (m_postInit) {
         m_postInit();
     }
+}
+
+void Environment::setupContext(const IApplication::RunMode& runMode)
+{
+    for (modularity::IModuleSetup* m : m_dependencyModules) {
+        if (modularity::IContextSetup* s = m->newContext(m_context)) {
+            m_contextSetups.push_back(s);
+        }
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->registerExports();
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->resolveImports();
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onPreInit(runMode);
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onInit(runMode);
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onAllInited(runMode);
+    }
+}
+
+void Environment::destroyContext()
+{
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onDeinit();
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        s->onDestroy();
+    }
+
+    for (modularity::IContextSetup* s : m_contextSetups) {
+        delete s;
+    }
+    m_contextSetups.clear();
+
+    modularity::removeIoC(m_context);
 }
 
 void Environment::deinit()
 {
     if (m_deInit) {
         m_deInit();
+    }
+
+    if (m_context) {
+        destroyContext();
     }
 
     for (modularity::IModuleSetup* m : m_dependencyModules) {

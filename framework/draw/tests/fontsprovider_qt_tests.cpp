@@ -33,22 +33,26 @@
 #include "draw/internal/fontsdatabase.h"
 #include "draw/internal/fontsengine.h"
 #include "draw/internal/qfontprovider.h"
+#include "draw/internal/qfontsubstitution.h"
 #include "global/modularity/ioc.h"
 
 using namespace muse;
 using namespace muse::draw;
+
+static const muse::modularity::ContextPtr utestCtx = std::make_shared<muse::modularity::Context>(1);
 
 class Draw_FontsProviderQtTests : public ::testing::Test
 {
 public:
     struct Env {
         Env()
-            : xProvider(muse::modularity::globalCtx()),
+            : qProvider(utestCtx),
+            xProvider(utestCtx),
             fontsDatabase(std::make_shared<FontsDatabase>()),
-            fontsEngine(std::make_shared<FontsEngine>(muse::modularity::globalCtx()))
+            fontsEngine(std::make_shared<FontsEngine>(utestCtx))
         {
-            muse::modularity::globalIoc()->registerExport<IFontsDatabase>("draw", fontsDatabase);
-            muse::modularity::globalIoc()->registerExport<IFontsEngine>("draw", fontsEngine);
+            muse::modularity::ioc(utestCtx)->registerExport<IFontsDatabase>("draw", fontsDatabase);
+            muse::modularity::ioc(utestCtx)->registerExport<IFontsEngine>("draw", fontsEngine);
 
             loadFont("Edwin", edwinPath());
             loadFont("FreeSerif", freeSerifPath());
@@ -71,8 +75,8 @@ public:
 
         ~Env()
         {
-            muse::modularity::globalIoc()->unregister<IFontsEngine>("draw");
-            muse::modularity::globalIoc()->unregister<IFontsDatabase>("draw");
+            muse::modularity::ioc(utestCtx)->unregister<IFontsEngine>("draw");
+            muse::modularity::ioc(utestCtx)->unregister<IFontsDatabase>("draw");
         }
 
         static muse::io::path_t fontRoot()
@@ -206,7 +210,6 @@ TEST_F(Draw_FontsProviderQtTests, removeSubstitutions)
     Env env;
 
     const muse::String family = u"Draw_FontsProviderQtTests_family";
-    QFont::removeSubstitutions(family.toQString());
 
     env.fontsDatabase->insertSubstitution(family, u"Edwin");
     env.fontsDatabase->insertSubstitution(family, u"FreeSerif");
@@ -220,11 +223,38 @@ TEST_F(Draw_FontsProviderQtTests, removeSubstitutions)
     EXPECT_EQ(substitutions.at(0), FontDataKey(u"Edwin"));
     EXPECT_EQ(substitutions.at(1), FontDataKey(u"Leland"));
 
-    QStringList qSubstitutions = QFont::substitutes(family.toQString());
+    const QStringList qFamilies = toQFont(Font(family, Font::Type::Text), *env.fontsDatabase).families();
 
-    ASSERT_EQ(2, qSubstitutions.size());
-    EXPECT_EQ(qSubstitutions.at(0).toLower(), QString("edwin"));
-    EXPECT_EQ(qSubstitutions.at(1).toLower(), QString("leland"));
+    ASSERT_EQ(3, qFamilies.size());
+    EXPECT_EQ(qFamilies.at(0), family.toQString().toLower());
+    EXPECT_EQ(qFamilies.at(1), QString("edwin"));
+    EXPECT_EQ(qFamilies.at(2), QString("leland"));
+}
+
+TEST_F(Draw_FontsProviderQtTests, removeApplicationFont)
+{
+    {
+        int qtFontId = -1;
+        {
+            FontsDatabase database;
+            qtFontId = database.addFont(FontDataKey(u"Edwin"), Env::edwinPath());
+            ASSERT_NE(qtFontId, -1);
+            EXPECT_FALSE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+        }
+
+        EXPECT_TRUE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+    }
+
+    {
+        QFontProvider provider(utestCtx);
+        const int qtFontId = provider.addSymbolFont(u"Bravura", Env::bravuraPath());
+        ASSERT_NE(qtFontId, -1);
+        EXPECT_FALSE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+
+        provider.removeSymbolFont(qtFontId);
+
+        EXPECT_TRUE(QFontDatabase::applicationFontFamilies(qtFontId).isEmpty());
+    }
 }
 
 TEST_F(Draw_FontsProviderQtTests, substitutionChangeReachesCachedFaces)

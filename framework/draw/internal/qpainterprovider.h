@@ -22,20 +22,24 @@
 #pragma once
 
 #include "../ipaintprovider.h"
+#include "global/modularity/ioc.h"
+#include "ifontsdatabase.h"
 
 class QPainter;
 class QImage;
 
 namespace muse::draw {
 class DrawObjectsLogger;
-class QPainterProvider : public IPaintProvider
+class QPainterProvider : public IPaintProvider, public Contextable
 {
+    ContextInject<IFontsDatabase> fontsDatabase = { this };
+
 public:
-    QPainterProvider(QPainter* painter, bool ownsPainter = false);
+    QPainterProvider(QPainter* painter, const modularity::ContextPtr& iocCtx, bool ownsPainter = false);
     ~QPainterProvider();
 
-    static IPaintProviderPtr make(QPaintDevice* dp);
-    static IPaintProviderPtr make(QPainter* qp, bool ownsPainter = false);
+    static IPaintProviderPtr make(QPaintDevice* dp, const modularity::ContextPtr& iocCtx);
+    static IPaintProviderPtr make(QPainter* qp, const modularity::ContextPtr& iocCtx, bool ownsPainter = false);
 
     QPainter* qpainter() const;
 

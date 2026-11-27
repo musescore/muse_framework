@@ -32,6 +32,7 @@ class FontsDatabase : public IFontsDatabase
 {
 public:
     FontsDatabase() = default;
+    ~FontsDatabase();
 
     void setDefaultFont(Font::Type type, const FontDataKey& key) override;
     FontDataKey defaultFont(Font::Type type) const override;
