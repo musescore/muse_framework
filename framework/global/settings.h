@@ -74,6 +74,8 @@ public:
         Val minValue;
         Val maxValue;
 
+        bool sticky = false;
+
         bool isNull() const { return key.isNull(); }
     };
 
@@ -104,6 +106,9 @@ public:
 
     void setCanBeManuallyEdited(const Settings::Key& key, bool canBeManuallyEdited, const Val& minValue = Val(),
                                 const Val& maxValue = Val());
+
+    void setSticky(const Key& key);
+    bool isSticky(const Key& key) const;
 
     void beginTransaction(bool notifyToOtherInstances = true);
     void commitTransaction(bool notifyToOtherInstances = true);
