@@ -30,14 +30,19 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-if [ -z "$ARTIFACT_PATH" ]; then 
-    ARTIFACT_NAME="$(cat $ARTIFACTS_DIR/env/artifact_name.env)";
-    if [ -z "$ARTIFACT_NAME" ]; then echo "error: not set ARTIFACT_NAME"; exit 1; fi
-    ARTIFACT_PATH=$ARTIFACTS_DIR/$ARTIFACT_NAME
+ARTIFACT_PATHS=()
+if [ -z "$ARTIFACT_PATH" ]; then
+    # artifact_name.env holds one file name per line: usually one, but a build may
+    # produce several packages (e.g. an installer and an archive on Windows).
+    while IFS= read -r ARTIFACT_NAME || [ -n "$ARTIFACT_NAME" ]; do
+        ARTIFACT_NAME="${ARTIFACT_NAME%$'\r'}"
+        if [ -n "$ARTIFACT_NAME" ]; then ARTIFACT_PATHS+=("$ARTIFACTS_DIR/$ARTIFACT_NAME"); fi
+    done < "$ARTIFACTS_DIR/env/artifact_name.env"
+    if [ ${#ARTIFACT_PATHS[@]} -eq 0 ]; then echo "error: not set ARTIFACT_NAME"; exit 1; fi
+else
+    ARTIFACT_PATHS=("$ARTIFACT_PATH")
 fi
 
-if [ -z "$ARTIFACT_PATH" ]; then echo "error: not set ARTIFACT_PATH"; exit 1; fi
+echo "ARTIFACT_PATH: ${ARTIFACT_PATHS[*]}"
 
-echo "ARTIFACT_PATH: $ARTIFACT_PATH"
-
-openssl sha256 $ARTIFACT_PATH > $ARTIFACTS_DIR/checksum.txt
+openssl sha256 "${ARTIFACT_PATHS[@]}" > $ARTIFACTS_DIR/checksum.txt

@@ -28,6 +28,9 @@ S3_BUCKET=""
 
 FILE_NAME=""
 
+# A bucket with ACLs disabled rejects --acl-public; public read then comes from the bucket policy.
+ACL_ARGS=(--acl-public)
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --s3_key) S3_KEY="$2"; shift ;;
@@ -35,6 +38,7 @@ while [[ "$#" -gt 0 ]]; do
         --s3_url) S3_URL="$2"; shift ;;
         --s3_bucket) S3_BUCKET="$2"; shift ;;
         --file_name) FILE_NAME="$2"; shift ;;
+        --no_acl_public) ACL_ARGS=() ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -61,4 +65,4 @@ EOL
 
 echo "=== Publish to S3 ==="
 
-s3cmd put --acl-public --guess-mime-type "$ARTIFACTS_DIR/$FILE_NAME" "$S3_URL"
+s3cmd put "${ACL_ARGS[@]}" --guess-mime-type "$ARTIFACTS_DIR/$FILE_NAME" "$S3_URL"
