@@ -163,7 +163,7 @@ samples_t MuseSamplerWrapper::process(float* buffer, samples_t samplesPerChannel
 
     if (!active) {
         msecs_t nextMicros = samplesToMsecs(samplesPerChannel, m_outputSpec.sampleRate);
-        MuseSamplerSequencer::EventSequenceMap sequences = m_sequencer.movePlaybackForward(nextMicros);
+        const MuseSamplerSequencer::EventSequenceMap& sequences = m_sequencer.movePlaybackForward(nextMicros);
 
         for (const auto& pair : sequences) {
             for (const MuseSamplerSequencer::EventType& event : pair.second) {
