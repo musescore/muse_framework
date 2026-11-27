@@ -69,6 +69,8 @@ public:
     bool isValid() const override;
 
 private:
+    friend class FluidSynthTests;
+
     struct KeyTuning {
         std::vector<int> keys;
         std::vector<double> pitches;
@@ -97,11 +99,12 @@ private:
     };
 
     void createFluidInstance();
+    void setupSoundChannels();
 
     void doFlushSound();
 
     bool processSequence(const FluidSequencer::EventSequence& sequence, const samples_t samples, float* buffer);
-    bool handleEvent(const midi::Event& event);
+    bool handleEvent(const midi::Event& event, NoteTreatmentId treatmentId = NoteTreatmentId::None);
 
     void updateExpressionLevels();
 

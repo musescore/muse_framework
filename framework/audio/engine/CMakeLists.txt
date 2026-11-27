@@ -146,6 +146,10 @@ else()
         internal/synthesizers/soundfontrepository.cpp
         internal/synthesizers/soundfontrepository.h
         internal/synthesizers/fluidsynth/soundmapping.h
+        internal/synthesizers/fluidsynth/playbacktreatmentdata.h
+        internal/synthesizers/fluidsynth/guitarcrossnoteenvelope.h
+        internal/synthesizers/fluidsynth/fluidtreatmentcontroller.h
+        internal/synthesizers/fluidsynth/fluidtreatmentcontroller.cpp
         internal/synthesizers/fluidsynth/sfcachedloader.h
         internal/synthesizers/fluidsynth/fluidsynth.cpp
         internal/synthesizers/fluidsynth/fluidsynth.h

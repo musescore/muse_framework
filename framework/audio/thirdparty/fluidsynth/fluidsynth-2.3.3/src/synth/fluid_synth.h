@@ -136,6 +136,8 @@ struct _fluid_synth_t
     int active_voice_count;            /**< count of active voices */
     unsigned int noteid;               /**< the id is incremented for every new note. it's used for noteoff's  */
     unsigned int storeid;
+    fluid_voice_created_callback_t voice_created_callback;
+    void *voice_created_callback_data;
     int fromkey_portamento;			 /**< fromkey portamento */
     fluid_rvoice_eventhandler_t *eventhandler;
 

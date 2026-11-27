@@ -28,6 +28,7 @@
 #include "audio/common/audiotypes.h"
 
 #include "sfcachedloader.h"
+#include "fluidtreatmentcontroller.h"
 
 #include "log.h"
 
@@ -218,13 +219,14 @@ void FluidSynth::doFlushSound()
     }
 }
 
-bool FluidSynth::handleEvent(const midi::Event& event)
+bool FluidSynth::handleEvent(const midi::Event& event, NoteTreatmentId treatmentId)
 {
     int ret = FLUID_OK;
     switch (event.opcode()) {
     case Event::Opcode::NoteOn: {
         // fluid_synth_noteon expects 0...127
-        ret = fluid_synth_noteon(m_fluid->synth, event.channel(), event.note(), event.velocity7());
+        ret = FluidTreatmentController::noteOn(m_fluid->synth, event.channel(), event.note(), event.velocity7(),
+                                               PlaybackTreatmentResolver::noteTreatment(treatmentId));
         m_tuning.add(event.note(), event.pitchTuningCents());
     } break;
     case Event::Opcode::NoteOff: {
@@ -295,7 +297,9 @@ void FluidSynth::setOutputSpec(const OutputSpec& spec)
     addSoundFonts(std::vector<io::path_t>(m_sfontPaths.cbegin(), m_sfontPaths.cend()));
 
     if (m_setupData.isValid()) {
-        setupSound(m_setupData);
+        // Restore synth settings, but keep `m_sequencer` data, so existing MIDI event channel IDs don't become invalid.
+        setupSoundChannels();
+        updateExpressionLevels();
     }
 }
 
@@ -341,6 +345,17 @@ void FluidSynth::setupSound(const PlaybackSetupData& setupData)
         return;
     }
 
+    m_sequencer.channelAdded().disconnect(this);
+    m_sequencer.init(setupData, m_preset, setupData.supportsSingleNoteDynamics, MIDI_CHANNEL_COUNT);
+    setupSoundChannels();
+}
+
+void FluidSynth::setupSoundChannels()
+{
+    IF_ASSERT_FAILED(m_fluid->synth) {
+        return;
+    }
+
     fluid_synth_activate_key_tuning(m_fluid->synth, 0, 0, "standard", NULL, true);
 
     auto setupChannel = [this](const midi::channel_t channelIdx, const midi::Program& program) {
@@ -358,8 +373,6 @@ void FluidSynth::setupSound(const PlaybackSetupData& setupData)
 
     m_sequencer.channelAdded().onReceive(this, setupChannel,
                                          async::Asyncable::Mode::SetReplace);
-
-    m_sequencer.init(setupData, m_preset, setupData.supportsSingleNoteDynamics, MIDI_CHANNEL_COUNT);
 
     for (const auto& voice : m_sequencer.channels().data()) {
         for (const auto& pair : voice.second) {
@@ -451,7 +464,8 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
     }
 
     for (const FluidSequencer::EventType& event : sequence) {
-        handleEvent(std::get<midi::Event>(event));
+        const FluidEvent& fluidEvent = std::get<FluidEvent>(event);
+        handleEvent(fluidEvent.event, fluidEvent.treatmentId);
     }
 
     fluid_synth_tune_notes(m_fluid->synth, 0, 0, m_tuning.size(), m_tuning.keys.data(), m_tuning.pitches.data(), true);
